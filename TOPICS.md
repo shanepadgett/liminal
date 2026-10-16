@@ -9,6 +9,7 @@
 - Collab-style session sharing through an encrypted relay
 - Sessions and storage
 - TUI
+- Transcript styles: compare Pi, Grok Build and Codex densities and blend per kind; plan in `docs/plans/transcript.md`
 - Gallery: its own isolated app, a minimal Storybook for the TUI; built before any TUI components or screens; every element, primitives through screens, is approved there first; houses its own components, duplication accepted; keep Tau's tier, state and width rules, redesign the shell
 
 ## Later
