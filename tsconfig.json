@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "types": ["bun"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "jsx": "preserve",
+    "jsxImportSource": "@opentui/solid",
+    "plugins": [{ "name": "@effect/language-service", "diagnostics": false }]
+  },
+  "include": ["apps", "kernel", "sdk", "plugins", "tools"],
+  "exclude": ["**/node_modules", "tools/**/fixtures"]
+}

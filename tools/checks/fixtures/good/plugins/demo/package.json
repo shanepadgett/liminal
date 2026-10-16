@@ -1,0 +1,12 @@
+{
+  "name": "@liminal/demo",
+  "type": "module",
+  "exports": {
+    ".": "./plugin.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "peerDependencies": {
+    "@liminal/sdk": "*",
+    "effect": "*"
+  }
+}

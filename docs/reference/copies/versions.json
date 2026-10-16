@@ -1,0 +1,72 @@
+{
+  "effect": {
+    "version": "4.0.5",
+    "fingerprint": "fb00675ec567ccbe",
+    "commits": []
+  },
+  "@effect/platform-bun": {
+    "version": "4.0.5",
+    "fingerprint": "1ad570f684c6ebff",
+    "commits": []
+  },
+  "@effect/tsgo": {
+    "version": "0.53.1",
+    "fingerprint": "023c958c7e5b4561",
+    "commits": [
+      "cb4c4a75630e229cdf0034e00222582ba39ef1a0"
+    ]
+  },
+  "typescript": {
+    "version": "7.0.2",
+    "fingerprint": "0f56cd86030d2f92",
+    "commits": []
+  },
+  "@types/bun": {
+    "version": "1.4.3",
+    "fingerprint": "293ac8cbbe725bb1",
+    "commits": []
+  },
+  "oxlint": {
+    "version": "1.88.0",
+    "fingerprint": "737b4e99a6c52be8",
+    "commits": [
+      "5e3db7bd3c8ea948dbdd88f3531f9d25130966dd"
+    ]
+  },
+  "@oxlint/plugins": {
+    "version": "1.88.0",
+    "fingerprint": "7a751595cb8d981f",
+    "commits": []
+  },
+  "oxlint-tsgolint": {
+    "version": "7.0.2004",
+    "fingerprint": "8676b959b411d307",
+    "commits": []
+  },
+  "oxfmt": {
+    "version": "0.73.0",
+    "fingerprint": "2ffd0fc9b0a5ee96",
+    "commits": [
+      "5e3db7bd3c8ea948dbdd88f3531f9d25130966dd"
+    ]
+  },
+  "fallow": {
+    "version": "3.33.1",
+    "fingerprint": "992c3d209e29ec58",
+    "commits": []
+  },
+  "bun": {
+    "version": "1.4.3",
+    "fingerprint": "4dd526caf1ba5d13",
+    "commits": [
+      "c6da4a4d3010e5553438c60f6bd76d981976867c"
+    ]
+  },
+  "node": {
+    "version": "24.22.0",
+    "fingerprint": "c057cf49f94c27c4",
+    "commits": [
+      "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93"
+    ]
+  }
+}

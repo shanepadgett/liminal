@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  // Fallow owns dead code, workspace dependency hygiene, cycles, import boundaries and duplicates.
+  "ignorePatterns": ["tools/**/fixtures/**", "docs/reference/copies/**"],
+  "entry": [
+    "tools/quiet.ts",
+    "tools/checks/plugin-anatomy.ts",
+    "tools/reference/sync.ts",
+    "tools/reference/check.ts",
+  ],
+  // Published APIs: the SDK for plugin authors, and every plugin's manifest and contract.
+  "publicPackages": ["@liminal/sdk", "@liminal/*"],
+  "rules": {
+    "unused-dev-dependencies": "error",
+    "unused-optional-dependencies": "error",
+    "type-only-dependencies": "error",
+    "test-only-dependencies": "error",
+    "dev-dependencies-in-production": "error",
+    "re-export-cycle": "error",
+    "stale-suppressions": "error",
+    "policy-violation": "error",
+  },
+  "duplicates": { "mode": "mild", "minTokens": 50, "minLines": 5, "minOccurrences": 2 },
+  "boundaries": {
+    "zones": [
+      { "name": "apps", "patterns": ["apps/**"] },
+      { "name": "kernel", "patterns": ["kernel/**"] },
+      { "name": "sdk", "patterns": ["sdk/**"] },
+      { "name": "plugins", "patterns": ["plugins/**"] },
+      { "name": "tools", "patterns": ["tools/**"] },
+    ],
+    "rules": [
+      { "from": "apps", "allow": ["kernel", "sdk", "plugins"] },
+      { "from": "kernel", "allow": ["sdk"] },
+      { "from": "sdk", "allow": [] },
+      { "from": "plugins", "allow": ["sdk", "plugins"] },
+      { "from": "tools", "allow": [] },
+    ],
+  },
+}

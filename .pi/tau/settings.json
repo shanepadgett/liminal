@@ -1,15 +1,147 @@
 {
-	"$schema": "https://raw.githubusercontent.com/shanepadgett/tau-agent/refs/heads/main/packages/agent/schemas/tau.schema.json",
-	"extensions": {
-		"commit": {
-			"avoidBreakingChanges": true,
-			"push": true
-		},
-		"decisions": {
-			"enabled": false
-		},
-		"toolApproval": {
-			"enabled": false
-		}
-	}
+  "$schema": "https://raw.githubusercontent.com/shanepadgett/tau-agent/refs/heads/main/packages/agent/schemas/tau.schema.json",
+  "extensions": {
+    "commit": { "avoidBreakingChanges": true, "push": true },
+    "decisions": { "enabled": false },
+    "toolApproval": { "enabled": false },
+    "mdLint": {
+      "ignoreGlobs": [
+        ".git/**",
+        "node_modules/**",
+        "dist/**",
+        "build/**",
+        "coverage/**",
+        "out/**",
+        ".cache/**",
+        ".next/**",
+        ".turbo/**",
+        ".parcel-cache/**",
+        ".pi/sessions/**",
+        ".pi/cache/**",
+        ".pi/tmp/**",
+        ".pi/temp/**",
+        ".pi/logs/**",
+        "docs/reference/copies/**"
+      ]
+    },
+    "silentCommandRunner": {
+      "afterWrite": [
+        {
+          "name": "format",
+          "command": "mise run fix:fmt -- {files}",
+          "details": "Format changed code and config with oxfmt",
+          "includeGlobs": ["**/*.ts", "**/*.tsx", "**/*.json", "**/*.jsonc", "**/*.toml"],
+          "excludeGlobs": [".pi/tau/vocabulary.json", "**/fixtures/**"]
+        },
+        {
+          "name": "lint fix",
+          "command": "mise run fix:lint -- {files}",
+          "details": "Apply safe oxlint fixes to changed code",
+          "includeGlobs": ["**/*.ts", "**/*.tsx"],
+          "excludeGlobs": ["**/fixtures/**"]
+        }
+      ],
+      "afterRun": [
+        {
+          "parallel": [
+            { "name": "mise", "command": "mise run check:mise", "includeGlobs": ["mise.toml"] },
+            {
+              "name": "types",
+              "command": "mise run check:types",
+              "details": "Types and Effect diagnostics",
+              "timeoutMs": 300000,
+              "includeGlobs": ["**/*.ts", "**/*.tsx", "tsconfig.json", "**/package.json"]
+            },
+            {
+              "name": "lint",
+              "command": "mise run check:lint",
+              "details": "Type-aware oxlint with Liminal rules",
+              "timeoutMs": 300000,
+              "includeGlobs": ["**/*.ts", "**/*.tsx", ".oxlintrc.json"]
+            },
+            {
+              "name": "plugin anatomy",
+              "command": "mise run check:anatomy",
+              "includeGlobs": ["plugins/**", "tools/checks/**"]
+            },
+            {
+              "name": "reference docs",
+              "command": "mise run check:reference",
+              "details": "Dependency docs match pinned versions",
+              "includeGlobs": [
+                "**/package.json",
+                "bun.lock",
+                "mise.toml",
+                "docs/reference/**",
+                "tools/reference/**"
+              ]
+            },
+            {
+              "name": "dead code",
+              "command": "mise run fallow:dead-code",
+              "details": "Unused code and dependencies, cycles, boundaries",
+              "includeGlobs": ["**/*.ts", "**/*.tsx", "**/package.json", ".fallowrc.jsonc"]
+            },
+            {
+              "name": "duplicates",
+              "command": "mise run fallow:dupes",
+              "includeGlobs": ["**/*.ts", "**/*.tsx", ".fallowrc.jsonc"]
+            },
+            {
+              "name": "tests",
+              "command": "mise run test",
+              "details": "Workspace tests",
+              "timeoutMs": 300000,
+              "includeGlobs": ["apps/**", "kernel/**", "sdk/**", "plugins/**"]
+            },
+            {
+              "name": "tool tests",
+              "command": "mise run test:tools",
+              "details": "Lint rule and check tests under Node",
+              "includeGlobs": ["tools/**"]
+            }
+          ]
+        }
+      ],
+      "beforeCommit": [
+        {
+          "parallel": [
+            { "name": "mise", "command": "mise run check:mise" },
+            { "name": "format", "command": "mise run check:fmt", "details": "Formatting" },
+            {
+              "name": "types",
+              "command": "mise run check:types",
+              "details": "Types and Effect diagnostics",
+              "timeoutMs": 300000
+            },
+            {
+              "name": "lint",
+              "command": "mise run check:lint",
+              "details": "Type-aware oxlint with Liminal rules",
+              "timeoutMs": 300000
+            },
+            { "name": "plugin anatomy", "command": "mise run check:anatomy" },
+            { "name": "reference docs", "command": "mise run check:reference" },
+            {
+              "name": "dead code",
+              "command": "mise run fallow:dead-code",
+              "details": "Unused code and dependencies, cycles, boundaries"
+            },
+            { "name": "duplicates", "command": "mise run fallow:dupes" },
+            {
+              "name": "tests",
+              "command": "mise run test",
+              "details": "Workspace tests",
+              "timeoutMs": 300000
+            },
+            {
+              "name": "tool tests",
+              "command": "mise run test:tools",
+              "details": "Lint rule and check tests under Node"
+            }
+          ]
+        }
+      ]
+    }
+  }
 }

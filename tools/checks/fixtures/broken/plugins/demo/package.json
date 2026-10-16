@@ -1,0 +1,12 @@
+{
+  "name": "@liminal/demo",
+  "type": "module",
+  "exports": {
+    ".": "./plugin.ts",
+    "./server": "./src/server.ts"
+  },
+  "dependencies": {
+    "@liminal/kernel": "workspace:*",
+    "@liminal/sdk": "workspace:*"
+  }
+}
