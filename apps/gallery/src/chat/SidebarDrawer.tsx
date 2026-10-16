@@ -3,13 +3,9 @@
  * the chat on the base surface, and the chat under it is dimmed.
  */
 
-import { RGBA } from "@opentui/core";
-
 import type { RoleColor } from "../tokens/roles.ts";
+import { SCRIM } from "./scrim.ts";
 import { Sidebar } from "./Sidebar.tsx";
-
-/** How dark the dimmed chat under the drawer is, from 0 to 255. */
-const DIM_ALPHA = 150;
 
 export function SidebarDrawer(props: { readonly color: RoleColor }) {
   return (
@@ -22,7 +18,7 @@ export function SidebarDrawer(props: { readonly color: RoleColor }) {
       zIndex={1}
       flexDirection="row"
       justifyContent="flex-end"
-      backgroundColor={RGBA.fromInts(0, 0, 0, DIM_ALPHA)}
+      backgroundColor={SCRIM}
     >
       <box flexDirection="row" height="100%" backgroundColor={props.color("surface.base")}>
         <Sidebar color={props.color} />

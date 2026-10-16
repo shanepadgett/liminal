@@ -6,7 +6,7 @@
  */
 
 import { mixHex } from "../tokens/oklch.ts";
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor, RoleName } from "../tokens/roles.ts";
 import { type Cell, FADE, HAIRLINE } from "./fade.ts";
 
 /** One glide there and back. */
@@ -91,9 +91,14 @@ const blockCell = (step: number, heading: Run["heading"], fg: string, bg: string
 };
 
 /** The header's hairline row with `run` on it. */
-export const runCells = (color: RoleColor, columns: number, run: Run): readonly Cell[] => {
+export const runCells = (
+  color: RoleColor,
+  surfaceRole: RoleName,
+  columns: number,
+  run: Run,
+): readonly Cell[] => {
   const top = FADE.length - 1;
-  const surface = color("surface.base");
+  const surface = color(surfaceRole);
 
   return Array.from({ length: columns }, (_, column) => {
     const along = alongRun(run, column);

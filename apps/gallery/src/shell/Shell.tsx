@@ -21,7 +21,7 @@ import {
   listEntries,
   moveEntry,
   moveGroup,
-  nextState,
+  moveState,
   type Place,
 } from "./navigation.ts";
 import { type Area, describeFrame, FIT, type FrameSize, frameArea, SIZES } from "./sizes.ts";
@@ -201,7 +201,7 @@ export function Shell(props: ShellProps) {
     {
       moveGroup: (step) => setPlace(moveGroup(props.groups, place(), step)),
       moveEntry: (step) => setPlace(moveEntry(props.groups, place(), step)),
-      nextState: () => setPlace(nextState(entry(), place())),
+      moveState: (step) => setPlace(moveState(entry(), place(), step)),
       nextPalette: () => setPaletteIndex((index) => (index + 1) % props.palettes.length),
       nextSize: () => setSizeIndex((index) => (index + 1) % SIZES.length),
       scrollPage: (direction) => scroll()?.scrollBy(direction * Math.max(1, renderer.height - 8)),

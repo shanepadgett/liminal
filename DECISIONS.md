@@ -136,12 +136,18 @@
 - Status and mode use chips: solid fill, one cell of padding each side
 - Liminal has its own signature ornament, used consistently in titles and headers
 - The ornament is the eighth-block fade `▏▎▍▌▋▊▉█` in the palette gradient
-- A small set of single-cell glyphs; no emoji or Nerd Font icons
+- Ornament placement is the edge: hairlines across the width that thicken into the fade, shared by headers and dialog titles
+- The gallery's Primitives group shows the shared pieces components are built from
+- A small set of single-cell glyphs; no Nerd Font icons
+- Emoji only for file-tag kinds: 📄 file, 📁 folder, 📚 reference, 🌄 image
 - Metadata lines join parts with a faint separator; key hints are a muted key and a fainter action
 - Every component renders to a given width; truncate with `…`, lower-priority parts yield first, long output collapses and expands
 - Background fills only to push secondary content back
 - Spacing rhythm: two-cell margin and indent, chips `(0,1)`, cards `(1,2)`
 - Motion has character and stays cheap
+- Working motion is the glide; no sweep
+- Only one place glides while working: the header or the composer's top edge
+- Toasts show in the chat column's top right, under the header; every kind times out, errors included
 - Palettes define the 16 ANSI colors used for terminal output
 
 ## Protocol

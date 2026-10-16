@@ -17,6 +17,7 @@ const KEY_GLYPHS: Readonly<Record<string, string>> = {
   down: "↓",
   pageup: "pgup",
   pagedown: "pgdn",
+  "shift+s": "S",
 };
 
 type Hint = { readonly desc: string; readonly keys: readonly string[] };
@@ -33,9 +34,9 @@ const groupHints = (active: readonly ActiveKey<Renderable, KeyEvent>[]): readonl
   return [...hints].map(([desc, keys]) => ({ desc, keys }));
 };
 
-/** Arrows read as one symbol, `←→`; named keys need a space, `pgup pgdn`. */
+/** Arrows read as one symbol, `←→`; letters and named keys need a space, `s S`, `pgup pgdn`. */
 const joinKeys = (keys: readonly string[]) =>
-  keys.join(keys.every((key) => key.length === 1) ? "" : " ");
+  keys.join(keys.every((key) => key.length === 1 && !/\w/u.test(key)) ? "" : " ");
 
 export function KeyHints() {
   const hints = useKeymapSelector((keymap) =>

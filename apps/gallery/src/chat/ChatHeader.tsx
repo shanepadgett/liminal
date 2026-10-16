@@ -9,14 +9,16 @@ import type { BoxRenderable } from "@opentui/core";
 import { createSignal, Show } from "solid-js";
 
 import { FADE } from "../ornament/fade.ts";
-import { GLIDE_PERIOD_MS, glideRun, restingRun, runCells } from "../ornament/glide.ts";
-import { Track } from "../ornament/Track.tsx";
+import { HeaderRule } from "../ornament/HeaderRule.tsx";
 import type { RoleColor } from "../tokens/roles.ts";
 
 const WORDMARK = "liminal ";
 
 /** The header's padding on each side. */
 const PADDING_COLUMNS = 2;
+
+/** The blank row above the header line, then the line. */
+export const HEADER_ROWS = 2;
 
 /** The shortest hairline the title may leave: the fade three times over. */
 const MIN_TRACK_COLUMNS = FADE.length * 3;
@@ -40,25 +42,13 @@ export function ChatHeader(props: {
       flexDirection="row"
       flexShrink={0}
       paddingX={PADDING_COLUMNS}
-      paddingTop={1}
+      paddingTop={HEADER_ROWS - 1}
       onSizeChange={() => setColumns(row()?.width ?? 0)}
     >
       <text fg={props.color("text.accent")} flexShrink={0}>
         {WORDMARK}
       </text>
-      <box flexGrow={1}>
-        <Track
-          isPlaying={props.isWorking}
-          periodMs={GLIDE_PERIOD_MS}
-          draw={(trackColumns, phase) =>
-            runCells(
-              props.color,
-              trackColumns,
-              props.isWorking ? glideRun(phase, trackColumns) : restingRun(trackColumns),
-            )
-          }
-        />
-      </box>
+      <HeaderRule color={props.color} surface="surface.base" isWorking={props.isWorking} />
       <Show when={hasTitle()}>
         <text wrapMode="none" flexShrink={0} fg={props.color("text.base")}>
           {shownTitle()}

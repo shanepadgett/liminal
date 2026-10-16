@@ -63,7 +63,7 @@ export const moveEntry = (groups: readonly Group[], place: Place, step: number):
   return { ...place, entryIndex: wrap(place.entryIndex, step, count), stateIndex: 0 };
 };
 
-export const nextState = (entry: Entry | undefined, place: Place): Place => ({
+export const moveState = (entry: Entry | undefined, place: Place, step: number): Place => ({
   ...place,
-  stateIndex: wrap(place.stateIndex, 1, entry?.states.length ?? 0),
+  stateIndex: wrap(place.stateIndex, step, entry?.states.length ?? 0),
 });

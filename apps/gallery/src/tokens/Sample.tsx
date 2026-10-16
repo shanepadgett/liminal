@@ -3,7 +3,6 @@
 import { ChatHeader } from "../chat/ChatHeader.tsx";
 import { Composer } from "../chat/Composer.tsx";
 import { Conversation } from "../chat/Conversation.tsx";
-import { GLIDE } from "../chat/scan.ts";
 import type { RoleColor } from "./roles.ts";
 
 const SAMPLE_COLUMNS = 72;
@@ -23,7 +22,7 @@ export function Sample(props: { readonly color: RoleColor }) {
         thinking="high"
         draft=""
         isWorking={false}
-        motion={GLIDE}
+        isGliding={false}
       />
     </box>
   );

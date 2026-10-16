@@ -10,7 +10,7 @@ import { useBindings } from "@opentui/keymap/solid";
 export type ShellActions = {
   readonly moveGroup: (step: number) => void;
   readonly moveEntry: (step: number) => void;
-  readonly nextState: () => void;
+  readonly moveState: (step: number) => void;
   readonly nextPalette: () => void;
   readonly nextSize: () => void;
   readonly scrollPage: (direction: number) => void;
@@ -34,49 +34,23 @@ const BINDINGS: readonly Binding[] = [
   { key: "ctrl+c", cmd: "gallery.quit" },
 ];
 
+/** A command that moves through a list by `step`. */
+const stepCommand = (name: string, move: (step: number) => void, step: number): Command => ({
+  name,
+  run: () => {
+    move(step);
+  },
+});
+
 const listCommands = (actions: ShellActions): readonly Command[] => [
-  {
-    name: "gallery.group.previous",
-    run: () => {
-      actions.moveGroup(-1);
-    },
-  },
-  {
-    name: "gallery.group.next",
-    run: () => {
-      actions.moveGroup(1);
-    },
-  },
-  {
-    name: "gallery.entry.previous",
-    run: () => {
-      actions.moveEntry(-1);
-    },
-  },
-  {
-    name: "gallery.entry.next",
-    run: () => {
-      actions.moveEntry(1);
-    },
-  },
-  {
-    name: "gallery.page.up",
-    run: () => {
-      actions.scrollPage(-1);
-    },
-  },
-  {
-    name: "gallery.page.down",
-    run: () => {
-      actions.scrollPage(1);
-    },
-  },
-  {
-    name: "gallery.state.next",
-    run: () => {
-      actions.nextState();
-    },
-  },
+  stepCommand("gallery.group.previous", actions.moveGroup, -1),
+  stepCommand("gallery.group.next", actions.moveGroup, 1),
+  stepCommand("gallery.entry.previous", actions.moveEntry, -1),
+  stepCommand("gallery.entry.next", actions.moveEntry, 1),
+  stepCommand("gallery.page.up", actions.scrollPage, -1),
+  stepCommand("gallery.page.down", actions.scrollPage, 1),
+  stepCommand("gallery.state.previous", actions.moveState, -1),
+  stepCommand("gallery.state.next", actions.moveState, 1),
   {
     name: "gallery.palette.next",
     run: () => {
@@ -93,7 +67,10 @@ const listCommands = (actions: ShellActions): readonly Command[] => [
 ];
 
 /** Bound only while the entry has more than one state, so the hint never offers a dead key. */
-const STATE_BINDINGS: readonly Binding[] = [{ key: "s", cmd: "gallery.state.next", desc: "state" }];
+const STATE_BINDINGS: readonly Binding[] = [
+  { key: "s", cmd: "gallery.state.next", desc: "state" },
+  { key: "shift+s", cmd: "gallery.state.previous", desc: "state" },
+];
 
 export const useShellKeys = (actions: ShellActions, hasStates: () => boolean) => {
   useBindings(() => ({
