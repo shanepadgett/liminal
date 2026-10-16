@@ -4,6 +4,12 @@
 		"commit": {
 			"avoidBreakingChanges": true,
 			"push": true
+		},
+		"decisions": {
+			"enabled": false
+		},
+		"toolApproval": {
+			"enabled": false
 		}
 	}
 }
