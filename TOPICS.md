@@ -2,10 +2,15 @@
 
 ## Open
 
-- Goals: TUI first; desktop and web later; web as server-only with consumer-provided UI; multi-user server mode later
-- Plugin kernel: everything is a plugin, any service replaceable, hot reload in dev and prod; own kernel vs Cordis
-- Core service map: llm, sessions, tools, auth/credentials, storage, compaction, config
-- Core ↔ frontend protocol: in-process vs local server for the TUI
-- Extension UI: one plugin rendering in TUI, desktop, and web
+- Code conventions: port Tau's standards and custom lint rules, reviewed per rule
+- Core service contracts: session-log, agent-loop, context, models, credential-store, tool-registry, tool-pipeline, settings
+- Stable service handles vs rebuilding dependents on swap
+- ACP adapter as a server plugin
+- Collab-style session sharing through an encrypted relay
 - Sessions and storage
 - TUI
+
+## Later
+
+- Bundles: named plugin sets
+- Trust boundaries: UI parts from untrusted servers, plugin permissions

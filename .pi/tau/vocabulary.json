@@ -1,0 +1,8 @@
+{
+	"terms": [
+		{
+			"term": "annex",
+			"definition": "The unit Liminal plugins are distributed in: an npm, git, or local package containing one or more plugins."
+		}
+	]
+}
