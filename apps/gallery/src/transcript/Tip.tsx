@@ -14,7 +14,7 @@ import { LiveLine } from "./LiveLine.tsx";
 import type { Action } from "./script.ts";
 import { Vapor } from "./Vapor.tsx";
 import { wordingOf } from "./wording.ts";
-import type { Group } from "./workGroups.ts";
+import type { WorkGroup } from "./workGroups.ts";
 
 /** Lines under the live line sit under its words, past the arc. */
 const DETAIL_INDENT = 2;
@@ -27,7 +27,7 @@ type Live = {
 };
 
 /** The group going on now in the present tense: `Exploring kernel/test, 2 files`. */
-const doingOf = (group: Group) => {
+const doingOf = (group: WorkGroup) => {
   const { verb, subject } = wordingOf(group, "present");
 
   return subject === "" ? verb : `${verb} ${subject}`;

@@ -8,8 +8,8 @@
 import { Index, Show } from "solid-js";
 
 import type { RoleColor } from "../tokens/roles.ts";
-import { optionsOf } from "../transcript2/questions.ts";
-import type { AnswerOption, Question } from "../transcript2/script.ts";
+import { optionsOf } from "../transcript/questions.ts";
+import type { AnswerOption, Question } from "../transcript/script.ts";
 import type { Draft } from "./formState.ts";
 import { ListRow } from "./ListRow.tsx";
 import { Suggested } from "./Suggested.tsx";

@@ -6,7 +6,7 @@
 import { Show } from "solid-js";
 
 import type { RoleColor } from "../tokens/roles.ts";
-import type { Recommendation } from "../transcript2/script.ts";
+import type { Recommendation } from "../transcript/script.ts";
 import { Suggested } from "./Suggested.tsx";
 
 const FIELD_ROWS = 2;

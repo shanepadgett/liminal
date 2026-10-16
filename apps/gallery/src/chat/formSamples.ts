@@ -1,9 +1,9 @@
 /**
  * The form of questions the gallery's composer shows, at each step of answering it: the questions
- * Transcript 2.0's `/qna` turn drafts, answered the way its next prompt says they were.
+ * The transcript's `/qna` turn drafts, answered the way its next prompt says they were.
  */
 
-import { FORM_QUESTIONS, FORM_TITLE } from "../transcript2/sample.ts";
+import { FORM_QUESTIONS, FORM_TITLE } from "../transcript/sample.ts";
 import type { Draft, FormState } from "./formState.ts";
 
 const OPEN_CHOICE: Draft = { kind: "choice", picked: undefined, own: "", notes: {} };

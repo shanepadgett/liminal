@@ -11,9 +11,9 @@ import type { BoxRenderable } from "@opentui/core";
 import { createSignal, Match, Show, Switch } from "solid-js";
 
 import type { RoleColor } from "../tokens/roles.ts";
-import { FINISHED_SESSION, WORKING_SESSION } from "../transcript/sample.ts";
-import { FOLDED } from "../transcript/styles.ts";
-import { Transcript } from "../transcript/Transcript.tsx";
+import { Conversation } from "../transcript/Conversation.tsx";
+import { momentOf } from "../transcript/play.ts";
+import { ASK, BOOT, FIX } from "../transcript/sample.ts";
 import { ChatHeader } from "./ChatHeader.tsx";
 import { CommandPalette } from "./CommandPalette.tsx";
 import { Composer } from "./Composer.tsx";
@@ -27,6 +27,9 @@ export type GlideAt = "header" | "composer";
 
 /** The narrowest chat column a docked sidebar may leave. */
 const MIN_CHAT_COLUMNS = 80;
+
+/** While working, the fix turn is held mid-run as its tests run. */
+const WORKING_MS = momentOf(FIX, 6, 0.7);
 
 export function ChatScreen(props: {
   readonly color: RoleColor;
@@ -57,12 +60,11 @@ export function ChatScreen(props: {
           isWorking={props.isWorking && props.glideAt === "header"}
         />
         <box flexGrow={1} minHeight={0}>
-          <Transcript
+          <Conversation
             color={props.color}
-            session={props.isWorking ? WORKING_SESSION : FINISHED_SESSION}
-            style={FOLDED}
-            isWorking={props.isWorking}
-            openIds={new Set()}
+            finished={props.isWorking ? [BOOT, ASK] : [BOOT, ASK, FIX]}
+            playing={props.isWorking ? [FIX] : []}
+            ms={props.isWorking ? WORKING_MS : 0}
           />
         </box>
         <Composer

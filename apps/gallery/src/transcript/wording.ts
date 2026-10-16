@@ -6,9 +6,9 @@
 
 import { Match } from "effect";
 
-import { formatDuration } from "../transcript/duration.ts";
+import { formatDuration } from "./duration.ts";
 import type { Check } from "./script.ts";
-import type { Edit, Group, Looked } from "./workGroups.ts";
+import type { Edit, WorkGroup, Looked } from "./workGroups.ts";
 
 export type Tense = "past" | "present";
 
@@ -92,7 +92,7 @@ const checkedOf = (checks: readonly Check[], tense: Tense): Wording => {
     : worded("Ran", "checks", "", `${failed.join(", ")} failed`);
 };
 
-export const wordingOf = (group: Group, tense: Tense): Wording =>
+export const wordingOf = (group: WorkGroup, tense: Tense): Wording =>
   Match.value(group).pipe(
     Match.discriminatorsExhaustive("kind")({
       thought: (thought) =>
@@ -118,7 +118,7 @@ const linesChanged = (edit: Edit) => {
 };
 
 /** The rows an opened group lists, one per action; a group of one action lists none. */
-export const actionWordingsOf = (group: Group): readonly Wording[] => {
+export const actionWordingsOf = (group: WorkGroup): readonly Wording[] => {
   if (group.kind === "explored" && group.actions.length > 1) {
     return group.actions.map((action) =>
       action.kind === "read"

@@ -22,7 +22,6 @@ import type { EntryState, Groups } from "./shell/entries.ts";
 import { PaletteView } from "./tokens/PaletteView.tsx";
 import { TerminalView } from "./tokens/TerminalView.tsx";
 import { TRANSCRIPT_COMPONENTS, TRANSCRIPT_SCREENS } from "./transcript/galleryEntries.tsx";
-import { TRANSCRIPT2_COMPONENTS, TRANSCRIPT2_SCREENS } from "./transcript2/galleryEntries.tsx";
 
 /** A draft long enough to show how the composer holds real text. */
 const DRAFT = "fix the test so it checks they start concurrently";
@@ -179,7 +178,6 @@ export const GROUPS: Groups = [
           },
         ],
       },
-      TRANSCRIPT2_COMPONENTS,
       TRANSCRIPT_COMPONENTS,
       {
         title: "Dialogs",
@@ -247,7 +245,6 @@ export const GROUPS: Groups = [
           },
         ],
       },
-      TRANSCRIPT2_SCREENS,
       TRANSCRIPT_SCREENS,
     ],
   },

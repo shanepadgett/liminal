@@ -17,14 +17,14 @@ export type Edit = Extract<Action, { readonly kind: "edit" }>;
 
 export type Run = Extract<Action, { readonly kind: "run" }>;
 
-export type Group =
+export type WorkGroup =
   | { readonly kind: "thought"; readonly text: string; readonly seconds: number }
   | { readonly kind: "explored"; readonly actions: readonly Looked[] }
   | { readonly kind: "edited"; readonly edits: readonly Edit[] }
   | { readonly kind: "ran"; readonly run: Run }
   | { readonly kind: "checked"; readonly checks: readonly Check[] };
 
-const groupOf = (work: Work): Group => {
+const groupOf = (work: Work): WorkGroup => {
   if (work.kind === "thought") return work;
 
   const { action } = work;
@@ -40,7 +40,7 @@ const groupOf = (work: Work): Group => {
 };
 
 /** The two groups as one, when the second carries on the first. */
-const joined = (last: Group, next: Group): Group | undefined => {
+const joined = (last: WorkGroup, next: WorkGroup): WorkGroup | undefined => {
   if (last.kind === "explored" && next.kind === "explored") {
     return { kind: "explored", actions: [...last.actions, ...next.actions] };
   }
@@ -52,8 +52,8 @@ const joined = (last: Group, next: Group): Group | undefined => {
   return undefined;
 };
 
-export const groupsOf = (work: readonly Work[]): readonly Group[] => {
-  const groups: Group[] = [];
+export const groupsOf = (work: readonly Work[]): readonly WorkGroup[] => {
+  const groups: WorkGroup[] = [];
 
   for (const each of work) {
     const next = groupOf(each);
@@ -74,7 +74,7 @@ export const groupsOf = (work: readonly Work[]): readonly Group[] => {
 export const withLive = (
   work: readonly Work[],
   next: Work,
-): { readonly settled: readonly Group[]; readonly live: Group } => {
+): { readonly settled: readonly WorkGroup[]; readonly live: WorkGroup } => {
   const groups = groupsOf(work);
   const own = groupOf(next);
   const last = groups.at(-1);

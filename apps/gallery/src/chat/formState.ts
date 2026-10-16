@@ -4,7 +4,7 @@
  * far. Questions left open are sent as skipped.
  */
 
-import type { Question } from "../transcript2/script.ts";
+import type { Question } from "../transcript/script.ts";
 import type { Hint } from "./Hints.tsx";
 
 /** What the user has given a question so far. */

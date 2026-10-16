@@ -1,7 +1,7 @@
 /** The answer the assistant suggests for a question, and why, set quietly under the question. */
 
 import type { RoleColor } from "../tokens/roles.ts";
-import type { Recommendation } from "../transcript2/script.ts";
+import type { Recommendation } from "../transcript/script.ts";
 
 const LABEL = "suggested  ";
 

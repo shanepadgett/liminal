@@ -7,7 +7,7 @@
 import { Show } from "solid-js";
 
 import type { RoleColor } from "../tokens/roles.ts";
-import type { Question } from "../transcript2/script.ts";
+import type { Question } from "../transcript/script.ts";
 import { ChoiceTab } from "./ChoiceTab.tsx";
 import type { Draft, FormState } from "./formState.ts";
 import { FormTabs } from "./FormTabs.tsx";

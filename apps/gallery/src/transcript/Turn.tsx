@@ -9,13 +9,13 @@
 import { createSignal, Index, Show } from "solid-js";
 
 import type { RoleColor } from "../tokens/roles.ts";
-import { UserPrompt } from "../transcript/UserPrompt.tsx";
 import { Answers } from "./Answers.tsx";
 import { Asked } from "./Asked.tsx";
 import type { Block, Ending, TurnFrame } from "./frame.ts";
 import { Said } from "./Said.tsx";
 import type { Prompt } from "./script.ts";
 import { Tip } from "./Tip.tsx";
+import { UserPrompt } from "./UserPrompt.tsx";
 import { WorkedFor } from "./WorkedFor.tsx";
 import { WorkRows } from "./WorkRows.tsx";
 

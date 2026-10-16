@@ -6,7 +6,7 @@
 import { Index, Show } from "solid-js";
 
 import type { RoleColor } from "../tokens/roles.ts";
-import { formatDuration } from "../transcript/duration.ts";
+import { formatDuration } from "./duration.ts";
 import { SHIMMER_PERIOD_MS, shimmerColors } from "./shimmer.ts";
 import { useClock } from "./useClock.ts";
 

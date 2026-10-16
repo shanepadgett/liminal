@@ -8,7 +8,7 @@
  */
 
 import type { Action } from "./script.ts";
-import type { Group } from "./workGroups.ts";
+import type { WorkGroup } from "./workGroups.ts";
 
 /** Text arriving a character at a time, `progress` of the way out, from 0 to 1. */
 export type Streaming = { readonly text: string; readonly progress: number };
@@ -17,7 +17,7 @@ export type Block =
   | ({ readonly kind: "said" } & Streaming)
   | {
       readonly kind: "work";
-      readonly groups: readonly Group[];
+      readonly groups: readonly WorkGroup[];
       /** How far the work has dimmed, from 0 to 1, once the assistant spoke after it or finished. */
       readonly dim: number;
     };
@@ -27,7 +27,7 @@ export type Tip =
   | {
       readonly kind: "acting";
       /** The group the action is part of, the action included. */
-      readonly group: Group;
+      readonly group: WorkGroup;
       readonly action: Action;
       /** How far through the action it is, from 0 to 1. */
       readonly progress: number;

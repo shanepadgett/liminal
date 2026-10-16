@@ -12,13 +12,13 @@ import { createSignal, For, Index, Show } from "solid-js";
 import { mixHex } from "../tokens/oklch.ts";
 import type { RoleColor, RoleName } from "../tokens/roles.ts";
 import { actionWordingsOf, type Wording, wordingOf } from "./wording.ts";
-import type { Group } from "./workGroups.ts";
+import type { WorkGroup } from "./workGroups.ts";
 
 /** Opened rows sit under the group's words, past its mark. */
 const OPENED_INDENT = 2;
 
 /** A group of several actions is marked apart from a single one. */
-const markOf = (group: Group) => (actionWordingsOf(group).length > 0 ? "◈" : "◆");
+const markOf = (group: WorkGroup) => (actionWordingsOf(group).length > 0 ? "◈" : "◆");
 
 type Part = "mark" | "verb" | "subject" | "detail" | "failure" | "thought";
 
@@ -64,7 +64,7 @@ export function WordedRow(props: {
 
 function GroupRow(props: {
   readonly color: RoleColor;
-  readonly group: Group;
+  readonly group: WorkGroup;
   readonly dim: number;
 }) {
   const [isOpen, setIsOpen] = createSignal(false);
@@ -111,7 +111,7 @@ function GroupRow(props: {
 
 export function WorkRows(props: {
   readonly color: RoleColor;
-  readonly groups: readonly Group[];
+  readonly groups: readonly WorkGroup[];
   /** How far the work has dimmed, from 0 to 1. */
   readonly dim: number;
 }) {

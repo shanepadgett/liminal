@@ -9,7 +9,7 @@ import { Match } from "effect";
 
 import type { Block, Ending, Final, Streaming, Tip, TurnFrame } from "./frame.ts";
 import type { Action, Beat, Close, Script } from "./script.ts";
-import { type Group, groupsOf, type Work, withLive } from "./workGroups.ts";
+import { type WorkGroup, groupsOf, type Work, withLive } from "./workGroups.ts";
 
 /** How long the worked line takes to ink in once the work is over, before the answer starts. */
 export const SETTLE_MS = 900;
@@ -117,7 +117,7 @@ const withLiveGroup = (
   action: Action,
   ms: number,
   endMs: number,
-): { readonly blocks: readonly Block[]; readonly group: Group } => {
+): { readonly blocks: readonly Block[]; readonly group: WorkGroup } => {
   const last = settled.at(-1);
   const isWorking = last?.kind === "work";
   const before = blocksOf(isWorking ? settled.slice(0, -1) : settled, ms, endMs);
@@ -133,7 +133,7 @@ const withLiveGroup = (
   };
 };
 
-const tipOf = (current: Timed | undefined, ms: number, group: Group | undefined): Tip => {
+const tipOf = (current: Timed | undefined, ms: number, group: WorkGroup | undefined): Tip => {
   if (current === undefined) return { kind: "quiet" };
 
   const progress = (ms - current.start) / current.beat.ms;

@@ -2,9 +2,8 @@
 
 import { ChatHeader } from "../chat/ChatHeader.tsx";
 import { Composer } from "../chat/Composer.tsx";
-import { FINISHED_SESSION } from "../transcript/sample.ts";
-import { FOLDED } from "../transcript/styles.ts";
-import { Transcript } from "../transcript/Transcript.tsx";
+import { Conversation } from "../transcript/Conversation.tsx";
+import { BOOT } from "../transcript/sample.ts";
 import type { RoleColor } from "./roles.ts";
 
 const SAMPLE_COLUMNS = 72;
@@ -19,13 +18,7 @@ export function Sample(props: { readonly color: RoleColor }) {
     >
       <ChatHeader color={props.color} title="Plugin host" isWorking={false} />
       <box height={SAMPLE_ROWS}>
-        <Transcript
-          color={props.color}
-          session={FINISHED_SESSION}
-          style={FOLDED}
-          isWorking={false}
-          openIds={new Set()}
-        />
+        <Conversation color={props.color} finished={[BOOT]} playing={[]} ms={0} />
       </box>
       <Composer
         color={props.color}

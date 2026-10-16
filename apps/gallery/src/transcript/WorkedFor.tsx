@@ -5,7 +5,7 @@
 
 import { mixHex } from "../tokens/oklch.ts";
 import type { RoleColor, RoleName } from "../tokens/roles.ts";
-import { formatDuration } from "../transcript/duration.ts";
+import { formatDuration } from "./duration.ts";
 import type { Ending } from "./frame.ts";
 
 export function WorkedFor(props: { readonly color: RoleColor; readonly ending: Ending }) {
