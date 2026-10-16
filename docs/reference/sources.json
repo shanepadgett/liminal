@@ -148,6 +148,47 @@
         }
       ],
       "api": []
+    },
+    {
+      "package": "@opentui/core",
+      "versionSource": "lock",
+      "summary": "Terminal UI renderer with a native core: renderables (box, text, scrollbox), layout, colors (`RGBA`, `TextAttributes`), border styles, keyboard input, terminal palette queries (`renderer.getPalette`). Backs the gallery.",
+      "docs": [
+        { "origin": { "kind": "installed" }, "files": ["README.md"] },
+        {
+          "origin": {
+            "kind": "git",
+            "repository": "https://github.com/anomalyco/opentui.git",
+            "ref": { "tag": "v{version}" }
+          },
+          "files": [
+            "packages/web/src/content/docs/**/*.md",
+            "packages/web/src/content/docs/**/*.mdx"
+          ]
+        }
+      ],
+      "api": [{ "kind": "types", "path": "" }]
+    },
+    {
+      "package": "@opentui/solid",
+      "versionSource": "lock",
+      "summary": "Solid renderer for OpenTUI: `render`, `testRender`, hooks such as `useKeyboard`, `useRenderer` and `useTerminalDimensions`, and the JSX elements. Needs the `@opentui/solid/preload` Bun preload to run `.tsx` from source.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "types", "path": "" }]
+    },
+    {
+      "package": "@opentui/keymap",
+      "versionSource": "lock",
+      "summary": "Layered key bindings and named commands for OpenTUI: `createDefaultOpenTuiKeymap`, `KeymapProvider`, `useBindings`, `useKeymapSelector`, `getActiveKeys`, binding `desc` metadata. Its guides live in the @opentui/core copy under `packages/web/src/content/docs/keymap/`.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "types", "path": "" }]
+    },
+    {
+      "package": "solid-js",
+      "versionSource": "lock",
+      "summary": "Fine-grained reactivity behind the OpenTUI Solid renderer: signals, memos, effects, control flow (`For`, `Show`), stores in `solid-js/store`.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "types", "path": "types" }]
     }
   ]
 }

@@ -124,6 +124,8 @@
 - Server is the source of truth for enabled plugins and their versions
 - In-process frontends import UI parts directly from disk
 - Attached frontends fetch UI part bundles from the server
+- TUI keys go through `@opentui/keymap`: named commands, bindings that point at them
+- The gallery has its own key map
 
 ## Protocol
 

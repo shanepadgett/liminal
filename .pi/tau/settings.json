@@ -27,24 +27,31 @@
     "silentCommandRunner": {
       "afterWrite": [
         {
-          "name": "format",
-          "command": "mise run fix:fmt -- {files}",
-          "details": "Format changed code and config with oxfmt",
-          "includeGlobs": ["**/*.ts", "**/*.tsx", "**/*.json", "**/*.jsonc", "**/*.toml"],
-          "excludeGlobs": [".pi/tau/vocabulary.json", "**/fixtures/**"]
-        },
-        {
           "name": "lint fix",
           "command": "mise run fix:lint -- {files}",
           "details": "Apply safe oxlint fixes to changed code",
           "includeGlobs": ["**/*.ts", "**/*.tsx"],
           "excludeGlobs": ["**/fixtures/**"]
+        },
+        {
+          "name": "format",
+          "command": "mise run fix:fmt -- {files}",
+          "details": "Format changed code and config with oxfmt; runs last so lint fixes get formatted",
+          "includeGlobs": ["**/*.ts", "**/*.tsx", "**/*.json", "**/*.jsonc", "**/*.toml"],
+          "excludeGlobs": [".pi/tau/vocabulary.json", "**/fixtures/**"]
         }
       ],
       "afterRun": [
         {
           "parallel": [
             { "name": "mise", "command": "mise run check:mise", "includeGlobs": ["mise.toml"] },
+            {
+              "name": "format",
+              "command": "mise run check:fmt",
+              "details": "Formatting",
+              "includeGlobs": ["**/*.ts", "**/*.tsx", "**/*.json", "**/*.jsonc", "**/*.toml"],
+              "excludeGlobs": [".pi/tau/vocabulary.json", "**/fixtures/**"]
+            },
             {
               "name": "types",
               "command": "mise run check:types",

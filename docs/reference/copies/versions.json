@@ -68,5 +68,27 @@
     "commits": [
       "f14cd3aa7bf9ca8df2cc5b8bb14beb0f335b1d93"
     ]
+  },
+  "@opentui/core": {
+    "version": "0.6.6",
+    "fingerprint": "bf3952edb843fc58",
+    "commits": [
+      "212eb27da4adf5b907031ad153fc6a5b9f713fbf"
+    ]
+  },
+  "@opentui/solid": {
+    "version": "0.6.6",
+    "fingerprint": "051697efa597f6a5",
+    "commits": []
+  },
+  "@opentui/keymap": {
+    "version": "0.6.6",
+    "fingerprint": "5f189e0cb2974a9b",
+    "commits": []
+  },
+  "solid-js": {
+    "version": "1.9.12",
+    "fingerprint": "9c87675d3602ba58",
+    "commits": []
   }
 }

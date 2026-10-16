@@ -1,0 +1,2 @@
+# Solid's JSX transform for the gallery's .tsx files.
+preload = ["@opentui/solid/preload"]
