@@ -11,6 +11,7 @@
 
 ## Shape
 
+- Build visual design straight in the gallery for the user to see. Never mock layouts in plan files or chat.
 - A plan fits in one to two pages and is mostly visual: diagrams, tables, trees. Prose only for a decision, a tradeoff or a question.
 - Lead each section with the decision or the shape. Reasons follow in short sentences.
 - Assume the reader is new to the code. Say in a few words what each system, file or term is and where it lives on first use.

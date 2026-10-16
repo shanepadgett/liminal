@@ -3,10 +3,13 @@
 import { For, Show } from "solid-js";
 
 import { CHROME } from "../shell/chrome.ts";
+import { buildAnsi } from "./ansi.ts";
+import { AnsiHeader, AnsiRow } from "./AnsiSwatches.tsx";
 import { hexToOklch } from "./oklch.ts";
 import { type Palette, RAMP_NAMES } from "./palettes.ts";
 import { buildRamp, FINE_STEPS, type Swatch } from "./ramp.ts";
-import { type RoleColor, type RoleName, ROLES, resolveRoles } from "./roles.ts";
+import { type RoleColor, ROLES, resolveRoles } from "./roles.ts";
+import { Sample } from "./Sample.tsx";
 
 const STEP_COLUMNS = 6;
 
@@ -73,7 +76,7 @@ function Ramps(props: { readonly palette: Palette }) {
   );
 }
 
-const ROLE_COLUMNS = 20;
+const ROLE_COLUMNS = 26;
 
 function Roles(props: { readonly color: RoleColor }) {
   return (
@@ -93,53 +96,16 @@ function Roles(props: { readonly color: RoleColor }) {
   );
 }
 
-/** A slice of an imagined Liminal session drawn only with roles, to judge the palette in use. */
-function Sample(props: { readonly color: RoleColor }) {
-  const color = (name: RoleName) => props.color(name);
+/** The ANSI colors this palette remaps terminal output onto. */
+function Ansi(props: { readonly palette: Palette }) {
+  const hexes = () => buildAnsi(props.palette);
 
   return (
     <box flexDirection="column">
-      <Heading>Sample</Heading>
-      <box backgroundColor={color("surface.base")} padding={1} width={64} flexDirection="column">
-        <box
-          border
-          borderStyle="rounded"
-          borderColor={color("border.base")}
-          backgroundColor={color("surface.raised")}
-          title=" session "
-          flexDirection="column"
-          paddingX={1}
-        >
-          <text fg={color("text.base")}>
-            <span style={{ fg: color("text.accent") }}>{"› "}</span>
-            explain how the plugin host boots
-          </text>
-          <text fg={color("text.muted")}>{"  reading kernel/src/kernel.ts"}</text>
-          <text>
-            <span style={{ fg: color("feedback.success") }}>{"  ✓ 3 files  "}</span>
-            <span style={{ fg: color("feedback.warning") }}>{"! 1 warning  "}</span>
-            <span style={{ fg: color("feedback.danger") }}>{"✗ 1 error  "}</span>
-            <span style={{ fg: color("feedback.info") }}>{"i 2 notes"}</span>
-          </text>
-          <text bg={color("surface.selected")} fg={color("text.base")}>
-            {"▌ the selected row in a list"}
-          </text>
-          <text fg={color("text.faint")}>{"  a quiet, unselected row"}</text>
-        </box>
-        <box
-          border
-          borderStyle="rounded"
-          borderColor={color("border.focus")}
-          backgroundColor={color("surface.overlay")}
-          marginTop={1}
-          paddingX={1}
-        >
-          <text fg={color("text.base")}>
-            type a message
-            <span style={{ fg: color("text.faint") }}>{"   enter send · esc cancel"}</span>
-          </text>
-        </box>
-      </box>
+      <Heading>Terminal output</Heading>
+      <AnsiHeader />
+      <AnsiRow label="normal" hexes={hexes().slice(0, 8)} />
+      <AnsiRow label="bright" hexes={hexes().slice(8, 16)} />
     </box>
   );
 }
@@ -156,6 +122,8 @@ export function PaletteView(props: { readonly palette: Palette }) {
       </text>
       <Ramps palette={props.palette} />
       <Roles color={color()} />
+      <Ansi palette={props.palette} />
+      <Heading>Sample</Heading>
       <Sample color={color()} />
     </box>
   );

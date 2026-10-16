@@ -56,8 +56,8 @@ description = "Open the gallery, where Liminal's tokens, primitives, components 
 # The gallery reads the terminal's keys, so it gets the terminal directly.
 raw = true
 dir = "{{config_root}}/apps/gallery"
-# --hot reloads changed source in the same process; main.tsx swaps the renderer and keeps the chosen entry.
-run = "bun --hot src/main.tsx"
+# watch.ts restarts the gallery on each save; --hot misses files the Solid plugin loads.
+run = "bun src/watch.ts"
 
 [tasks.docs]
 description = "Copy version-matched dependency docs into docs/reference/copies/ and rebuild the index"

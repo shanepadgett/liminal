@@ -4,32 +4,15 @@
  */
 
 import { useRenderer } from "@opentui/solid";
-import { createResource, For, Match, Switch } from "solid-js";
+import { createResource, Match, Switch } from "solid-js";
 
 import { CHROME } from "../shell/chrome.ts";
+import { AnsiHeader, AnsiRow } from "./AnsiSwatches.tsx";
 import { PaletteView } from "./PaletteView.tsx";
-import { ANSI_NAMES, terminalPalette } from "./terminal-palette.ts";
-
-const SWATCH = "    ";
+import { terminalPalette } from "./terminal-palette.ts";
 
 /** Terminals answer palette queries within milliseconds; slow links such as SSH may not. */
 const QUERY_MILLISECONDS = 500;
-
-function AnsiRow(props: { readonly label: string; readonly hexes: readonly (string | null)[] }) {
-  return (
-    <text>
-      <span style={{ fg: CHROME.muted }}>{props.label.padEnd(10)}</span>
-      <For each={props.hexes}>
-        {(hex) => (
-          <>
-            <span style={{ bg: hex ?? CHROME.background }}>{hex === null ? " ?? " : SWATCH}</span>
-            <span> </span>
-          </>
-        )}
-      </For>
-    </text>
-  );
-}
 
 export function TerminalView() {
   const renderer = useRenderer();
@@ -47,9 +30,7 @@ export function TerminalView() {
         {(reported) => (
           <box flexDirection="column">
             <text fg={CHROME.muted}>REPORTED BY THE TERMINAL</text>
-            <text fg={CHROME.faint}>
-              {" ".repeat(10) + ANSI_NAMES.map((name) => name.slice(0, 4).padEnd(5)).join("")}
-            </text>
+            <AnsiHeader />
             <AnsiRow label="normal" hexes={reported().palette.slice(0, 8)} />
             <AnsiRow label="bright" hexes={reported().palette.slice(8, 16)} />
             <AnsiRow

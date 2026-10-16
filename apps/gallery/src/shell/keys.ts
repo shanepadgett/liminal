@@ -10,6 +10,9 @@ import { useBindings } from "@opentui/keymap/solid";
 export type ShellActions = {
   readonly moveGroup: (step: number) => void;
   readonly moveEntry: (step: number) => void;
+  readonly nextState: () => void;
+  readonly nextPalette: () => void;
+  readonly nextSize: () => void;
   readonly scrollPage: (direction: number) => void;
   readonly quit: () => void;
 };
@@ -21,6 +24,8 @@ const BINDINGS: readonly Binding[] = [
   { key: "down", cmd: "gallery.entry.next", desc: "choose" },
   { key: "pageup", cmd: "gallery.page.up", desc: "scroll" },
   { key: "pagedown", cmd: "gallery.page.down", desc: "scroll" },
+  { key: "t", cmd: "gallery.palette.next", desc: "theme" },
+  { key: "z", cmd: "gallery.size.next", desc: "size" },
   { key: "q", cmd: "gallery.quit", desc: "quit" },
   { key: "h", cmd: "gallery.group.previous" },
   { key: "l", cmd: "gallery.group.next" },
@@ -66,9 +71,33 @@ const listCommands = (actions: ShellActions): readonly Command[] => [
       actions.scrollPage(1);
     },
   },
+  {
+    name: "gallery.state.next",
+    run: () => {
+      actions.nextState();
+    },
+  },
+  {
+    name: "gallery.palette.next",
+    run: () => {
+      actions.nextPalette();
+    },
+  },
+  {
+    name: "gallery.size.next",
+    run: () => {
+      actions.nextSize();
+    },
+  },
   { name: "gallery.quit", run: actions.quit },
 ];
 
-export const useShellKeys = (actions: ShellActions) => {
-  useBindings(() => ({ commands: listCommands(actions), bindings: BINDINGS }));
+/** Bound only while the entry has more than one state, so the hint never offers a dead key. */
+const STATE_BINDINGS: readonly Binding[] = [{ key: "s", cmd: "gallery.state.next", desc: "state" }];
+
+export const useShellKeys = (actions: ShellActions, hasStates: () => boolean) => {
+  useBindings(() => ({
+    commands: listCommands(actions),
+    bindings: hasStates() ? [...BINDINGS, ...STATE_BINDINGS] : BINDINGS,
+  }));
 };

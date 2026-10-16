@@ -19,11 +19,29 @@ export const ROLES = [
   { name: "text.base", ramp: "neutral", step: 100 },
   { name: "text.muted", ramp: "neutral", step: 300 },
   { name: "text.faint", ramp: "neutral", step: 500 },
+  { name: "text.ghost", ramp: "neutral", step: 600 },
   { name: "text.accent", ramp: "accent", step: 300 },
+  /** Section titles, set in bold. */
+  { name: "text.heading", ramp: "accent", step: 200 },
+  /** Text on a solid fill, such as a chip label. */
+  { name: "text.inverse", ramp: "neutral", step: 950 },
+  { name: "fill.accent", ramp: "accent", step: 400 },
+  { name: "fill.danger", ramp: "danger", step: 400 },
+  { name: "fill.warning", ramp: "warning", step: 400 },
+  { name: "fill.success", ramp: "success", step: 400 },
+  { name: "fill.info", ramp: "info", step: 400 },
   { name: "feedback.danger", ramp: "danger", step: 300 },
   { name: "feedback.warning", ramp: "warning", step: 300 },
   { name: "feedback.success", ramp: "success", step: 300 },
   { name: "feedback.info", ramp: "info", step: 300 },
+  /** Pending and secondary states that still need their hue, such as a running tool's icon. */
+  { name: "feedback.danger.subtle", ramp: "danger", step: 600 },
+  { name: "feedback.warning.subtle", ramp: "warning", step: 600 },
+  { name: "feedback.success.subtle", ramp: "success", step: 600 },
+  { name: "feedback.info.subtle", ramp: "info", step: 600 },
+  /** Ends of the gradient used by the signature ornament and loading animation. */
+  { name: "gradient.from", ramp: "accent", step: 200 },
+  { name: "gradient.to", ramp: "accent", step: 600 },
 ] as const satisfies readonly RoleSpec[];
 
 export type RoleName = (typeof ROLES)[number]["name"];

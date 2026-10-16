@@ -23,7 +23,7 @@ const neutral = (hue: number, chroma: number): RampSpec => ({ hue, chroma, steps
 
 const hued = (hue: number, chroma: number): RampSpec => ({ hue, chroma, steps: STANDARD_STEPS });
 
-export const PALETTES: readonly Palette[] = [
+export const PALETTES: readonly [Palette, ...Palette[]] = [
   {
     id: "afterhours",
     name: "Afterhours",

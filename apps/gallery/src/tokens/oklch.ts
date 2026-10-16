@@ -66,3 +66,21 @@ export const hexToOklch = (hex: string): Oklch => {
     hue: ((Math.atan2(bAxis, a) * 180) / Math.PI + 360) % 360,
   };
 };
+
+const lerp = (from: number, to: number, amount: number) => from + (to - from) * amount;
+
+/**
+ * The color `amount` of the way from `from` to `to`, mixed in OKLCH so evenly spaced amounts look
+ * evenly spaced. Hue takes the short way round the wheel.
+ */
+export const mixHex = (from: string, to: string, amount: number): string => {
+  const start = hexToOklch(from);
+  const end = hexToOklch(to);
+  const hueSpan = ((end.hue - start.hue + 540) % 360) - 180;
+
+  return oklchToHex({
+    lightness: lerp(start.lightness, end.lightness, amount),
+    chroma: lerp(start.chroma, end.chroma, amount),
+    hue: (start.hue + hueSpan * amount + 360) % 360,
+  });
+};

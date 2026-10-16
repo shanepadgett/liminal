@@ -8,6 +8,7 @@
     "tools/reference/sync.ts",
     "tools/reference/check.ts",
     "apps/gallery/src/main.tsx",
+    "apps/gallery/src/watch.ts",
   ],
   // Published APIs: the SDK for plugin authors, and every plugin's manifest and contract.
   "publicPackages": ["@liminal/sdk", "@liminal/*"],

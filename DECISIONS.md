@@ -127,6 +127,23 @@
 - TUI keys go through `@opentui/keymap`: named commands, bindings that point at them
 - The gallery has its own key map
 
+## TUI design
+
+- Charm's design sensibility is the model; own palettes, glyphs and ornament
+- Content carries no chrome; borders and boxes only for dialogs, overlays and cards
+- Hierarchy comes from four text brightness levels; color only where it carries meaning
+- Focus changes weight, never shape; blurred states keep their shape and drop to muted
+- Status and mode use chips: solid fill, one cell of padding each side
+- Liminal has its own signature ornament, used consistently in titles and headers
+- The ornament is the eighth-block fade `▏▎▍▌▋▊▉█` in the palette gradient
+- A small set of single-cell glyphs; no emoji or Nerd Font icons
+- Metadata lines join parts with a faint separator; key hints are a muted key and a fainter action
+- Every component renders to a given width; truncate with `…`, lower-priority parts yield first, long output collapses and expands
+- Background fills only to push secondary content back
+- Spacing rhythm: two-cell margin and indent, chips `(0,1)`, cards `(1,2)`
+- Motion has character and stays cheap
+- Palettes define the 16 ANSI colors used for terminal output
+
 ## Protocol
 
 - Server and frontends always talk through the protocol: commands, events, plugin RPC
