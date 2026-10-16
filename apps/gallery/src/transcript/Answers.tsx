@@ -4,7 +4,8 @@
  * under it in the user's voice, or `skipped` in faint text, then what sets the answer apart: the
  * user's own in place of the options, whether it is the one the assistant suggested, and if not,
  * what was suggested. Notes the user left on options hang under the answer, and any added context
- * closes the band.
+ * closes the band. Folded, only the title line shows, with how many answers it holds; a click opens
+ * and closes it.
  */
 
 import { Index, Show } from "solid-js";
@@ -66,6 +67,8 @@ export function Answers(props: {
   readonly title: string;
   readonly answered: readonly Answered[];
   readonly context: string;
+  readonly isFolded: boolean;
+  readonly onToggle: () => void;
 }) {
   return (
     <box
@@ -76,12 +79,30 @@ export function Answers(props: {
       backgroundColor={props.color("surface.raised")}
       paddingX={2}
       paddingY={1}
+      onMouseUp={props.onToggle}
     >
       <text>
         <span style={{ fg: props.color("text.accent") }}>Answers</span>
         <span style={{ fg: props.color("text.ghost") }}>{"  "}</span>
         <span style={{ fg: props.color("text.heading") }}>{props.title}</span>
+        <span style={{ fg: props.color("text.ghost") }}>
+          {props.isFolded ? `  ${props.answered.length} answers  …` : ""}
+        </span>
       </text>
+      <Show when={!props.isFolded}>
+        <Body color={props.color} answered={props.answered} context={props.context} />
+      </Show>
+    </box>
+  );
+}
+
+function Body(props: {
+  readonly color: RoleColor;
+  readonly answered: readonly Answered[];
+  readonly context: string;
+}) {
+  return (
+    <>
       <Index each={props.answered}>
         {(answered, index) => (
           <AnswerItem color={props.color} answered={answered()} number={`${index + 1}`} />
@@ -98,6 +119,6 @@ export function Answers(props: {
           </box>
         </box>
       </Show>
-    </box>
+    </>
   );
 }

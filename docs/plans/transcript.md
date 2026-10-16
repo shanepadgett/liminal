@@ -5,6 +5,7 @@ How the chat transcript shows a session, played as a live turn in the gallery (`
 ## Design (built, awaiting review)
 
 - A turn is a prompt and a reply. The prompt is a raised band with an accent bar; a long prompt shows two lines ending in `…`, and a click opens and closes it.
+- Once a turn's prompt scrolls past the top, a copy stays pinned there until the next prompt pushes it out row for row; it opens and closes with the prompt. A pinned band of answers folds to its title line (`Answers  <title>  4 answers  …`) until clicked open.
 - While working, the tip of the turn is one live line: a turning arc and the action in the present tense with a band of light sweeping across it; elapsed time after 3s.
 - Under the live line, what the action produces, gone when it ends: thinking as three fading italic lines that rise and thin out, a command's newest two output lines, the diff an edit writes, checks ticking off.
 - Work reads like Grok Build's folded rows: everything the assistant says is full-brightness text, and all its work is gray rows between, so the two never blur. Prose and rows share one left edge, with a blank line between blocks.
@@ -34,8 +35,10 @@ apps/gallery/src/transcript/
   shimmer.ts   the live line's light band
   useClock.ts  looping time for anything that moves
   duration.ts, wrapWords.ts, UserPrompt.tsx
-  Turn.tsx, Tip.tsx, LiveLine.tsx, Vapor.tsx, details.tsx, Answers.tsx, WorkRows.tsx, Asked.tsx, WorkedFor.tsx, Said.tsx
-  Conversation.tsx  a session held at one moment; Playback.tsx plays it
+  Tip.tsx, LiveLine.tsx, Vapor.tsx, details.tsx, Answers.tsx, WorkRows.tsx, Asked.tsx, WorkedFor.tsx, Said.tsx
+  Sent.tsx     the prompt or answers band; Reply.tsx the assistant's side; Turn.tsx both, on its own
+  pin.ts       which prompt is pinned to the top and how far the next pushes it
+  Conversation.tsx  a session held at one moment, with the pinned prompt; Playback.tsx plays it
   galleryEntries.tsx
 ```
 
