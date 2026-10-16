@@ -1,114 +1,123 @@
 /**
- * A session drawn in a style. Each turn folds into rows, each row takes its kind's level for the
- * turn's phase, and `live` rows draw only as the last row of the turn still being worked on.
- * Assistant rows sit indented past the user's bar; one-line rows stack without space between.
+ * A session drawn in a style, scrolled. Each turn is the user's prompt over the assistant's reply.
+ * Once a turn's prompt scrolls past the top, a copy of it stays pinned there, so the reply in view
+ * always shows what it answers, until the next prompt arrives and pushes it out the top. Prompts
+ * open and close together with their pinned copy.
  */
 
+import type { BoxRenderable, ScrollBoxRenderable } from "@opentui/core";
 import type { JSX } from "@opentui/solid";
-import { Match } from "effect";
-import { For } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 
-import { INDENT, Prose, UserMessage } from "../chat/Message.tsx";
 import type { RoleColor } from "../tokens/roles.ts";
-import { isToolCall, type TranscriptEntry, type Turn } from "./entries.ts";
-import { foldRows, type Row } from "./fold.ts";
-import { Group } from "./Group.tsx";
-import type { DrawnLevel, Level, Phase, Style } from "./levels.ts";
-import { Thinking } from "./Thinking.tsx";
-import { ToolCall } from "./ToolCall.tsx";
-import { Worked } from "./Worked.tsx";
+import type { Turn } from "./entries.ts";
+import type { Style } from "./levels.ts";
+import { Reply } from "./Reply.tsx";
+import { UserPrompt } from "./UserPrompt.tsx";
 
-type Drawn = { readonly row: Row; readonly level: DrawnLevel };
+const PADDING_X = 2;
 
-const kindOf = (row: Row) => (row.kind === "entry" ? row.entry.kind : row.calls[0].kind);
+/** The last turn whose prompt has scrolled above the top of the view. */
+const pinnedTurnIndex = (
+  prompts: ReadonlyMap<number, BoxRenderable>,
+  viewTop: number,
+): number | undefined => {
+  let pinned: number | undefined;
 
-const idOf = (row: Row) => (row.kind === "entry" ? row.entry.id : row.calls[0].id);
+  for (const [index, prompt] of prompts) {
+    if (prompt.y < viewTop && (pinned === undefined || index > pinned)) pinned = index;
+  }
 
-/** Rows drawn on one line stack tight against each other. */
-const isOneLine = (drawn: Drawn) => drawn.level !== "full";
-
-const levelOf = (style: Style, phase: Phase, row: Row, isCurrent: boolean): Level => {
-  const level = style.levels[kindOf(row)][phase];
-
-  return level === "live" && !isCurrent ? "hidden" : level;
+  return pinned;
 };
 
-const drawnRows = (turn: Turn, style: Style, phase: Phase): readonly Drawn[] => {
-  const rows = foldRows(turn, style.groups);
+const toggled = (ids: ReadonlySet<string>, id: string): ReadonlySet<string> => {
+  const next = new Set(ids);
 
-  return rows.flatMap((row, index): readonly Drawn[] => {
-    const level = levelOf(style, phase, row, phase === "working" && index === rows.length - 1);
+  if (!next.delete(id)) next.add(id);
 
-    return level === "hidden" ? [] : [{ row, level }];
-  });
+  return next;
 };
 
-type DrawProps = {
+/**
+ * How far the next prompt pushes the pinned one up: nothing until the next prompt's top reaches the
+ * pinned prompt's bottom, then row for row, so the two never overlap.
+ */
+const pushOf = (
+  prompts: ReadonlyMap<number, BoxRenderable>,
+  pinned: number | undefined,
+  viewTop: number,
+): number => {
+  if (pinned === undefined) return 0;
+
+  const current = prompts.get(pinned);
+  const next = prompts.get(pinned + 1);
+  if (current === undefined || next === undefined) return 0;
+
+  return Math.max(0, current.height - (next.y - viewTop));
+};
+
+/**
+ * Which turn's prompt is pinned, and how far the next one pushes it. A wheel scroll bubbles up from
+ * the scrollbox after it has moved, so `onScroll` updates the pin before the next frame and the two
+ * move together. Other moves (sticky scroll to the bottom, a prompt opening) are caught as each
+ * frame is drawn, and set after that frame, since changing the tree mid-draw is not safe.
+ */
+const createPin = () => {
+  const [pinnedIndex, setPinnedIndex] = createSignal<number>();
+  const [push, setPush] = createSignal(0);
+  const [scroll, setScroll] = createSignal<ScrollBoxRenderable>();
+  const prompts = new Map<number, BoxRenderable>();
+
+  const update = () => {
+    const view = scroll();
+    if (view === undefined) return;
+
+    const index = pinnedTurnIndex(prompts, view.viewport.y);
+    setPinnedIndex(index);
+    setPush(pushOf(prompts, index, view.viewport.y));
+  };
+
+  const onScroll = update;
+
+  const check = () => {
+    const view = scroll();
+    if (view === undefined) return;
+
+    const index = pinnedTurnIndex(prompts, view.viewport.y);
+    const nextPush = pushOf(prompts, index, view.viewport.y);
+
+    if (index !== pinnedIndex() || nextPush !== push()) queueMicrotask(update);
+  };
+
+  return { pinnedIndex, push, setScroll, prompts, check, onScroll };
+};
+
+/**
+ * The pinned prompt, drawn over the top of the scrolled turns. Not keyed: moving the pin to another
+ * turn keeps the measured prompt and only swaps its text, so it never draws a blank frame.
+ */
+function Pinned(props: {
   readonly color: RoleColor;
-  readonly level: DrawnLevel;
-  readonly isOpen: boolean;
-};
-
-function EntryView(props: DrawProps & { readonly entry: TranscriptEntry }): JSX.Element {
-  const entry = props.entry;
-
-  if (isToolCall(entry)) return <ToolCall {...props} call={entry} />;
-
-  return Match.value(entry).pipe(
-    Match.discriminatorsExhaustive("kind")({
-      user: (user) => (
-        <UserMessage color={props.color} isFocused={false}>
-          {user.text}
-        </UserMessage>
-      ),
-      thinking: (thinking) => <Thinking {...props} thinking={thinking} />,
-      interim: (interim) => <Prose color={props.color}>{interim.text}</Prose>,
-      answer: (answer) => <Prose color={props.color}>{answer.text}</Prose>,
-      worked: (worked) => <Worked color={props.color} seconds={worked.seconds} />,
-    }),
-  );
-}
-
-function RowView(props: DrawProps & { readonly row: Row }) {
-  const row = props.row;
-
-  return row.kind === "entry" ? (
-    <EntryView {...props} entry={row.entry} />
-  ) : (
-    <Group {...props} rule={row.rule} calls={row.calls} />
-  );
-}
-
-function TurnView(props: {
-  readonly color: RoleColor;
-  readonly turn: Turn;
-  readonly style: Style;
-  readonly phase: Phase;
-  readonly openIds: ReadonlySet<string>;
+  readonly turn: Turn | undefined;
+  readonly push: number;
+  readonly children: (turn: () => Turn) => JSX.Element;
 }) {
-  const rows = () => drawnRows(props.turn, props.style, props.phase);
-
   return (
-    <box flexDirection="column">
-      <For each={rows()}>
-        {(drawn, index) => {
-          const previous = rows()[index() - 1];
-          const isTight = previous !== undefined && isOneLine(previous) && isOneLine(drawn);
-          const isUser = drawn.row.kind === "entry" && drawn.row.entry.kind === "user";
-
-          return (
-            <box marginTop={index() === 0 || isTight ? 0 : 1} paddingLeft={isUser ? 0 : INDENT}>
-              <RowView
-                color={props.color}
-                row={drawn.row}
-                level={drawn.level}
-                isOpen={props.openIds.has(idOf(drawn.row))}
-              />
-            </box>
-          );
-        }}
-      </For>
-    </box>
+    <Show when={props.turn}>
+      {(turn) => (
+        <box
+          position="absolute"
+          top={-props.push}
+          left={0}
+          right={0}
+          paddingX={PADDING_X}
+          backgroundColor={props.color("surface.base")}
+        >
+          {props.children(turn)}
+        </box>
+      )}
+    </Show>
   );
 }
 
@@ -119,19 +128,58 @@ export function Transcript(props: {
   readonly isWorking: boolean;
   readonly openIds: ReadonlySet<string>;
 }) {
+  const [expandedPrompts, setExpandedPrompts] = createSignal<ReadonlySet<string>>(new Set());
+  const pin = createPin();
+
+  const prompt = (turn: () => Turn) => (
+    <UserPrompt
+      color={props.color}
+      text={turn().prompt}
+      isExpanded={expandedPrompts().has(turn().id)}
+      onToggle={() => setExpandedPrompts((ids) => toggled(ids, turn().id))}
+    />
+  );
+
   return (
-    <box flexDirection="column" gap={1} paddingX={2} paddingY={1}>
-      <For each={props.session}>
-        {(turn, index) => (
-          <TurnView
-            color={props.color}
-            turn={turn}
-            style={props.style}
-            phase={props.isWorking && index() === props.session.length - 1 ? "working" : "done"}
-            openIds={props.openIds}
-          />
-        )}
-      </For>
+    <box
+      width="100%"
+      height="100%"
+      overflow="hidden"
+      backgroundColor={props.color("surface.base")}
+      onMouseScroll={pin.onScroll}
+    >
+      <scrollbox
+        ref={pin.setScroll}
+        flexGrow={1}
+        stickyScroll
+        stickyStart="bottom"
+        scrollbarOptions={{ visible: false }}
+        renderBefore={pin.check}
+      >
+        <box flexDirection="column" gap={1} paddingX={PADDING_X} paddingY={1}>
+          <For each={props.session}>
+            {(turn, index) => (
+              <box flexDirection="column">
+                <box ref={(box: BoxRenderable) => pin.prompts.set(index(), box)}>
+                  {prompt(() => turn)}
+                </box>
+                <Reply
+                  color={props.color}
+                  reply={turn.reply}
+                  style={props.style}
+                  phase={
+                    props.isWorking && index() === props.session.length - 1 ? "working" : "done"
+                  }
+                  openIds={props.openIds}
+                />
+              </box>
+            )}
+          </For>
+        </box>
+      </scrollbox>
+      <Pinned color={props.color} turn={props.session[pin.pinnedIndex() ?? -1]} push={pin.push()}>
+        {prompt}
+      </Pinned>
     </box>
   );
 }

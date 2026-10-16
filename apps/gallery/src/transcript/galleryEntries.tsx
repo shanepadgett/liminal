@@ -3,24 +3,30 @@
  * session in each style, working and finished.
  */
 
+import { createSignal } from "solid-js";
+
 import { withRoles } from "../entryViews.ts";
 import type { Entry, EntryState, Section } from "../shell/entries.ts";
-import type { ToolKind } from "./entries.ts";
-import { Group } from "./Group.tsx";
-import type { DrawnLevel, Style } from "./levels.ts";
+import type { RoleColor } from "../tokens/roles.ts";
+import type { ToolKind, TranscriptEntry } from "./entries.ts";
+import type { DrawnLevel, Phase, Style } from "./levels.ts";
+import { Reply } from "./Reply.tsx";
 import {
   DONE_CALLS,
   EXPANDED_ID,
   FAILED_CALLS,
   FINISHED_SESSION,
+  FIX_LOG_ID,
+  LONG_PROMPT,
   RUNNING_CALLS,
   THINKING,
   WORKING_SESSION,
 } from "./sample.ts";
-import { EXPLORED, FOLDED, FULL, QUIET } from "./styles.ts";
+import { FOLDED, FULL, LIMINAL, LIMINAL_LOG, QUIET } from "./styles.ts";
 import { Thinking } from "./Thinking.tsx";
 import { ToolCall } from "./ToolCall.tsx";
 import { Transcript } from "./Transcript.tsx";
+import { UserPrompt } from "./UserPrompt.tsx";
 
 type Shown = { readonly name: string; readonly level: DrawnLevel; readonly isOpen: boolean };
 
@@ -85,23 +91,101 @@ const callEntry = (kind: ToolKind, title: string): Entry => ({
   ],
 });
 
-const groupState = (name: string, isOpen: boolean): EntryState => ({
+/** A group as a reply draws it, so its rows fold and open the way they do in a session. */
+type GroupPick = {
+  readonly name: string;
+  readonly style: Style;
+  readonly phase: Phase;
+  readonly reply: readonly TranscriptEntry[];
+  readonly isOpen: boolean;
+};
+
+const groupState = (pick: GroupPick): EntryState => ({
+  name: pick.name,
+  fill: "width",
+  view: withRoles((color) => (
+    <Reply
+      color={color}
+      reply={pick.reply}
+      style={pick.style}
+      phase={pick.phase}
+      openIds={new Set(pick.isOpen ? pick.reply.slice(0, 1).map((entry) => entry.id) : [])}
+    />
+  )),
+});
+
+const EXPLORING = [DONE_CALLS.read, DONE_CALLS.search];
+
+const STEP_WORK = [THINKING, DONE_CALLS.read, DONE_CALLS.search, DONE_CALLS.edit, DONE_CALLS.run];
+
+const GROUP_PICKS: readonly [GroupPick, ...GroupPick[]] = [
+  { name: "Explored", style: FOLDED, phase: "done", reply: EXPLORING, isOpen: false },
+  { name: "Explored, open", style: FOLDED, phase: "done", reply: EXPLORING, isOpen: true },
+  { name: "Step", style: LIMINAL_LOG, phase: "done", reply: STEP_WORK, isOpen: false },
+  { name: "Step, open", style: LIMINAL_LOG, phase: "done", reply: STEP_WORK, isOpen: true },
+  {
+    name: "Step, failed",
+    style: LIMINAL_LOG,
+    phase: "done",
+    reply: [DONE_CALLS.read, DONE_CALLS.edit, FAILED_CALLS.run],
+    isOpen: false,
+  },
+  {
+    name: "Step, running",
+    style: LIMINAL_LOG,
+    phase: "working",
+    reply: [DONE_CALLS.read, DONE_CALLS.edit, RUNNING_CALLS.run],
+    isOpen: false,
+  },
+  {
+    name: "Step, thinking",
+    style: LIMINAL_LOG,
+    phase: "working",
+    reply: [DONE_CALLS.read, DONE_CALLS.search, THINKING],
+    isOpen: false,
+  },
+];
+
+/** A prompt that opens and closes on click, as it does in the transcript. */
+function TogglingPrompt(props: {
+  readonly color: RoleColor;
+  readonly text: string;
+  readonly isExpanded: boolean;
+}) {
+  const [isExpanded, setIsExpanded] = createSignal(props.isExpanded);
+
+  return (
+    <UserPrompt
+      color={props.color}
+      text={props.text}
+      isExpanded={isExpanded()}
+      onToggle={() => setIsExpanded((was) => !was)}
+    />
+  );
+}
+
+const promptState = (name: string, text: string, isExpanded: boolean): EntryState => ({
   name,
   fill: "width",
   view: withRoles((color) => (
-    <Group
-      color={color}
-      rule={EXPLORED}
-      calls={[DONE_CALLS.read, DONE_CALLS.search]}
-      level="line"
-      isOpen={isOpen}
-    />
+    <box paddingX={2}>
+      <TogglingPrompt color={color} text={text} isExpanded={isExpanded} />
+    </box>
   )),
 });
 
 export const TRANSCRIPT_COMPONENTS: Section = {
   title: "Transcript",
   entries: [
+    {
+      id: "transcript-prompt",
+      title: "Prompt",
+      states: [
+        promptState("Short", "explain how the plugin host boots", false),
+        promptState("Long", LONG_PROMPT, false),
+        promptState("Long, open", LONG_PROMPT, true),
+      ],
+    },
     THINKING_ENTRY,
     callEntry("read", "Read"),
     callEntry("edit", "Edit"),
@@ -112,23 +196,28 @@ export const TRANSCRIPT_COMPONENTS: Section = {
     {
       id: "transcript-group",
       title: "Group",
-      states: [groupState("Line", false), groupState("Line, open", true)],
+      states: [groupState(GROUP_PICKS[0]), ...GROUP_PICKS.slice(1).map(groupState)],
     },
   ],
 };
 
 const OPEN_IDS: ReadonlySet<string> = new Set([EXPANDED_ID]);
 
-const sessionState = (style: Style, isWorking: boolean): EntryState => ({
-  name: `${style.name}, ${isWorking ? "working" : "finished"}`,
-  fill: "page",
+const sessionState = (
+  style: Style,
+  isWorking: boolean,
+  openIds: ReadonlySet<string> = OPEN_IDS,
+  name = `${style.name}, ${isWorking ? "working" : "finished"}`,
+): EntryState => ({
+  name,
+  fill: "screen",
   view: withRoles((color) => (
     <Transcript
       color={color}
       session={isWorking ? WORKING_SESSION : FINISHED_SESSION}
       style={style}
       isWorking={isWorking}
-      openIds={OPEN_IDS}
+      openIds={openIds}
     />
   )),
 });
@@ -146,6 +235,9 @@ export const TRANSCRIPT_SCREENS: Section = {
         sessionState(FOLDED, false),
         sessionState(QUIET, true),
         sessionState(QUIET, false),
+        sessionState(LIMINAL, true),
+        sessionState(LIMINAL, false),
+        sessionState(LIMINAL, false, new Set([FIX_LOG_ID]), "Liminal, work log open"),
       ],
     },
   ],

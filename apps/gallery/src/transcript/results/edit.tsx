@@ -18,7 +18,8 @@ const CHANGE: Readonly<
   kept: { sign: " ", signRole: "text.ghost", tint: "surface.raised" },
 };
 
-const countOf = (diff: readonly DiffLine[], change: DiffLine["change"]) =>
+/** How many lines of a diff made a given change. */
+export const countOf = (diff: readonly DiffLine[], change: DiffLine["change"]) =>
   diff.filter((line) => line.change === change).length;
 
 export const editFace = (call: EditCall): ToolFace => ({

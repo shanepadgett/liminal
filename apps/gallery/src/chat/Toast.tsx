@@ -7,6 +7,7 @@
 import { TextAttributes } from "@opentui/core";
 import { Show } from "solid-js";
 
+import { EDGE_BAR } from "../ornament/edgeBar.ts";
 import type { RoleColor, RoleName } from "../tokens/roles.ts";
 
 export type ToastKind = "info" | "success" | "warning" | "error";
@@ -26,21 +27,6 @@ const KIND_ROLES: Readonly<Record<ToastKind, RoleName>> = {
 
 const TOAST_COLUMNS = 48;
 
-/** Only the left edge draws, as a thin bar. */
-const BAR = {
-  topLeft: "",
-  topRight: "",
-  bottomLeft: "",
-  bottomRight: "",
-  horizontal: " ",
-  vertical: "▎",
-  topT: "",
-  bottomT: "",
-  leftT: "",
-  rightT: "",
-  cross: "",
-};
-
 export function Toast(props: { readonly color: RoleColor; readonly toast: ToastMessage }) {
   const accent = () => props.color(KIND_ROLES[props.toast.kind]);
 
@@ -50,7 +36,7 @@ export function Toast(props: { readonly color: RoleColor; readonly toast: ToastM
       maxWidth="100%"
       flexDirection="column"
       border={["left"]}
-      customBorderChars={BAR}
+      customBorderChars={EDGE_BAR}
       borderColor={accent()}
       backgroundColor={props.color("surface.overlay")}
       paddingX={2}

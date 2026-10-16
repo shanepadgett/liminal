@@ -4,7 +4,6 @@ import { ChatHeader } from "./chat/ChatHeader.tsx";
 import { ChatScreen, type GlideAt } from "./chat/ChatScreen.tsx";
 import { CommandPalette } from "./chat/CommandPalette.tsx";
 import { Composer } from "./chat/Composer.tsx";
-import { Conversation } from "./chat/Conversation.tsx";
 import { Sidebar } from "./chat/Sidebar.tsx";
 import { Toast, type ToastKind, type ToastMessage } from "./chat/Toast.tsx";
 import { only, withRoles } from "./entryViews.ts";
@@ -109,14 +108,6 @@ export const GROUPS: Groups = [
             id: "header",
             title: "Header",
             states: [headerState("Idle", false), headerState("Working", true)],
-          },
-          {
-            id: "conversation",
-            title: "Conversation",
-            states: only(
-              "width",
-              withRoles((color) => <Conversation color={color} />),
-            ),
           },
           {
             id: "composer",

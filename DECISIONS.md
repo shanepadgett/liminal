@@ -138,6 +138,8 @@
 - The ornament is the eighth-block fade `▏▎▍▌▋▊▉█` in the palette gradient
 - Ornament placement is the edge: hairlines across the width that thicken into the fade, shared by headers and dialog titles
 - The gallery's Primitives group shows the shared pieces components are built from
+- One component per concept; screens and samples are built only from gallery components, so a change shows everywhere it is used
+- The transcript is the only conversation component; the chat screen uses it in Folded
 - A small set of single-cell glyphs; no Nerd Font icons
 - Emoji only for file-tag kinds: 📄 file, 📁 folder, 📚 reference, 🌄 image
 - Metadata lines join parts with a faint separator; key hints are a muted key and a fainter action

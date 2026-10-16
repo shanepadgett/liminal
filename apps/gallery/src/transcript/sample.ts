@@ -14,13 +14,14 @@ import type {
   ThinkingEntry,
   ToolCall,
   ToolKind,
+  TranscriptEntry,
   Turn,
 } from "./entries.ts";
 
 /** One call of each tool, keyed by the tool. */
 type CallPerTool = { readonly [Kind in ToolKind]: Extract<ToolCall, { readonly kind: Kind }> };
 
-const RUNNING = { status: "running" } as const;
+const RUNNING = { status: "running", seconds: 14 } as const;
 
 export const THINKING: ThinkingEntry = {
   kind: "thinking",
@@ -153,6 +154,33 @@ const CHECKS: ChecksCall = {
   },
 };
 
+/** The first checks run on the fix, before the assistant drops the import it left unused. */
+const CHECKS_FAILED: ChecksCall = {
+  ...CHECKS,
+  id: "checks-lint",
+  outcome: {
+    status: "failed",
+    error: "1 of 4 checks failed",
+    output: ["lint  kernel/test/host.test.ts:2 no-unused-vars: Effect"],
+  },
+};
+
+const EDIT_IMPORT: EditCall = {
+  kind: "edit",
+  id: "edit-import",
+  path: "kernel/test/host.test.ts",
+  outcome: {
+    status: "done",
+    result: {
+      diff: [
+        { change: "kept", number: 1, text: 'import { describe, expect, it } from "bun:test";' },
+        { change: "removed", number: 2, text: 'import { Effect } from "effect";' },
+        { change: "kept", number: 2, text: "" },
+      ],
+    },
+  },
+};
+
 /** Each tool done, caught while running, and after failing, for the component pages. */
 export const DONE_CALLS: CallPerTool = {
   read: READ,
@@ -188,42 +216,41 @@ export const FAILED_CALLS: CallPerTool = {
     pattern: "definePlugin(",
     outcome: { status: "failed", error: "Unclosed group in pattern definePlugin(", output: [] },
   },
-  checks: {
-    ...CHECKS,
-    outcome: {
-      status: "failed",
-      error: "1 of 4 checks failed",
-      output: ["lint  kernel/src/host.ts:31 max-lines-per-function"],
-    },
-  },
+  checks: CHECKS_FAILED,
   ask: {
     ...ASK,
     outcome: { status: "failed", error: "The user dismissed the question", output: [] },
   },
 };
 
-const BOOT_TURN: Turn = [
-  { kind: "user", id: "user-boot", text: "explain how the plugin host boots" },
-  THINKING,
-  READ,
-  READ_MANIFEST,
-  SEARCH,
-  {
-    kind: "interim",
-    id: "interim-boot",
-    text: "The host reads manifests before any plugin code. Running the kernel tests to confirm the activation order.",
-  },
-  RUN_FAILED,
-  { kind: "worked", id: "worked-boot", seconds: 125 },
-  {
-    kind: "answer",
-    id: "answer-boot",
-    text: "The host reads every manifest first, without loading plugin code. It resolves the dependency graph from what each plugin provides and requires, then activates plugins in graph order. One test fails: two plugins with no dependency between them start 41ms apart, but the test expects them to start together.",
-  },
-];
+const BOOT_TURN: Turn = {
+  id: "boot",
+  prompt: "explain how the plugin host boots",
+  reply: [
+    THINKING,
+    READ,
+    READ_MANIFEST,
+    SEARCH,
+    {
+      kind: "interim",
+      id: "interim-boot",
+      text: "The host reads manifests before any plugin code. Running the kernel tests to confirm the activation order.",
+    },
+    RUN_FAILED,
+    { kind: "worked", id: "worked-boot", seconds: 125, filesChanged: 0 },
+    {
+      kind: "answer",
+      id: "answer-boot",
+      text: "The host reads every manifest first, without loading plugin code. It resolves the dependency graph from what each plugin provides and requires, then activates plugins in graph order. One test fails: two plugins with no dependency between them start 41ms apart, but the test expects them to start together.",
+    },
+  ],
+};
 
-const FIX_STARTED: Turn = [
-  { kind: "user", id: "user-fix", text: "fix the test so it checks they start concurrently" },
+/** Long enough to fold to two lines in any frame the gallery offers. */
+export const LONG_PROMPT =
+  "fix the test so it checks they start concurrently. Don't change the host itself; the order it activates independent plugins in is fine. I only care that the test stops depending on which of git and shell happens to start first, and that it would still catch a host that waits for one plugin to finish before starting the next. Keep the test under twenty lines and reuse bootAndRecord.";
+
+const FIX_STARTED: readonly TranscriptEntry[] = [
   {
     kind: "thinking",
     id: "thinking-fix",
@@ -234,22 +261,34 @@ const FIX_STARTED: Turn = [
   EDIT,
 ];
 
-const FIX_TURN: Turn = [
-  ...FIX_STARTED,
-  RUN,
-  CHECKS,
-  { kind: "worked", id: "worked-fix", seconds: 48 },
-  {
-    kind: "answer",
-    id: "answer-fix",
-    text: "The test now records when each plugin starts and finishes and checks that git and shell overlap. All 42 kernel tests pass.",
-  },
-];
+const FIX_TURN: Turn = {
+  id: "fix",
+  prompt: LONG_PROMPT,
+  reply: [
+    ...FIX_STARTED,
+    RUN,
+    CHECKS_FAILED,
+    EDIT_IMPORT,
+    CHECKS,
+    { kind: "worked", id: "worked-fix", seconds: 48, filesChanged: 1 },
+    {
+      kind: "answer",
+      id: "answer-fix",
+      text: "The test now records when each plugin starts and finishes and checks that git and shell overlap. All 42 kernel tests pass.",
+    },
+  ],
+};
 
 /** The session while the assistant is still running the tests for the fix. */
-export const WORKING_SESSION: readonly Turn[] = [BOOT_TURN, [...FIX_STARTED, RUNNING_CALLS.run]];
+export const WORKING_SESSION: readonly Turn[] = [
+  BOOT_TURN,
+  { ...FIX_TURN, reply: [...FIX_STARTED, RUNNING_CALLS.run] },
+];
 
 export const FINISHED_SESSION: readonly Turn[] = [BOOT_TURN, FIX_TURN];
 
 /** The row the full-screen sample shows open. */
 export const EXPANDED_ID = EDIT.id;
+
+/** The fix turn's `worked` line, which opens to its work log. */
+export const FIX_LOG_ID = "worked-fix";

@@ -11,10 +11,12 @@ import type { BoxRenderable } from "@opentui/core";
 import { createSignal, Match, Show, Switch } from "solid-js";
 
 import type { RoleColor } from "../tokens/roles.ts";
+import { FINISHED_SESSION, WORKING_SESSION } from "../transcript/sample.ts";
+import { FOLDED } from "../transcript/styles.ts";
+import { Transcript } from "../transcript/Transcript.tsx";
 import { ChatHeader } from "./ChatHeader.tsx";
 import { CommandPalette } from "./CommandPalette.tsx";
 import { Composer } from "./Composer.tsx";
-import { Conversation } from "./Conversation.tsx";
 import { Sidebar, SIDEBAR_COLUMNS } from "./Sidebar.tsx";
 import { SidebarDrawer } from "./SidebarDrawer.tsx";
 import type { ToastMessage } from "./Toast.tsx";
@@ -54,14 +56,15 @@ export function ChatScreen(props: {
           title="Explain how the plugin host boots"
           isWorking={props.isWorking && props.glideAt === "header"}
         />
-        <scrollbox
-          flexGrow={1}
-          stickyScroll
-          stickyStart="bottom"
-          scrollbarOptions={{ visible: false }}
-        >
-          <Conversation color={props.color} />
-        </scrollbox>
+        <box flexGrow={1} minHeight={0}>
+          <Transcript
+            color={props.color}
+            session={props.isWorking ? WORKING_SESSION : FINISHED_SESSION}
+            style={FOLDED}
+            isWorking={props.isWorking}
+            openIds={new Set()}
+          />
+        </box>
         <Composer
           color={props.color}
           model="claude-opus-4"
