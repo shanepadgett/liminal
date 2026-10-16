@@ -72,6 +72,7 @@ export function ChatScreen(props: {
           draft=""
           isWorking={props.isWorking}
           isGliding={props.isWorking && props.glideAt === "composer"}
+          form={undefined}
         />
         <ToastCorner color={props.color} toast={props.toast} />
       </box>

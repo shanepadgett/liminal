@@ -34,6 +34,7 @@ export function Sample(props: { readonly color: RoleColor }) {
         draft=""
         isWorking={false}
         isGliding={false}
+        form={undefined}
       />
     </box>
   );

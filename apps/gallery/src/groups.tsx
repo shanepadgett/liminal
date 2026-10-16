@@ -4,6 +4,16 @@ import { ChatHeader } from "./chat/ChatHeader.tsx";
 import { ChatScreen, type GlideAt } from "./chat/ChatScreen.tsx";
 import { CommandPalette } from "./chat/CommandPalette.tsx";
 import { Composer } from "./chat/Composer.tsx";
+import {
+  FORM_CHOOSING,
+  FORM_CONFIRMING,
+  FORM_CONTEXT,
+  FORM_SKIPPING,
+  FORM_NOTING,
+  FORM_OWN,
+  FORM_WRITING,
+} from "./chat/formSamples.ts";
+import type { FormState } from "./chat/formState.ts";
 import { Sidebar } from "./chat/Sidebar.tsx";
 import { Toast, type ToastKind, type ToastMessage } from "./chat/Toast.tsx";
 import { only, withRoles } from "./entryViews.ts";
@@ -12,6 +22,7 @@ import type { EntryState, Groups } from "./shell/entries.ts";
 import { PaletteView } from "./tokens/PaletteView.tsx";
 import { TerminalView } from "./tokens/TerminalView.tsx";
 import { TRANSCRIPT_COMPONENTS, TRANSCRIPT_SCREENS } from "./transcript/galleryEntries.tsx";
+import { TRANSCRIPT2_COMPONENTS, TRANSCRIPT2_SCREENS } from "./transcript2/galleryEntries.tsx";
 
 /** A draft long enough to show how the composer holds real text. */
 const DRAFT = "fix the test so it checks they start concurrently";
@@ -27,6 +38,24 @@ const composerState = (name: string, isWorking: boolean, draft: string): EntrySt
       draft={draft}
       isWorking={isWorking}
       isGliding={isWorking}
+      form={undefined}
+    />
+  )),
+});
+
+/** The composer taken over by the assistant's questions. */
+const questionsState = (name: string, form: FormState): EntryState => ({
+  name,
+  fill: "width",
+  view: withRoles((color) => (
+    <Composer
+      color={color}
+      model="claude-opus-4"
+      thinking="high"
+      draft=""
+      isWorking={false}
+      isGliding={false}
+      form={form}
     />
   )),
 });
@@ -121,6 +150,13 @@ export const GROUPS: Groups = [
               composerState("Slash commands, filtered", false, "/co"),
               composerState("File tags", false, "explain how @"),
               composerState("File tags, filtered", false, "explain how @plug"),
+              questionsState("Questions, choosing", FORM_CHOOSING),
+              questionsState("Questions, writing a note", FORM_NOTING),
+              questionsState("Questions, yes or no", FORM_CONFIRMING),
+              questionsState("Questions, written answer", FORM_WRITING),
+              questionsState("Questions, own answer", FORM_OWN),
+              questionsState("Questions, additional context", FORM_CONTEXT),
+              questionsState("Questions, one skipped", FORM_SKIPPING),
             ],
           },
           {
@@ -143,6 +179,7 @@ export const GROUPS: Groups = [
           },
         ],
       },
+      TRANSCRIPT2_COMPONENTS,
       TRANSCRIPT_COMPONENTS,
       {
         title: "Dialogs",
@@ -210,6 +247,7 @@ export const GROUPS: Groups = [
           },
         ],
       },
+      TRANSCRIPT2_SCREENS,
       TRANSCRIPT_SCREENS,
     ],
   },
