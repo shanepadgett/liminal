@@ -30,6 +30,9 @@ Step 1 is built: the SDK plugin definition and test harness, the kernel host, `s
 - Release tooling, probably changesets with a `fixed` group as Effect uses; `changeset publish` runs `npm publish`, which leaves `workspace:*` unresolved under Bun (changesets#1468, bun#16074), so publish with `bun publish`
 - Bundles: named plugin sets
 - Subagents: the user does not use them
+- MCP as its own plugin, including tools hidden until found by search
+- Sandboxing commands in an OS jail, as a command runner provider
+- Automatic approvals by a model judge, as its own plugin (prior art: Codex, Goose `SmartApprove`, Tau main branch)
 - Trust boundaries: UI parts from untrusted servers, plugin permissions
 
 ## Sessions
@@ -42,4 +45,4 @@ Pi session IDs and the topics each discussed.
 - 01a145a9-703a-7284-8f7a-054aea36ec2c: TUI design (transcript)
 - 01a14649-dee8-74a7-b272-e37fd82f47b6: Sessions, Plugin catalog, docs layout
 - 01a1473c-d9a2-74a7-b272-e383d7bf6e43: session-log contract, entry kinds and visibility, compaction memories, plugin foundation, build order, testing, step 1 build, repository layout
-- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop
+- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools

@@ -234,3 +234,43 @@ Not consulted: Bubbletea, Lipgloss, Glow (TUI only); oh-my-pi follows Pi.
 - Cancel: output so far saved marked interrupted, visible to the model; unrun tool calls report as cancelled
 - Tool calls in one step: one at a time unless every tool in the step declares it can run alongside others; the flag comes from the Round 6 tools contract
 - No built-in step limit; a plugin can end the turn before a model call
+
+## Round 6: tools
+
+Today [requirements/03-plugin-model.md](../requirements/03-plugin-model.md) names SDK `Pipeline` (ordered middleware with `next()`), and [plugins/_index.md](../plugins/_index.md) lists `tool-registry`, `tool-pipeline`, `permissions`, `approval`, `tool-output-spill` and one plugin per tool family. Round 4 settled offer and withdraw; Round 5 settled the run-alongside flag and the safe-to-rerun flag.
+
+### Prior art
+
+| Source | Tool declares | Steps of a call | Arguments rewritten | Result | Many tools |
+| --- | --- | --- | --- | --- | --- |
+| Pi `agent/src/types.ts`, `durable/docs/spec.md` §7.2 | TypeBox params, `execute(id, params, signal, onUpdate)`, `replay: never \| safe`, `executionMode`, `prepareArguments`, `outputSchema` | `beforeTool` chain (first block wins), `afterTool` replaces result | Yes, `beforeTool` chain | `content`, `details` for display, `isError` | — |
+| DeepSeek `docs/subsystems/tools.md` | Params DSL compiled to JSON Schema, required output schema, `execute(args, exec)`, `timeoutMs`, `isConcurrencySafe(args)`, `presentCall`, `presentResult` | `pre-execute` allow, deny, ask or cancel → guards that can only deny → `execute` wrappers → `post-execute` accept, replace or block → `result` observers | No: history, audit, UI and execution must agree | Value (not saved), model content, display `meta`; unknown and throwing tools become error results | Per-scope allow and deny filters |
+| OpenCode `schema/src/tool.ts`, `core/src/tool.ts` | Effect Schema, Standard Schema or JSON Schema input; `execute(input, ctx)` returns `Effect`; `options.permission` key; `progress` callback | Permission ruleset hides wholly denied tools; before and after events | — | `output`, `content`, `metadata` | Code-mode catalog; `pinned` tools listed up front |
+| Codex `features/src/lib.rs` | — | — | — | — | MCP and dynamic tools always deferred behind `tool_search` |
+| Crush `internal/agent/tools/*.go`, `internal/permission` | Go tool per file | Each tool calls `permissions.Request` itself (`edit.go`, `bash.go`) | — | — | — |
+| Tau `src/core/internal/tools/model-tool.ts` | `effect/ai` `Tool` with `Schema.Unknown` params | — | — | `text`, `isFailure`, `details`, `images` | — |
+| `effect/ai` `20_tools.ts` | `Tool.make` with `parameters`, `success`, `failureMode`; handlers in a `Toolkit` layer | Framework resolves calls (Liminal turns this off, Round 3) | — | Typed success | — |
+| Anthropic docs (Round 4 spike) | `defer_loading`; `tool_reference` offers a deferred tool | — | — | — | Deferred tools found by search |
+
+| Source | Before-call hook | Approval rules | Sandbox |
+| --- | --- | --- | --- |
+| Pi `coding-agent/docs/extensions.md` | `tool_call` event: block with a reason or change the input; a failing handler blocks | None built in; extensions (`examples/extensions/permission-gate.ts`, `protected-paths.ts`) use the event and MCP `annotations` (`readOnlyHint`, `destructiveHint`, `openWorldHint`) | Example extension replaces `bash` with an OS-sandboxed one (`examples/extensions/sandbox`) |
+| Codex `hooks/src/lib.rs`, `protocol/src/protocol.rs`, `execpolicy` | `PreToolUse`, `PermissionRequest`, `PostToolUse` hooks | `AskForApproval`: `untrusted`, `on-request`, granular, `never`; `execpolicy` command prefix rules `allow`, `prompt`, `forbidden` | Built in: `SandboxPolicy` `read-only`, `workspace-write`, `danger-full-access`; per-OS crates |
+| OpenCode `core/src/permission.ts`, `core/src/tool/plugin/shell.ts` | Before and after events | Rules of action, resource, `allow`/`ask`/`deny`; each tool calls `permission.assert` with the resources it touches | — |
+| Crush `internal/permission` | — | Each tool calls `permissions.Request`; grants remembered per session | — |
+| Goose `tool_inspection.rs`, `goose_mode.rs`, `permission/` | Ordered inspectors (security, egress, repetition, permission), each returning allow, deny or ask | Modes `Auto`, `Approve`, `SmartApprove` (a model judges read-only), `Chat` | — |
+| DeepSeek `docs/subsystems/tools.md`, `approval.md`, `sandbox.md`, `permission-presets.md` | `pre-execute` chain allow, deny, ask; guards that can only deny | Per-session approval policy | Built in: `read-only`, `workspace-write`, `danger-full-access`; presets bundle a sandbox mode and an approval policy |
+
+Not consulted: Bubbletea, Lipgloss, Glow (TUI only); oh-my-pi follows Pi.
+
+### Shape
+
+- Each tool carries hint labels with the meaning of MCP tool annotations: `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`; MCP tools carry their server's hints; missing hints take the MCP defaults (not read-only, may be destructive, reaches an open world) (Pi `coding-agent/docs/extensions.md`)
+- Permission and approval rules decide from the hint labels
+- Before a tool call runs, plugins answer allow, deny or ask; any deny is final and no later plugin can turn it back to allow
+- No plugin changes a call's inputs; a plugin that wants a different call denies with a reason and the model asks again
+- A result holds model content and display details; both are saved
+- Run-alongside is stated once per tool
+- The `idempotentHint` label informs approval rules only; safe-to-rerun after a restart is a separate flag
+- Wrong inputs, an unknown tool or a crashing tool become a failed result the model sees; the turn continues
+- Tools that run commands start them through a replaceable command runner service; the default runner has no jail, and a later sandbox plugin provides a jailed one
