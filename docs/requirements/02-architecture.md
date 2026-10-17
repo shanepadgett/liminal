@@ -20,6 +20,7 @@ The kernel, the protocol between server and frontends, and how code reloads.
 - Session content reaches clients only from saved state: session log entries and the live slot
 - The kernel event bus carries only non-session events that are safe to lose; a client that misses one re-reads state
 - The kernel holds each client's session subscriptions and resumes them from the last delivered `Seq` after a graph change or reconnect
+- During a graph change the kernel follows a session through both the old and new builds until the old graph closes, delivering each `Seq` once
 - Approvals and questions are session entries; the client answers with a command
 - Server-to-client requests outside a session get their own path when the first one appears
 - Sessions survive a client disconnect for a grace period so clients can reattach

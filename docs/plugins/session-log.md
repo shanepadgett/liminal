@@ -30,7 +30,10 @@ Status: planned
 - A plugin that is on may show its entries with a richer display
 - An entry carries the plugin's structured data, the model content and the plain user text
 - Model content is saved in Liminal's own part types, not a dependency's message format
-- One writer per session at a time; a batch of entries saves in one transaction
+- A writer passes its own entry definition with each entry; `append` checks the data against that definition
+- Reading back decodes with the newest registered definition of a kind
+- The store numbers entries inside its own write; `session-log` holds no write lock
+- A batch of entries saves in one transaction
 - Subscribers are told the newest sequence number and read new entries from the store
 - An entry is visible to subscribers only after it is saved
 - Subscribing replays the entries after a given sequence number, marks when it has caught up, then sends each entry as it is saved

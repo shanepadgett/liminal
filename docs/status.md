@@ -4,19 +4,21 @@ Step 1 is built: the SDK plugin definition and test harness, the kernel host, `s
 
 ## Focus
 
-- Design the core contracts for the final product: [plans/core-contracts.md](plans/core-contracts.md).
+- Unattended build of [plans/milestones.md](plans/milestones.md) steps 2, 3, 4 and 6, and step 5's protocol server, event bus and session following; the TUI on a live session waits for the user.
+- Each step's code plan goes in `docs/plans/` and is built right away; the user reviews plan and code afterwards.
+- Questions the contracts leave open: pick what fits the contracts and prior art, build it, list it under `Open` in that step's plan; stop if it would change an agreed requirement or contract.
+- Live model tests use Tau's `codex`/`chatgpt` tokens read only while valid; never refresh them; pause live recording when they expire.
+- Approved dependencies: `@effect/ai-openai` (or a direct HTTP provider if it cannot reach `chatgpt.com/backend-api/codex`), `jsonc-parser`.
+- One local commit per finished step, only when checks pass; no pushes.
 
 ## Next
 
 - Review the transcript in a live terminal ([plans/transcript.md](plans/transcript.md)).
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
-- Rewrite steps 2 to 6 of [plans/milestones.md](plans/milestones.md) against the core contracts.
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
 
 ## Open topics
 
-- CLI folders are provisional: global `~/.liminal`, project `<cwd>/.liminal`, data `~/.liminal/data`
-- Step 1 differs from its plan: `EntryKinds` is a `Registry`, so there is no `DuplicateEntryKind`; one global append lock instead of one per session; `SessionLog.create` added; the restart proof lives in `apps/cli` because fallow forbids kernel importing plugins; `effectTest` takes the layer as a required third argument; re-checked in round 8 of [plans/core-contracts.md](plans/core-contracts.md)
 - Code conventions: port Tau's standards and custom lint rules, reviewed per rule
 - Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`)
 - ACP adapter as a server plugin
@@ -45,4 +47,4 @@ Pi session IDs and the topics each discussed.
 - 01a145a9-703a-7284-8f7a-054aea36ec2c: TUI design (transcript)
 - 01a14649-dee8-74a7-b272-e37fd82f47b6: Sessions, Plugin catalog, docs layout
 - 01a1473c-d9a2-74a7-b272-e383d7bf6e43: session-log contract, entry kinds and visibility, compaction memories, plugin foundation, build order, testing, step 1 build, repository layout
-- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools
+- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check

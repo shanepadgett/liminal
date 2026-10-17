@@ -274,3 +274,72 @@ Not consulted: Bubbletea, Lipgloss, Glow (TUI only); oh-my-pi follows Pi.
 - The `idempotentHint` label informs approval rules only; safe-to-rerun after a restart is a separate flag
 - Wrong inputs, an unknown tool or a crashing tool become a failed result the model sees; the turn continues
 - Tools that run commands start them through a replaceable command runner service; the default runner has no jail, and a later sandbox plugin provides a jailed one
+
+## Round 7: `settings` and `credential-store`
+
+Today [requirements/03-plugin-model.md](../requirements/03-plugin-model.md) puts a `settings.json` in `~/.liminal/` and `.liminal/`, layers built-in defaults, user global and project, and lets each layer enable, disable, replace or configure a plugin; [plugins/_index.md](../plugins/_index.md) lists `settings`, `credential-store` and one login plugin per provider or flow.
+
+### Prior art: settings
+
+| Source | Layers | How layers combine | Who reads a section | App-written changes | Project trust |
+| --- | --- | --- | --- | --- | --- |
+| Pi `coding-agent/docs/settings.md`, `configuration.md`, `security.md` | `~/.pi/agent`, `.pi` | Project overrides user; resource lists combine | — | Same file | Project settings and extensions load only after the folder is trusted |
+| OpenCode `core/src/config.ts`, `config/discovery.ts`, `config/variable.ts`, `config/plugin/*` | System, MDM, user, project; JSONC | Highest document that sets a top-level key wins (`latest`) | Each config plugin decodes its own section with its own Schema | `update(patch)`; `changes()` stream from a file watcher | — |
+| Codex `config/src/config_layer_source.rs` | Packaged defaults, MDM, system, enterprise, user (plus profile), project, session flags | Higher layer overrides lower per setting | — | — | — |
+| Crush `internal/config/load.go`, `resolve.go` | Global, project, plus an app-written file in the data folder | — | — | Separate app-owned file, so the user's file stays untouched | — |
+| DeepSeek `docs/subsystems/settings.md` | Profile entries | Inherited value plus explicit override per field | Each plugin reads `.get()` on its own Config; forms per plugin entry | Validated patch with a revision check | — |
+| Tau `src/host/Settings.ts` | Global, project; comments allowed | Project over global, then defaults | — | — | — |
+| Effect `Config`, `ConfigProvider` (api index) | Environment and other providers | — | — | Read-only | — |
+
+### Prior art: credentials
+
+| Source | Storage | Kinds | Several per provider | Environment and commands | Refresh |
+| --- | --- | --- | --- | --- | --- |
+| Pi `coding-agent/docs/providers.md`, `src/core/auth-storage.ts` | `auth.json` | API key, OAuth | No | Environment variables; `!command` keys run once per process | Under a file lock (`proper-lockfile`) |
+| OpenCode `schema/src/credential.ts`, `core/src/credential.ts` | SQLite | `oauth`, `key`, `external` | Yes, labeled, one active | `{env:VAR}`, `{file:path}` in config | — |
+| Codex `config/src/types.rs`, `secrets/src/local.rs` | `File`, `Keyring`, `Auto` (keyring, else file), `Ephemeral`; secrets in an `age`-encrypted file whose key lives in the keyring | — | — | — | — |
+| Goose `config/base.rs` | System keyring, else `secrets.yaml` | — | — | Environment overrides by key name | — |
+| Crush `internal/config/resolve.go` | App-written config file | — | — | Shell expansion in values, including command substitution | — |
+| DeepSeek `docs/subsystems/credentials.md` | Managed file above launch environment and `.env` | — | — | Settings hold only references (variable names); values resolved per operation | — |
+| Tau `src/host/CredentialStore.ts` | `~/.tau/credentials.db` (SQLite), one row per provider | API key, OAuth | No | — | One process at a time |
+| Bun `docs/runtime/secrets.mdx` | `Bun.secrets`: macOS Keychain, Linux libsecret, Windows Credential Manager; marked experimental | — | — | — | — |
+
+Not consulted: Bubbletea, Lipgloss, Glow (TUI only); Grok Build, Mastra and AI SDK have no user-facing settings or credential store; oh-my-pi follows Pi.
+
+### Shape
+
+- Each plugin owns one section of `settings.json` under its own name and decodes it with its own Schema; a bad section fails only that plugin (OpenCode `config/plugin/*`, DeepSeek `settings.md`)
+- Layers merge objects key by key; a higher layer's list replaces the lower one
+- App-written changes edit the same file in place and keep comments (`jsonc-parser`)
+- Turning a plugin on or off, or replacing it, is a graph change; other values are read on each use with no rebuild
+- Project plugins and project settings load only after the user trusts the folder once (Pi `security.md`)
+- Credentials live in a SQLite file in `~/.liminal/` readable only by the user, behind a replaceable store contract (Pi, Tau, OpenCode)
+- A credential comes from the store, then an environment variable; a command credential runs a command to fetch the secret (Pi `!command`)
+- Settings name credentials and never hold secrets (DeepSeek `credentials.md`)
+- The store refreshes OAuth credentials under an exclusive lock and re-reads before refreshing; the login plugin supplies the refresh step (Pi, Tau)
+- One credential per login method; a provider with several login methods (OpenAI API key, Codex, ChatGPT) holds one for each (Tau `CredentialStore.ts`, `Providers.ts`)
+
+## Round 8: step 1 re-check
+
+Step 1 code checked against rounds 1 to 7.
+
+| Finding | Where | Breaks under |
+| --- | --- | --- |
+| `append` finds a kind's first registration; during a rebuild the old build's definition is first, so new-shape data fails as `InvalidEntry` | `session-log/src/server/entries.ts` `findKind` | Round 1 handover |
+| A rebuilt plugin's registrations sit beside its old build's until the old graph closes; every `Registry` lists both | `sdk/src/core/registry.ts` | Round 1 handover; Round 6 tool registry |
+| The append lock and change feed belong to one `session-log` build; during a `session-log` rebuild two builds can stamp the same `seq`, and followers of one miss the other's appends | `session-log/src/server.ts`, `deps.ts` | Round 1 handover; Round 2 kernel subscription |
+| `effectTest` takes its layer as a required third argument | `sdk/src/testing/effect-test.ts` | Nothing |
+| `SessionLog.create`; restart proof in `apps/cli` | `session-log/src/contract.ts`, `apps/cli/test/restart.test.ts` | Nothing |
+
+Prior art: Pi `durable/docs/spec.md` §7.5 (registry replaced by name; running work keeps its snapshot); MCP tools spec (clients treat annotations as untrusted unless the server is trusted).
+
+### Shape
+
+- `append` takes the writer's own entry definition with each entry and checks the data against it; reading back decodes with the newest registered definition
+- The SDK adds a keyed registry where the newest addition under a name wins; tools and entry kinds use it; the plain `Registry` stays for unnamed lists
+- A step reads a registry once when it starts and keeps that list (Pi `durable/docs/spec.md` §7.5)
+- The store numbers entries inside its own write transaction and returns the numbers; `session-log` holds no write lock
+- During a graph change the kernel follows a session through both builds until the old graph closes and delivers each `Seq` once
+- `effectTest` keeps its required layer argument; `SessionLog.create` and the restart proof in `apps/cli` stay
+- `idempotentHint` and safe-to-rerun stay separate; rerun is declared by Liminal's tool code, since MCP annotations are untrusted unless the server is trusted
+- Step 2 starts with these step 1 changes

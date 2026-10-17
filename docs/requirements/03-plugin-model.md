@@ -9,7 +9,8 @@ What a plugin is, where plugins load from, and how the host wires them together.
 - UI parts talk to their server part only through the contract
 - A plugin is enabled or disabled as a whole across all parts
 - Plugins publish their own extension points as typed services with registries
-- SDK extension primitives: `Registry` (ordered collection) and `Pipeline` (ordered middleware with `next()`)
+- SDK extension primitives: `Registry` (ordered collection), a keyed registry (newest addition under a name wins) and `Pipeline` (ordered middleware with `next()`)
+- A step reads a registry once when it starts and keeps that list
 - Observe-only events go through the kernel event bus, exposed to plugins through the SDK
 - Every registration is tied to the plugin's `Scope`; closing it on disable, replace, or reload removes them
 - Adding to another plugin's registry requires that plugin in `requires`
@@ -21,7 +22,7 @@ What a plugin is, where plugins load from, and how the host wires them together.
 - Everything shipped is enabled by default
 - Optional and experimental plugins ship disabled but available; the manifest sets the default
 - Plugins load from three places: built-in, user global, project
-- User global directory is `~/.liminal/`; project directory is `.liminal/`
+- User global directory is `~/.liminal/`; project directory is `.liminal/`; data directory is `~/.liminal/data/`
 - Each holds `plugins/` and `settings.json`
 - An annex is the distribution unit: an npm, git, or local package containing one or more plugins
 - An annex's `package.json` `liminal` key lists paths to its plugin manifests

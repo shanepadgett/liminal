@@ -55,7 +55,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 
 | Plugin | Does | Status |
 | --- | --- | --- |
-| credential-store | Stores secrets | to plan |
+| [credential-store](credential-store.md) | Stores secrets | planned |
 | one login plugin per provider or flow | OAuth or API key login | to plan |
 
 ## Tools
@@ -75,7 +75,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 
 | Plugin | Does | Status |
 | --- | --- | --- |
-| settings | Layered settings store and schemas; each plugin owns its settings UI parts | to plan |
+| [settings](settings.md) | Layered settings store and schemas; each plugin owns its settings UI parts | planned |
 
 ## Plugin file shape
 
