@@ -1,20 +1,11 @@
 /** CredentialStore over one SQLite file: one row per login method, the credential as JSON. */
 
 import { SqliteClient, SqliteMigrator } from "@effect/sql-sqlite-bun";
-import {
-  Clock,
-  Config,
-  Duration,
-  Effect,
-  Layer,
-  Option,
-  Predicate,
-  Redacted,
-  Schedule,
-  Schema,
-} from "effect";
+import { Clock, Config, Duration, Effect, Layer, Option, Redacted, Schema } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 import { SqlClient, SqlError } from "effect/sql";
+
+import { whileLocked } from "@liminal/sdk";
 
 import { ApiKey, Credential, CredentialError, CredentialStore, OAuth } from "../contract.ts";
 
@@ -34,17 +25,6 @@ const CredentialJson = Schema.fromJsonString(Schema.toCodecJson(Credential));
 const encode = Schema.encodeEffect(CredentialJson);
 const decode = Schema.decodeUnknownEffect(CredentialJson);
 
-/**
- * Bun's SQLite waits for a busy database by blocking the thread, which would stall the holder when
- * it is a second build in this process; so the client never waits and this retries asynchronously.
- */
-const whileBusy = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-  Effect.retry(effect, {
-    while: (error: E) =>
-      SqlError.isSqlError(error) && Predicate.isTagged(error.reason, "LockTimeoutError"),
-    schedule: Schedule.spaced("20 millis").pipe(Schedule.upTo({ duration: "30 seconds" })),
-  });
-
 const isApiKey = Schema.is(ApiKey);
 const isOAuth = Schema.is(OAuth);
 
@@ -62,7 +42,7 @@ const rows = (sql: SqlClient.SqlClient) => ({
       if (row === undefined) return Option.none();
 
       return Option.some(yield* decode(row.credential));
-    }).pipe(whileBusy, Effect.mapError(failed(method))),
+    }).pipe(whileLocked, Effect.mapError(failed(method))),
 
   save: (method: string, credential: Credential) =>
     Effect.flatMap(
@@ -71,12 +51,12 @@ const rows = (sql: SqlClient.SqlClient) => ({
         INSERT INTO credentials (method, credential) VALUES (${method}, ${json})
         ON CONFLICT (method) DO UPDATE SET credential = excluded.credential
       `,
-    ).pipe(Effect.asVoid, whileBusy, Effect.mapError(failed(method))),
+    ).pipe(Effect.asVoid, whileLocked, Effect.mapError(failed(method))),
 
   remove: (method: string) =>
     sql`DELETE FROM credentials WHERE method = ${method}`.pipe(
       Effect.asVoid,
-      whileBusy,
+      whileLocked,
       Effect.mapError(failed(method)),
     ),
 });
@@ -89,7 +69,7 @@ const fromEnv = (method: string, name: string | undefined) =>
 const make = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
-  yield* whileBusy(migrate);
+  yield* whileLocked(migrate);
 
   const { read, save, remove } = rows(sql);
 
@@ -125,7 +105,7 @@ const make = Effect.gen(function* () {
       return refreshed;
     }).pipe(
       sql.withTransaction,
-      whileBusy,
+      whileLocked,
       Effect.catchIf(SqlError.isSqlError, (error) => Effect.fail(failed(method)(error))),
     );
 

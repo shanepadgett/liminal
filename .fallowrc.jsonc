@@ -7,6 +7,8 @@
     "tools/checks/plugin-anatomy.ts",
     "tools/reference/sync.ts",
     "tools/reference/check.ts",
+    // The supervisor runs it as a child process by path.
+    "apps/cli/src/main.ts",
     "apps/gallery/src/main.tsx",
     "apps/gallery/src/watch.ts",
   ],

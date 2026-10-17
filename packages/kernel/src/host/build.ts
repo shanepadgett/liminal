@@ -76,27 +76,50 @@ const buildInScope = Effect.fn("buildInScope")(function* (
     Effect.provideContext(Layer.buildWithScope(layer, scope), context),
   );
 
-  if (Exit.isSuccess(exit)) return exit.value;
+  if (Exit.isSuccess(exit)) return { services: exit.value, scope };
 
   yield* Scope.close(scope, exit);
 
   return yield* Effect.fail(InactiveReason.BuildFailed({ cause: exit.cause }));
 });
 
+/** One plugin's built services and the scope that holds them; graphs may share it. */
+export interface PluginBuild {
+  readonly manifest: Manifest;
+  readonly services: Built;
+  readonly scope: Scope.Closeable;
+}
+
+export interface BuildOptions {
+  /** Builds kept from an earlier graph, by plugin name; their plugins are not built again. */
+  readonly reuse: ReadonlyMap<string, PluginBuild>;
+  /** Each new build's scope is a child of this one. */
+  readonly root: Scope.Scope;
+}
+
 const buildPlugin = Effect.fn("buildPlugin")(function* (
   plugin: Manifest,
   resolution: Resolution,
   waiting: Waiting,
+  options: BuildOptions,
 ) {
-  const base = yield* Effect.context<BaseServices>();
-  const root = yield* Effect.scope;
   const dependencies = yield* awaitDependencies(plugin, resolution.providers, waiting);
+  const kept = options.reuse.get(plugin.name);
+  if (kept !== undefined) return kept;
+
+  const base = yield* Effect.context<BaseServices>();
   const server = yield* importServer(plugin);
 
-  return yield* buildInScope(server.layer, Context.merge(base, dependencies), root);
+  const built = yield* buildInScope(server.layer, Context.merge(base, dependencies), options.root);
+
+  const build: PluginBuild = { manifest: plugin, ...built };
+
+  return build;
 });
 
 export interface BuildResult {
+  /** Every active plugin's build, kept ones included, each after the plugins it needs. */
+  readonly builds: ReadonlyArray<PluginBuild>;
   readonly services: Built;
   readonly status: ReadonlyArray<PluginStatus>;
   /** The active plugins' commands, handled by `services`. */
@@ -104,8 +127,10 @@ export interface BuildResult {
 }
 
 /** Builds every active plugin; a plugin waits on the Deferreds of the plugins it needs. */
-export const build = Effect.fn("build")(function* (resolution: Resolution) {
+export const build = Effect.fn("build")(function* (resolution: Resolution, options: BuildOptions) {
   const waiting = new Map<string, Deferred.Deferred<Built, InactiveReason>>();
+
+  const builds: Array<PluginBuild> = [];
 
   for (const plugin of resolution.active)
     waiting.set(plugin.name, yield* Deferred.make<Built, InactiveReason>());
@@ -115,10 +140,16 @@ export const build = Effect.fn("build")(function* (resolution: Resolution) {
     (plugin) => {
       const deferred = waiting.get(plugin.name);
 
-      return buildPlugin(plugin, resolution, waiting).pipe(
+      return buildPlugin(plugin, resolution, waiting, options).pipe(
+        Effect.tap((built) => Effect.sync(() => builds.push(built))),
         Effect.exit,
         Effect.tap((exit) =>
-          deferred === undefined ? Effect.void : Deferred.done(deferred, exit),
+          deferred === undefined
+            ? Effect.void
+            : Deferred.done(
+                deferred,
+                Exit.map(exit, (built) => built.services),
+              ),
         ),
         Effect.map((exit) => ({ plugin, exit })),
       );
@@ -134,7 +165,7 @@ export const build = Effect.fn("build")(function* (resolution: Resolution) {
     const { name } = plugin;
 
     if (Exit.isSuccess(exit)) {
-      services = Context.merge(services, exit.value);
+      services = Context.merge(services, exit.value.services);
       status.push(PluginStatus.Active({ name }));
       if (plugin.rpcs !== undefined) rpcs.push(plugin.rpcs);
       continue;
@@ -149,7 +180,7 @@ export const build = Effect.fn("build")(function* (resolution: Resolution) {
     status.push(PluginStatus.Inactive({ name, reason: inactive }));
   }
 
-  const result: BuildResult = { services, status, rpcs };
+  const result: BuildResult = { builds, services, status, rpcs };
 
   return result;
 });

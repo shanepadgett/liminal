@@ -1,29 +1,25 @@
-/** Boots plugins from folders: discover manifests, resolve the graph, build each active plugin. */
+/** Finds the plugins in folders: discover manifests, then resolve which can activate. */
 
-import { Context, Effect, Predicate } from "effect";
-import type { RpcGroup } from "effect/rpc";
+import { Effect, Predicate } from "effect";
 
-import { build } from "./build.ts";
 import { discover } from "./discover.ts";
-import { resolve } from "./resolve.ts";
+import { type Resolution, resolve } from "./resolve.ts";
 import { InactiveReason, PluginStatus } from "./status.ts";
-
-export interface Booted {
-  /** Every active plugin's services; check `status`, then read one with `Context.getOption`. */
-  readonly services: Context.Context<never>;
-  readonly status: ReadonlyArray<PluginStatus>;
-  /** The active plugins' commands, handled by `services`. */
-  readonly rpcs: ReadonlyArray<RpcGroup.Any>;
-}
 
 export interface BootOptions {
   /** Folders whose packages hold plugins, such as the built-in plugins folder. */
   readonly folders: ReadonlyArray<string>;
 }
 
-/** Never fails: a plugin that cannot load or build is inactive with a reason, and boot continues. */
-export const boot = Effect.fn("boot")(function* (options: BootOptions) {
-  const discovered = yield* discover(options.folders);
+export interface Loaded {
+  readonly resolution: Resolution;
+  /** Plugins that cannot activate: broken manifests and resolution failures. */
+  readonly inactive: ReadonlyArray<PluginStatus>;
+}
+
+/** Discovers the manifests in `folders` and resolves which can activate; never fails. */
+export const load = Effect.fn("load")(function* (folders: ReadonlyArray<string>) {
+  const discovered = yield* discover(folders);
 
   const manifests = discovered.flatMap((found) =>
     Predicate.isTagged(found, "Found") ? [found.manifest] : [],
@@ -41,17 +37,12 @@ export const boot = Effect.fn("boot")(function* (options: BootOptions) {
   );
 
   const resolution = resolve(manifests);
-  const built = yield* build(resolution);
 
-  const inactive = [...resolution.inactive].map(([name, reason]) =>
+  const unresolved = [...resolution.inactive].map(([name, reason]) =>
     PluginStatus.Inactive({ name, reason }),
   );
 
-  const booted: Booted = {
-    services: built.services,
-    status: [...broken, ...inactive, ...built.status],
-    rpcs: built.rpcs,
-  };
+  const loaded: Loaded = { resolution, inactive: [...broken, ...unresolved] };
 
-  return booted;
+  return loaded;
 });

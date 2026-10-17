@@ -98,6 +98,12 @@ const make = Effect.gen(function* () {
         lastSeq: lastSeqOf(sessions, id),
       })),
     ),
+    lastEntriesOfKinds: (kinds) =>
+      Effect.map(Ref.get(ref), (sessions) =>
+        [...sessions.values()].flatMap((session) =>
+          session.entries.filter((entry) => kinds.includes(entry.kind)).slice(-1),
+        ),
+      ),
     readLive: (id) => Effect.map(existing(id), (session) => session.live),
     writeLive: (id, live) =>
       Effect.flatMap(existing(id), (session) => put(id, { ...session, live })),

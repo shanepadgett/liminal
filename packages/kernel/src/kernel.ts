@@ -1,38 +1,47 @@
-/** The kernel: boots the plugins and serves them to clients over the protocol. */
+/** The kernel: holds the plugin graphs and serves them to clients over the protocol. */
 
-import { type Context, Effect, Layer, type Scope } from "effect";
+import { Effect, Layer, type Scope } from "effect";
 import { RpcClient, RpcSerialization, RpcServer } from "effect/rpc";
 import { Socket, SocketServer } from "effect/socket";
 
-import { EventBus } from "@liminal/sdk";
+import { EventBus, type HoldGraph } from "@liminal/sdk";
 
-import { boot, type BootOptions } from "./host/host.ts";
+import type { ChangeFailed } from "./graph/change.ts";
+import { makeGraphs } from "./graph/graphs.ts";
+import type { BootOptions } from "./host/host.ts";
 import type { PluginStatus } from "./host/status.ts";
 import { makeMemoryServer } from "./server/memory.ts";
-import { serve } from "./server/serve.ts";
+import { route } from "./server/router.ts";
+import { serveKernel } from "./server/serve.ts";
 
 export interface Kernel {
-  readonly status: ReadonlyArray<PluginStatus>;
-  /** Every active plugin's services, for code running in the kernel's process. */
-  readonly services: Context.Context<never>;
+  /** The current graph's plugin states. */
+  readonly status: Effect.Effect<ReadonlyArray<PluginStatus>>;
+  /** Runs code in the kernel's process against the current graph's services. */
+  readonly use: HoldGraph;
+  /**
+   * Rebuilds the named plugins, their dependents, and plugins whose resolution changed, then swaps
+   * the new graph in; work already running finishes on the graph it holds.
+   */
+  readonly reload: (
+    names: ReadonlyArray<string>,
+  ) => Effect.Effect<ReadonlyArray<PluginStatus>, ChangeFailed>;
   /** A client protocol over a new in-memory connection; closing the scope disconnects. */
   readonly connect: Effect.Effect<RpcClient.Protocol["Service"], never, Scope.Scope>;
 }
 
-/** Boots the plugins and serves them until the scope closes. */
+/** Builds the first graph and serves it, and each one after, until the scope closes. */
 export const start = Effect.fn("start")(function* (options: BootOptions) {
   const bus = yield* Layer.build(EventBus.layer);
-  const booted = yield* boot(options).pipe(Effect.provideContext(bus));
+  const graphs = yield* makeGraphs(options.folders).pipe(Effect.provideContext(bus));
   const memory = yield* makeMemoryServer;
 
-  const protocol = yield* RpcServer.makeProtocolSocketServer.pipe(
+  const transport = yield* RpcServer.makeProtocolSocketServer.pipe(
     Effect.provideService(SocketServer.SocketServer, memory.server),
     Effect.provideService(RpcSerialization.RpcSerialization, RpcSerialization.ndjson),
   );
 
-  yield* serve(booted).pipe(
-    Effect.provideService(RpcServer.Protocol, protocol),
-    Effect.provideContext(bus),
+  yield* route(transport, graphs, serveKernel(graphs).pipe(Effect.provideContext(bus))).pipe(
     Effect.forkScoped,
   );
 
@@ -43,7 +52,16 @@ export const start = Effect.fn("start")(function* (options: BootOptions) {
     ),
   );
 
-  const kernel: Kernel = { status: booted.status, services: booted.services, connect };
+  const kernel: Kernel = {
+    status: Effect.acquireUseRelease(
+      graphs.acquire,
+      (graph) => Effect.succeed(graph.status),
+      graphs.release,
+    ),
+    use: graphs.hold,
+    reload: graphs.reload,
+    connect,
+  };
 
   return kernel;
 });

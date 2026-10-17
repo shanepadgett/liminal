@@ -39,7 +39,8 @@ effectTest(
     );
 
     // The turn's writer runs in the kernel's process; the client only reads.
-    const log = Context.getUnsafe(kernel.services, SessionLog);
+    const log = <A, E>(f: (service: SessionLog["Service"]) => Effect.Effect<A, E>) =>
+      kernel.use((services) => f(Context.getUnsafe(services, SessionLog)));
 
     yield* client["session-log/create"]({ session: s1 });
 
@@ -53,10 +54,10 @@ effectTest(
     expect(yield* Queue.take(seen)).toBe("synced");
     expect(yield* Queue.take(seen)).toBe("live none");
 
-    yield* log.append(s1, [userMessage("hello")]);
+    yield* log((found) => found.append(s1, [userMessage("hello")]));
     expect(yield* Queue.take(seen)).toBe("saved 1 hello");
 
-    yield* log.setLive(s1, { kind: "test/typing", data: "he" });
+    yield* log((found) => found.setLive(s1, { kind: "test/typing", data: "he" }));
     expect(yield* Queue.take(seen)).toBe("live test/typing");
 
     const preview = yield* client["context/preview"]({ session: s1, model });
@@ -69,6 +70,46 @@ effectTest(
 
     const sessions = yield* client["session-log/list"]();
     expect(sessions.map((session) => [session.id, session.lastSeq])).toEqual([[s1, 1]]);
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "a follower keeps following across a session-log rebuild and sees each entry once",
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+
+    const kernel = yield* start({
+      folders: [path.resolve(import.meta.dir, "../../../packages/plugins")],
+    });
+
+    const client = yield* RpcClient.make(KernelRpcs).pipe(
+      Effect.provideService(RpcClient.Protocol, yield* kernel.connect),
+    );
+
+    const append = (text: string) =>
+      kernel.use((services) => {
+        const log = Context.getUnsafe(services, SessionLog);
+
+        return log.append(s1, [userMessage(text)]);
+      });
+
+    yield* kernel.use((services) => Context.getUnsafe(services, SessionLog).create(s1));
+    const saved = yield* Queue.unbounded<string>();
+
+    yield* client["kernel/follow"]({ session: s1 }).pipe(
+      Stream.filter((event) => Predicate.isTagged(event, "Saved")),
+      Stream.runForEach((event) => Queue.offer(saved, describe(event))),
+      Effect.forkChild,
+    );
+
+    yield* append("before");
+    expect(yield* Queue.take(saved)).toBe("saved 1 before");
+    yield* kernel.reload(["session-log"]);
+    yield* append("after");
+    expect(yield* Queue.take(saved)).toBe("saved 2 after");
+    yield* append("last");
+    expect(yield* Queue.take(saved)).toBe("saved 3 last");
   }),
   testBaseServices,
 );

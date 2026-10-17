@@ -81,6 +81,10 @@ export class SessionStore extends Context.Service<
     ) => Effect.Effect<ReadonlyArray<StoredEntry>, SessionNotFound | StoreError>;
     /** Every session, most recently updated first. */
     readonly listSessions: Effect.Effect<ReadonlyArray<StoredSession>, StoreError>;
+    /** Per session, its newest entry of any of `kinds`; sessions with none are left out. */
+    readonly lastEntriesOfKinds: (
+      kinds: ReadonlyArray<string>,
+    ) => Effect.Effect<ReadonlyArray<StoredEntry>, StoreError>;
     readonly readLive: (
       sessionId: string,
     ) => Effect.Effect<StoredLive | undefined, SessionNotFound | StoreError>;

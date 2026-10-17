@@ -9,7 +9,7 @@ import { Effect, FileSystem, Path, Predicate } from "effect";
 
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 
-import { boot, InactiveReason, type PluginStatus } from "../src/index.ts";
+import { InactiveReason, type PluginStatus, start } from "../src/index.ts";
 
 /** Fixture files import Effect by absolute URL, since the temp folder has no node_modules. */
 const effectUrl = import.meta.resolve("effect");
@@ -120,12 +120,13 @@ const reasonsOf = (status: ReadonlyArray<PluginStatus>) =>
     ),
   );
 
-describe("boot", () => {
+describe("start", () => {
   effectTest(
     "activates what resolves and builds, and gives every other plugin its reason",
     Effect.gen(function* () {
       const folder = yield* writeFixtures;
-      const { status } = yield* boot({ folders: [folder] });
+      const kernel = yield* start({ folders: [folder] });
+      const status = yield* kernel.status;
       const reasons = reasonsOf(status);
 
       const active = status.flatMap((plugin) =>
@@ -172,8 +173,8 @@ describe("boot", () => {
   effectTest(
     "a missing folder boots nothing",
     Effect.gen(function* () {
-      const booted = yield* boot({ folders: ["/nonexistent/liminal-plugins"] });
-      expect(booted.status).toEqual([]);
+      const kernel = yield* start({ folders: ["/nonexistent/liminal-plugins"] });
+      expect(yield* kernel.status).toEqual([]);
     }),
     testBaseServices,
   );

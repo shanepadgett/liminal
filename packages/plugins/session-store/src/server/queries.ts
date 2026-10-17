@@ -119,6 +119,23 @@ export const readEntries = Effect.fn("readEntries")(function* (sessionId: string
   return entries;
 });
 
+/** Per session, its newest entry of any of `kinds`; sessions with none are left out. */
+export const lastEntriesOfKinds = Effect.fn("lastEntriesOfKinds")(function* (
+  kinds: ReadonlyArray<string>,
+) {
+  const sql = yield* SqlClient.SqlClient;
+  if (kinds.length === 0) return [];
+
+  return yield* sql`
+    SELECT e.session_id AS "sessionId", e.seq, e.kind, e.at, e.data, e.model, e.text, e.user
+    FROM entries e
+    JOIN (
+      SELECT session_id, MAX(seq) AS seq FROM entries WHERE kind IN ${sql.in(kinds)}
+      GROUP BY session_id
+    ) last ON e.session_id = last.session_id AND e.seq = last.seq
+  `.pipe(Effect.flatMap(Schema.decodeUnknownEffect(Schema.Array(StoredEntry))));
+});
+
 /** Runs inside the append's write transaction, so no other writer can take the same seq. */
 const lastSeq = Effect.fn("lastSeq")(function* (sessionId: string) {
   const sql = yield* SqlClient.SqlClient;

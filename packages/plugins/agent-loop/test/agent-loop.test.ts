@@ -41,7 +41,9 @@ import {
   BeforeCall,
   BeforeCallHooks,
   StepOutcome,
+  TurnEndedEntry,
   TurnEndingHooks,
+  TurnStartedEntry,
 } from "../src/contract.ts";
 
 const stack = serverOf(agentLoop).pipe(
@@ -349,6 +351,71 @@ effectTest(
       { callId: "c2", name: "write", status: "interrupted", result: "interrupted by a restart" },
       { callId: "c1", name: "echo", status: "done", result: "again" },
     ]);
+  }),
+  stack,
+);
+
+/** The session's turn markers, as `started` and each end. */
+const markersOf = (entries: ReadonlyArray<Entry>) =>
+  entries.flatMap((entry) => {
+    if (entry.kind === TurnStartedEntry.kind) return ["started"];
+    if (entry.kind !== TurnEndedEntry.kind) return [];
+
+    return [Schema.decodeUnknownSync(TurnEndedEntry.data)(entry.data).end];
+  });
+
+effectTest(
+  "a started turn runs as held work and saves how it ended",
+  Effect.gen(function* () {
+    const log = yield* start("hello");
+    yield* (yield* ScriptedModel).enqueue(replyText("done"));
+    yield* (yield* AgentLoop).start(s1, settings);
+
+    yield* until(
+      Effect.map(Effect.orDie(log.read(s1, {})), (entries) => markersOf(entries).length === 2),
+    );
+
+    const entries = yield* log.read(s1, {});
+
+    expect(markersOf(entries)).toEqual(["started", "answered"]);
+    expect(kinds(entries)).toContain(TextEntry.kind);
+  }),
+  stack,
+);
+
+effectTest(
+  "a turn left running resumes when agent-loop builds again",
+  Effect.gen(function* () {
+    const log = yield* start("hello");
+    yield* log.append(s1, [draft(TurnStartedEntry, { data: settings, text: "" })]);
+    yield* (yield* ScriptedModel).enqueue(replyText("resumed"));
+
+    // A second build of agent-loop, as after a restart, finds the turn and runs it.
+    yield* Layer.build(Layer.fresh(serverOf(agentLoop)));
+
+    yield* until(
+      Effect.map(Effect.orDie(log.read(s1, {})), (entries) => markersOf(entries).length === 2),
+    );
+
+    const entries = yield* log.read(s1, {});
+
+    expect(markersOf(entries)).toEqual(["started", "answered"]);
+    expect(entries.some((entry) => entry.text === "resumed")).toBe(true);
+  }),
+  stack,
+);
+
+effectTest(
+  "cancel stops the running turn and saves it as cancelled",
+  Effect.gen(function* () {
+    const log = yield* start("hello");
+    const loop = yield* AgentLoop;
+    yield* (yield* ScriptedModel).enqueue([{ type: "hang" }]);
+    yield* loop.start(s1, settings);
+    yield* loop.cancel(s1);
+    yield* loop.cancel(s1);
+
+    expect(markersOf(yield* log.read(s1, {}))).toEqual(["started", "cancelled"]);
   }),
   stack,
 );

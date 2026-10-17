@@ -153,6 +153,32 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
         expect(yield* store.readLive("s1")).toBeUndefined();
       }),
   ],
+  [
+    "finds each session's newest entry of some kinds",
+    (store) =>
+      Effect.gen(function* () {
+        yield* store.createSession("s1");
+        yield* store.createSession("s2");
+        yield* store.createSession("s3");
+        const mark = { ...draft(1), kind: "test/mark" };
+        yield* store.appendEntries("s1", [mark, draft(2), { ...mark, kind: "test/other" }]);
+        yield* store.appendEntries("s2", [draft(1), mark]);
+        yield* store.appendEntries("s3", [draft(1)]);
+
+        const found = yield* store.lastEntriesOfKinds(["test/mark", "test/other"]);
+
+        expect(
+          found
+            .map((saved) => [saved.sessionId, saved.seq, saved.kind])
+            .toSorted((a, b) => String(a[0]).localeCompare(String(b[0]))),
+        ).toEqual([
+          ["s1", 3, "test/other"],
+          ["s2", 2, "test/mark"],
+        ]);
+
+        expect(yield* store.lastEntriesOfKinds([])).toEqual([]);
+      }),
+  ],
 ];
 
 const reopenCase = <E>(

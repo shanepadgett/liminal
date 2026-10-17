@@ -55,10 +55,18 @@ const createIndex = Effect.gen(function* () {
   yield* sql`CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`;
 });
 
+/** Serves `lastEntriesOfKinds`: the newest entry of some kinds in each session. */
+const indexKinds = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+
+  yield* sql`CREATE INDEX entries_kind ON entries (kind, session_id, seq)`;
+});
+
 /** Applies the migrations the database has not seen yet. */
 export const migrate = SqliteMigrator.run({
   loader: SqliteMigrator.fromRecord({
     "0001_create_tables": createTables,
     "0002_create_index": createIndex,
+    "0003_index_kinds": indexKinds,
   }),
 });

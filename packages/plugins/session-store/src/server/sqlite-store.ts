@@ -4,18 +4,20 @@ import { SqliteClient } from "@effect/sql-sqlite-bun";
 import { Effect, Layer } from "effect";
 import { SqlClient } from "effect/sql";
 
+import { whileLocked } from "@liminal/sdk";
+
 import { SessionStore } from "../contract.ts";
 import { migrate } from "./migrations.ts";
 import * as Queries from "./queries.ts";
 import { ensureIndex, listSessions } from "./session-index.ts";
 
-/** WAL and the busy timeout are the driver's defaults; these settings are per connection. */
+/** WAL is the driver's default; these settings are per connection. */
 const configure = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
   yield* sql`PRAGMA synchronous = NORMAL`;
   yield* sql`PRAGMA foreign_keys = ON`;
-  yield* migrate;
-  yield* ensureIndex;
+  yield* whileLocked(migrate);
+  yield* whileLocked(ensureIndex);
 });
 
 const make = Effect.gen(function* () {
@@ -25,7 +27,11 @@ const make = Effect.gen(function* () {
   const run =
     (operation: string) =>
     <A, E>(effect: Effect.Effect<A, E, SqlClient.SqlClient>) =>
-      effect.pipe(Queries.storeFailure(operation), Effect.provideService(SqlClient.SqlClient, sql));
+      effect.pipe(
+        whileLocked,
+        Queries.storeFailure(operation),
+        Effect.provideService(SqlClient.SqlClient, sql),
+      );
 
   return SessionStore.of({
     createSession: (id) => run("createSession")(Queries.createSession(id)),
@@ -34,6 +40,7 @@ const make = Effect.gen(function* () {
       run("appendEntries")(sql.withTransaction(Queries.appendEntries(sessionId, entries))),
     readEntries: (sessionId, range) => run("readEntries")(Queries.readEntries(sessionId, range)),
     listSessions: run("listSessions")(listSessions()),
+    lastEntriesOfKinds: (kinds) => run("lastEntriesOfKinds")(Queries.lastEntriesOfKinds(kinds)),
     readLive: (sessionId) => run("readLive")(Queries.readLive(sessionId)),
     writeLive: (sessionId, live) => run("writeLive")(Queries.writeLive(sessionId, live)),
   });
@@ -41,4 +48,6 @@ const make = Effect.gen(function* () {
 
 /** The store over the database at `filename`, migrated before first use. */
 export const sqliteStore = (filename: string) =>
-  Layer.effect(SessionStore, make).pipe(Layer.provide(SqliteClient.layer({ filename })));
+  Layer.effect(SessionStore, make).pipe(
+    Layer.provide(SqliteClient.layer({ filename, busyTimeout: 0 })),
+  );

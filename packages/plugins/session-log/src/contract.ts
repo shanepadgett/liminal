@@ -66,6 +66,10 @@ export class SessionLog extends Context.Service<
       session: SessionId,
       range: SeqRange,
     ) => Effect.Effect<ReadonlyArray<Entry>, SessionNotFound | StoreError>;
+    /** Per session, its newest entry of any of `kinds`; sessions with none are left out. */
+    readonly lastOfKinds: (
+      kinds: ReadonlyArray<EntryDefinition>,
+    ) => Effect.Effect<ReadonlyArray<Entry>, StoreError>;
     /** The saved entries after `from.after`, then Synced, then each new entry as it is saved. */
     readonly subscribe: (
       session: SessionId,

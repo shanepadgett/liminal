@@ -23,6 +23,7 @@ import { makeCalls } from "./server/calls.ts";
 import { makeHooks } from "./server/hooks.ts";
 import { makeCallModel } from "./server/model-call.ts";
 import { replyCalls } from "./server/reply.ts";
+import { makeTurns } from "./server/turns.ts";
 
 const make = Effect.gen(function* () {
   const log = yield* SessionLog;
@@ -84,7 +85,10 @@ const make = Effect.gen(function* () {
     }
   });
 
-  return AgentLoop.of({ step, run });
+  const turns = yield* makeTurns(log);
+  yield* turns.resume;
+
+  return AgentLoop.of({ step, run, start: turns.start, cancel: turns.cancel });
 });
 
 export const layer = Layer.effect(AgentLoop, make).pipe(

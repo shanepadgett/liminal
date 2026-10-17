@@ -4,11 +4,12 @@ import { Array as Arr, DateTime, Effect, PubSub, Ref, Stream } from "effect";
 
 import {
   type Entry,
+  type EntryDefinition,
   type EntryDraft,
   Seq,
   type SessionId,
   type SessionNotFound,
-  type StoreError,
+  StoreError,
   Synced,
 } from "@liminal/sdk";
 
@@ -99,8 +100,20 @@ export const makeEntries = (deps: LogDeps) => {
     return yield* Effect.forEach(stored, toSaved);
   });
 
+  const lastOfKinds = Effect.fn("SessionLog.lastOfKinds")(function* (
+    kinds: ReadonlyArray<EntryDefinition>,
+  ) {
+    const stored = yield* deps.store
+      .lastEntriesOfKinds(kinds.map((definition) => definition.kind))
+      .pipe(
+        Effect.mapError((error) => new StoreError({ message: error.message, cause: error.cause })),
+      );
+
+    return yield* Effect.forEach(stored, (row) => restore(row, deps.entryKinds.get));
+  });
+
   const subscribe = followWith(deps, read);
   const follow = followWith(deps, readSaved);
 
-  return { read, append, subscribe, follow };
+  return { read, append, lastOfKinds, subscribe, follow };
 };

@@ -10,7 +10,7 @@ Status: built
 
 ## Requires
 
-- `SessionLog`, `Context`, `Models`, `ToolRegistry`, `ToolPipeline`
+- `SessionLog`, `EntryKinds`, `Context`, `Models`, `ToolRegistry`, `ToolPipeline`
 
 ## Requirements
 

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "bin": {
-    "liminal": "./src/main.ts"
+    "liminal": "./src/supervisor.ts"
   },
   "type": "module",
   "dependencies": {

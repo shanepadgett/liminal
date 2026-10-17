@@ -3,27 +3,55 @@
  * plugins join it.
  */
 
-import { Context, Data, type Duration, type Effect } from "effect";
+import { Context, Data, type Duration, type Effect, Schema } from "effect";
 
 import {
+  defineEntry,
   type EntryDraft,
   type InvalidEntry,
   type ModelError,
-  type ModelRef,
+  ModelRef,
   type ProviderNotFound,
   Registry,
   type SessionId,
   type SessionNotFound,
   type StoreError,
-  type ThinkingLevel,
+  ThinkingLevel,
 } from "@liminal/sdk";
 
 /** What a turn's caller chooses for its model calls. */
-export interface TurnSettings {
-  readonly model: ModelRef;
-  readonly thinking: ThinkingLevel;
-  readonly maxOutputTokens?: number;
-}
+export const TurnSettings = Schema.Struct({
+  model: ModelRef,
+  thinking: ThinkingLevel,
+  maxOutputTokens: Schema.optionalKey(Schema.Int),
+});
+
+export type TurnSettings = typeof TurnSettings.Type;
+
+/** A turn began with these settings; without a later TurnEndedEntry it resumes at boot. */
+export const TurnStartedEntry = defineEntry({
+  kind: "agent-loop/turn-started",
+  data: TurnSettings,
+  model: false,
+  user: "hidden",
+});
+
+/** How a started turn ended; `stopped` is an error, of which nothing is saved. */
+export const TurnEndReason = Schema.Literals([
+  "answered",
+  "ended-by-plugin",
+  "cancelled",
+  "stopped",
+]);
+
+export type TurnEndReason = typeof TurnEndReason.Type;
+
+export const TurnEndedEntry = defineEntry({
+  kind: "agent-loop/turn-ended",
+  data: Schema.Struct({ end: TurnEndReason }),
+  model: false,
+  user: "hidden",
+});
 
 /** The turn a hook is called for. */
 export interface Turn {
@@ -109,5 +137,17 @@ export class AgentLoop extends Context.Service<
       sessionId: SessionId,
       settings: TurnSettings,
     ) => Effect.Effect<TurnEnd, TurnError>;
+    /**
+     * Saves TurnStartedEntry and runs the turn as kernel-held work, each step on the graph current
+     * when it starts, until it saves TurnEndedEntry; a session's running turn is left alone.
+     */
+    readonly start: (
+      sessionId: SessionId,
+      settings: TurnSettings,
+    ) => Effect.Effect<void, SessionNotFound | InvalidEntry | StoreError>;
+    /** Interrupts the session's running turn and saves it as cancelled; no turn running is a no-op. */
+    readonly cancel: (
+      sessionId: SessionId,
+    ) => Effect.Effect<void, SessionNotFound | InvalidEntry | StoreError>;
   }
 >()("liminal/agent-loop/AgentLoop") {}

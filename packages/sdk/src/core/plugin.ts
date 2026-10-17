@@ -6,6 +6,7 @@ import type { Rpc, RpcGroup } from "effect/rpc";
 
 import type { Directories } from "./directories.ts";
 import type { EventBus } from "./protocol.ts";
+import type { Work } from "./work.ts";
 
 /** Services the host gives every plugin without listing them in `requires`. */
 export type BaseServices =
@@ -13,7 +14,8 @@ export type BaseServices =
   | Path.Path
   | ChildProcessSpawner
   | Directories
-  | EventBus;
+  | EventBus
+  | Work;
 
 /** A service tag a plugin provides, requires or uses. */
 export type ServiceTag = Context.Key<unknown, unknown>;

@@ -1,10 +1,10 @@
-/** The host boots the built-in plugins from their manifests, and entries survive a restart. */
+/** The kernel starts the built-in plugins from their manifests, and entries survive a restart. */
 
 import { expect } from "bun:test";
 
 import { Context, Effect, Path, Predicate, Schema } from "effect";
 
-import { boot } from "@liminal/kernel";
+import { start } from "@liminal/kernel";
 import { defineEntry, draft, Seq, SessionId } from "@liminal/sdk";
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
@@ -18,17 +18,17 @@ const Note = defineEntry({
 
 const s1 = SessionId.make("s1");
 
-/** Boots the repository's plugins folder in its own scope, as one run of Liminal. */
+/** Starts a kernel over the repository's plugins folder in its own scope, as one run of Liminal. */
 const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E>) =>
   Effect.scoped(
     Effect.gen(function* () {
       const path = yield* Path.Path;
 
-      const booted = yield* boot({
+      const kernel = yield* start({
         folders: [path.resolve(import.meta.dir, "../../../packages/plugins")],
       });
 
-      const active = booted.status.flatMap((plugin) =>
+      const active = (yield* kernel.status).flatMap((plugin) =>
         Predicate.isTagged(plugin, "Active") ? [plugin.name] : [],
       );
 
@@ -48,7 +48,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "tools-shell",
       ]);
 
-      return yield* use(booted.services);
+      return yield* kernel.use(use);
     }),
   );
 

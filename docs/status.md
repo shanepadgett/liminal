@@ -10,6 +10,8 @@ Step 4 is built ([plans/archive/step-4.md](plans/archive/step-4.md)): `settings`
 
 Step 5 is built except the TUI session ([plans/archive/step-5.md](plans/archive/step-5.md)): the kernel serves `KernelRpcs` and every active plugin's `RpcGroup` over an in-memory ndjson socket, with the `EventBus` and session following through `SessionFeed`; `session-store` keeps a session index; `apps/cli` prints plugin states through the protocol.
 
+Step 6 is built ([plans/archive/step-6.md](plans/archive/step-6.md)): the kernel holds plugin graphs by reference count and `Kernel.reload` rebuilds changed plugins and their dependents beside the running graph; requests, steps and `Work` tasks finish on the graph they hold; `agent-loop` turns run as kernel-held work and resume at boot; `apps/cli/src/supervisor.ts` restarts the app on exit code 75.
+
 ## Focus
 
 - Unattended build of [plans/milestones.md](plans/milestones.md) steps 2, 3, 4 and 6, and step 5's protocol server, event bus and session following; the TUI on a live session waits for the user.
