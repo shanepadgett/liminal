@@ -32,6 +32,8 @@ How the TUI and the gallery look and move, and how the transcript shows a sessio
 - The gallery's Primitives group shows the shared pieces components are built from
 - One component per concept; screens and samples are built only from gallery components, so a change shows everywhere it is used
 - The transcript is the only conversation component; the chat screen and samples hold a moment of it
+- The gallery is the design source for the TUI
+- The gallery and the TUI keep separate components; every requested change updates both
 
 ## Transcript
 

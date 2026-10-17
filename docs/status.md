@@ -33,7 +33,7 @@ Step 6 is built ([plans/archive/step-6.md](plans/archive/step-6.md)): the kernel
 - Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`)
 - ACP adapter as a server plugin
 - Collab-style session sharing through an encrypted relay
-- TUI
+- TUI: the first TUI step builds the frontend plugin host and slot tree, with the chat screen made of built-in UI plugins (DeepSeek's `ui-slots` model on OpenTUI and Solid; OpenCode's pure slot resolver `packages/tui/src/plugin/structure.ts` as prior art). The first session includes an inbox plugin for steering and follow-ups. The SDK `tui` subpath holds tokens, primitives and the ornament; a built-in `chat` plugin owns the frame and its slots; each plugin draws its own entry kinds. A turn's model and thinking level come from `settings` defaults, shown in the composer's model line; switching waits for the command palette. `Slot` lives in the SDK root; `defineTui` and `TuiHost` in `@liminal/sdk/tui`. Plan: [plans/tui-session.md](plans/tui-session.md)
 - Gallery: its own isolated app, a minimal Storybook for the TUI; built before any TUI components or screens; every element, primitives through screens, is approved there first; houses its own components, duplication accepted; keep Tau's tier, state and width rules, redesign the shell
 
 ## Later
@@ -57,4 +57,4 @@ Pi session IDs and the topics each discussed.
 - 01a145a9-703a-7284-8f7a-054aea36ec2c: TUI design (transcript)
 - 01a14649-dee8-74a7-b272-e37fd82f47b6: Sessions, Plugin catalog, docs layout
 - 01a1473c-d9a2-74a7-b272-e383d7bf6e43: session-log contract, entry kinds and visibility, compaction memories, plugin foundation, build order, testing, step 1 build, repository layout
-- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check
+- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract

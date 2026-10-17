@@ -26,8 +26,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | Plugin | Does | Status |
 | --- | --- | --- |
 | [agent-loop](agent-loop.md) | Runs one turn | built |
-| inbox | Holds input sent while a turn runs | to plan |
-| steering | Joins a steer into the running turn | to plan |
+| inbox | The composer and all sending: starts a turn when idle, queues steers and follow-ups while one runs | planned |
 | retry | Retries failed model calls | to plan |
 | cancel | Stops a running turn | to plan |
 | usage | Counts tokens and cost | to plan |

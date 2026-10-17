@@ -9,7 +9,9 @@ Workspace layout, the checks that guard it, and how code is tested.
 - Every plugin is its own workspace package
 - Plugin packages export only their contract to other plugins
 - Top-level code areas: `apps/`, `packages/`, `tools/`
-- `packages/` holds `kernel/`, `sdk/` and `plugins/`; each plugin is `packages/plugins/<name>/`
+- `packages/` holds `kernel/`, `sdk/`, `frontend/` and `plugins/`; each plugin is `packages/plugins/<name>/`
+- `packages/frontend/` is the renderer-free frontend host: slot core, per-session state, UI part loading and reload, each part's kernel connection
+- The TUI's OpenTUI renderer lives in `apps/cli/src/tui/`
 - `apps/` is its own workspace area; the CLI lives in `apps/cli/`
 - Built-in plugins use the same SDK and loader as third-party plugins
 - `@liminal/sdk` is published for plugin authors
