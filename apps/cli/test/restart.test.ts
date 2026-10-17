@@ -34,12 +34,18 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
 
       expect(active.toSorted()).toEqual([
         "agent-loop",
+        "command-runner",
         "context",
+        "credential-store",
+        "model-codex",
         "models",
         "session-log",
         "session-store",
+        "settings",
         "tool-pipeline",
         "tool-registry",
+        "tools-file",
+        "tools-shell",
       ]);
 
       return yield* use(booted.services);

@@ -196,6 +196,20 @@
       "summary": "Fine-grained reactivity behind the OpenTUI Solid renderer: signals, memos, effects, control flow (`For`, `Show`), stores in `solid-js/store`.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
       "api": [{ "kind": "types", "path": "types" }]
+    },
+    {
+      "package": "@effect/ai-openai",
+      "versionSource": "lock",
+      "summary": "OpenAI provider for effect/ai: OpenAiClient (apiUrl, transformClient) and OpenAiLanguageModel on the Responses API. The model-codex plugin uses it against the Codex backend.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "source", "path": "src" }]
+    },
+    {
+      "package": "jsonc-parser",
+      "versionSource": "lock",
+      "summary": "Parses JSON with comments and edits it in place: parse, modify and applyEdits keep comments and formatting. The settings plugin uses it.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "types", "path": "lib/umd/main.d.ts" }]
     }
   ]
 }

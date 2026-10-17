@@ -18,17 +18,8 @@ import {
   scriptedProvider,
 } from "@liminal/model-scripted/contract";
 import models from "@liminal/models";
-import {
-  defineTool,
-  draft,
-  type Entry,
-  ModelError,
-  type ModelPart,
-  type Plugin,
-  type ServiceTags,
-  SessionId,
-} from "@liminal/sdk";
-import { effectTest, testBaseServices } from "@liminal/sdk/testing";
+import { defineTool, draft, type Entry, ModelError, type ModelPart, SessionId } from "@liminal/sdk";
+import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
 import sessionLog from "@liminal/session-log";
 import {
   SessionLog,
@@ -52,11 +43,6 @@ import {
   StepOutcome,
   TurnEndingHooks,
 } from "../src/contract.ts";
-
-/** A plugin's server Layer, over whatever the test provides. */
-const serverOf = <P extends ServiceTags, R extends ServiceTags, U extends ServiceTags, E>(
-  plugin: Plugin<P, R, U, E>,
-) => Layer.unwrap(Effect.map(Effect.promise(plugin.server), (server) => server.layer));
 
 const stack = serverOf(agentLoop).pipe(
   Layer.provideMerge(serverOf(context)),

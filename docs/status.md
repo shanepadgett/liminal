@@ -6,6 +6,8 @@ Step 2 is built ([plans/archive/step-2.md](plans/archive/step-2.md)): `KeyedRegi
 
 Step 3 is built ([plans/archive/step-3.md](plans/archive/step-3.md)): the SDK `Pipeline`, `tool-pipeline` and `agent-loop`; turns with tool calls, steering, follow-ups, retry, cancel and resume run on the scripted provider.
 
+Step 4 is built ([plans/archive/step-4.md](plans/archive/step-4.md)): `settings`, `credential-store`, `command-runner`, `tools-file`, `tools-shell` and `model-codex`; a turn on the replayed Codex provider reads a workspace file and answers from it.
+
 ## Focus
 
 - Unattended build of [plans/milestones.md](plans/milestones.md) steps 2, 3, 4 and 6, and step 5's protocol server, event bus and session following; the TUI on a live session waits for the user.

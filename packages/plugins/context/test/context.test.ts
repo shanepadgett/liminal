@@ -7,16 +7,8 @@ import { expect } from "bun:test";
 
 import { Context as EffectContext, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";
 
-import {
-  defineEntry,
-  defineTool,
-  draft,
-  type Entry,
-  type Plugin,
-  type ServiceTags,
-  SessionId,
-} from "@liminal/sdk";
-import { effectTest, testBaseServices } from "@liminal/sdk/testing";
+import { defineEntry, defineTool, draft, type Entry, SessionId } from "@liminal/sdk";
+import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
 import sessionLog from "@liminal/session-log";
 import { SessionLog } from "@liminal/session-log/contract";
 import sessionStore from "@liminal/session-store";
@@ -33,11 +25,6 @@ import {
   SystemEntry,
   ViewSteps,
 } from "../src/contract.ts";
-
-/** A plugin's server Layer, over whatever the test provides. */
-const serverOf = <P extends ServiceTags, R extends ServiceTags, U extends ServiceTags, E>(
-  plugin: Plugin<P, R, U, E>,
-) => Layer.unwrap(Effect.map(Effect.promise(plugin.server), (server) => server.layer));
 
 /** One run of the plugins over the test's data folder. */
 const stack = serverOf(context).pipe(

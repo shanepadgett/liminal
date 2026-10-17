@@ -48,6 +48,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | Plugin | Does | Status |
 | --- | --- | --- |
 | [models](models.md) | The seam every provider plugs into | built |
+| model-codex | Provider `codex`: OpenAI models on a ChatGPT plan login | built |
 | one plugin per provider | Talks to one model provider | to plan |
 | model-select | Chooses the model for a session | to plan |
 
@@ -55,7 +56,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 
 | Plugin | Does | Status |
 | --- | --- | --- |
-| [credential-store](credential-store.md) | Stores secrets | planned |
+| [credential-store](credential-store.md) | Stores secrets | built |
 | one login plugin per provider or flow | OAuth or API key login | to plan |
 
 ## Tools
@@ -68,14 +69,17 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | approval | Asks the user before a tool runs | to plan |
 | tool-output-spill | Moves large tool output to a file | to plan |
 | checks | The checks tool, and runs the checks itself, with its own entry kind, when the model ends its turn without them | to plan |
-| one plugin per tool family | File, shell, web tools | to plan |
+| command-runner | Runs one command to its end, with a timeout | built |
+| tools-file | `read`, `write` and `edit` in the workspace | built |
+| tools-shell | `shell` over the command runner | built |
+| one plugin per tool family | Web and other tools | to plan |
 | [processes](processes.md) | Commands that keep running across turns and restarts | planned |
 
 ## Settings
 
 | Plugin | Does | Status |
 | --- | --- | --- |
-| [settings](settings.md) | Layered settings store and schemas; each plugin owns its settings UI parts | planned |
+| [settings](settings.md) | Layered settings store and schemas; each plugin owns its settings UI parts | built |
 
 ## Plugin file shape
 

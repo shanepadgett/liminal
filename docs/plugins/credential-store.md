@@ -2,7 +2,7 @@
 
 Stores secrets for login methods and refreshes OAuth credentials.
 
-Status: planned
+Status: built
 
 ## Requirements
 

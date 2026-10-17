@@ -23,7 +23,7 @@ Bun layers for Effect's platform services: FileSystem, Path, runtime entry. Its 
 SQLite client for effect/sql on bun:sqlite: SqliteClient layer and SqliteMigrator. SqlClient, Migrator and SqlError come from effect/sql.
 
 - Docs: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/` (1 file: README.md)
-- API (source): `packages/plugins/session-store/node_modules/@effect/sql-sqlite-bun/src/`, modules: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/api-index/@effect-sql-sqlite-bun-src.md`
+- API (source): `packages/plugins/credential-store/node_modules/@effect/sql-sqlite-bun/src/`, modules: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/api-index/@effect-sql-sqlite-bun-src.md`
 
 ## @effect/tsgo 0.53.1
 
@@ -126,3 +126,17 @@ Fine-grained reactivity behind the OpenTUI Solid renderer: signals, memos, effec
 
 - Docs: `docs/reference/copies/solid-js/1.9.12/` (1 file: README.md)
 - API (types): `apps/gallery/node_modules/solid-js/types/`, modules: `docs/reference/copies/solid-js/1.9.12/api-index/solid-js-types.md`
+
+## @effect/ai-openai 4.0.5
+
+OpenAI provider for effect/ai: OpenAiClient (apiUrl, transformClient) and OpenAiLanguageModel on the Responses API. The model-codex plugin uses it against the Codex backend.
+
+- Docs: `docs/reference/copies/@effect/ai-openai/4.0.5/` (1 file: README.md)
+- API (source): `packages/plugins/model-codex/node_modules/@effect/ai-openai/src/`, modules: `docs/reference/copies/@effect/ai-openai/4.0.5/api-index/@effect-ai-openai-src.md`
+
+## jsonc-parser 3.3.1
+
+Parses JSON with comments and edits it in place: parse, modify and applyEdits keep comments and formatting. The settings plugin uses it.
+
+- Docs: `docs/reference/copies/jsonc-parser/3.3.1/` (1 file: README.md)
+- API (types): `packages/plugins/settings/node_modules/jsonc-parser/lib/umd/main.d.ts`

@@ -2,7 +2,7 @@
 
 Layered settings store: reads `settings.json` layers and gives each plugin its own section.
 
-Status: planned
+Status: built
 
 ## Requirements
 

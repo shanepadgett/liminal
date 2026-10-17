@@ -4,6 +4,6 @@ One file per piece of work being planned or built. A plan moves to `archive/` on
 
 | Plan | State |
 | --- | --- |
-| [milestones.md](milestones.md) | Build order; steps 1 to 3 built, step 4 next |
+| [milestones.md](milestones.md) | Build order; steps 1 to 4 built, step 5 next |
 | [core-contracts.md](core-contracts.md) | All eight rounds agreed |
 | [transcript.md](transcript.md) | Built in the gallery, awaiting review |

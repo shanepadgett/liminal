@@ -21,3 +21,13 @@ export const testPlugin = <
       server.layer.pipe(Layer.provide(fakes), Layer.provide(testBaseServices)),
     ),
   );
+
+/** A plugin's server Layer over whatever the test provides, for stacking several plugins. */
+export const serverOf = <
+  Provides extends ServiceTags,
+  Requires extends ServiceTags,
+  Uses extends ServiceTags,
+  Error,
+>(
+  plugin: Plugin<Provides, Requires, Uses, Error>,
+) => Layer.unwrap(Effect.map(Effect.promise(plugin.server), (server) => server.layer));

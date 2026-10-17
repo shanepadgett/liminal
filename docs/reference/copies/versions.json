@@ -95,5 +95,15 @@
     "version": "1.9.12",
     "fingerprint": "9c87675d3602ba58",
     "commits": []
+  },
+  "@effect/ai-openai": {
+    "version": "4.0.5",
+    "fingerprint": "082952a68150809f",
+    "commits": []
+  },
+  "jsonc-parser": {
+    "version": "3.3.1",
+    "fingerprint": "c3479840b364fc98",
+    "commits": []
   }
 }
