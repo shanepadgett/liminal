@@ -6,7 +6,7 @@ import {
   noReflect,
 } from "./shape-rules.ts";
 
-const file = "kernel/src/example.ts";
+const file = "packages/kernel/src/example.ts";
 
 testRule("no-filter-map", noFilterMap, {
   valid: [

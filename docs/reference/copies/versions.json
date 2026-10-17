@@ -9,6 +9,11 @@
     "fingerprint": "1ad570f684c6ebff",
     "commits": []
   },
+  "@effect/sql-sqlite-bun": {
+    "version": "4.0.5",
+    "fingerprint": "9b52a5282e87c4b0",
+    "commits": []
+  },
   "@effect/tsgo": {
     "version": "0.53.1",
     "fingerprint": "023c958c7e5b4561",
@@ -30,7 +35,7 @@
     "version": "1.88.0",
     "fingerprint": "737b4e99a6c52be8",
     "commits": [
-      "5e3db7bd3c8ea948dbdd88f3531f9d25130966dd"
+      "0e96696318539bd6c74df6f5d4a523927e13fd7a"
     ]
   },
   "@oxlint/plugins": {
@@ -47,7 +52,7 @@
     "version": "0.73.0",
     "fingerprint": "2ffd0fc9b0a5ee96",
     "commits": [
-      "5e3db7bd3c8ea948dbdd88f3531f9d25130966dd"
+      "0e96696318539bd6c74df6f5d4a523927e13fd7a"
     ]
   },
   "fallow": {

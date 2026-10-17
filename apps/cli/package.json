@@ -1,6 +1,6 @@
 {
   "name": "@liminal/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "bin": {
     "liminal": "./src/main.ts"
@@ -9,6 +9,10 @@
   "dependencies": {
     "@effect/platform-bun": "4.0.5",
     "@liminal/kernel": "workspace:*",
+    "@liminal/sdk": "workspace:*",
     "effect": "4.0.5"
+  },
+  "devDependencies": {
+    "@liminal/session-log": "workspace:*"
   }
 }

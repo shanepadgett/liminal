@@ -1,7 +1,7 @@
 import { noEffectRun, noManualTagCheck, noManualTaggedObject } from "./effect-rules.ts";
 import { testRule } from "./rule-tester.ts";
 
-const file = "kernel/src/example.ts";
+const file = "packages/kernel/src/example.ts";
 
 testRule("no-manual-tag-check", noManualTagCheck, {
   valid: [{ filename: file, code: "const tag = error._tag;" }],

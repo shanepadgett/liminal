@@ -14,10 +14,13 @@ import {
 } from "./comment-rules.ts";
 import { noEffectRun, noManualTagCheck, noManualTaggedObject } from "./effect-rules.ts";
 import {
+  conformanceImports,
   contractImports,
   contractNoSideEffects,
   manifestImports,
   partIsolation,
+  serverImports,
+  testingImports,
 } from "./plugin-rules.ts";
 import {
   noConditionalEmptySpread,
@@ -45,6 +48,9 @@ export default definePlugin({
     "contract-no-side-effects": contractNoSideEffects,
     "manifest-imports": manifestImports,
     "part-isolation": partIsolation,
+    "server-imports": serverImports,
+    "testing-imports": testingImports,
+    "conformance-imports": conformanceImports,
     "no-unknown-parameters": noUnknownParameters,
     "no-unknown-returns": noUnknownReturns,
     "no-unknown-type-aliases": noUnknownTypeAliases,

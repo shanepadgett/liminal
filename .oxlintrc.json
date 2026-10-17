@@ -58,6 +58,9 @@
     "liminal/contract-no-side-effects": "error",
     "liminal/manifest-imports": "error",
     "liminal/part-isolation": "error",
+    "liminal/server-imports": "error",
+    "liminal/testing-imports": "error",
+    "liminal/conformance-imports": "error",
     "liminal/no-unknown-parameters": "error",
     "liminal/no-unknown-returns": "error",
     "liminal/no-unknown-type-aliases": "error",
@@ -85,14 +88,8 @@
     "effecttsgo/unstable-api-usage": "off"
   },
   "overrides": [
-    {
-      "files": ["kernel/**", "sdk/**", "plugins/**", "apps/**"],
-      "rules": { "liminal/no-runtime-typeof": "error" }
-    },
-    {
-      "files": ["kernel/**", "sdk/**", "plugins/**"],
-      "rules": { "liminal/no-effect-run": "error" }
-    },
+    { "files": ["packages/**", "apps/**"], "rules": { "liminal/no-runtime-typeof": "error" } },
+    { "files": ["packages/**"], "rules": { "liminal/no-effect-run": "error" } },
     {
       "files": ["**/test/**", "**/*.test.ts", "**/*.test.tsx"],
       "rules": { "liminal/no-effect-run": "off", "max-lines-per-function": "off" }

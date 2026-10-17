@@ -1,12 +1,11 @@
 {
   "name": "liminal",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "workspaces": [
     "apps/*",
-    "kernel",
-    "sdk",
-    "plugins/*"
+    "packages/*",
+    "packages/plugins/*"
   ],
   "type": "module",
   "scripts": {

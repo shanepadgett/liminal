@@ -28,6 +28,7 @@ depends = [
   "check:lint",
   "check:types",
   "check:anatomy",
+  "check:versions",
   "check:reference",
   "fallow:dead-code",
   "fallow:dupes",
@@ -71,6 +72,10 @@ run = "bun tools/reference/check.ts"
 description = "Plugin package anatomy"
 run = "bun tools/checks/plugin-anatomy.ts"
 
+[tasks."check:versions"]
+description = "Every workspace package has the root package's version"
+run = "bun tools/checks/versions.ts"
+
 [tasks."fallow:dead-code"]
 description = "Unused files, exports and dependencies, cycles and import boundaries"
 run = "bun tools/quiet.ts bunx --bun --no-install fallow dead-code --fail-on-issues"
@@ -81,7 +86,7 @@ run = "bun tools/quiet.ts bunx --bun --no-install fallow dupes --fail-on-issues"
 
 [tasks.test]
 description = "Workspace tests"
-run = "bun tools/quiet.ts bun test ./apps ./kernel ./sdk ./plugins --pass-with-no-tests --only-failures"
+run = "bun tools/quiet.ts bun test ./apps ./packages --pass-with-no-tests --only-failures"
 
 [tasks."test:tools"]
 description = "Lint rule and check tests under Node"

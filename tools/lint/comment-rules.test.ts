@@ -11,7 +11,7 @@ import {
 } from "./comment-rules.ts";
 import { testRule } from "./rule-tester.ts";
 
-const file = "kernel/src/example.ts";
+const file = "packages/kernel/src/example.ts";
 
 testRule("no-narration-comments", noNarrationComments, {
   valid: [{ filename: file, code: "// Retries stop after the session closes.\nrun();" }],

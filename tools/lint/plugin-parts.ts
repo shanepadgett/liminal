@@ -35,11 +35,13 @@ const partOf = (rest: readonly string[]): PluginPart => {
   return "other";
 };
 
-/** Locates a repository-relative path inside `plugins/<name>/`, or returns undefined. */
+/** Locates a repository-relative path inside `packages/plugins/<name>/`, or returns undefined. */
 export const locate = (path: string): PluginLocation | undefined => {
   const segments = normalize(path).split(sep);
-  const [area, plugin, ...rest] = segments;
-  if (area !== "plugins" || plugin === undefined || rest.length === 0) return undefined;
+  const [root, area, plugin, ...rest] = segments;
+
+  if (root !== "packages" || area !== "plugins" || plugin === undefined || rest.length === 0)
+    return undefined;
 
   return { plugin, part: partOf(rest) };
 };

@@ -1,0 +1,13 @@
+{
+  "name": "@liminal/sdk",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/core/index.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "peerDependencies": {
+    "@effect/platform-bun": "4.0.5",
+    "effect": "4.0.5"
+  }
+}

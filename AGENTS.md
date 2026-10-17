@@ -9,7 +9,7 @@ Read an instruction file only when you are about to change something it covers. 
 | Instruction | Read when |
 | --- | --- |
 | [instructions.md](docs/instructions/instructions.md) | Changing `AGENTS.md` or any file in `docs/instructions/`. |
-| [code.md](docs/instructions/code.md) | Writing or changing code in `apps/`, `kernel/`, `sdk/`, `plugins/` or `tools/`. |
+| [code.md](docs/instructions/code.md) | Writing or changing code in `apps/`, `packages/` or `tools/`. |
 | [planning.md](docs/instructions/planning.md) | Planning work, in chat or in `docs/plans/`. |
 
 ## Grounding

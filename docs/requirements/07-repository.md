@@ -8,10 +8,13 @@ Workspace layout, the checks that guard it, and how code is tested.
 - Latest Bun, Effect, and OpenTUI
 - Every plugin is its own workspace package
 - Plugin packages export only their contract to other plugins
-- Top-level areas: `apps/`, `kernel/`, `sdk/`, `plugins/`
+- Top-level code areas: `apps/`, `packages/`, `tools/`
+- `packages/` holds `kernel/`, `sdk/` and `plugins/`; each plugin is `packages/plugins/<name>/`
 - `apps/` is its own workspace area; the CLI lives in `apps/cli/`
 - Built-in plugins use the same SDK and loader as third-party plugins
 - `@liminal/sdk` is published for plugin authors
+- Every workspace package shares the root package's version; versions change only at a release
+- The first release is 0.1.0
 - `@liminal/sdk` is one package with subpath exports: `.` (core), `/testing`, `/tui`, `/desktop`
 - OpenTUI is an optional peer dependency of the SDK, needed only by `/tui`
 - `@liminal/sdk`, `effect`, and OpenTUI are peer dependencies supplied by the host
@@ -43,13 +46,14 @@ Workspace layout, the checks that guard it, and how code is tested.
 - `fallow` runs workspace-aware: undeclared and unused workspace dependencies, cross-package cycles
 - Plugin packages export only `plugin.ts`, `./contract` and `./conformance`
 - `./conformance` is imported only from other plugins' `test/` folders
-- `plugins/*` cannot import `kernel/`; `kernel/` cannot import `plugins/*`
+- `packages/plugins/*` cannot import `packages/kernel/`; `packages/kernel/` cannot import `packages/plugins/*`
 - `contract.ts` imports only Effect and the SDK and has no side effects
 - `plugin.ts` imports only contracts
 - `server` and `tui` parts never import each other
 - SDK folders `core`, `testing`, `tui`, `desktop` are fallow zones; `core` imports none of the others, the rest import only `core`
 - Plugin manifests and contracts import only the SDK root; `server` never imports `/tui`, `/desktop` or OpenTUI; only `test/` imports `/testing`
 - A structure check enforces plugin anatomy
+- A version check enforces one shared version across workspace packages
 
 ## Testing
 

@@ -24,7 +24,7 @@
 ## Rounds
 
 - Plan in rounds. Each round asks a small batch of related decisions.
-- Lasting plans live in `docs/plans/`, one file per piece of work. Delete the file once the work is built and verified.
+- Lasting plans live in `docs/plans/`, one file per piece of work. Once its work is built and verified, move the file to `docs/plans/archive/` right away, without asking: fix its relative links and remove its row from `docs/plans/_index.md`.
 - Record each agreed decision in the plan file in the same reply. A correction rewrites the affected part; no history.
 - Requirements that outlive the plan go in `docs/requirements/` or the plugin's file in `docs/plugins/`. Open topics and deferred items go in `docs/status.md`.
 

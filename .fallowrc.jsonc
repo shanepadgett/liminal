@@ -26,16 +26,30 @@
   "boundaries": {
     "zones": [
       { "name": "apps", "patterns": ["apps/**"] },
-      { "name": "kernel", "patterns": ["kernel/**"] },
-      { "name": "sdk", "patterns": ["sdk/**"] },
-      { "name": "plugins", "patterns": ["plugins/**"] },
+      { "name": "kernel", "patterns": ["packages/kernel/**"] },
+      // The SDK's subpaths: core is the root export; testing, tui and desktop build on it.
+      { "name": "sdk-core", "patterns": ["packages/sdk/src/core/**"] },
+      { "name": "sdk-testing", "patterns": ["packages/sdk/src/testing/**"] },
+      { "name": "sdk-tui", "patterns": ["packages/sdk/src/tui/**"] },
+      { "name": "sdk-desktop", "patterns": ["packages/sdk/src/desktop/**"] },
+      { "name": "plugins", "patterns": ["packages/plugins/**"] },
       { "name": "tools", "patterns": ["tools/**"] },
     ],
     "rules": [
-      { "from": "apps", "allow": ["kernel", "sdk", "plugins"] },
-      { "from": "kernel", "allow": ["sdk"] },
-      { "from": "sdk", "allow": [] },
-      { "from": "plugins", "allow": ["sdk", "plugins"] },
+      // sdk-testing serves only test files; the liminal/testing-imports lint rule enforces that.
+      {
+        "from": "apps",
+        "allow": ["kernel", "sdk-core", "sdk-testing", "sdk-tui", "sdk-desktop", "plugins"],
+      },
+      { "from": "kernel", "allow": ["sdk-core", "sdk-testing"] },
+      { "from": "sdk-core", "allow": [] },
+      { "from": "sdk-testing", "allow": ["sdk-core"] },
+      { "from": "sdk-tui", "allow": ["sdk-core"] },
+      { "from": "sdk-desktop", "allow": ["sdk-core"] },
+      {
+        "from": "plugins",
+        "allow": ["sdk-core", "sdk-testing", "sdk-tui", "sdk-desktop", "plugins"],
+      },
       { "from": "tools", "allow": [] },
     ],
   },

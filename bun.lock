@@ -20,19 +20,23 @@
     },
     "apps/cli": {
       "name": "@liminal/cli",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "bin": {
         "liminal": "./src/main.ts",
       },
       "dependencies": {
         "@effect/platform-bun": "4.0.5",
         "@liminal/kernel": "workspace:*",
+        "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
+      },
+      "devDependencies": {
+        "@liminal/session-log": "workspace:*",
       },
     },
     "apps/gallery": {
       "name": "@liminal/gallery",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@opentui/core": "0.6.6",
         "@opentui/keymap": "0.6.6",
@@ -41,13 +45,43 @@
         "solid-js": "1.9.12",
       },
     },
-    "kernel": {
+    "packages/kernel": {
       "name": "@liminal/kernel",
-      "version": "0.0.0",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
     },
-    "sdk": {
+    "packages/plugins/session-log": {
+      "name": "@liminal/session-log",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
+    "packages/plugins/session-store": {
+      "name": "@liminal/session-store",
+      "version": "0.1.0",
+      "dependencies": {
+        "@effect/sql-sqlite-bun": "4.0.5",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
+    "packages/sdk": {
       "name": "@liminal/sdk",
-      "version": "0.0.0",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@effect/platform-bun": "4.0.5",
+        "effect": "4.0.5",
+      },
     },
   },
   "packages": {
@@ -111,6 +145,8 @@
 
     "@effect/platform-node-shared": ["@effect/platform-node-shared@4.0.5", "", { "dependencies": { "@types/ws": "^8.18.2", "ws": "^8.22.0" }, "peerDependencies": { "effect": "^4.0.5" } }, "sha512-a8rCdEkfZBGe9C6bsIjxVZuRp73svIyK5IHwHdDAVsvZXjrbkxusfI+rZ8WlX31RP1mKizwI/E72GQTNfdMWHw=="],
 
+    "@effect/sql-sqlite-bun": ["@effect/sql-sqlite-bun@4.0.5", "", { "peerDependencies": { "effect": "^4.0.5" } }, "sha512-gL6mOT/BPM/AOWzcHhFphv6092zpgbJC79j29vfORakJ2ZLE/p+Eah9DeahokI6WBOk7AqFcaXsKVnjJBTUNXw=="],
+
     "@effect/tsgo": ["@effect/tsgo@0.53.1", "", { "optionalDependencies": { "@effect/tsgo-darwin-arm64": "0.53.1", "@effect/tsgo-darwin-x64": "0.53.1", "@effect/tsgo-linux-arm": "0.53.1", "@effect/tsgo-linux-arm64": "0.53.1", "@effect/tsgo-linux-x64": "0.53.1", "@effect/tsgo-win32-arm64": "0.53.1", "@effect/tsgo-win32-x64": "0.53.1" }, "bin": { "effect-tsgo": "dist/effect-tsgo.cjs" } }, "sha512-0LW8VI1+HvC+S5KOpReuAneN4T93ipcd8aKNXpy2DubBfm6ShWhBtWxtxPSaQ9M25gAtQs6w/D9NEmXqgd8uGg=="],
 
     "@effect/tsgo-darwin-arm64": ["@effect/tsgo-darwin-arm64@0.53.1", "", { "os": "darwin", "cpu": "arm64" }, "sha512-wje3jvSaN3ttD7sBm9Bw/E8xHq2ZQWMJNg1YAGCj3/tiwUxHDUjKrt1LC/HLju+OnTBSsSvkUE8jXUT3OdQY4A=="],
@@ -157,9 +193,13 @@
 
     "@liminal/gallery": ["@liminal/gallery@workspace:apps/gallery"],
 
-    "@liminal/kernel": ["@liminal/kernel@workspace:kernel"],
+    "@liminal/kernel": ["@liminal/kernel@workspace:packages/kernel"],
 
-    "@liminal/sdk": ["@liminal/sdk@workspace:sdk"],
+    "@liminal/sdk": ["@liminal/sdk@workspace:packages/sdk"],
+
+    "@liminal/session-log": ["@liminal/session-log@workspace:packages/plugins/session-log"],
+
+    "@liminal/session-store": ["@liminal/session-store@workspace:packages/plugins/session-store"],
 
     "@opentui/core": ["@opentui/core@0.6.6", "", { "dependencies": { "bun-ffi-structs": "0.3.1", "diff": "9.0.0", "marked": "17.0.1", "string-width": "7.2.0" }, "optionalDependencies": { "@opentui/core-darwin-arm64": "0.6.6", "@opentui/core-darwin-x64": "0.6.6", "@opentui/core-linux-arm64": "0.6.6", "@opentui/core-linux-arm64-musl": "0.6.6", "@opentui/core-linux-x64": "0.6.6", "@opentui/core-linux-x64-musl": "0.6.6", "@opentui/core-win32-arm64": "0.6.6", "@opentui/core-win32-x64": "0.6.6" }, "peerDependencies": { "web-tree-sitter": "0.25.10" } }, "sha512-GhlGB8iG4YDzL6hIaxAYUZpHXDy76sQKuI6mQiCFCKXjfv6xH53pEcPX5gn+qYYYPjfjSaUevAVZBaS5Srtl/g=="],
 

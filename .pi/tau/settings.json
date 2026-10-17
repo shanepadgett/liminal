@@ -69,7 +69,14 @@
             {
               "name": "plugin anatomy",
               "command": "mise run check:anatomy",
-              "includeGlobs": ["plugins/**", "tools/checks/**"]
+              "includeGlobs": ["packages/plugins/**", "tools/checks/**"]
+            },
+            {
+              "name": "versions",
+              "command": "mise run check:versions",
+              "details": "Every workspace package shares the root version",
+              "includeGlobs": ["**/package.json", "tools/checks/**"],
+              "excludeGlobs": ["**/fixtures/**"]
             },
             {
               "name": "reference docs",
@@ -99,7 +106,7 @@
               "command": "mise run test",
               "details": "Workspace tests",
               "timeoutMs": 300000,
-              "includeGlobs": ["apps/**", "kernel/**", "sdk/**", "plugins/**"]
+              "includeGlobs": ["apps/**", "packages/**"]
             },
             {
               "name": "tool tests",

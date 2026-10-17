@@ -1,0 +1,9 @@
+{
+  "name": "unversioned",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "packages/plugins/*"
+  ]
+}

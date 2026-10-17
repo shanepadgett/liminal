@@ -1,8 +1,0 @@
-{
-  "name": "@liminal/sdk",
-  "version": "0.0.0",
-  "type": "module",
-  "exports": {
-    ".": "./src/sdk.ts"
-  }
-}

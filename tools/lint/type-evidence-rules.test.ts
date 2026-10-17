@@ -11,7 +11,7 @@ import {
   noWidenThenAssert,
 } from "./type-evidence-rules.ts";
 
-const file = "kernel/src/example.ts";
+const file = "packages/kernel/src/example.ts";
 
 testRule("no-unknown-parameters", noUnknownParameters, {
   valid: [

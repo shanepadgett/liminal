@@ -21,6 +21,13 @@
       "api": [{ "kind": "source", "path": "src" }]
     },
     {
+      "package": "@effect/sql-sqlite-bun",
+      "versionSource": "lock",
+      "summary": "SQLite client for effect/sql on bun:sqlite: SqliteClient layer and SqliteMigrator. SqlClient, Migrator and SqlError come from effect/sql.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "source", "path": "src" }]
+    },
+    {
       "package": "@effect/tsgo",
       "versionSource": "lock",
       "summary": "Effect diagnostics for the TypeScript 7 compiler and Oxlint: rule names, severities, presets and tsconfig options.",

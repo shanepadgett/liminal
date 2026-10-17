@@ -16,11 +16,12 @@ void test("a broken plugin reports each anatomy problem", () => {
   );
 
   assert.deepEqual(messages.toSorted(), [
-    "broken/plugins/demo/package.json: @liminal/sdk is supplied by the host; declare it in peerDependencies",
-    "broken/plugins/demo/package.json: dependencies cannot include @liminal/kernel",
-    'broken/plugins/demo/package.json: exports must be exactly {".":"./plugin.ts","./contract":"./src/contract.ts"}',
-    "broken/plugins/demo/src/contract.ts: missing",
-    "broken/plugins/demo/src/helpers.ts: src/ holds only contract.ts, server.ts or server/, tui.tsx or tui/",
-    "broken/plugins/demo/test: missing test directory",
+    "broken/packages/plugins/demo/package.json: @liminal/sdk is supplied by the host; declare it in peerDependencies",
+    "broken/packages/plugins/demo/package.json: dependencies cannot include @liminal/kernel",
+    'broken/packages/plugins/demo/package.json: exports must be exactly {".":"./plugin.ts","./contract":"./src/contract.ts"} and optionally {"./conformance":"./test/conformance.ts"}',
+    "broken/packages/plugins/demo/src/contract.ts: missing",
+    "broken/packages/plugins/demo/src/helpers.ts: src/ holds only contract.ts, server.ts or server/, tui.tsx or tui/",
+    "broken/packages/plugins/demo/test: missing test directory",
+    "broken/packages/plugins/suite/test/conformance.ts: exported but missing",
   ]);
 });

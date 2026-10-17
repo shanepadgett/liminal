@@ -10,8 +10,8 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 
 | Plugin | Does | Status |
 | --- | --- | --- |
-| [session-log](session-log.md) | Append, read and subscribe to a session's entries | planned |
-| [session-store](session-store.md) | Stores sessions in SQLite | planned |
+| [session-log](session-log.md) | Append, read and subscribe to a session's entries | built |
+| [session-store](session-store.md) | Stores sessions in SQLite | built |
 | session-fork | Starts a new session from a point in another | to plan |
 | session-resume | Reopens a past session | to plan |
 | session-list | Lists sessions | to plan |

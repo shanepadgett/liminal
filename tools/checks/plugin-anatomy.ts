@@ -1,16 +1,14 @@
 /**
- * Checks every package under plugins/ has the plugin anatomy: plugin.ts, src/contract.ts, test/,
- * exports limited to the manifest and contract, host-supplied packages as peers, and no kernel.
+ * Checks every package under packages/plugins/ has the plugin anatomy: plugin.ts, src/contract.ts,
+ * test/, exports limited to the manifest, contract and an optional conformance suite, host-supplied
+ * packages as peers, and no kernel.
  */
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { existsSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 
-import { Option, Schema } from "effect";
+import { Schema } from "effect";
 
-export interface Problem {
-  readonly path: string;
-  readonly message: string;
-}
+import { jsonReader, type Problem, report } from "./problem.ts";
 
 const requiredExports = { ".": "./plugin.ts", "./contract": "./src/contract.ts" };
 const allowedSrcEntries = new Set(["contract.ts", "server.ts", "server", "tui.tsx", "tui"]);
@@ -42,20 +40,30 @@ const dependencyFields = [
   "optionalDependencies",
 ] as const;
 
-const decodeManifest = Schema.decodeUnknownOption(Schema.fromJsonString(Manifest));
+const readManifest = jsonReader(Manifest);
 
-const readManifest = (path: string): Manifest | undefined =>
-  existsSync(path) ? Option.getOrUndefined(decodeManifest(readFileSync(path, "utf8"))) : undefined;
+const conformanceExport = { "./conformance": "./test/conformance.ts" };
 
-const checkExports = (dir: string, manifest: Manifest): Problem[] =>
-  JSON.stringify(manifest.exports) === JSON.stringify(requiredExports)
-    ? []
-    : [
-        {
-          path: join(dir, "package.json"),
-          message: `exports must be exactly ${JSON.stringify(requiredExports)}`,
-        },
-      ];
+const checkExports = (dir: string, manifest: Manifest): Problem[] => {
+  const path = join(dir, "package.json");
+  const { "./conformance": conformance, ...rest } = manifest.exports ?? {};
+
+  if (JSON.stringify(rest) !== JSON.stringify(requiredExports)) {
+    const allowed = `${JSON.stringify(requiredExports)} and optionally ${JSON.stringify(conformanceExport)}`;
+
+    return [{ path, message: `exports must be exactly ${allowed}` }];
+  }
+
+  if (conformance === undefined) return [];
+
+  if (conformance !== conformanceExport["./conformance"])
+    return [{ path, message: `./conformance must point to ./test/conformance.ts` }];
+
+  if (!existsSync(join(dir, "test/conformance.ts")))
+    return [{ path: join(dir, "test/conformance.ts"), message: "exported but missing" }];
+
+  return [];
+};
 
 const checkDependencies = (dir: string, manifest: Manifest): Problem[] => {
   const path = join(dir, "package.json");
@@ -123,7 +131,7 @@ const checkPlugin = (dir: string): Problem[] => {
 
 /** Every anatomy problem in the plugins directory under `root`. */
 export const checkPlugins = (root: string): Problem[] => {
-  const pluginsDir = join(root, "plugins");
+  const pluginsDir = join(root, "packages", "plugins");
   if (!existsSync(pluginsDir)) return [];
 
   return readdirSync(pluginsDir).flatMap((name) => {
@@ -133,12 +141,4 @@ export const checkPlugins = (root: string): Problem[] => {
   });
 };
 
-if (import.meta.main) {
-  const problems = checkPlugins(process.cwd());
-
-  for (const problem of problems) {
-    console.error(`${relative(process.cwd(), problem.path)}: ${problem.message}`);
-  }
-
-  process.exitCode = problems.length > 0 ? 1 : 0;
-}
+if (import.meta.main) report(checkPlugins(process.cwd()));

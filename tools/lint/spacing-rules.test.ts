@@ -1,7 +1,7 @@
 import { testRule } from "./rule-tester.ts";
 import { paddingLines } from "./spacing-rules.ts";
 
-const file = "kernel/src/example.ts";
+const file = "packages/kernel/src/example.ts";
 
 testRule("padding-lines", paddingLines, {
   valid: [

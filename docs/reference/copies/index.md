@@ -18,6 +18,13 @@ Bun layers for Effect's platform services: FileSystem, Path, runtime entry. Its 
 - Docs: `docs/reference/copies/@effect/platform-bun/4.0.5/` (1 file: README.md)
 - API (source): `apps/cli/node_modules/@effect/platform-bun/src/`, modules: `docs/reference/copies/@effect/platform-bun/4.0.5/api-index/@effect-platform-bun-src.md`
 
+## @effect/sql-sqlite-bun 4.0.5
+
+SQLite client for effect/sql on bun:sqlite: SqliteClient layer and SqliteMigrator. SqlClient, Migrator and SqlError come from effect/sql.
+
+- Docs: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/` (1 file: README.md)
+- API (source): `packages/plugins/session-store/node_modules/@effect/sql-sqlite-bun/src/`, modules: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/api-index/@effect-sql-sqlite-bun-src.md`
+
 ## @effect/tsgo 0.53.1
 
 Effect diagnostics for the TypeScript 7 compiler and Oxlint: rule names, severities, presets and tsconfig options.
@@ -45,7 +52,7 @@ Type definitions for Bun's APIs. The declarations are the API reference.
 Linter: configuration, rules and their options, and the JS plugin guide. The website pages are unversioned.
 
 - Docs: `docs/reference/copies/oxlint/1.88.0/` (896 files: README.md, src/)
-- From: https://github.com/oxc-project/website.git, branch main, commit 5e3db7bd3c8e (not pinned to the installed version)
+- From: https://github.com/oxc-project/website.git, branch main, commit 0e9669631853 (not pinned to the installed version)
 - API (schema): `node_modules/oxlint/configuration_schema.json`
 
 ## @oxlint/plugins 1.88.0
@@ -66,7 +73,7 @@ Type-aware lint rules for Oxlint.
 Formatter: options, ignore files and supported languages. The website pages are unversioned.
 
 - Docs: `docs/reference/copies/oxfmt/0.73.0/` (17 files: README.md, src/)
-- From: https://github.com/oxc-project/website.git, branch main, commit 5e3db7bd3c8e (not pinned to the installed version)
+- From: https://github.com/oxc-project/website.git, branch main, commit 0e9669631853 (not pinned to the installed version)
 - API (schema): `node_modules/oxfmt/configuration_schema.json`
 
 ## fallow 3.33.1
