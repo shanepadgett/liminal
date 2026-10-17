@@ -1,6 +1,6 @@
 /** Models: the registry providers join and the service that routes each call to one. */
 
-import { Context, type Effect, Schema, type Stream } from "effect";
+import { Context, type Effect, type Stream } from "effect";
 
 import {
   KeyedRegistry,
@@ -8,13 +8,9 @@ import {
   type ModelEvent,
   type ModelInfo,
   type ModelRequest,
+  type ProviderNotFound,
   type ProviderInfo,
 } from "@liminal/sdk";
-
-export class ProviderNotFound extends Schema.TaggedError<
-  ProviderNotFound,
-  { readonly brand: unique symbol }
->()("ProviderNotFound", { provider: Schema.String }) {}
 
 /** What a provider plugin registers. */
 export interface ModelProvider {

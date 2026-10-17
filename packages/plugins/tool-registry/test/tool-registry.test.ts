@@ -4,11 +4,11 @@ import { expect } from "bun:test";
 
 import { Effect, Exit, Layer, Option, Schema, Scope } from "effect";
 
-import { SessionId } from "@liminal/sdk";
+import { defaultHints, defineTool, SessionId } from "@liminal/sdk";
 import { effectTest, testPlugin } from "@liminal/sdk/testing";
 
 import toolRegistry from "../plugin.ts";
-import { defaultHints, defineTool, Tools } from "../src/contract.ts";
+import { Tools } from "../src/contract.ts";
 
 const echo = (description: string) =>
   defineTool({

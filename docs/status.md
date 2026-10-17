@@ -4,6 +4,8 @@ Step 1 is built: the SDK plugin definition and test harness, the kernel host, `s
 
 Step 2 is built ([plans/archive/step-2.md](plans/archive/step-2.md)): `KeyedRegistry` in the SDK, `models`, `model-scripted`, `tool-registry` and `context`; their `RpcGroup`s come with step 5.
 
+Step 3 is built ([plans/archive/step-3.md](plans/archive/step-3.md)): the SDK `Pipeline`, `tool-pipeline` and `agent-loop`; turns with tool calls, steering, follow-ups, retry, cancel and resume run on the scripted provider.
+
 ## Focus
 
 - Unattended build of [plans/milestones.md](plans/milestones.md) steps 2, 3, 4 and 6, and step 5's protocol server, event bus and session following; the TUI on a live session waits for the user.

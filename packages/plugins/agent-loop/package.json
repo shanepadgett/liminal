@@ -1,0 +1,28 @@
+{
+  "name": "@liminal/agent-loop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./plugin.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "dependencies": {
+    "@liminal/context": "workspace:*",
+    "@liminal/models": "workspace:*",
+    "@liminal/session-log": "workspace:*",
+    "@liminal/tool-pipeline": "workspace:*",
+    "@liminal/tool-registry": "workspace:*"
+  },
+  "devDependencies": {
+    "@liminal/model-scripted": "workspace:*",
+    "@liminal/session-store": "workspace:*"
+  },
+  "peerDependencies": {
+    "@liminal/sdk": "workspace:*",
+    "effect": "4.0.5"
+  },
+  "liminal": [
+    "./plugin.ts"
+  ]
+}

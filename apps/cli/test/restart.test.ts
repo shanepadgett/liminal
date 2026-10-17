@@ -33,10 +33,12 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
       );
 
       expect(active.toSorted()).toEqual([
+        "agent-loop",
         "context",
         "models",
         "session-log",
         "session-store",
+        "tool-pipeline",
         "tool-registry",
       ]);
 

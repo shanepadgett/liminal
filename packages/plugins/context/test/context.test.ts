@@ -9,6 +9,7 @@ import { Context as EffectContext, Effect, Exit, Layer, Ref, Schema, Scope } fro
 
 import {
   defineEntry,
+  defineTool,
   draft,
   type Entry,
   type Plugin,
@@ -20,7 +21,7 @@ import sessionLog from "@liminal/session-log";
 import { SessionLog } from "@liminal/session-log/contract";
 import sessionStore from "@liminal/session-store";
 import toolRegistry from "@liminal/tool-registry";
-import { defineTool, Tools } from "@liminal/tool-registry/contract";
+import { Tools } from "@liminal/tool-registry/contract";
 
 import context from "../plugin.ts";
 import {

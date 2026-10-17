@@ -53,11 +53,29 @@
         "effect": "4.0.5",
       },
     },
+    "packages/plugins/agent-loop": {
+      "name": "@liminal/agent-loop",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/context": "workspace:*",
+        "@liminal/models": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@liminal/tool-pipeline": "workspace:*",
+        "@liminal/tool-registry": "workspace:*",
+      },
+      "devDependencies": {
+        "@liminal/model-scripted": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
     "packages/plugins/context": {
       "name": "@liminal/context",
       "version": "0.1.0",
       "dependencies": {
-        "@liminal/models": "workspace:*",
         "@liminal/session-log": "workspace:*",
         "@liminal/tool-registry": "workspace:*",
       },
@@ -74,7 +92,6 @@
       "version": "0.1.0",
       "dependencies": {
         "@liminal/models": "workspace:*",
-        "@liminal/session-log": "workspace:*",
       },
       "peerDependencies": {
         "@liminal/sdk": "workspace:*",
@@ -84,9 +101,6 @@
     "packages/plugins/models": {
       "name": "@liminal/models",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/session-log": "workspace:*",
-      },
       "peerDependencies": {
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
@@ -114,12 +128,17 @@
         "effect": "4.0.5",
       },
     },
+    "packages/plugins/tool-pipeline": {
+      "name": "@liminal/tool-pipeline",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
     "packages/plugins/tool-registry": {
       "name": "@liminal/tool-registry",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/session-log": "workspace:*",
-      },
       "peerDependencies": {
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
@@ -239,6 +258,8 @@
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
+    "@liminal/agent-loop": ["@liminal/agent-loop@workspace:packages/plugins/agent-loop"],
+
     "@liminal/cli": ["@liminal/cli@workspace:apps/cli"],
 
     "@liminal/context": ["@liminal/context@workspace:packages/plugins/context"],
@@ -256,6 +277,8 @@
     "@liminal/session-log": ["@liminal/session-log@workspace:packages/plugins/session-log"],
 
     "@liminal/session-store": ["@liminal/session-store@workspace:packages/plugins/session-store"],
+
+    "@liminal/tool-pipeline": ["@liminal/tool-pipeline@workspace:packages/plugins/tool-pipeline"],
 
     "@liminal/tool-registry": ["@liminal/tool-registry@workspace:packages/plugins/tool-registry"],
 

@@ -36,18 +36,18 @@ export interface Plugin<
   readonly provides: Provides;
   /** The plugin is inactive unless every one of these is provided. */
   readonly requires: Requires;
-  /** Optional services, read with `Effect.serviceOption`. */
+  /** Optional services, read with `Effect.serviceOption`, so the layer never needs them. */
   readonly uses: Uses;
   readonly enabledByDefault: boolean;
   /** Loaded only after the graph resolves, so a disabled plugin's code never runs. */
   readonly server: () => Promise<
-    ServerModule<Services<Provides>, Error, Services<Requires> | Services<Uses> | BaseServices>
+    ServerModule<Services<Provides>, Error, Services<Requires> | BaseServices>
   >;
 }
 
 /**
  * Declares a plugin. Fails to type-check unless the server's layer provides every `provides` tag
- * and needs nothing outside `requires`, `uses` and the base services.
+ * and needs nothing outside `requires` and the base services.
  */
 export const definePlugin = <
   const Provides extends ServiceTags,

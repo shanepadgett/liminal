@@ -25,7 +25,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 
 | Plugin | Does | Status |
 | --- | --- | --- |
-| [agent-loop](agent-loop.md) | Runs one turn | planned |
+| [agent-loop](agent-loop.md) | Runs one turn | built |
 | inbox | Holds input sent while a turn runs | to plan |
 | steering | Joins a steer into the running turn | to plan |
 | retry | Retries failed model calls | to plan |
@@ -63,7 +63,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | Plugin | Does | Status |
 | --- | --- | --- |
 | tool-registry | Tools the model can call | built |
-| tool-pipeline | Runs a tool call through its steps | to plan |
+| tool-pipeline | Runs a tool call through its steps | built |
 | permissions | Rules for what tools may do | to plan |
 | approval | Asks the user before a tool runs | to plan |
 | tool-output-spill | Moves large tool output to a file | to plan |

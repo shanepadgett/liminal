@@ -3,18 +3,22 @@
  * with.
  */
 
-import { Context, Data, type Effect, type Schema, type Stream } from "effect";
+import { Context, Data, type Effect, Schema, type Stream } from "effect";
 
 import {
+  defineEntry,
+  draft,
   type Entry,
   type EntryDefinition,
   type EntryDraft,
+  FinishReason,
   type InvalidEntry,
   KeyedRegistry,
   type Seq,
   type SessionId,
   type SessionNotFound,
   type StoreError,
+  Usage,
 } from "@liminal/sdk";
 
 /** A session's one transient slot, such as a streaming reply; not part of the history. */
@@ -71,3 +75,92 @@ export class SessionLog extends Context.Service<
 export class EntryKinds extends KeyedRegistry.Service<EntryKinds, EntryDefinition>()(
   "liminal/session-log/EntryKinds",
 ) {}
+
+/** How a reply ended; saved on the reply's last part. */
+export const Finish = Schema.Struct({ reason: FinishReason, usage: Usage });
+export type Finish = typeof Finish.Type;
+
+/** What the user typed. */
+export const UserEntry = defineEntry({
+  kind: "session-log/user",
+  data: Schema.Struct({ text: Schema.String }),
+  model: true,
+  user: "shown",
+});
+
+const StreamedText = Schema.Struct({
+  text: Schema.String,
+  /** Cut short by a cancel; the model sees what was said. */
+  interrupted: Schema.Boolean,
+  finish: Schema.optionalKey(Finish),
+});
+
+/** One text part of a reply. */
+export const TextEntry = defineEntry({
+  kind: "session-log/text",
+  data: StreamedText,
+  model: true,
+  user: "shown",
+});
+
+/** One reasoning part of a reply. */
+export const ReasoningEntry = defineEntry({
+  kind: "session-log/reasoning",
+  data: StreamedText,
+  model: true,
+  user: "shown",
+});
+
+/** One tool call of a reply. */
+export const ToolCallEntry = defineEntry({
+  kind: "session-log/tool-call",
+  data: Schema.Struct({
+    id: Schema.String,
+    name: Schema.String,
+    params: Schema.Json,
+    finish: Schema.optionalKey(Finish),
+  }),
+  model: true,
+  user: "shown",
+});
+
+export const ToolResultStatus = Schema.Literals([
+  "done",
+  "failed",
+  "denied",
+  "cancelled",
+  "interrupted",
+]);
+
+export type ToolResultStatus = typeof ToolResultStatus.Type;
+
+/** A tool call's result; every status but `done` is a failure the model sees. */
+export const ToolResultEntry = defineEntry({
+  kind: "session-log/tool-result",
+  data: Schema.Struct({
+    callId: Schema.String,
+    name: Schema.String,
+    status: ToolResultStatus,
+    result: Schema.Json,
+    details: Schema.optionalKey(Schema.Json),
+  }),
+  model: true,
+  user: "shown",
+});
+
+/** The core entry kinds, registered by session-log's server. */
+export const coreEntries: ReadonlyArray<EntryDefinition> = [
+  UserEntry,
+  TextEntry,
+  ReasoningEntry,
+  ToolCallEntry,
+  ToolResultEntry,
+];
+
+/** A user message, sent to the model as user text. */
+export const userMessage = (text: string): EntryDraft<typeof UserEntry.data.Type> =>
+  draft(UserEntry, {
+    data: { text },
+    model: [{ role: "user", parts: [{ type: "text", text, providerData: {} }] }],
+    text,
+  });

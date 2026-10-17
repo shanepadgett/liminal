@@ -69,7 +69,8 @@ const buildInScope = Effect.fn("buildInScope")(function* (
 ) {
   const scope = yield* Scope.fork(root);
 
-  // definePlugin checks that the layer needs only its requires, uses and the base services, all in `context`.
+  // definePlugin checks that the layer needs only its requires and the base services, all in `context`;
+  // the uses found are in `context` too, for `Effect.serviceOption`.
   const exit = yield* Effect.exit(
     Effect.provideContext(Layer.buildWithScope(layer, scope), context),
   );

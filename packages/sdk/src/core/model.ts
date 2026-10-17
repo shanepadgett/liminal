@@ -154,6 +154,12 @@ export class ModelError extends Schema.TaggedError<ModelError, { readonly brand:
   },
 ) {}
 
+/** No active provider has the requested id. */
+export class ProviderNotFound extends Schema.TaggedError<
+  ProviderNotFound,
+  { readonly brand: unique symbol }
+>()("ProviderNotFound", { provider: Schema.String }) {}
+
 /** US dollars per million tokens. */
 export const ModelPrice = Schema.Struct({
   input: Schema.Finite,
