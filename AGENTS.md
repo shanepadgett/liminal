@@ -48,8 +48,10 @@ Treat all reference repositories as read-only examples. Search and read only the
 
 ## Documentation
 
-- `DECISIONS.md` holds only decisions the user has explicitly agreed to. One terse bullet per decision, grouped by concept. No explanations, goals, options, or commentary.
-- `TOPICS.md` lists open discussion topics, one terse bullet each with the user's stated wants. Remove a topic once it is settled into `DECISIONS.md`.
-- `SESSIONS.md` maps Pi session IDs to the `DECISIONS.md` and `TOPICS.md` sections they discussed, one line per session. When logging a decision, add or update the line for the current `$PI_SESSION_ID`.
+- Start at `docs/_index.md`; it lists what each docs folder holds.
+- `docs/requirements/` and the plugin files in `docs/plugins/` hold only requirements the user has explicitly agreed to. One terse bullet each, grouped by concept. No explanations, options, or commentary.
+- Docs state only what is true now. Never write history or status words such as "decided", "agreed", "rejected" or "replaces"; unsettled items go only in an `Open` section.
+- `docs/status.md` holds the current focus, next steps, open and later topics with the user's stated wants, and the Pi sessions map. Remove a topic once it is settled into a requirements or plugin file.
+- When logging a requirement, add or update the `docs/status.md` Sessions line for the current `$PI_SESSION_ID`.
 - Pi sessions for this repo live in `~/.pi/agent/sessions/--Users-shanepadgett-dev-open-source-liminal--/` as `<timestamp>_<session-id>.jsonl`; search them with `rg` or `jq` for the full discussion behind a decision.
 - Do not create new documentation files or new kinds of documentation without first agreeing on their purpose and structure with the user.
