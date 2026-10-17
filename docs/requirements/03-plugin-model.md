@@ -9,6 +9,10 @@ What a plugin is, where plugins load from, and how the host wires them together.
 - UI parts talk to their server part only through the contract
 - A plugin is enabled or disabled as a whole across all parts
 - Plugins publish their own extension points as typed services with registries
+- SDK extension primitives: `Registry` (ordered collection) and `Pipeline` (ordered middleware with `next()`)
+- Observe-only events go through the kernel event bus, exposed to plugins through the SDK
+- Every registration is tied to the plugin's `Scope`; closing it on disable, replace, or reload removes them
+- Adding to another plugin's registry requires that plugin in `requires`
 - Core domains use the same extension mechanism as any plugin
 - A behavior the agent can work without is its own plugin
 - All plugins share one shape, one host, and one replacement mechanism
@@ -36,6 +40,10 @@ What a plugin is, where plugins load from, and how the host wires them together.
 - Each service tag has exactly one active provider
 - Competing providers are chosen by user config, never silently
 - A plugin missing a required service is inactive with a reason
+- A plugin that fails to import or build is inactive with a reason; its dependents are inactive; boot continues
+- Each plugin is built in its own scope
+- The host finds plugins by scanning folders for `package.json` `liminal` keys; the app supplies the built-in folder
+- The host supplies base services to every plugin without manifest entries: file system, paths, child processes, and `Directories`
 - Dependency cycles are errors
 - Boot order comes from the dependency graph; independent plugins activate concurrently
 - Order within a registry is an explicit `order` on each registration

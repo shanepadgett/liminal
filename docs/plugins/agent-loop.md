@@ -17,6 +17,7 @@ Status: planned
 - Unfinished output is saved about every 100 ms while it streams
 - A running turn resumes after a restart
 - Tools declare whether they are safe to rerun; an unsafe one reports as interrupted on resume
+- A turn that stops on an error saves nothing about the failure; the next message continues from the log
 - In-flight turns finish on the plugin graph they started on
 - Inbox, steering, retry, cancel and usage are separate plugins
 

@@ -19,8 +19,9 @@ What a chat session is and the rules every session plugin follows. Each part bel
 
 - A session is an append-only log of immutable entries; the log is the source of truth
 - Session metadata lives in an index rebuilt from the log
-- Entries hold model-level records plus turn and step boundaries, with timestamps
+- Entries hold model-level records with timestamps; turns and steps are derived from their order
 - Plugins add their own entry kinds through their contracts
+- Model and thinking-level changes are entries the model does not see
 - Transcript groups and wording are derived, never stored
 - Each session is one line; a fork is a new session that reads its parent's entries up to a point
 - Rewinding a session also rolls back files

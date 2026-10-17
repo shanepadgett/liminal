@@ -4,17 +4,19 @@ Nothing in the agent is built yet: `kernel/src/kernel.ts` and `sdk/src/sdk.ts` a
 
 ## Focus
 
-- Core service contracts for a plain chat: `session-log`, `session-store`, `agent-loop`, `context`, then `models`, `credential-store`, `tool-registry`, `tool-pipeline`, `settings`.
+- Step 1 of [plans/milestones.md](plans/milestones.md): SDK plugin definition, kernel host, `session-store`, `session-log`.
 
 ## Next
 
 - Review the transcript in a live terminal ([plans/transcript.md](plans/transcript.md)).
-- Settle the open items in the plugin files: [session-store](plugins/session-store.md), [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
+- Build step 1, guardrails first; every part is planned.
+- Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
 
 ## Open topics
 
 - Code conventions: port Tau's standards and custom lint rules, reviewed per rule
 - Stable service handles vs rebuilding dependents on swap
+- Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`)
 - ACP adapter as a server plugin
 - Collab-style session sharing through an encrypted relay
 - TUI
@@ -35,3 +37,4 @@ Pi session IDs and the topics each discussed.
 - 01a1430c-57fe-7284-8f7a-053cbfe928dc: TUI design, Ornament placement, Gallery, Transcript styles
 - 01a145a9-703a-7284-8f7a-054aea36ec2c: TUI design (transcript)
 - 01a14649-dee8-74a7-b272-e37fd82f47b6: Sessions, Plugin catalog, docs layout
+- 01a1473c-d9a2-74a7-b272-e383d7bf6e43: session-log contract, entry kinds and visibility, compaction memories, plugin foundation, build order, testing

@@ -7,7 +7,10 @@
 - Extend a close fit instead of adding a parallel one. If the existing shape resists the work, plan the restructure as a prep step.
 - Lean on dependencies. Find the dependency in `docs/reference/copies/index.md`, read its docs and API there, and name the module and function that provides each capability. Propose new code only when the reference shows nothing that fits.
 - Name no API you did not find in the reference or the installed types.
-- Read the relevant reference repositories for how other harnesses solved the same problem. Cite what you studied.
+- For each new piece, search the reference repositories for prior art and the web for packages that solve it. Cite what you studied.
+- Own the code by default. Propose a new dependency only when building the piece would take thousands of lines, and state the size of the work.
+- Every new dependency needs the user's approval.
+- When a package fits but is far larger than the need, build a clean-room version, using it as prior art without copying its code.
 
 ## Shape
 

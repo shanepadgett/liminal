@@ -68,6 +68,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | permissions | Rules for what tools may do | to plan |
 | approval | Asks the user before a tool runs | to plan |
 | tool-output-spill | Moves large tool output to a file | to plan |
+| checks | The checks tool, and runs the checks itself, with its own entry kind, when the model ends its turn without them | to plan |
 | one plugin per tool family | File, shell, web tools | to plan |
 | [processes](processes.md) | Commands that keep running across turns and restarts | planned |
 

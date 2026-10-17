@@ -12,6 +12,8 @@ Workspace layout, the checks that guard it, and how code is tested.
 - `apps/` is its own workspace area; the CLI lives in `apps/cli/`
 - Built-in plugins use the same SDK and loader as third-party plugins
 - `@liminal/sdk` is published for plugin authors
+- `@liminal/sdk` is one package with subpath exports: `.` (core), `/testing`, `/tui`, `/desktop`
+- OpenTUI is an optional peer dependency of the SDK, needed only by `/tui`
 - `@liminal/sdk`, `effect`, and OpenTUI are peer dependencies supplied by the host
 - Plugin contracts are published; plugins import other plugins' contracts and get the host's copy at runtime
 - Built-in plugins depend only on the SDK and other plugins' contracts, never on `kernel/`
@@ -39,16 +41,25 @@ Workspace layout, the checks that guard it, and how code is tested.
 - Style rules are agreed one at a time before they are added
 - Each check runs independently, scoped to the files it covers
 - `fallow` runs workspace-aware: undeclared and unused workspace dependencies, cross-package cycles
-- Plugin packages export only `plugin.ts` and `./contract`
+- Plugin packages export only `plugin.ts`, `./contract` and `./conformance`
+- `./conformance` is imported only from other plugins' `test/` folders
 - `plugins/*` cannot import `kernel/`; `kernel/` cannot import `plugins/*`
 - `contract.ts` imports only Effect and the SDK and has no side effects
 - `plugin.ts` imports only contracts
 - `server` and `tui` parts never import each other
+- SDK folders `core`, `testing`, `tui`, `desktop` are fallow zones; `core` imports none of the others, the rest import only `core`
+- Plugin manifests and contracts import only the SDK root; `server` never imports `/tui`, `/desktop` or OpenTUI; only `test/` imports `/testing`
 - A structure check enforces plugin anatomy
 
 ## Testing
 
+- Tests run under `bun:test`; the SDK's `effectTest` helper runs scoped Effects with `TestClock`
 - Plugin tests use the SDK test harness, building Layers in process with real or fake dependencies
 - Contracts ship conformance suites; every provider of a service must pass its suite
+- A conformance suite lives in the contract's plugin as `test/conformance.ts`
+- Plugin tests use a temp folder per test as their real file system, deleted when the test ends
 - End-to-end tests run over the in-memory transport with a scripted fake model provider plugin
+- Tests never call real models; everything above the models seam uses the scripted provider
+- Provider plugins are tested by replaying their recorded raw responses from disk
+- Live tests against real models run only through a separate command run by hand
 - Kernel has its own tests
