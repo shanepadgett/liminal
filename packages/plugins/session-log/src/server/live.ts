@@ -2,9 +2,10 @@
 
 import { Effect, PubSub, Schema, Stream } from "effect";
 
+import { type SessionId, StoreError } from "@liminal/sdk";
 import type { StoredLive } from "@liminal/session-store/contract";
 
-import { type LiveState, type SessionId, StoreError } from "../contract.ts";
+import type { LiveState } from "../contract.ts";
 import { fromStore, type LogDeps } from "./deps.ts";
 
 const LiveData = Schema.fromJsonString(Schema.Json);
@@ -21,7 +22,7 @@ export const makeLive = (deps: LogDeps) => {
 
     yield* fromStore(deps.store.writeLive(session, stored));
 
-    yield* PubSub.publish(deps.liveChanges, { session, live });
+    yield* PubSub.publish(deps.liveChanges, session);
   });
 
   const readLive = Effect.fn("SessionLog.readLive")(function* (session: SessionId) {
@@ -39,7 +40,10 @@ export const makeLive = (deps: LogDeps) => {
     return stored === undefined ? undefined : yield* decode(stored);
   });
 
-  /** Subscribes and reads under the write lock, so no change lands between the two. */
+  /**
+   * Subscribes before the first read and rereads the store on each change, so the last value sent
+   * is always the saved one, however writes interleave.
+   */
   const watchLive = (session: SessionId) =>
     Stream.unwrap(
       Effect.gen(function* () {
@@ -47,16 +51,13 @@ export const makeLive = (deps: LogDeps) => {
         const current = yield* readLive(session);
 
         const followed = Stream.fromSubscription(changes).pipe(
-          Stream.filter((change) => change.session === session),
-          Stream.map((change) => change.live),
+          Stream.filter((changed) => changed === session),
+          Stream.mapEffect(() => readLive(session)),
         );
 
         return Stream.succeed(current).pipe(Stream.concat(followed));
-      }).pipe((effect) => deps.lock.withPermit(effect)),
+      }),
     );
 
-  return {
-    setLive: (session: SessionId, live?: LiveState) => deps.lock.withPermit(setLive(session, live)),
-    watchLive,
-  };
+  return { setLive, watchLive };
 };

@@ -1,22 +1,24 @@
-/** SessionLog over an in-memory store: seq stamping, validation, followers and the live slot. */
+/** SessionLog over an in-memory store: seq numbering, validation, followers and the live slot. */
 
 import { describe, expect } from "bun:test";
 
-import { Deferred, Effect, Exit, Fiber, Predicate, Schema, Stream } from "effect";
+import {
+  Deferred,
+  Effect,
+  Exit,
+  Fiber,
+  Predicate,
+  Queue,
+  Schema,
+  type Scope,
+  Stream,
+} from "effect";
 
+import { defineEntry, draft, InvalidEntry, Seq, SessionId, SessionNotFound } from "@liminal/sdk";
 import { effectTest, testPlugin } from "@liminal/sdk/testing";
 
 import sessionLog from "../plugin.ts";
-import {
-  defineEntry,
-  EntryKinds,
-  InvalidEntry,
-  Seq,
-  SessionId,
-  SessionLog,
-  SessionNotFound,
-  UnknownEntryKind,
-} from "../src/contract.ts";
+import { EntryKinds, type LiveState, SessionLog } from "../src/contract.ts";
 import { memoryStore } from "./memory-store.ts";
 
 const Note = defineEntry({
@@ -28,17 +30,28 @@ const Note = defineEntry({
 
 const s1 = SessionId.make("s1");
 
-const note = (body: string) => ({ kind: Note.kind, data: { body }, text: body });
+const note = (body: string) => draft(Note, { data: { body }, text: body });
+
+/** A later build's `test/note`, with a different data shape. */
+const NoteV2 = defineEntry({
+  kind: "test/note",
+  data: Schema.Struct({ body: Schema.String, pinned: Schema.optionalKey(Schema.Boolean) }),
+  model: false,
+  user: "shown",
+});
 
 const sessionLogLayer = () => testPlugin(sessionLog, memoryStore);
 
 /** A test against a SessionLog with `test/note` registered and session `s1` created. */
-const logTest = <E>(name: string, use: (log: SessionLog["Service"]) => Effect.Effect<void, E>) => {
+const logTest = <E>(
+  name: string,
+  use: (log: SessionLog["Service"]) => Effect.Effect<void, E, EntryKinds | Scope.Scope>,
+) => {
   effectTest(
     name,
     Effect.gen(function* () {
       const kinds = yield* EntryKinds;
-      yield* kinds.register(Note, { order: 0 });
+      yield* kinds.register(Note);
       const log = yield* SessionLog;
       yield* log.create(s1);
       yield* use(log);
@@ -48,7 +61,7 @@ const logTest = <E>(name: string, use: (log: SessionLog["Service"]) => Effect.Ef
 };
 
 describe("SessionLog", () => {
-  logTest("append stamps consecutive seqs and read decodes them", (log) =>
+  logTest("append numbers consecutive seqs and read decodes them", (log) =>
     Effect.gen(function* () {
       yield* log.append(s1, [note("a")]);
       const appended = yield* log.append(s1, [note("b"), note("c")]);
@@ -60,20 +73,26 @@ describe("SessionLog", () => {
     }),
   );
 
-  logTest("a batch with an unknown kind or bad data saves nothing", (log) =>
+  logTest("a batch with bad data saves nothing", (log) =>
     Effect.gen(function* () {
-      const unknown = yield* Effect.flip(
-        log.append(s1, [note("a"), { kind: "test/missing", data: {}, text: "" }]),
-      );
-
-      expect(unknown).toBeInstanceOf(UnknownEntryKind);
-
-      const invalid = yield* Effect.flip(
-        log.append(s1, [{ kind: Note.kind, data: { body: 1 }, text: "" }]),
-      );
+      const wrongShape = { entry: Note, data: { body: 1 }, text: "" };
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the test feeds data its type forbids.
+      const invalid = yield* Effect.flip(log.append(s1, [note("a"), wrongShape as never]));
 
       expect(invalid).toBeInstanceOf(InvalidEntry);
       expect(yield* log.read(s1, {})).toEqual([]);
+    }),
+  );
+
+  logTest("each writer's own definition checks its data while two builds overlap", (log) =>
+    Effect.gen(function* () {
+      const kinds = yield* EntryKinds;
+      yield* kinds.register(NoteV2);
+      yield* log.append(s1, [note("old build")]);
+      yield* log.append(s1, [draft(NoteV2, { data: { body: "new", pinned: true }, text: "new" })]);
+
+      const [, newest] = yield* log.read(s1, {});
+      expect(newest?.data).toEqual({ body: "new", pinned: true });
     }),
   );
 
@@ -118,24 +137,18 @@ describe("SessionLog", () => {
   logTest("watchLive sends the saved slot, then each change", (log) =>
     Effect.gen(function* () {
       yield* log.setLive(s1, { kind: "test/typing", data: "a" });
-      const started = yield* Deferred.make<void>();
+      const seen = yield* Queue.unbounded<LiveState | undefined>();
 
-      const fiber = yield* log.watchLive(s1).pipe(
-        Stream.tap(() => Deferred.done(started, Exit.void)),
-        Stream.take(3),
-        Stream.runCollect,
+      yield* log.watchLive(s1).pipe(
+        Stream.runForEach((live) => Queue.offer(seen, live)),
         Effect.forkChild,
       );
 
-      yield* Deferred.await(started);
+      expect(yield* Queue.take(seen)).toEqual({ kind: "test/typing", data: "a" });
       yield* log.setLive(s1, { kind: "test/typing", data: "b" });
+      expect(yield* Queue.take(seen)).toEqual({ kind: "test/typing", data: "b" });
       yield* log.setLive(s1);
-
-      expect(yield* Fiber.join(fiber)).toEqual([
-        { kind: "test/typing", data: "a" },
-        { kind: "test/typing", data: "b" },
-        undefined,
-      ]);
+      expect(yield* Queue.take(seen)).toBeUndefined();
     }),
   );
 
@@ -146,9 +159,7 @@ describe("SessionLog", () => {
       const log = yield* SessionLog;
       yield* log.create(s1);
 
-      yield* Effect.scoped(
-        Effect.andThen(kinds.register(Note, { order: 0 }), log.append(s1, [note("a")])),
-      );
+      yield* Effect.scoped(Effect.andThen(kinds.register(Note), log.append(s1, [note("a")])));
 
       const [entry] = yield* log.read(s1, {});
       expect(entry?.data).toEqual({ body: "a" });

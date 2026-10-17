@@ -2,43 +2,42 @@
 
 import { Array as Arr, DateTime, Effect, PubSub, Ref, Stream } from "effect";
 
-import {
-  type Entry,
-  type EntryDraft,
-  Seq,
-  type SeqRange,
-  type SessionId,
-  Synced,
-} from "../contract.ts";
+import { type Entry, type EntryDraft, Seq, type SessionId } from "@liminal/sdk";
+
+import { type SeqRange, Synced } from "../contract.ts";
 import { fromStore, type LogDeps } from "./deps.ts";
 import { prepare, restore } from "./entries.ts";
 
 export const makeEntries = (deps: LogDeps) => {
   const read = Effect.fn("SessionLog.read")(function* (session: SessionId, range: SeqRange) {
     const stored = yield* fromStore(deps.store.readEntries(session, range));
-    const kinds = yield* deps.entryKinds.list;
 
-    return yield* Effect.forEach(stored, (row) => restore(row, kinds));
+    return yield* Effect.forEach(stored, (row) => restore(row, deps.entryKinds.get));
   });
 
   const append = Effect.fn("SessionLog.append")(function* (
     session: SessionId,
     drafts: readonly [EntryDraft, ...Array<EntryDraft>],
   ) {
-    const kinds = yield* deps.entryKinds.list;
-    const last = yield* fromStore(deps.store.lastSeq(session));
     const at = yield* DateTime.now;
 
     const prepared = yield* Effect.all(
-      Arr.map(drafts, (draft, index) =>
-        prepare(draft, kinds, { sessionId: session, seq: Seq.make(last + index + 1), at }),
+      Arr.map(drafts, (draft) => prepare(draft, { sessionId: session, at })),
+    );
+
+    const saved = yield* fromStore(
+      deps.store.appendEntries(
+        session,
+        Arr.map(prepared, (each) => each.row),
       ),
     );
 
-    yield* fromStore(deps.store.saveEntries(Arr.map(prepared, (each) => each.row)));
     yield* PubSub.publish(deps.appended, session);
 
-    return Arr.map(prepared, (each): Entry => each.entry);
+    return Arr.zipWith(prepared, saved, (each, row): Entry => ({
+      ...each.entry,
+      seq: Seq.make(row.seq),
+    }));
   });
 
   /** The saved entries, Synced, then whatever each append signal reveals past the cursor. */
@@ -73,10 +72,5 @@ export const makeEntries = (deps: LogDeps) => {
       }),
     );
 
-  return {
-    read,
-    append: (session: SessionId, drafts: readonly [EntryDraft, ...Array<EntryDraft>]) =>
-      deps.lock.withPermit(append(session, drafts)),
-    subscribe,
-  };
+  return { read, append, subscribe };
 };

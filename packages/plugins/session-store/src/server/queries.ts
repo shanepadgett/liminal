@@ -1,9 +1,10 @@
 /** SQL for each SessionStore operation; each needs the SqlClient and fails with the store's errors. */
 
-import { Clock, Effect, Predicate, Schema } from "effect";
+import { Array as Arr, Clock, Effect, Predicate, Schema } from "effect";
 import { SqlClient, type SqlError } from "effect/sql";
 
 import {
+  type NewEntry,
   type SeqRange,
   SessionNotFound,
   StoredEntry,
@@ -115,7 +116,8 @@ export const readEntries = Effect.fn("readEntries")(function* (sessionId: string
   return entries;
 });
 
-export const lastSeq = Effect.fn("lastSeq")(function* (sessionId: string) {
+/** Runs inside the append's write transaction, so no other writer can take the same seq. */
+const lastSeq = Effect.fn("lastSeq")(function* (sessionId: string) {
   const sql = yield* SqlClient.SqlClient;
   const session = yield* findSession(sessionId);
 
@@ -127,15 +129,21 @@ export const lastSeq = Effect.fn("lastSeq")(function* (sessionId: string) {
   return Math.max(row?.last ?? 0, session.forkSeq ?? 0);
 });
 
-export const saveEntries = Effect.fn("saveEntries")(function* (
-  entries: ReadonlyArray<StoredEntry>,
+/** Must run in a write transaction; the SQLite client begins its transactions IMMEDIATE. */
+export const appendEntries = Effect.fn("appendEntries")(function* (
+  sessionId: string,
+  entries: readonly [NewEntry, ...Array<NewEntry>],
 ) {
   const sql = yield* SqlClient.SqlClient;
+  const last = yield* lastSeq(sessionId);
 
-  for (const sessionId of new Set(entries.map((entry) => entry.sessionId)))
-    yield* findSession(sessionId);
+  const stored = Arr.map(entries, (entry, index): StoredEntry => ({
+    ...entry,
+    sessionId,
+    seq: last + index + 1,
+  }));
 
-  const rows = entries.map((entry) => ({
+  const rows = stored.map((entry) => ({
     session_id: entry.sessionId,
     seq: entry.seq,
     kind: entry.kind,
@@ -147,6 +155,8 @@ export const saveEntries = Effect.fn("saveEntries")(function* (
   }));
 
   yield* sql`INSERT INTO entries ${sql.insert(rows)}`;
+
+  return stored;
 });
 
 export const readLive = Effect.fn("readLive")(function* (sessionId: string) {

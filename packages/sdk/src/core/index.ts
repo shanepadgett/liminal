@@ -11,4 +11,7 @@ export {
   type ServiceTags,
 } from "./plugin.ts";
 
+export * as KeyedRegistry from "./keyed-registry.ts";
+export * from "./model.ts";
+export * from "./session.ts";
 export * as Registry from "./registry.ts";

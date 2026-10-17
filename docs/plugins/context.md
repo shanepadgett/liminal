@@ -2,7 +2,7 @@
 
 Builds what the model sees from a session's entries.
 
-Status: planned
+Status: built
 
 ## Provides
 

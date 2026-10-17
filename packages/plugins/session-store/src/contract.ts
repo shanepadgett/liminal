@@ -17,6 +17,9 @@ export const StoredEntry = Schema.Struct({
 
 export type StoredEntry = typeof StoredEntry.Type;
 
+/** An entry to append; the store gives it its session and seq. */
+export type NewEntry = Omit<StoredEntry, "sessionId" | "seq">;
+
 /** A session's one live slot; `data` is JSON text. */
 export const StoredLive = Schema.Struct({ kind: Schema.String, data: Schema.String });
 
@@ -49,17 +52,20 @@ export class SessionStore extends Context.Service<
       parent: string,
       seq: number,
     ) => Effect.Effect<void, SessionNotFound | StoreError>;
-    /** Saves every entry in one transaction, or none. */
-    readonly saveEntries: (
-      entries: readonly [StoredEntry, ...Array<StoredEntry>],
-    ) => Effect.Effect<void, SessionNotFound | StoreError>;
+    /**
+     * Saves every entry in one transaction, or none, numbering them after the session's highest
+     * seq, a fork's inherited entries included. The numbering happens inside the write, so writers
+     * sharing the medium never take the same seq.
+     */
+    readonly appendEntries: (
+      sessionId: string,
+      entries: readonly [NewEntry, ...Array<NewEntry>],
+    ) => Effect.Effect<readonly [StoredEntry, ...Array<StoredEntry>], SessionNotFound | StoreError>;
     /** The session's entries in seq order, its fork parents' entries first. */
     readonly readEntries: (
       sessionId: string,
       range: SeqRange,
     ) => Effect.Effect<ReadonlyArray<StoredEntry>, SessionNotFound | StoreError>;
-    /** The highest seq the session holds, counting a fork's inherited entries; 0 when empty. */
-    readonly lastSeq: (sessionId: string) => Effect.Effect<number, SessionNotFound | StoreError>;
     readonly readLive: (
       sessionId: string,
     ) => Effect.Effect<StoredLive | undefined, SessionNotFound | StoreError>;

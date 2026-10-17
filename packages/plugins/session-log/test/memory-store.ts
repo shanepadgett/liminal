@@ -1,12 +1,11 @@
 /** An in-memory SessionStore, so session-log tests run without SQLite. */
 
-import { Effect, Layer, Ref } from "effect";
+import { Array as Arr, Effect, Layer, Ref } from "effect";
 
 import {
   SessionNotFound,
   SessionStore,
   type StoredEntry,
-  StoreError,
   type StoredLive,
 } from "@liminal/session-store/contract";
 
@@ -42,26 +41,15 @@ const allEntries = (sessions: Sessions, id: string): ReadonlyArray<StoredEntry> 
 const lastSeqOf = (sessions: Sessions, id: string) =>
   Math.max(0, ...allEntries(sessions, id).map((entry) => entry.seq));
 
-const taken = (sessions: Sessions, entries: ReadonlyArray<StoredEntry>) =>
-  entries.some(
-    (entry, index) =>
-      allEntries(sessions, entry.sessionId).some((saved) => saved.seq === entry.seq)
-      || entries.findIndex(
-        (other) => other.sessionId === entry.sessionId && other.seq === entry.seq,
-      ) !== index,
-  );
+const withEntries = (
+  sessions: Sessions,
+  id: string,
+  entries: ReadonlyArray<StoredEntry>,
+): Sessions => {
+  const session = sessions.get(id);
+  if (session === undefined) return sessions;
 
-const withEntries = (sessions: Sessions, entries: ReadonlyArray<StoredEntry>): Sessions => {
-  const next = new Map(sessions);
-
-  for (const entry of entries) {
-    const session = next.get(entry.sessionId);
-
-    if (session !== undefined)
-      next.set(entry.sessionId, { ...session, entries: [...session.entries, entry] });
-  }
-
-  return next;
+  return new Map(sessions).set(id, { ...session, entries: [...session.entries, ...entries] });
 };
 
 const make = Effect.gen(function* () {
@@ -77,14 +65,20 @@ const make = Effect.gen(function* () {
     createSession: (id) => put(id, empty),
     forkSession: (id, parent, seq) =>
       Effect.flatMap(existing(parent), () => put(id, { ...empty, parent: { id: parent, seq } })),
-    saveEntries: Effect.fn(function* (entries) {
+    appendEntries: Effect.fn(function* (id, entries) {
       const sessions = yield* Ref.get(ref);
-      for (const entry of entries) yield* find(sessions, entry.sessionId);
+      yield* find(sessions, id);
+      const last = lastSeqOf(sessions, id);
 
-      if (taken(sessions, entries))
-        return yield* new StoreError({ message: "seq already taken", cause: undefined });
+      const stored = Arr.map(entries, (entry, index): StoredEntry => ({
+        ...entry,
+        sessionId: id,
+        seq: last + index + 1,
+      }));
 
-      return yield* Ref.set(ref, withEntries(sessions, entries));
+      yield* Ref.set(ref, withEntries(sessions, id, stored));
+
+      return stored;
     }),
     readEntries: (id, range) =>
       Effect.map(Ref.get(ref), (sessions) =>
@@ -94,10 +88,6 @@ const make = Effect.gen(function* () {
             && (range.through === undefined || entry.seq <= range.through),
         ),
       ).pipe(Effect.tap(() => existing(id))),
-    lastSeq: (id) =>
-      Effect.flatMap(existing(id), () =>
-        Effect.map(Ref.get(ref), (sessions) => lastSeqOf(sessions, id)),
-      ),
     readLive: (id) => Effect.map(existing(id), (session) => session.live),
     writeLive: (id, live) =>
       Effect.flatMap(existing(id), (session) => put(id, { ...session, live })),

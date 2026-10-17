@@ -28,9 +28,9 @@ const make = Effect.gen(function* () {
   return SessionStore.of({
     createSession: (id) => run("createSession")(Queries.createSession(id)),
     forkSession: (id, parent, seq) => run("forkSession")(Queries.forkSession(id, parent, seq)),
-    saveEntries: (entries) => run("saveEntries")(sql.withTransaction(Queries.saveEntries(entries))),
+    appendEntries: (sessionId, entries) =>
+      run("appendEntries")(sql.withTransaction(Queries.appendEntries(sessionId, entries))),
     readEntries: (sessionId, range) => run("readEntries")(Queries.readEntries(sessionId, range)),
-    lastSeq: (sessionId) => run("lastSeq")(Queries.lastSeq(sessionId)),
     readLive: (sessionId) => run("readLive")(Queries.readLive(sessionId)),
     writeLive: (sessionId, live) => run("writeLive")(Queries.writeLive(sessionId, live)),
   });

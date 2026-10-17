@@ -1,34 +1,19 @@
-/**
- * What the SessionLog's parts share: the store, the entry kinds, the write lock and the change
- * feeds.
- */
+/** What the SessionLog's parts share: the store, the entry kinds and the change feeds. */
 
-import { Effect, Predicate, type PubSub, type Semaphore } from "effect";
+import { Effect, Predicate, type PubSub } from "effect";
 
+import { type SessionId, SessionNotFound, StoreError } from "@liminal/sdk";
 import type * as Store from "@liminal/session-store/contract";
 
-import {
-  type EntryKinds,
-  type LiveState,
-  type SessionId,
-  SessionNotFound,
-  StoreError,
-} from "../contract.ts";
-
-/** A live slot change, published after it is saved. */
-export interface LiveChange {
-  readonly session: SessionId;
-  readonly live: LiveState | undefined;
-}
+import type { EntryKinds } from "../contract.ts";
 
 export interface LogDeps {
   readonly store: Store.SessionStore["Service"];
   readonly entryKinds: EntryKinds["Service"];
-  /** One write at a time, so seq stamping and publishing never interleave. */
-  readonly lock: Semaphore.Semaphore;
   /** The session that just saved entries; followers read what they have not seen. */
   readonly appended: PubSub.PubSub<SessionId>;
-  readonly liveChanges: PubSub.PubSub<LiveChange>;
+  /** The session whose live slot just changed; watchers reread it. */
+  readonly liveChanges: PubSub.PubSub<SessionId>;
 }
 
 /** Recasts the store's errors as the log's. */

@@ -53,6 +53,45 @@
         "effect": "4.0.5",
       },
     },
+    "packages/plugins/context": {
+      "name": "@liminal/context",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/models": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@liminal/tool-registry": "workspace:*",
+      },
+      "devDependencies": {
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
+    "packages/plugins/model-scripted": {
+      "name": "@liminal/model-scripted",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/models": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
+    "packages/plugins/models": {
+      "name": "@liminal/models",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/session-log": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
     "packages/plugins/session-log": {
       "name": "@liminal/session-log",
       "version": "0.1.0",
@@ -69,6 +108,17 @@
       "version": "0.1.0",
       "dependencies": {
         "@effect/sql-sqlite-bun": "4.0.5",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
+    "packages/plugins/tool-registry": {
+      "name": "@liminal/tool-registry",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/session-log": "workspace:*",
       },
       "peerDependencies": {
         "@liminal/sdk": "workspace:*",
@@ -191,15 +241,23 @@
 
     "@liminal/cli": ["@liminal/cli@workspace:apps/cli"],
 
+    "@liminal/context": ["@liminal/context@workspace:packages/plugins/context"],
+
     "@liminal/gallery": ["@liminal/gallery@workspace:apps/gallery"],
 
     "@liminal/kernel": ["@liminal/kernel@workspace:packages/kernel"],
+
+    "@liminal/model-scripted": ["@liminal/model-scripted@workspace:packages/plugins/model-scripted"],
+
+    "@liminal/models": ["@liminal/models@workspace:packages/plugins/models"],
 
     "@liminal/sdk": ["@liminal/sdk@workspace:packages/sdk"],
 
     "@liminal/session-log": ["@liminal/session-log@workspace:packages/plugins/session-log"],
 
     "@liminal/session-store": ["@liminal/session-store@workspace:packages/plugins/session-store"],
+
+    "@liminal/tool-registry": ["@liminal/tool-registry@workspace:packages/plugins/tool-registry"],
 
     "@opentui/core": ["@opentui/core@0.6.6", "", { "dependencies": { "bun-ffi-structs": "0.3.1", "diff": "9.0.0", "marked": "17.0.1", "string-width": "7.2.0" }, "optionalDependencies": { "@opentui/core-darwin-arm64": "0.6.6", "@opentui/core-darwin-x64": "0.6.6", "@opentui/core-linux-arm64": "0.6.6", "@opentui/core-linux-arm64-musl": "0.6.6", "@opentui/core-linux-x64": "0.6.6", "@opentui/core-linux-x64-musl": "0.6.6", "@opentui/core-win32-arm64": "0.6.6", "@opentui/core-win32-x64": "0.6.6" }, "peerDependencies": { "web-tree-sitter": "0.25.10" } }, "sha512-GhlGB8iG4YDzL6hIaxAYUZpHXDy76sQKuI6mQiCFCKXjfv6xH53pEcPX5gn+qYYYPjfjSaUevAVZBaS5Srtl/g=="],
 

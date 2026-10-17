@@ -37,7 +37,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 
 | Plugin | Does | Status |
 | --- | --- | --- |
-| [context](context.md) | Turns the log into model messages | planned |
+| [context](context.md) | Turns the log into model messages | built |
 | system-prompt | The base system prompt | to plan |
 | instructions | Loads instruction files into the prompt | to plan |
 | [compaction](compaction.md) | Keeps the context within the model's window | planned |
@@ -47,7 +47,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 
 | Plugin | Does | Status |
 | --- | --- | --- |
-| [models](models.md) | The seam every provider plugs into | planned |
+| [models](models.md) | The seam every provider plugs into | built |
 | one plugin per provider | Talks to one model provider | to plan |
 | model-select | Chooses the model for a session | to plan |
 
@@ -62,7 +62,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 
 | Plugin | Does | Status |
 | --- | --- | --- |
-| tool-registry | Tools the model can call | to plan |
+| tool-registry | Tools the model can call | built |
 | tool-pipeline | Runs a tool call through its steps | to plan |
 | permissions | Rules for what tools may do | to plan |
 | approval | Asks the user before a tool runs | to plan |

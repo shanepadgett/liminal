@@ -2,6 +2,8 @@
 
 Step 1 is built: the SDK plugin definition and test harness, the kernel host, `session-store` and `session-log`. `apps/cli` boots `packages/plugins/` and prints each plugin's status; `apps/cli/test/restart.test.ts` proves entries survive a restart. The gallery (`apps/gallery`) holds the TUI components.
 
+Step 2 is built ([plans/archive/step-2.md](plans/archive/step-2.md)): `KeyedRegistry` in the SDK, `models`, `model-scripted`, `tool-registry` and `context`; their `RpcGroup`s come with step 5.
+
 ## Focus
 
 - Unattended build of [plans/milestones.md](plans/milestones.md) steps 2, 3, 4 and 6, and step 5's protocol server, event bus and session following; the TUI on a live session waits for the user.

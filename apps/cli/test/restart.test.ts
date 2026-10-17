@@ -5,8 +5,9 @@ import { expect } from "bun:test";
 import { Context, Effect, Path, Predicate, Schema } from "effect";
 
 import { boot } from "@liminal/kernel";
+import { defineEntry, draft, Seq, SessionId } from "@liminal/sdk";
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
-import { defineEntry, EntryKinds, Seq, SessionId, SessionLog } from "@liminal/session-log/contract";
+import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
 
 const Note = defineEntry({
   kind: "test/note",
@@ -31,7 +32,13 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         Predicate.isTagged(plugin, "Active") ? [plugin.name] : [],
       );
 
-      expect(active.toSorted()).toEqual(["session-log", "session-store"]);
+      expect(active.toSorted()).toEqual([
+        "context",
+        "models",
+        "session-log",
+        "session-store",
+        "tool-registry",
+      ]);
 
       return yield* use(booted.services);
     }),
@@ -42,10 +49,10 @@ effectTest(
   Effect.gen(function* () {
     yield* run((services) =>
       Effect.gen(function* () {
-        yield* Context.getUnsafe(services, EntryKinds).register(Note, { order: 0 });
+        yield* Context.getUnsafe(services, EntryKinds).register(Note);
         const log = Context.getUnsafe(services, SessionLog);
         yield* log.create(s1);
-        yield* log.append(s1, [{ kind: Note.kind, data: { body: "a" }, text: "a" }]);
+        yield* log.append(s1, [draft(Note, { data: { body: "a" }, text: "a" })]);
       }).pipe(Effect.scoped),
     );
 

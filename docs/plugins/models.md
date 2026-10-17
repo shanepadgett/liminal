@@ -2,7 +2,7 @@
 
 The seam every provider plugs into: streams one model call through a registered provider.
 
-Status: planned
+Status: built
 
 ## Provides
 

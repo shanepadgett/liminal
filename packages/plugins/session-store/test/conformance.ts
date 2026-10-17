@@ -7,7 +7,13 @@ import { Context, Effect, Layer } from "effect";
 import type { BaseServices } from "@liminal/sdk";
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 
-import { SessionNotFound, SessionStore, type StoredEntry, StoreError } from "../src/contract.ts";
+import {
+  type NewEntry,
+  SessionNotFound,
+  SessionStore,
+  type StoredEntry,
+  StoreError,
+} from "../src/contract.ts";
 
 export interface ConformanceHarness<E> {
   /** A fresh provider over an empty medium. */
@@ -16,9 +22,8 @@ export interface ConformanceHarness<E> {
   readonly reopen?: Layer.Layer<SessionStore, E, BaseServices>;
 }
 
-const entry = (sessionId: string, seq: number): StoredEntry => ({
-  sessionId,
-  seq,
+/** The entry to append that is saved as `seq`. */
+const draft = (seq: number): NewEntry => ({
   kind: "test/note",
   at: seq * 1000,
   data: JSON.stringify({ seq }),
@@ -26,6 +31,8 @@ const entry = (sessionId: string, seq: number): StoredEntry => ({
   text: `note ${seq}`,
   user: "shown",
 });
+
+const entry = (sessionId: string, seq: number): StoredEntry => ({ ...draft(seq), sessionId, seq });
 
 const seqs = (entries: ReadonlyArray<StoredEntry>) => entries.map((saved) => saved.seq);
 
@@ -48,19 +55,13 @@ type Case = (store: Store) => Effect.Effect<void, SessionNotFound | StoreError>;
 
 const cases: ReadonlyArray<readonly [string, Case]> = [
   [
-    "saves a batch and reads it back in seq order",
+    "numbers a batch after the last seq and reads it back in order",
     (store) =>
       Effect.gen(function* () {
         yield* store.createSession("s1");
-        yield* store.saveEntries([entry("s1", 1), entry("s1", 2), entry("s1", 3)]);
-
-        expect(yield* store.readEntries("s1", {})).toEqual([
-          entry("s1", 1),
-          entry("s1", 2),
-          entry("s1", 3),
-        ]);
-
-        expect(yield* store.lastSeq("s1")).toBe(3);
+        const saved = yield* store.appendEntries("s1", [draft(1), draft(2), draft(3)]);
+        expect(saved).toEqual([entry("s1", 1), entry("s1", 2), entry("s1", 3)]);
+        expect(yield* store.readEntries("s1", {})).toEqual(saved);
       }),
   ],
   [
@@ -68,17 +69,18 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
     (store) =>
       Effect.gen(function* () {
         yield* store.createSession("s1");
-        yield* store.saveEntries([entry("s1", 1), entry("s1", 2), entry("s1", 3), entry("s1", 4)]);
+        yield* store.appendEntries("s1", [draft(1), draft(2), draft(3), draft(4)]);
         expect(seqs(yield* store.readEntries("s1", { after: 1, through: 3 }))).toEqual([2, 3]);
       }),
   ],
   [
-    "an empty session has last seq 0",
+    "an empty session numbers from 1",
     (store) =>
       Effect.gen(function* () {
         yield* store.createSession("s1");
-        expect(yield* store.lastSeq("s1")).toBe(0);
         expect(yield* store.readEntries("s1", {})).toEqual([]);
+        expect(seqs(yield* store.appendEntries("s1", [draft(1)]))).toEqual([1]);
+        expect(seqs(yield* store.appendEntries("s1", [draft(2)]))).toEqual([2]);
       }),
   ],
   [
@@ -87,9 +89,7 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
       Effect.gen(function* () {
         expect(yield* failureOf(store.readEntries("missing", {}))).toBeInstanceOf(SessionNotFound);
 
-        expect(yield* failureOf(store.lastSeq("missing"))).toBeInstanceOf(SessionNotFound);
-
-        expect(yield* failureOf(store.saveEntries([entry("missing", 1)]))).toBeInstanceOf(
+        expect(yield* failureOf(store.appendEntries("missing", [draft(1)]))).toBeInstanceOf(
           SessionNotFound,
         );
 
@@ -99,14 +99,13 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
       }),
   ],
   [
-    "a batch with a taken seq saves nothing",
+    "concurrent appends take distinct seqs",
     (store) =>
       Effect.gen(function* () {
         yield* store.createSession("s1");
-        yield* store.saveEntries([entry("s1", 1)]);
-        const error = yield* failureOf(store.saveEntries([entry("s1", 2), entry("s1", 1)]));
-        expect(error).toBeInstanceOf(StoreError);
-        expect(seqs(yield* store.readEntries("s1", {}))).toEqual([1]);
+        const batch = store.appendEntries("s1", [draft(1), draft(2)]);
+        yield* Effect.all([batch, batch, batch], { concurrency: "unbounded" });
+        expect(seqs(yield* store.readEntries("s1", {}))).toEqual([1, 2, 3, 4, 5, 6]);
       }),
   ],
   [
@@ -114,10 +113,9 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
     (store) =>
       Effect.gen(function* () {
         yield* store.createSession("parent");
-        yield* store.saveEntries([entry("parent", 1), entry("parent", 2), entry("parent", 3)]);
+        yield* store.appendEntries("parent", [draft(1), draft(2), draft(3)]);
         yield* store.forkSession("child", "parent", 2);
-        expect(yield* store.lastSeq("child")).toBe(2);
-        yield* store.saveEntries([entry("child", 3)]);
+        expect(yield* store.appendEntries("child", [draft(3)])).toEqual([entry("child", 3)]);
 
         expect(yield* store.readEntries("child", {})).toEqual([
           entry("parent", 1),
@@ -151,7 +149,7 @@ const reopenCase = <E>(
     yield* withStore(layer, (store) =>
       Effect.gen(function* () {
         yield* store.createSession("s1");
-        yield* store.saveEntries([entry("s1", 1)]);
+        yield* store.appendEntries("s1", [draft(1)]);
         yield* store.writeLive("s1", { kind: "test/typing", data: "1" });
       }),
     );
