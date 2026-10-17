@@ -1,6 +1,7 @@
 /** Boots plugins from folders: discover manifests, resolve the graph, build each active plugin. */
 
 import { Context, Effect, Predicate } from "effect";
+import type { RpcGroup } from "effect/rpc";
 
 import { build } from "./build.ts";
 import { discover } from "./discover.ts";
@@ -11,6 +12,8 @@ export interface Booted {
   /** Every active plugin's services; check `status`, then read one with `Context.getOption`. */
   readonly services: Context.Context<never>;
   readonly status: ReadonlyArray<PluginStatus>;
+  /** The active plugins' commands, handled by `services`. */
+  readonly rpcs: ReadonlyArray<RpcGroup.Any>;
 }
 
 export interface BootOptions {
@@ -47,6 +50,7 @@ export const boot = Effect.fn("boot")(function* (options: BootOptions) {
   const booted: Booted = {
     services: built.services,
     status: [...broken, ...inactive, ...built.status],
+    rpcs: built.rpcs,
   };
 
   return booted;

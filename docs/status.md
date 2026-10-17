@@ -8,6 +8,8 @@ Step 3 is built ([plans/archive/step-3.md](plans/archive/step-3.md)): the SDK `P
 
 Step 4 is built ([plans/archive/step-4.md](plans/archive/step-4.md)): `settings`, `credential-store`, `command-runner`, `tools-file`, `tools-shell` and `model-codex`; a turn on the replayed Codex provider reads a workspace file and answers from it.
 
+Step 5 is built except the TUI session ([plans/archive/step-5.md](plans/archive/step-5.md)): the kernel serves `KernelRpcs` and every active plugin's `RpcGroup` over an in-memory ndjson socket, with the `EventBus` and session following through `SessionFeed`; `session-store` keeps a session index; `apps/cli` prints plugin states through the protocol.
+
 ## Focus
 
 - Unattended build of [plans/milestones.md](plans/milestones.md) steps 2, 3, 4 and 6, and step 5's protocol server, event bus and session following; the TUI on a live session waits for the user.

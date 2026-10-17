@@ -7,6 +7,7 @@ import { SqlClient } from "effect/sql";
 import { SessionStore } from "../contract.ts";
 import { migrate } from "./migrations.ts";
 import * as Queries from "./queries.ts";
+import { ensureIndex, listSessions } from "./session-index.ts";
 
 /** WAL and the busy timeout are the driver's defaults; these settings are per connection. */
 const configure = Effect.gen(function* () {
@@ -14,6 +15,7 @@ const configure = Effect.gen(function* () {
   yield* sql`PRAGMA synchronous = NORMAL`;
   yield* sql`PRAGMA foreign_keys = ON`;
   yield* migrate;
+  yield* ensureIndex;
 });
 
 const make = Effect.gen(function* () {
@@ -31,6 +33,7 @@ const make = Effect.gen(function* () {
     appendEntries: (sessionId, entries) =>
       run("appendEntries")(sql.withTransaction(Queries.appendEntries(sessionId, entries))),
     readEntries: (sessionId, range) => run("readEntries")(Queries.readEntries(sessionId, range)),
+    listSessions: run("listSessions")(listSessions()),
     readLive: (sessionId) => run("readLive")(Queries.readLive(sessionId)),
     writeLive: (sessionId, live) => run("writeLive")(Queries.writeLive(sessionId, live)),
   });

@@ -1,6 +1,6 @@
 /** Each plugin's state after boot, and why an inactive plugin is inactive. */
 
-import { type Cause, Data } from "effect";
+import { Cause, Data } from "effect";
 
 export type InactiveReason = Data.TaggedEnum<{
   /** The manifest sets `enabledByDefault: false`. */
@@ -27,3 +27,14 @@ export type PluginStatus = Data.TaggedEnum<{
 }>;
 
 export const PluginStatus = Data.taggedEnum<PluginStatus>();
+
+/** A reason as one line of text, for clients that show why a plugin is off. */
+export const describeReason: (reason: InactiveReason) => string = InactiveReason.$match({
+  Disabled: () => "disabled by default",
+  MissingService: ({ service }) => `no enabled plugin provides ${service}`,
+  DuplicateProvider: ({ service, plugins }) => `${service} is provided by ${plugins.join(", ")}`,
+  Cycle: ({ plugins }) => `its requirements cycle through ${plugins.join(", ")}`,
+  DependencyInactive: ({ plugin }) => `${plugin} is inactive`,
+  ImportFailed: ({ cause }) => `failed to load: ${Cause.pretty(cause)}`,
+  BuildFailed: ({ cause }) => `failed to build: ${Cause.pretty(cause)}`,
+});

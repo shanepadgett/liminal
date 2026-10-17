@@ -2,7 +2,7 @@
 
 Stores sessions and their entries in SQLite.
 
-Status: planned
+Status: built
 
 ## Provides
 
@@ -14,7 +14,7 @@ Status: planned
 - One global `sessions.db` in the `Directories` data folder
 - Migrations live in code, not files, so they run from a compiled binary
 - Entries are keyed by `(session, seq)`; a second process appending the same seq fails with `StoreError`
-- Holds the log and an index of session metadata rebuilt from the log; the index is built in step 5, dropped and rebuilt when its version changes
+- Holds the log and an index of session metadata rebuilt from the log; the index is dropped and rebuilt when its version changes
 - The `SessionStore` contract ships a conformance suite every provider passes
 - A fork reads its parent's entries up to a point instead of copying them
 - Creates sessions, and forks as sessions with a parent and a cut point

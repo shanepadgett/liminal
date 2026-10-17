@@ -25,6 +25,19 @@ export const StoredLive = Schema.Struct({ kind: Schema.String, data: Schema.Stri
 
 export type StoredLive = typeof StoredLive.Type;
 
+/** A session's row in the index rebuilt from the log; times are milliseconds since the Unix epoch. */
+export const StoredSession = Schema.Struct({
+  id: Schema.String,
+  parentId: Schema.NullOr(Schema.String),
+  createdAt: Schema.Int,
+  /** When its last entry was saved, or `createdAt` while it has none. */
+  updatedAt: Schema.Int,
+  /** Its highest seq, a fork's inherited entries included; 0 while it has none. */
+  lastSeq: Schema.Int,
+});
+
+export type StoredSession = typeof StoredSession.Type;
+
 /** Bounds on seq: entries with `after < seq <= through`. */
 export interface SeqRange {
   readonly after?: number;
@@ -66,6 +79,8 @@ export class SessionStore extends Context.Service<
       sessionId: string,
       range: SeqRange,
     ) => Effect.Effect<ReadonlyArray<StoredEntry>, SessionNotFound | StoreError>;
+    /** Every session, most recently updated first. */
+    readonly listSessions: Effect.Effect<ReadonlyArray<StoredSession>, StoreError>;
     readonly readLive: (
       sessionId: string,
     ) => Effect.Effect<StoredLive | undefined, SessionNotFound | StoreError>;

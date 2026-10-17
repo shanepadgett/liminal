@@ -7,6 +7,7 @@ import {
   SessionStore,
   type StoredEntry,
   type StoredLive,
+  type StoredSession,
 } from "@liminal/session-store/contract";
 
 interface MemorySession {
@@ -88,6 +89,15 @@ const make = Effect.gen(function* () {
             && (range.through === undefined || entry.seq <= range.through),
         ),
       ).pipe(Effect.tap(() => existing(id))),
+    listSessions: Effect.map(Ref.get(ref), (sessions) =>
+      [...sessions].map(([id, session]): StoredSession => ({
+        id,
+        parentId: session.parent?.id ?? null,
+        createdAt: 0,
+        updatedAt: session.entries.at(-1)?.at ?? 0,
+        lastSeq: lastSeqOf(sessions, id),
+      })),
+    ),
     readLive: (id) => Effect.map(existing(id), (session) => session.live),
     writeLive: (id, live) =>
       Effect.flatMap(existing(id), (session) => put(id, { ...session, live })),

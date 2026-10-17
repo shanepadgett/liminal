@@ -2,11 +2,60 @@
 
 import { Array as Arr, DateTime, Effect, PubSub, Ref, Stream } from "effect";
 
-import { type Entry, type EntryDraft, Seq, type SessionId } from "@liminal/sdk";
+import {
+  type Entry,
+  type EntryDraft,
+  Seq,
+  type SessionId,
+  type SessionNotFound,
+  type StoreError,
+  Synced,
+} from "@liminal/sdk";
 
-import { type SeqRange, Synced } from "../contract.ts";
+import type { SeqRange } from "../contract.ts";
 import { fromStore, type LogDeps } from "./deps.ts";
-import { prepare, restore } from "./entries.ts";
+import { prepare, restore, toSaved } from "./entries.ts";
+
+/** Reads one session's entries in a seq range, in seq order. */
+type Reader<A> = (
+  session: SessionId,
+  range: SeqRange,
+) => Effect.Effect<ReadonlyArray<A>, SessionNotFound | StoreError>;
+
+/** The saved entries, Synced, then whatever each append signal reveals past the cursor. */
+const followWith =
+  <A extends { readonly seq: Seq }>(deps: LogDeps, read: Reader<A>) =>
+  (session: SessionId, from: { readonly after?: Seq }) =>
+    Stream.unwrap(
+      Effect.gen(function* () {
+        const signals = yield* PubSub.subscribe(deps.appended);
+        const saved = yield* read(session, from);
+        const cursor = yield* Ref.make(saved.at(-1)?.seq ?? from.after);
+
+        const readNew = Effect.gen(function* () {
+          const after = yield* Ref.get(cursor);
+          const entries = yield* read(session, after === undefined ? {} : { after });
+          const newest = entries.at(-1);
+          if (newest !== undefined) yield* Ref.set(cursor, newest.seq);
+
+          return entries;
+        });
+
+        const followed = Stream.fromSubscription(signals).pipe(
+          Stream.filter((signal) => signal === session),
+          Stream.mapEffect(() => readNew),
+          Stream.flattenIterable,
+        );
+
+        const last = yield* Ref.get(cursor);
+        const synced = last === undefined ? new Synced({}) : new Synced({ seq: last });
+
+        return Stream.fromIterable<A | Synced>(saved).pipe(
+          Stream.concat(Stream.succeed(synced)),
+          Stream.concat(followed),
+        );
+      }),
+    );
 
 export const makeEntries = (deps: LogDeps) => {
   const read = Effect.fn("SessionLog.read")(function* (session: SessionId, range: SeqRange) {
@@ -40,37 +89,18 @@ export const makeEntries = (deps: LogDeps) => {
     }));
   });
 
-  /** The saved entries, Synced, then whatever each append signal reveals past the cursor. */
-  const subscribe = (session: SessionId, from: { readonly after?: Seq }) =>
-    Stream.unwrap(
-      Effect.gen(function* () {
-        const signals = yield* PubSub.subscribe(deps.appended);
-        const saved = yield* read(session, from);
-        const cursor = yield* Ref.make(saved.at(-1)?.seq ?? from.after);
+  /** Decoded rows as clients receive them, data left as JSON. */
+  const readSaved = Effect.fn("SessionLog.readSaved")(function* (
+    session: SessionId,
+    range: SeqRange,
+  ) {
+    const stored = yield* fromStore(deps.store.readEntries(session, range));
 
-        const readNew = Effect.gen(function* () {
-          const after = yield* Ref.get(cursor);
-          const entries = yield* read(session, after === undefined ? {} : { after });
-          const newest = entries.at(-1);
-          if (newest !== undefined) yield* Ref.set(cursor, newest.seq);
+    return yield* Effect.forEach(stored, toSaved);
+  });
 
-          return entries;
-        });
+  const subscribe = followWith(deps, read);
+  const follow = followWith(deps, readSaved);
 
-        const followed = Stream.fromSubscription(signals).pipe(
-          Stream.filter((signal) => signal === session),
-          Stream.mapEffect(() => readNew),
-          Stream.flattenIterable,
-        );
-
-        const synced = new Synced({ seq: yield* Ref.get(cursor) });
-
-        return Stream.fromIterable<Entry | Synced>(saved).pipe(
-          Stream.concat(Stream.succeed(synced)),
-          Stream.concat(followed),
-        );
-      }),
-    );
-
-  return { read, append, subscribe };
+  return { read, append, subscribe, follow };
 };

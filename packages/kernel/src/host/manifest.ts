@@ -1,6 +1,7 @@
 /** Checks the runtime shape of what manifests and server modules export. */
 
 import { Context, Layer, Predicate, Schema } from "effect";
+import type { RpcGroup } from "effect/rpc";
 
 import type { ServiceTag } from "@liminal/sdk";
 
@@ -11,6 +12,16 @@ const isLoadServer = (input: unknown): input is LoadServer => Predicate.isFuncti
 
 const isServiceTag = (input: unknown): input is ServiceTag => Context.isKey(input);
 
+/**
+ * A group is a function with its rpcs in `requests`, inherited by a class extending it; it carries
+ * no type id at runtime.
+ */
+const isRpcGroup = (input: unknown): input is RpcGroup.Any =>
+  Predicate.isFunction(input)
+  && "requests" in input
+  && input.requests instanceof Map
+  && "toLayer" in input;
+
 const Tags = Schema.Array(Schema.declare(isServiceTag, { title: "service tag" }));
 
 /** A plugin manifest as the host reads it. */
@@ -20,6 +31,7 @@ export const Manifest = Schema.Struct({
   requires: Tags,
   uses: Tags,
   enabledByDefault: Schema.Boolean,
+  rpcs: Schema.optionalKey(Schema.declare(isRpcGroup, { title: "RpcGroup" })),
   server: Schema.declare(isLoadServer, { title: "server loader" }),
 });
 

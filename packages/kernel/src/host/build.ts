@@ -1,6 +1,7 @@
 /** Builds each active plugin concurrently in its own scope, once the plugins it needs are built. */
 
 import { Cause, Context, Deferred, Effect, Exit, Layer, Option, Schema, Scope } from "effect";
+import type { RpcGroup } from "effect/rpc";
 
 import type { BaseServices } from "@liminal/sdk";
 
@@ -98,6 +99,8 @@ const buildPlugin = Effect.fn("buildPlugin")(function* (
 export interface BuildResult {
   readonly services: Built;
   readonly status: ReadonlyArray<PluginStatus>;
+  /** The active plugins' commands, handled by `services`. */
+  readonly rpcs: ReadonlyArray<RpcGroup.Any>;
 }
 
 /** Builds every active plugin; a plugin waits on the Deferreds of the plugins it needs. */
@@ -117,7 +120,7 @@ export const build = Effect.fn("build")(function* (resolution: Resolution) {
         Effect.tap((exit) =>
           deferred === undefined ? Effect.void : Deferred.done(deferred, exit),
         ),
-        Effect.map((exit) => ({ name: plugin.name, exit })),
+        Effect.map((exit) => ({ plugin, exit })),
       );
     },
     { concurrency: "unbounded" },
@@ -125,11 +128,15 @@ export const build = Effect.fn("build")(function* (resolution: Resolution) {
 
   let services: Built = Context.empty();
   const status: Array<PluginStatus> = [];
+  const rpcs: Array<RpcGroup.Any> = [];
 
-  for (const { name, exit } of results) {
+  for (const { plugin, exit } of results) {
+    const { name } = plugin;
+
     if (Exit.isSuccess(exit)) {
       services = Context.merge(services, exit.value);
       status.push(PluginStatus.Active({ name }));
+      if (plugin.rpcs !== undefined) rpcs.push(plugin.rpcs);
       continue;
     }
 
@@ -142,7 +149,7 @@ export const build = Effect.fn("build")(function* (resolution: Resolution) {
     status.push(PluginStatus.Inactive({ name, reason: inactive }));
   }
 
-  const result: BuildResult = { services, status };
+  const result: BuildResult = { services, status, rpcs };
 
   return result;
 });

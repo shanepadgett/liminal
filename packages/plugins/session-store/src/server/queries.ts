@@ -11,6 +11,7 @@ import {
   StoredLive,
   StoreError,
 } from "../contract.ts";
+import { indexSession } from "./session-index.ts";
 
 const SessionRow = Schema.Struct({
   parentId: Schema.NullOr(Schema.String),
@@ -60,6 +61,7 @@ export const createSession = Effect.fn("createSession")(function* (id: string) {
   const now = yield* Clock.currentTimeMillis;
 
   yield* sql`INSERT INTO sessions (id, parent_id, fork_seq, created_at) VALUES (${id}, NULL, NULL, ${now})`;
+  yield* indexSession(id, now, 0);
 });
 
 export const forkSession = Effect.fn("forkSession")(function* (
@@ -72,6 +74,7 @@ export const forkSession = Effect.fn("forkSession")(function* (
   yield* findSession(parent);
 
   yield* sql`INSERT INTO sessions (id, parent_id, fork_seq, created_at) VALUES (${id}, ${parent}, ${seq}, ${now})`;
+  yield* indexSession(id, now, seq);
 });
 
 /** One session's slice of a read: its entries with `seq <= through`. */
@@ -155,6 +158,9 @@ export const appendEntries = Effect.fn("appendEntries")(function* (
   }));
 
   yield* sql`INSERT INTO entries ${sql.insert(rows)}`;
+
+  const newest = Arr.lastNonEmpty(stored);
+  yield* indexSession(sessionId, newest.at, newest.seq);
 
   return stored;
 });

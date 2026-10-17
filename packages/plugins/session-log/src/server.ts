@@ -1,16 +1,38 @@
-/** Session-log's server: the SessionLog over the required SessionStore, and the EntryKinds registry. */
+/**
+ * Session-log's server: the SessionLog and SessionFeed over the required SessionStore, the
+ * EntryKinds registry, and the session commands clients call.
+ */
 
-import { Effect, Layer, PubSub } from "effect";
+import { Array as Arr, Context, DateTime, Effect, Layer, Option, PubSub, Stream } from "effect";
 
-import { KeyedRegistry, type SessionId, StoreError } from "@liminal/sdk";
-import { SessionStore } from "@liminal/session-store/contract";
+import { EventBus, KeyedRegistry, SessionFeed, SessionId, StoreError } from "@liminal/sdk";
+import { SessionStore, type StoredSession } from "@liminal/session-store/contract";
 
-import { coreEntries, EntryKinds, SessionLog } from "./contract.ts";
+import {
+  coreEntries,
+  EntryKinds,
+  SessionLog,
+  SessionLogRpcs,
+  SessionsChanged,
+  type SessionSummary,
+} from "./contract.ts";
 import { makeEntries } from "./server/entries-log.ts";
 import { makeLive } from "./server/live.ts";
 
+const toStoreError = (error: { readonly message: string; readonly cause: unknown }) =>
+  new StoreError({ message: error.message, cause: error.cause });
+
+const toSummary = (stored: StoredSession): SessionSummary => ({
+  id: SessionId.make(stored.id),
+  parentId: stored.parentId === null ? null : SessionId.make(stored.parentId),
+  createdAt: DateTime.makeUnsafe(stored.createdAt),
+  updatedAt: DateTime.makeUnsafe(stored.updatedAt),
+  lastSeq: stored.lastSeq,
+});
+
 const make = Effect.gen(function* () {
   const store = yield* SessionStore;
+  const bus = yield* EventBus;
 
   const entryKinds = yield* EntryKinds;
   yield* Effect.forEach(coreEntries, entryKinds.register, { discard: true });
@@ -22,20 +44,40 @@ const make = Effect.gen(function* () {
     liveChanges: yield* PubSub.sliding<SessionId>(64),
   };
 
-  return SessionLog.of({
+  const { follow, ...entries } = makeEntries(deps);
+  const live = makeLive(deps);
+
+  const log = SessionLog.of({
     create: (session) =>
-      store
-        .createSession(session)
-        .pipe(
-          Effect.mapError(
-            (error) => new StoreError({ message: error.message, cause: error.cause }),
-          ),
-        ),
-    ...makeEntries(deps),
-    ...makeLive(deps),
+      store.createSession(session).pipe(
+        Effect.mapError(toStoreError),
+        Effect.tap(() => bus.publish(SessionsChanged, {})),
+      ),
+    list: store.listSessions.pipe(Effect.map(Arr.map(toSummary)), Effect.mapError(toStoreError)),
+    ...entries,
+    ...live,
   });
+
+  const feed = SessionFeed.of({
+    follow,
+    watchLive: (session) => live.watchLive(session).pipe(Stream.map(Option.fromNullishOr)),
+  });
+
+  return Context.make(SessionLog, log).pipe(Context.add(SessionFeed, feed));
 });
 
-export const layer = Layer.effect(SessionLog, make).pipe(
+const rpcs = SessionLogRpcs.toLayer(
+  Effect.gen(function* () {
+    const log = yield* SessionLog;
+
+    return SessionLogRpcs.of({
+      "session-log/create": ({ session }) => log.create(session),
+      "session-log/list": () => log.list,
+    });
+  }),
+);
+
+export const layer = rpcs.pipe(
+  Layer.provideMerge(Layer.effectContext(make)),
   Layer.provideMerge(KeyedRegistry.layer(EntryKinds, (definition) => definition.kind)),
 );

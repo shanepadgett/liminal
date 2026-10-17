@@ -4,7 +4,7 @@ import { definePlugin } from "@liminal/sdk";
 import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
 import { Tools } from "@liminal/tool-registry/contract";
 
-import { Context, PromptSections, ViewSteps } from "./src/contract.ts";
+import { Context, ContextRpcs, PromptSections, ViewSteps } from "./src/contract.ts";
 
 export default definePlugin({
   name: "context",
@@ -12,5 +12,6 @@ export default definePlugin({
   requires: [SessionLog, EntryKinds],
   uses: [Tools],
   enabledByDefault: true,
+  rpcs: ContextRpcs,
   server: () => import("./src/server.ts"),
 });

@@ -13,7 +13,14 @@ import {
 import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
 import { Tools } from "@liminal/tool-registry/contract";
 
-import { Context, MessageEntry, PromptSections, SystemEntry, ViewSteps } from "./contract.ts";
+import {
+  Context,
+  ContextRpcs,
+  MessageEntry,
+  PromptSections,
+  SystemEntry,
+  ViewSteps,
+} from "./contract.ts";
 import {
   diff,
   fold,
@@ -85,7 +92,18 @@ const make = Effect.gen(function* () {
   });
 });
 
-export const layer = Layer.effect(Context, make).pipe(
+const rpcs = ContextRpcs.toLayer(
+  Effect.gen(function* () {
+    const context = yield* Context;
+
+    return ContextRpcs.of({
+      "context/preview": ({ session, model }) => context.preview(session, model),
+    });
+  }),
+);
+
+export const layer = rpcs.pipe(
+  Layer.provideMerge(Layer.effect(Context, make)),
   Layer.provideMerge(KeyedRegistry.layer(PromptSections, (section) => section.key)),
   Layer.provideMerge(Registry.layer(ViewSteps)),
 );

@@ -127,6 +127,20 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
       }),
   ],
   [
+    "lists sessions with their newest entry, most recently updated first",
+    (store) =>
+      Effect.gen(function* () {
+        yield* store.createSession("s1");
+        yield* store.appendEntries("s1", [draft(1), draft(2)]);
+        yield* store.forkSession("s2", "s1", 1);
+
+        expect(yield* store.listSessions).toEqual([
+          { id: "s1", parentId: null, createdAt: 0, updatedAt: 2000, lastSeq: 2 },
+          { id: "s2", parentId: "s1", createdAt: 0, updatedAt: 0, lastSeq: 1 },
+        ]);
+      }),
+  ],
+  [
     "the live slot is overwritten and cleared",
     (store) =>
       Effect.gen(function* () {

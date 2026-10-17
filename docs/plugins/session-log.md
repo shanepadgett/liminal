@@ -2,11 +2,14 @@
 
 Appends, reads and streams a session's entries.
 
-Status: planned
+Status: built
 
 ## Provides
 
-- `SessionLog` service: append, read, subscribe
+- `SessionLog` service: create, list, append, read, subscribe, live slot
+- `SessionFeed` service: saved entries and the live slot in wire form, for the kernel
+- Commands: `session-log/create`, `session-log/list`
+- Event: `session-log/sessions-changed`
 
 ## Requires
 

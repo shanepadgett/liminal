@@ -2,11 +2,18 @@
 
 import type { Context, FileSystem, Layer, Path } from "effect";
 import type { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
+import type { Rpc, RpcGroup } from "effect/rpc";
 
 import type { Directories } from "./directories.ts";
+import type { EventBus } from "./protocol.ts";
 
 /** Services the host gives every plugin without listing them in `requires`. */
-export type BaseServices = FileSystem.FileSystem | Path.Path | ChildProcessSpawner | Directories;
+export type BaseServices =
+  | FileSystem.FileSystem
+  | Path.Path
+  | ChildProcessSpawner
+  | Directories
+  | EventBus;
 
 /** A service tag a plugin provides, requires or uses. */
 export type ServiceTag = Context.Key<unknown, unknown>;
@@ -30,6 +37,7 @@ export interface Plugin<
   Requires extends ServiceTags = ServiceTags,
   Uses extends ServiceTags = ServiceTags,
   Error = unknown,
+  Rpcs extends Rpc.Any = never,
 > {
   /** Unique across every loaded plugin. */
   readonly name: string;
@@ -39,9 +47,11 @@ export interface Plugin<
   /** Optional services, read with `Effect.serviceOption`, so the layer never needs them. */
   readonly uses: Uses;
   readonly enabledByDefault: boolean;
+  /** The commands the kernel serves from this plugin; the server's layer handles each one. */
+  readonly rpcs?: RpcGroup.RpcGroup<Rpcs>;
   /** Loaded only after the graph resolves, so a disabled plugin's code never runs. */
   readonly server: () => Promise<
-    ServerModule<Services<Provides>, Error, Services<Requires> | BaseServices>
+    ServerModule<Services<Provides> | Rpc.ToHandler<Rpcs>, Error, Services<Requires> | BaseServices>
   >;
 }
 
@@ -54,6 +64,7 @@ export const definePlugin = <
   const Requires extends ServiceTags,
   const Uses extends ServiceTags,
   Error,
+  Rpcs extends Rpc.Any = never,
 >(
-  plugin: Plugin<Provides, Requires, Uses, Error>,
-): Plugin<Provides, Requires, Uses, Error> => plugin;
+  plugin: Plugin<Provides, Requires, Uses, Error, Rpcs>,
+): Plugin<Provides, Requires, Uses, Error, Rpcs> => plugin;

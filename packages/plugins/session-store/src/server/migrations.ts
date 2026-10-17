@@ -40,7 +40,25 @@ const createTables = Effect.gen(function* () {
   `;
 });
 
+/** The session index, rebuilt from the log whenever `indexVersion` changes. */
+const createIndex = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+
+  yield* sql`
+    CREATE TABLE session_index (
+      session_id TEXT PRIMARY KEY REFERENCES sessions,
+      updated_at INTEGER NOT NULL,
+      last_seq INTEGER NOT NULL
+    )
+  `;
+
+  yield* sql`CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`;
+});
+
 /** Applies the migrations the database has not seen yet. */
 export const migrate = SqliteMigrator.run({
-  loader: SqliteMigrator.fromRecord({ "0001_create_tables": createTables }),
+  loader: SqliteMigrator.fromRecord({
+    "0001_create_tables": createTables,
+    "0002_create_index": createIndex,
+  }),
 });

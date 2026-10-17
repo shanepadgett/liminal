@@ -6,7 +6,7 @@ import { BunServices } from "@effect/platform-bun";
 import { Effect, FileSystem, Layer, Path } from "effect";
 import type { PlatformError } from "effect/PlatformError";
 
-import { type BaseServices, Directories } from "../core/index.ts";
+import { type BaseServices, Directories, EventBus } from "../core/index.ts";
 
 const temporaryDirectories = Layer.effect(
   Directories,
@@ -30,6 +30,7 @@ const temporaryDirectories = Layer.effect(
 );
 
 /** Every base service, with each test's folders in a fresh temp folder. */
-export const testBaseServices: Layer.Layer<BaseServices, PlatformError> = temporaryDirectories.pipe(
-  Layer.provideMerge(BunServices.layer),
-);
+export const testBaseServices: Layer.Layer<BaseServices, PlatformError> = Layer.mergeAll(
+  temporaryDirectories,
+  EventBus.layer,
+).pipe(Layer.provideMerge(BunServices.layer));

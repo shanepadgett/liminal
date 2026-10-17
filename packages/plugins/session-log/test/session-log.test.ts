@@ -7,6 +7,7 @@ import {
   Effect,
   Exit,
   Fiber,
+  Option,
   Predicate,
   Queue,
   Schema,
@@ -14,11 +15,20 @@ import {
   Stream,
 } from "effect";
 
-import { defineEntry, draft, InvalidEntry, Seq, SessionId, SessionNotFound } from "@liminal/sdk";
+import {
+  defineEntry,
+  draft,
+  InvalidEntry,
+  type LiveState,
+  Seq,
+  SessionFeed,
+  SessionId,
+  SessionNotFound,
+} from "@liminal/sdk";
 import { effectTest, testPlugin } from "@liminal/sdk/testing";
 
 import sessionLog from "../plugin.ts";
-import { EntryKinds, type LiveState, SessionLog } from "../src/contract.ts";
+import { EntryKinds, SessionLog } from "../src/contract.ts";
 import { memoryStore } from "./memory-store.ts";
 
 const Note = defineEntry({
@@ -45,7 +55,9 @@ const sessionLogLayer = () => testPlugin(sessionLog, memoryStore);
 /** A test against a SessionLog with `test/note` registered and session `s1` created. */
 const logTest = <E>(
   name: string,
-  use: (log: SessionLog["Service"]) => Effect.Effect<void, E, EntryKinds | Scope.Scope>,
+  use: (
+    log: SessionLog["Service"],
+  ) => Effect.Effect<void, E, EntryKinds | SessionFeed | Scope.Scope>,
 ) => {
   effectTest(
     name,
@@ -149,6 +161,57 @@ describe("SessionLog", () => {
       expect(yield* Queue.take(seen)).toEqual({ kind: "test/typing", data: "b" });
       yield* log.setLive(s1);
       expect(yield* Queue.take(seen)).toBeUndefined();
+    }),
+  );
+
+  logTest("list returns every session with its last seq", (log) =>
+    Effect.gen(function* () {
+      yield* log.append(s1, [note("a"), note("b")]);
+      yield* log.create(SessionId.make("s2"));
+
+      const sessions = yield* log.list;
+      const byId = sessions.toSorted((a, b) => a.id.localeCompare(b.id));
+
+      expect(byId.map((each) => [each.id, each.lastSeq])).toEqual([
+        [SessionId.make("s1"), 2],
+        [SessionId.make("s2"), 0],
+      ]);
+    }),
+  );
+
+  logTest("the feed sends saved entries as JSON, Synced, then appends", (log) =>
+    Effect.gen(function* () {
+      const feed = yield* SessionFeed;
+      yield* log.append(s1, [note("a")]);
+
+      const synced = yield* Deferred.make<void>();
+
+      const fiber = yield* feed.follow(s1, {}).pipe(
+        Stream.tap((item) =>
+          Predicate.isTagged(item, "Synced") ? Deferred.done(synced, Exit.void) : Effect.void,
+        ),
+        Stream.take(3),
+        Stream.runCollect,
+        Effect.forkChild,
+      );
+
+      yield* Deferred.await(synced);
+      yield* log.append(s1, [note("b")]);
+
+      const items = yield* Fiber.join(fiber);
+
+      expect(
+        items.map((item) => (Predicate.isTagged(item, "Synced") ? "synced" : item.data)),
+      ).toEqual([{ body: "a" }, "synced", { body: "b" }]);
+    }),
+  );
+
+  logTest("the feed watches the live slot as an Option", () =>
+    Effect.gen(function* () {
+      const feed = yield* SessionFeed;
+      const first = yield* feed.watchLive(s1).pipe(Stream.take(1), Stream.runCollect);
+
+      expect(first).toEqual([Option.none()]);
     }),
   );
 

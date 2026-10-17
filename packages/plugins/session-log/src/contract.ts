@@ -3,10 +3,12 @@
  * with.
  */
 
-import { Context, Data, type Effect, Schema, type Stream } from "effect";
+import { Context, type Effect, Schema, type Stream } from "effect";
+import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
   defineEntry,
+  defineEvent,
   draft,
   type Entry,
   type EntryDefinition,
@@ -14,21 +16,32 @@ import {
   FinishReason,
   type InvalidEntry,
   KeyedRegistry,
+  type LiveState,
   type Seq,
-  type SessionId,
+  SessionId,
   type SessionNotFound,
-  type StoreError,
+  StoreError,
+  type Synced,
   Usage,
 } from "@liminal/sdk";
 
-/** A session's one transient slot, such as a streaming reply; not part of the history. */
-export interface LiveState {
-  readonly kind: string;
-  readonly data: Schema.Json;
-}
+/** A session in the list of sessions; times are when it was created and last written. */
+export const SessionSummary = Schema.Struct({
+  id: SessionId,
+  parentId: Schema.NullOr(SessionId),
+  createdAt: Schema.DateTimeUtc,
+  updatedAt: Schema.DateTimeUtc,
+  /** Its highest seq; 0 while it has no entries. */
+  lastSeq: Schema.Int,
+});
 
-/** Sent by `subscribe` after the saved entries; everything after it is live. */
-export class Synced extends Data.TaggedClass("Synced")<{ readonly seq: Seq | undefined }> {}
+export type SessionSummary = typeof SessionSummary.Type;
+
+/** A session was created; clients reread the list of sessions. */
+export const SessionsChanged = defineEvent({
+  name: "session-log/sessions-changed",
+  data: Schema.Struct({}),
+});
 
 export interface SeqRange {
   readonly after?: Seq;
@@ -39,6 +52,8 @@ export class SessionLog extends Context.Service<
   SessionLog,
   {
     readonly create: (session: SessionId) => Effect.Effect<void, StoreError>;
+    /** Every session, most recently updated first. */
+    readonly list: Effect.Effect<ReadonlyArray<SessionSummary>, StoreError>;
     /** Validates and saves the drafts as consecutive entries, all or none. */
     readonly append: (
       session: SessionId,
@@ -74,6 +89,12 @@ export class SessionLog extends Context.Service<
  */
 export class EntryKinds extends KeyedRegistry.Service<EntryKinds, EntryDefinition>()(
   "liminal/session-log/EntryKinds",
+) {}
+
+/** The session commands clients call. */
+export class SessionLogRpcs extends RpcGroup.make(
+  Rpc.make("session-log/create", { payload: { session: SessionId }, error: StoreError }),
+  Rpc.make("session-log/list", { success: Schema.Array(SessionSummary), error: StoreError }),
 ) {}
 
 /** How a reply ended; saved on the reply's last part. */

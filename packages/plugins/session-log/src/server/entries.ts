@@ -9,6 +9,7 @@ import {
   InvalidEntry,
   ModelContent,
   type ModelContent as ModelContentType,
+  type SavedEntry,
   Seq,
   SessionId,
   StoreError,
@@ -90,28 +91,39 @@ export const prepare = Effect.fn("prepare")(function* (
   return prepared;
 });
 
+const malformed = (stored: StoredEntry) => (error: Schema.SchemaError) =>
+  new StoreError({
+    message: `entry ${stored.seq} of session ${stored.sessionId} is malformed`,
+    cause: error,
+  });
+
+/** Decodes a stored row as clients receive it, with its data left as JSON. */
+export const toSaved = Effect.fn("toSaved")(function* (stored: StoredEntry) {
+  const row: EntryRow = yield* Schema.decodeEffect(EntryRow)(stored).pipe(
+    Effect.mapError(malformed(stored)),
+  );
+
+  const { model, ...fields } = row;
+  const saved: SavedEntry = withModel(fields, model);
+
+  return saved;
+});
+
 /** Decodes a stored row with the newest definition of its kind; a kind with none keeps its JSON. */
 export const restore = Effect.fn("restore")(function* (
   stored: StoredEntry,
   definitionOf: (kind: string) => Effect.Effect<Option.Option<EntryDefinition>>,
 ) {
-  const malformed = (error: Schema.SchemaError) =>
-    new StoreError({
-      message: `entry ${stored.seq} of session ${stored.sessionId} is malformed`,
-      cause: error,
-    });
-
-  const row: EntryRow = yield* Schema.decodeEffect(EntryRow)(stored).pipe(
-    Effect.mapError(malformed),
-  );
-
-  const definition = yield* definitionOf(row.kind);
+  const saved = yield* toSaved(stored);
+  const definition = yield* definitionOf(saved.kind);
 
   const data = Option.isNone(definition)
-    ? row.data
-    : yield* Schema.decodeEffect(definition.value.data)(row.data).pipe(Effect.mapError(malformed));
+    ? saved.data
+    : yield* Schema.decodeEffect(definition.value.data)(saved.data).pipe(
+        Effect.mapError(malformed(stored)),
+      );
 
-  const entry: Entry = withModel({ ...row, data }, row.model);
+  const entry: Entry = { ...saved, data };
 
   return entry;
 });

@@ -4,21 +4,22 @@
  */
 
 import { Context as EffectContext, Effect, Equal, Option, Schema } from "effect";
+import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
   defineEntry,
   draft,
   type Entry,
   type EntryDraft,
-  type InvalidEntry,
+  InvalidEntry,
   KeyedRegistry,
-  type ModelContent,
-  type ModelRef,
+  ModelContent,
+  ModelRef,
   ModelTool,
   Registry,
-  type SessionId,
-  type SessionNotFound,
-  type StoreError,
+  SessionId,
+  SessionNotFound,
+  StoreError,
   ToolSpec,
   type UserVisibility,
 } from "@liminal/sdk";
@@ -197,12 +198,14 @@ export const contextMessage = (message: {
 };
 
 /** A model request without the settings `agent-loop` adds: thinking level, limits, cache key. */
-export interface ContextRequest {
-  readonly model: ModelRef;
-  readonly messages: ReadonlyArray<ModelContent>;
+export const ContextRequest = Schema.Struct({
+  model: ModelRef,
+  messages: Schema.Array(ModelContent),
   /** The first baseline's tools; later offers and withdrawals are `tool-change` parts. */
-  readonly tools: ReadonlyArray<ModelTool>;
-}
+  tools: Schema.Array(ModelTool),
+});
+
+export type ContextRequest = typeof ContextRequest.Type;
 
 export class Context extends EffectContext.Service<
   Context,
@@ -219,3 +222,12 @@ export class Context extends EffectContext.Service<
     ) => Effect.Effect<ContextRequest, SessionNotFound | InvalidEntry | StoreError>;
   }
 >()("liminal/context/Context") {}
+
+/** The context commands clients call. */
+export class ContextRpcs extends RpcGroup.make(
+  Rpc.make("context/preview", {
+    payload: { session: SessionId, model: ModelRef },
+    success: ContextRequest,
+    error: Schema.Union([SessionNotFound, InvalidEntry, StoreError]),
+  }),
+) {}

@@ -2,10 +2,9 @@
 
 import { Effect, PubSub, Schema, Stream } from "effect";
 
-import { type SessionId, StoreError } from "@liminal/sdk";
+import { type LiveState, type SessionId, StoreError } from "@liminal/sdk";
 import type { StoredLive } from "@liminal/session-store/contract";
 
-import type { LiveState } from "../contract.ts";
 import { fromStore, type LogDeps } from "./deps.ts";
 
 const LiveData = Schema.fromJsonString(Schema.Json);
