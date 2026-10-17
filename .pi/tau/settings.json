@@ -104,15 +104,15 @@
             {
               "name": "tests",
               "command": "mise run test",
-              "details": "Workspace tests",
+              "details": "Workspace and tool tests under Bun",
               "timeoutMs": 300000,
-              "includeGlobs": ["apps/**", "packages/**"]
+              "includeGlobs": ["apps/**", "packages/**", "tools/checks/**", "tools/reference/**"]
             },
             {
               "name": "tool tests",
               "command": "mise run test:tools",
-              "details": "Lint rule and check tests under Node",
-              "includeGlobs": ["tools/**"]
+              "details": "Lint rule tests under Node",
+              "includeGlobs": ["tools/lint/**"]
             }
           ]
         }

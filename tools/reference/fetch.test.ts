@@ -1,13 +1,12 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
+import { expect, test } from "bun:test";
 
 import { relativePath } from "./fetch.ts";
 
-void test("relative documentation paths pass through", () => {
-  assert.equal(relativePath("docs/**/*.md"), "docs/**/*.md");
+test("relative documentation paths pass through", () => {
+  expect(relativePath("docs/**/*.md")).toBe("docs/**/*.md");
 });
 
-void test("paths that escape the package are rejected", () => {
+test("paths that escape the package are rejected", () => {
   for (const path of [
     "",
     "/etc/passwd",
@@ -17,5 +16,5 @@ void test("paths that escape the package are rejected", () => {
     ".git/config",
     "a\\b.md",
   ])
-    assert.throws(() => relativePath(path), /Expected a relative documentation path/u);
+    expect(() => relativePath(path)).toThrow(/Expected a relative documentation path/u);
 });

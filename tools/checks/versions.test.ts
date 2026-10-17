@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
+import { expect, test } from "bun:test";
 import { join } from "node:path";
-import { test } from "node:test";
 
 import { checkVersions } from "./versions.ts";
 
@@ -11,17 +10,17 @@ const messages = (root: string) =>
     (problem) => `${problem.path.slice(root.length + 1)}: ${problem.message}`,
   );
 
-void test("packages sharing the root version pass", () => {
-  assert.deepEqual(checkVersions(join(fixtures, "same")), []);
+test("packages sharing the root version pass", () => {
+  expect(checkVersions(join(fixtures, "same"))).toEqual([]);
 });
 
-void test("each package with another version is reported", () => {
-  assert.deepEqual(messages(join(fixtures, "mixed")), [
+test("each package with another version is reported", () => {
+  expect(messages(join(fixtures, "mixed"))).toEqual([
     "packages/kernel/package.json: version 0.2.0, expected 0.1.0",
     "packages/plugins/demo/package.json: version missing, expected 0.1.0",
   ]);
 });
 
-void test("a root without a version is reported", () => {
-  assert.deepEqual(messages(join(fixtures, "unversioned")), ["package.json: missing version"]);
+test("a root without a version is reported", () => {
+  expect(messages(join(fixtures, "unversioned"))).toEqual(["package.json: missing version"]);
 });

@@ -26,6 +26,7 @@ Step 1 is built: the SDK plugin definition and test harness, the kernel host, `s
 
 ## Later
 
+- Switch from oxlint and oxfmt to Bun's built-in `bun lint` and `bun fmt` once they are in a stable Bun release and run Liminal's custom JS rules and type-aware lint; they read `.oxlintrc.json` and oxfmt configs (oven-sh/bun#44805, canary only in Oct 2026). Until then lint rule tests stay on Node: oxc will not support `RuleTester` on Bun (oxc#26740)
 - Release tooling, probably changesets with a `fixed` group as Effect uses; `changeset publish` runs `npm publish`, which leaves `workspace:*` unresolved under Bun (changesets#1468, bun#16074), so publish with `bun publish`
 - Bundles: named plugin sets
 - Subagents: the user does not use them

@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
+import { expect, test } from "bun:test";
 
 import { fingerprint, type Source } from "./manifest.ts";
 import { pinnedNames, pinnedVersion, type Pins } from "./pins.ts";
@@ -17,18 +16,18 @@ const source = (name: string, versionSource: Source["versionSource"]): Source =>
   api: [],
 });
 
-void test("lock sources read package pins and mise sources read tool pins", () => {
-  assert.equal(pinnedVersion(source("effect", "lock"), pins), "4.0.5");
-  assert.equal(pinnedVersion(source("bun", "mise"), pins), "1.4.3");
-  assert.equal(pinnedVersion(source("bun", "lock"), pins), undefined);
+test("lock sources read package pins and mise sources read tool pins", () => {
+  expect(pinnedVersion(source("effect", "lock"), pins)).toBe("4.0.5");
+  expect(pinnedVersion(source("bun", "mise"), pins)).toBe("1.4.3");
+  expect(pinnedVersion(source("bun", "lock"), pins)).toBe(undefined);
 });
 
-void test("every package and tool needs a reference", () => {
-  assert.deepEqual(pinnedNames(pins), ["effect", "bun"]);
+test("every package and tool needs a reference", () => {
+  expect(pinnedNames(pins)).toEqual(["effect", "bun"]);
 });
 
-void test("editing a source changes its fingerprint", () => {
+test("editing a source changes its fingerprint", () => {
   const before = fingerprint(source("effect", "lock"));
-  assert.notEqual(before, fingerprint({ ...source("effect", "lock"), summary: "changed" }));
-  assert.equal(before, fingerprint(source("effect", "lock")));
+  expect(before).not.toBe(fingerprint({ ...source("effect", "lock"), summary: "changed" }));
+  expect(before).toBe(fingerprint(source("effect", "lock")));
 });

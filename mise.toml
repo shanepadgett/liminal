@@ -1,6 +1,6 @@
 [tools]
 bun = "1.4.3"
-# Lint rule tests only: oxlint's RuleTester does not run under Bun.
+# Lint rule tests only: oxlint's RuleTester does not run under Bun (oxc#26740).
 node = "24.22.0"
 
 [env]
@@ -85,12 +85,12 @@ description = "Duplicated code"
 run = "bun tools/quiet.ts bunx --bun --no-install fallow dupes --fail-on-issues"
 
 [tasks.test]
-description = "Workspace tests"
-run = "bun tools/quiet.ts bun test ./apps ./packages --pass-with-no-tests --only-failures"
+description = "Workspace and tool tests under Bun"
+run = "bun tools/quiet.ts bun test ./apps ./packages ./tools/checks ./tools/reference --pass-with-no-tests --only-failures"
 
 [tasks."test:tools"]
-description = "Lint rule and check tests under Node"
-run = "bun tools/quiet.ts node --test --test-reporter=dot \"tools/**/*.test.ts\""
+description = "Lint rule tests under Node; oxlint's RuleTester does not run under Bun"
+run = "bun tools/quiet.ts node --test --test-reporter=dot \"tools/lint/**/*.test.ts\""
 
 [tasks."fix:fmt"]
 description = "Format the given files"

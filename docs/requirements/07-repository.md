@@ -58,6 +58,7 @@ Workspace layout, the checks that guard it, and how code is tested.
 ## Testing
 
 - Tests run under `bun:test`; the SDK's `effectTest` helper runs scoped Effects with `TestClock`
+- Lint rule tests are the one exception and run under Node, because oxlint's `RuleTester` does not run under Bun
 - Plugin tests use the SDK test harness, building Layers in process with real or fake dependencies
 - Contracts ship conformance suites; every provider of a service must pass its suite
 - A conformance suite lives in the contract's plugin as `test/conformance.ts`

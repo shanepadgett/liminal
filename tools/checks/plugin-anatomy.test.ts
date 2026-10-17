@@ -1,21 +1,20 @@
-import assert from "node:assert/strict";
+import { expect, test } from "bun:test";
 import { join } from "node:path";
-import { test } from "node:test";
 
 import { checkPlugins } from "./plugin-anatomy.ts";
 
 const fixtures = join(import.meta.dirname, "fixtures");
 
-void test("a plugin with the full anatomy passes", () => {
-  assert.deepEqual(checkPlugins(join(fixtures, "good")), []);
+test("a plugin with the full anatomy passes", () => {
+  expect(checkPlugins(join(fixtures, "good"))).toEqual([]);
 });
 
-void test("a broken plugin reports each anatomy problem", () => {
+test("a broken plugin reports each anatomy problem", () => {
   const messages = checkPlugins(join(fixtures, "broken")).map(
     (problem) => `${problem.path.slice(fixtures.length + 1)}: ${problem.message}`,
   );
 
-  assert.deepEqual(messages.toSorted(), [
+  expect(messages.toSorted()).toEqual([
     "broken/packages/plugins/demo/package.json: @liminal/sdk is supplied by the host; declare it in peerDependencies",
     "broken/packages/plugins/demo/package.json: dependencies cannot include @liminal/kernel",
     'broken/packages/plugins/demo/package.json: exports must be exactly {".":"./plugin.ts","./contract":"./src/contract.ts"} and optionally {"./conformance":"./test/conformance.ts"}',
