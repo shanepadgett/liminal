@@ -39,7 +39,7 @@ Status: planned
 
 ## Open
 
-- Entry kinds for session metadata such as the title, usage outside a reply, and context edits that hide or replace an earlier entry for the model (Pi `context_edit`)
+- Entry kinds for session metadata such as the title, and usage outside a reply
 
 ## References
 

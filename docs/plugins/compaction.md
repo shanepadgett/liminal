@@ -11,11 +11,14 @@ Status: planned
 ## Adds
 
 - A checkpoint entry kind
+- A view step in the context's chain
 
 ## Requirements
 
 - Follows Tau: the agent writes its own checkpoint and continues, never waiting on a summary step
 - Changes only what the model sees; visible history is never removed
+- Shapes the model's view through its view step; the context knows nothing about checkpoints
+- Keeps the view stable between checkpoints so the request stays append-only
 - A separate, cheaper model writes bounded summaries of entry ranges in the background, as short-term and long-term memories
 - Memories are stored beside the log, not in it, and stay out of the context until a checkpoint
 - At a checkpoint, memories replace the entries they cover, reminders included

@@ -1,6 +1,9 @@
 # Milestones
 
-The order Liminal is built in. Each step builds only what the next validation needs and ends in something that runs or is tested. Topic plans hang off the step they serve.
+The order Liminal is built in. Each step ends in something that runs or is tested. Topic plans hang off the step they serve.
+
+- Each step adds implementations behind final contracts and deletes nothing; no temporary, minimal or placeholder shapes
+- The core contracts are designed together in [core-contracts.md](core-contracts.md) before step 2 is built; steps 2 to 6 below are rewritten against them
 
 ## Dependency chain
 

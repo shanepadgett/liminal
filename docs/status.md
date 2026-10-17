@@ -4,20 +4,20 @@ Step 1 is built: the SDK plugin definition and test harness, the kernel host, `s
 
 ## Focus
 
-- Step 2 of [plans/milestones.md](plans/milestones.md): `models` seam with a scripted fake provider, minimal `context`, one-step `agent-loop`.
+- Design the core contracts for the final product: [plans/core-contracts.md](plans/core-contracts.md).
 
 ## Next
 
 - Review the transcript in a live terminal ([plans/transcript.md](plans/transcript.md)).
-- Plan step 2.
+- Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
+- Rewrite steps 2 to 6 of [plans/milestones.md](plans/milestones.md) against the core contracts.
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
 
 ## Open topics
 
 - CLI folders are provisional: global `~/.liminal`, project `<cwd>/.liminal`, data `~/.liminal/data`
-- Step 1 differs from its plan: `EntryKinds` is a `Registry`, so there is no `DuplicateEntryKind`; one global append lock instead of one per session; `SessionLog.create` added; the restart proof lives in `apps/cli` because fallow forbids kernel importing plugins; `effectTest` takes the layer as a required third argument
+- Step 1 differs from its plan: `EntryKinds` is a `Registry`, so there is no `DuplicateEntryKind`; one global append lock instead of one per session; `SessionLog.create` added; the restart proof lives in `apps/cli` because fallow forbids kernel importing plugins; `effectTest` takes the layer as a required third argument; re-checked in round 8 of [plans/core-contracts.md](plans/core-contracts.md)
 - Code conventions: port Tau's standards and custom lint rules, reviewed per rule
-- Stable service handles vs rebuilding dependents on swap
 - Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`)
 - ACP adapter as a server plugin
 - Collab-style session sharing through an encrypted relay
@@ -42,3 +42,4 @@ Pi session IDs and the topics each discussed.
 - 01a145a9-703a-7284-8f7a-054aea36ec2c: TUI design (transcript)
 - 01a14649-dee8-74a7-b272-e37fd82f47b6: Sessions, Plugin catalog, docs layout
 - 01a1473c-d9a2-74a7-b272-e383d7bf6e43: session-log contract, entry kinds and visibility, compaction memories, plugin foundation, build order, testing, step 1 build, repository layout
+- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop

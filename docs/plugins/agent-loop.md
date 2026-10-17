@@ -18,12 +18,18 @@ Status: planned
 - A running turn resumes after a restart
 - Tools declare whether they are safe to rerun; an unsafe one reports as interrupted on resume
 - A turn that stops on an error saves nothing about the failure; the next message continues from the log
-- In-flight turns finish on the plugin graph they started on
+- A running step finishes on the graph it started on; the turn continues on the new graph from the session log
 - Inbox, steering, retry, cancel and usage are separate plugins
+- Plugins join a turn at three named checkpoints, each with a fixed rule: before each model call, after a failed attempt, when the turn would end
+- Any plugin can end the turn before a model call; the loop has no built-in step limit
+- Steering input enters at the next step boundary, sent with the tool results; queued follow-ups enter when the turn would end
+- A failed attempt before a retry is discarded and saves nothing; the retry status shows only in live state
+- On cancel, the output so far is saved marked interrupted and the model sees it; tool calls that never ran report as cancelled
+- Tool calls in one step run one at a time unless each tool declares it can run alongside others
 
 ## Open
 
-- The contract, and the extension points the turn plugins hook into
+- The contract types
 
 ## References
 

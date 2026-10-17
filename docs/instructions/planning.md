@@ -17,6 +17,7 @@
 - Build visual design straight in the gallery for the user to see. Never mock layouts in plan files or chat.
 - A plan fits in one to two pages and is mostly visual: diagrams, tables, trees. Prose only for a decision, a tradeoff or a question.
 - Lead each section with the decision or the shape. Reasons follow in short sentences.
+- Present each decision in plain terms for someone who hasn't read the code; give the real options, a strong recommendation, and why it beats the others.
 - Assume the reader is new to the code. Say in a few words what each system, file or term is and where it lives on first use.
 - State what the change lets the user or the code do before how it works.
 - Name what the change deletes or replaces. A plan that only adds code is incomplete.

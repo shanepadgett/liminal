@@ -47,9 +47,8 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 
 | Plugin | Does | Status |
 | --- | --- | --- |
-| models | The seam every provider plugs into | to plan |
+| [models](models.md) | The seam every provider plugs into | planned |
 | one plugin per provider | Talks to one model provider | to plan |
-| model-catalog | Known models and their limits | to plan |
 | model-select | Chooses the model for a session | to plan |
 
 ## Credentials

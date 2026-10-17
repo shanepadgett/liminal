@@ -51,6 +51,11 @@ What a plugin is, where plugins load from, and how the host wires them together.
 - Server is ready when required plugins are active; slow plugins activate in the background
 - Code edits, toggles, and replacements are all graph changes applied in process
 - A graph change builds the changed plugins and their dependents aside, then swaps; failure keeps the old graph
-- In-flight turns finish on the old graph
+- A graph change rebuilds the changed plugins and every dependent; services are never proxied or swapped in place
+- Only the kernel holds the current graph; each command and each step reads it
+- In-flight work finishes its current step on the old graph; the turn continues on the new graph from the session log
+- An old graph closes when its last step finishes
+- Turns resume from the session log through one path, used by graph changes and process restarts
+- A rebuilt plugin starts with fresh live resources; state that must survive a rebuild lives in the session log
 - A plugin with no provider for a required service waits and reactivates when one appears
 - Enabling a plugin that competes for a provided tag is presented as a replacement and applied in one change

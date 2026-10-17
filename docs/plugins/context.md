@@ -6,7 +6,10 @@ Status: planned
 
 ## Provides
 
-- `Context` service: log to model messages, prompt sections
+- `Context` service: `build` writes the sync entry and returns the next model request; `preview` returns it without writing
+- `PromptSections` registry
+- `RpcGroup` with `preview`
+- View steps: an ordered chain that plugins add to; each rewrites the entries before they become messages
 
 ## Requires
 
@@ -21,12 +24,18 @@ Status: planned
 - System prompt, instructions, compaction and cache hints are separate plugins that add to the context
 - Builds model messages from the text saved on each entry; needs no converter per entry kind
 - A shared context message kind holds a plugin's label, its text and a show or hide setting on each entry; plugins use it for nudges, notices and similar messages
-- The system prompt and tool list live in the log: the first request saves every prompt section and tool, later entries add, replace or remove sections and tools, and each checkpoint saves a full copy as the new start
+- The system prompt and tool list live in the log: the first request saves every prompt section and tool, and later entries add, replace or remove sections and tools
+- Sections sort by number, then key
+- A section reads a value, and the sync entry saves that value with the text it rendered; each section renders its first text, a change from the saved value and, optionally, a removal
+- A failed read keeps the saved value and writes nothing for that section
+- Before every model call, the context compares current sections and tools with the saved ones and appends one entry at the point of change when they differ
+- Knows nothing about checkpoints; when no saved baseline is left in view after the view steps, it writes a full one
 - The context stays append-only between checkpoints
-
-## Open
-
-- The contract, and how prompt sections are ordered and registered
+- An instruction file such as `AGENTS.md` that changes before a checkpoint reaches the model as a diff against the text it saw
+- Each tool is declared in the baseline as offered or not; offering and withdrawing a tool are entries at the point of change
+- A provider that cannot offer or withdraw a tool mid-conversation keeps every declared tool in the request, and a call to a tool not offered is refused
+- A tool that appears after the baseline is declared and offered by one entry at that point; providers that can define a tool mid-conversation do so there, and others add it to the tool list at once
+- No entry kind hides or replaces an earlier entry for the model (no Pi `context_edit`)
 
 ## References
 

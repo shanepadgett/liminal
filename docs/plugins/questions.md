@@ -19,6 +19,7 @@ Status: planned
 
 ## Requirements
 
+- `ask_question` is declared but not offered; `/qna` offers it and answering the form withdraws it
 - `ask_question` ends the turn; its entry holds the form
 - The form has a title
 - Answers are a structured `answers` user entry the model reads as text
