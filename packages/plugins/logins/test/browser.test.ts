@@ -5,7 +5,7 @@
 
 import { expect } from "bun:test";
 
-import { Deferred, Effect, Exit, Fiber, Ref } from "effect";
+import { Deferred, Effect, Exit, Fiber, Option, Ref } from "effect";
 import { badArgument } from "effect/PlatformError";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
@@ -57,7 +57,7 @@ const address = (code: string, state: string | null) =>
   `http://127.0.0.1:1/auth/callback?code=${code}&state=${state ?? ""}`;
 
 effectTest(
-  "the browser coming back to the callback gives its code, verifier and redirect address",
+  "the browser coming back to the callback gives its code, verifier, redirect address and client id",
   withSpawner((ran) =>
     Effect.gen(function* () {
       const { steps, opened, told } = yield* makeSteps(() => Effect.never);
@@ -69,10 +69,14 @@ effectTest(
       expect(url.searchParams.get("client_id")).toBe("client-1");
       expect(url.searchParams.get("code_challenge_method")).toBe("S256");
 
-      yield* Effect.promise(() => fetch(`${redirect}?code=c1&state=${state ?? ""}`));
+      yield* Effect.promise(() =>
+        fetch(`${redirect}?code=c1&state=${state ?? ""}&client_id=issued-1`),
+      );
+
       const authorized = yield* Fiber.join(running);
 
       expect(authorized.code).toBe("c1");
+      expect(authorized.clientId).toEqual(Option.some("issued-1"));
       expect(authorized.state).toBe(state ?? "");
       expect(authorized.redirectUri).toBe(redirect);
       expect(authorized.verifier.length).toBeGreaterThan(40);
@@ -187,6 +191,7 @@ effectTest(
         verifier: authorized.verifier,
         redirectUri: "https://auth.example.com/oauth/code/callback",
         state: url.searchParams.get("state") ?? "",
+        clientId: Option.none(),
       });
     }),
   ),

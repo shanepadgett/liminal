@@ -25,8 +25,8 @@ const state = (name: string, draw: (color: RoleColor) => JSX.Element): EntryStat
 const OPENAI: Vendor = {
   name: "OpenAI",
   ways: [
-    { title: "ChatGPT plan: Codex login", state: "saved" },
     { title: "Sign in with ChatGPT", state: "out" },
+    { title: "ChatGPT plan (Codex)", state: "saved" },
     { title: "API key", state: "env:OPENAI_API_KEY" },
   ],
 };
@@ -56,7 +56,7 @@ export const CONNECT_STATES: readonly [EntryState, ...EntryState[]] = [
   state("Methods", (color) => (
     <MethodList
       color={color}
-      title="ChatGPT plan: Codex login"
+      title="ChatGPT plan (Codex)"
       methods={["Browser", "Device code"]}
       selected="Browser"
     />

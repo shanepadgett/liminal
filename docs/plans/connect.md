@@ -79,7 +79,7 @@ One commit each, with gallery updates.
 2. `@liminal/sdk/ai` with `model-codex` moved onto it, SDK prompt and confirm dialogs, `logins` plugin, `/connect`, `/model` listing only signed-in providers, `model-openai` with its API key; one commit
 3. Codex browser and device code login
 4. `model-anthropic`: Claude subscription and API key
-5. `model-chatgpt`: Sign in with ChatGPT
+5. Sign in with ChatGPT: provider `chatgpt` in `model-openai`
 6. `model-openrouter`, `model-opencode-go`, `model-local`
 
 ## Step 1: model-catalog
@@ -464,7 +464,7 @@ both: requestTokens(client, params) -> OAuth; accountId(access) must succeed -> 
 
 ## Step 4: model-anthropic
 
-Status: built; live sign-in and live requests are untested.
+Status: built; a live Claude sign-in and requests work.
 
 ### Step 4 decisions
 
@@ -628,11 +628,135 @@ authorizeInBrowser, Page return (logins/server/browser.ts)
 - `BrowserAuthorization.callback` becomes `returnTo`; the Codex browser way passes `Callback`.
 - `replyOf` and `promptOf` take a `ProviderPrompt` instead of a `ProviderData`.
 
+## Step 5: Sign in with ChatGPT
+
+Status: built; a live sign-in is not yet checked.
+
+Lets the user sign in with a ChatGPT account and spend the plan on the public OpenAI API (`api.openai.com/v1`), with Liminal registered as its own app on the account. It is a second OpenAI provider beside `codex`, which spends the plan on the Codex backend through the Codex CLI's app.
+
+### Step 5 today
+
+| Piece | Where | What it does now |
+| --- | --- | --- |
+| `model-openai` | `packages/plugins/model-openai/` | Provider `openai`: Responses calls signed with an API key |
+| `model-codex` plan list | `model-codex/src/server/plan.ts` | Reads `GET <api>/models` (slug, context window, visibility) for the plan's models |
+| Browser sign-in | `logins/src/server/browser.ts` | PKCE, callback server, paste fallback; reads `code`, `state`, `error` from the reply |
+| Token requests | `credential-store` contract `issuedTokens` | Posts a token request, decodes access, refresh, expiry; gives an `OAuth` |
+| Sign-out | `logins/src/server.ts` | Runs the method's `logOut`; a failed `logOut` stops the removal |
+
+### Step 5 protocol (Tau `src/ai/internal/login/chatgpt-app.ts`, `src/ai/Providers.ts`, `src/host/HostId.ts`)
+
+| Piece | Value |
+| --- | --- |
+| Authorize | `https://auth.openai.com/api/accounts/authorize`; first login sends `client_id=dynamic_agent_client` and `agent_name_hint`; later logins send the issued `client_id` and `id_token_hint`; every login sends `ext_agent_host_id`, `resource=https://api.openai.com/v1`, a `nonce` and scopes `openid profile email offline_access resource.invoke chatgpt.tokens.use.direct` |
+| Callback | `127.0.0.1:1455/auth/callback` (same as Codex); a first login's reply carries the issued `client_id` |
+| Token | `https://auth.openai.com/api/accounts/oauth/token`, form body with `resource`; replies add `id_token` and `scope` |
+| Checks | `scope` holds `chatgpt.tokens.use.direct`, else "plan use not allowed"; the ID token's RS256 signature matches a key from `/.well-known/jwks.json`, issuer `https://auth.openai.com`, audience the client id, not expired, nonce matches |
+| Revoke | `https://auth.openai.com/api/accounts/oauth/revoke`, form `token`, `token_type_hint=refresh_token`, `client_id` |
+| Host id | `urn:uuid:<uuid v4>`, made once, kept apart from the credentials |
+| Requests | Responses API at `api.openai.com/v1`, Bearer access token, streamed only |
+| Plan list | `GET api.openai.com/v1/models` with the token answers in the Codex shape |
+
+### Step 5 shape
+
+```mermaid
+flowchart LR
+  connect["/connect"] --> logins
+  logins -->|Flow logIn| chatgpt["model-openai: chatgpt login"]
+  chatgpt --> browser["LoginFlow.authorizeInBrowser"]
+  chatgpt --> idtoken["ID token check (WebCrypto)"]
+  chatgpt --> tokens["credential-store requestTokens"]
+  model["/model and turns"] --> provider["model-openai: chatgpt provider"]
+  provider --> plan["sdk/ai planModels"]
+  provider --> api["api.openai.com/v1"]
+```
+
+### Step 5 files
+
+```text
+packages/sdk/src/ai/plan.ts                    planModels(name, request, client, sign): Codex-shape model list, moved from model-codex
+packages/sdk/src/core/model.ts                 PlanModel, moved from the models contract
+packages/plugins/credential-store/src/contract.ts   requestTokens gives the decoded reply (id_token, scope); issuedTokens builds on it
+packages/plugins/logins/src/contract.ts        Authorized gains clientId: Option<string>
+packages/plugins/logins/src/server/browser.ts  reads client_id from the reply
+packages/plugins/logins/src/server.ts          logout removes the credential even when logOut fails, then reports the failure
+packages/plugins/model-codex/src/server/plan.ts     deleted; uses planModels
+packages/plugins/model-openai/
+  src/contract.ts                              chatgptProvider = "chatgpt", chatgptLogin = "chatgpt"
+  src/server/provider.ts                       Responses stream shared by both providers, signed by each provider's token
+  src/server/chatgpt/provider.ts               provider chatgpt: plan list, fresh access token, login registration
+  src/server/chatgpt/auth.ts                   token endpoint, saved extra, refresh, access token
+  src/server/chatgpt/login.ts                  Flow "Sign in with ChatGPT": registration, nonce, token exchange, checks, revoke
+  src/server/chatgpt/id-token.ts               verifyIdToken: JWKS fetch, RS256 verify, claims
+  src/server/chatgpt/host-id.ts                <data>/host-id, made on first use
+  test/chatgpt-login.test.ts                   fake auth server: first login, later login, scope refused, bad token, revoke
+  test/chatgpt.test.ts                         plan list and a signed request
+```
+
+### Step 5 types
+
+```ts
+// credential-store contract
+export const TokenReply: Schema.Struct<{ access_token; refresh_token; expires_in; id_token?: string; scope?: string }>
+export const requestTokens: (client, request) => Effect<TokenReply, HttpClientError | SchemaError>
+export const issuedTokens: (client, request, extra) => Effect<OAuth, ...>   // unchanged signature
+
+// logins contract
+export interface Authorized { code; verifier; redirectUri; state; readonly clientId: Option.Option<string> }
+
+// model-openai: what the chatgpt OAuth credential keeps in extra
+{ clientId: string; idToken: string }
+
+// sdk/ai
+export const planModels: (name: string, request: HttpClientRequest, client: HttpClient, sign: RequestSigner) => Effect<ReadonlyArray<PlanModel>, ModelError>
+```
+
+### Step 5 call path
+
+```text
+logIn("browser")
+  saved  <- store.get(chatgpt)                      OAuth with extra.clientId, extra.idToken, or none
+  hostId <- hostId.read                             <data>/host-id
+  nonce  <- random 32 bytes
+  params <- saved ? { client_id, id_token_hint } : { client_id: dynamic_agent_client, agent_name_hint: "Liminal" }
+            + ext_agent_host_id, scope, resource, nonce
+  authorized <- flow.authorizeInBrowser({ authorizeUrl, params, returnTo: Callback 127.0.0.1:1455 })
+  clientId <- saved.clientId (reply must not name another) | authorized.clientId (required on first login)
+  reply <- requestTokens(token form: authorization_code, code, verifier, redirect_uri, client_id, resource)
+  scope lacks chatgpt.tokens.use.direct -> LoginFailed "plan use not allowed"
+  verifyIdToken(reply.id_token, clientId, nonce)
+  return OAuth { access, refresh, expiresAt, extra: { clientId, idToken } }
+
+logOut
+  saved <- store.get(chatgpt)
+  revoke(refresh, clientId) failing -> LoginFailed "disconnect Liminal at chatgpt.com/settings"
+  logins removes the credential either way
+
+request (provider chatgpt)
+  oauth <- store.fresh(chatgpt, refresh: requestTokens(refresh_token, client_id, resource), skew)
+  OpenAiClient.make({ apiKey: oauth.access }) -> same Responses model as openai
+```
+
+### Step 5 decisions
+
+| Topic | Decision |
+| --- | --- |
+| Home | Provider `chatgpt` and its login live in `model-openai` beside `openai`; they share the Responses request code and differ in signing |
+| Model list | The plan's models from `GET api.openai.com/v1/models`; Codex's plan reader moves to `@liminal/sdk/ai` as `planModels` and both providers use it |
+| ID token | Verified as Tau does: RS256 signature against OpenAI's JWKS with WebCrypto (`crypto.subtle`), then issuer, audience, expiry and nonce |
+| ID token storage | `OAuth.extra` holds `clientId` and `idToken` as plain JSON |
+| Host id | `<data>/host-id`, a `urn:uuid` made on first use, owned by `model-openai`, apart from the credentials |
+| Sign-out | `logins` removes the credential even when `logOut` fails, then reports the failure; the ChatGPT failure says to disconnect Liminal in ChatGPT settings |
+
+### Step 5 open
+
+- Live check: the user signs in once; the plan list format and the request path are unverified before that.
+
 ## Deletes or replaces
 
 - Live Codex tests stop reading Tau's `~/.tau/credentials.db`; they read Liminal's store.
 - `model-codex` `src/server/catalog.ts` stops being the source of the Codex model list; it supplies the plan list the catalog filters.
-- `/model` stops leaving failed providers out silently; it shows "sign in with /connect" under them.
+- `/model` stops leaving failed providers out silently; a signed-in provider whose list fails shows the failure.
 
 ## References
 

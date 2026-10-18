@@ -2,20 +2,31 @@
 
 import { Generated, OpenAiClient, OpenAiLanguageModel } from "@effect/ai-openai";
 import { Effect, FileSystem, Layer, Schema, Stream } from "effect";
-import { HttpClient } from "effect/http";
+import { HttpClient, HttpClientRequest } from "effect/http";
 
 import { CredentialStore } from "@liminal/credential-store/contract";
 import { LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
 import type { ModelRequest } from "@liminal/sdk";
-import { effortOf, OpenAiPrompt, replyOf } from "@liminal/sdk/ai";
+import { effortOf, OpenAiPrompt, planModels, replyOf } from "@liminal/sdk/ai";
 
 import { codexProvider } from "../contract.ts";
 import { checkLogin, makeSigner, type Signer } from "./auth.ts";
 import { codexMethod } from "./login.ts";
-import { readPlan } from "./plan.ts";
 
 export const apiUrl = "https://chatgpt.com/backend-api/codex";
+
+/** The backend hides models newer than the client version it is sent; recent versions see all. */
+const clientVersion = "0.200.0";
+
+/** The plan's models as the backend lists them. */
+const planOf = (http: HttpClient.HttpClient, sign: Signer) =>
+  planModels(
+    "Codex",
+    HttpClientRequest.get(`${apiUrl}/models`, { urlParams: { client_version: clientVersion } }),
+    http,
+    sign(),
+  );
 
 /** The backend takes only efforts. */
 const codexEffort = effortOf("Codex", Schema.is(Generated.ReasoningEffort), "none");
@@ -70,7 +81,7 @@ export const codexLayer = Layer.effectDiscard(
     yield* providers.register({
       id: codexProvider,
       name: "Codex",
-      source: ModelSource.PlanCatalog({ catalogId: "openai", plan: readPlan(apiUrl, http, sign) }),
+      source: ModelSource.PlanCatalog({ catalogId: "openai", plan: planOf(http, sign) }),
       checkLogin: checkLogin(store),
       stream: makeStream(http, sign, fs),
       nativeToolChanges: false,

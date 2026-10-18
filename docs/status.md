@@ -30,7 +30,7 @@ Connect and login step 3 is built ([plans/connect.md](plans/connect.md)): `Login
 
 ## Next
 
-- Review connect step 4 (`model-anthropic`, `cache-hints`, [plans/connect.md](plans/connect.md)): built, live Claude sign-in and requests untested. Later connect steps cover every other Tau provider and login method; each needs its provider plugin.
+- Live check of connect step 5, Sign in with ChatGPT ([plans/connect.md](plans/connect.md)): built; the user signs in once to verify the plan list and requests. Later connect steps cover every other Tau provider and login method.
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
 

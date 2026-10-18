@@ -1,4 +1,7 @@
-/** Model-openai: registers provider `openai`, the OpenAI API, and its API key login. */
+/**
+ * Model-openai: registers providers `openai` (API key) and `chatgpt` (Sign in with ChatGPT), both
+ * on the OpenAI API, and their logins.
+ */
 
 import { CredentialStore } from "@liminal/credential-store/contract";
 import { LoginMethods } from "@liminal/logins/contract";

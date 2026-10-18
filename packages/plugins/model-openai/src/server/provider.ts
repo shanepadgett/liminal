@@ -1,7 +1,7 @@
 /** Provider `openai`: one streamed Responses call per request, signed with the API key. */
 
 import { Generated, OpenAiClient, OpenAiLanguageModel } from "@effect/ai-openai";
-import { Effect, FileSystem, Layer, Option, Schema, Stream } from "effect";
+import { Effect, FileSystem, Layer, Option, type Redacted, Schema, Stream } from "effect";
 import { HttpClient } from "effect/http";
 
 import { CredentialStore } from "@liminal/credential-store/contract";
@@ -32,14 +32,18 @@ const keyOf = (store: CredentialStore["Service"]) =>
     ),
   );
 
+/** How one provider on the API signs its calls. */
+export interface Signing {
+  readonly provider: string;
+  readonly name: string;
+  /** The bearer token for one call. */
+  readonly token: Effect.Effect<Redacted.Redacted, ModelError>;
+}
+
 /** The `effect/ai` language model for `request`. */
-const languageModel = (
-  request: ModelRequest,
-  http: HttpClient.HttpClient,
-  store: CredentialStore["Service"],
-) =>
+const languageModel = (request: ModelRequest, http: HttpClient.HttpClient, signing: Signing) =>
   Effect.gen(function* () {
-    const apiKey = yield* keyOf(store);
+    const apiKey = yield* signing.token;
     const effort = yield* openAiEffort(request.thinking);
 
     const client = yield* OpenAiClient.make({ apiKey }).pipe(
@@ -51,7 +55,7 @@ const languageModel = (
     return yield* OpenAiLanguageModel.make({
       model: request.model.id,
       config: {
-        ...request.providerOptions?.[openAiProvider],
+        ...request.providerOptions?.[signing.provider],
         store: false,
         include: ["reasoning.encrypted_content"],
         prompt_cache_key: request.cacheKey,
@@ -60,6 +64,14 @@ const languageModel = (
       },
     }).pipe(Effect.provideService(OpenAiClient.OpenAiClient, client));
   });
+
+/** Streams one Responses call per request, signed by `signing`. */
+export const responsesStream =
+  (http: HttpClient.HttpClient, fs: FileSystem.FileSystem, signing: Signing) =>
+  (request: ModelRequest) =>
+    replyOf(signing.name, OpenAiPrompt, languageModel(request, http, signing), request).pipe(
+      Stream.provideService(FileSystem.FileSystem, fs),
+    );
 
 /** Registers provider `openai` and its API key login; needs an `HttpClient`, which tests replace. */
 export const openAiLayer = Layer.effectDiscard(
@@ -84,10 +96,11 @@ export const openAiLayer = Layer.effectDiscard(
       name: "OpenAI",
       source: ModelSource.Catalog({ catalogId: "openai" }),
       checkLogin: Effect.asVoid(keyOf(store)),
-      stream: (request) =>
-        replyOf("OpenAI", OpenAiPrompt, languageModel(request, http, store), request).pipe(
-          Stream.provideService(FileSystem.FileSystem, fs),
-        ),
+      stream: responsesStream(http, fs, {
+        provider: openAiProvider,
+        name: "OpenAI",
+        token: keyOf(store),
+      }),
       nativeToolChanges: false,
     });
   }),

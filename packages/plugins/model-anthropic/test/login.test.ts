@@ -2,7 +2,7 @@
 
 import { expect } from "bun:test";
 
-import { Effect, Exit, Layer, Predicate, Redacted, Ref } from "effect";
+import { Effect, Exit, Layer, Option, Predicate, Redacted, Ref } from "effect";
 
 import {
   type Authorized,
@@ -38,6 +38,7 @@ const fakeFlow = (asked: Ref.Ref<ReadonlyArray<BrowserAuthorization>>) =>
           verifier: "v1",
           redirectUri: redirectOf(authorization.returnTo),
           state: "s1",
+          clientId: Option.none(),
         }),
       ),
   });

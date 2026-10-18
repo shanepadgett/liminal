@@ -11,10 +11,11 @@ import {
   ModelError,
   type ModelInfo,
   type ModelRef,
+  type PlanModel,
   ProviderNotFound,
 } from "@liminal/sdk";
 
-import { ModelSource, ModelProviders, Models, ModelsRpcs, type PlanModel } from "./contract.ts";
+import { ModelSource, ModelProviders, Models, ModelsRpcs } from "./contract.ts";
 import { makePlans } from "./server/plans.ts";
 
 /** The catalog's models the plan offers, in the plan's order, each with the plan's context window. */

@@ -84,6 +84,7 @@ const fakeFlow = (shown: Ref.Ref<ReadonlyArray<string>>) => {
           verifier: "bv",
           redirectUri: "http://127.0.0.1:1455/auth/callback",
           state: "bs",
+          clientId: Option.none(),
         }),
       ),
   });

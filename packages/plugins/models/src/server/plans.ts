@@ -5,9 +5,7 @@
 
 import { Effect, FiberMap, FileSystem, Path, Record, Ref, Schema, Semaphore } from "effect";
 
-import { Directories, type ModelError } from "@liminal/sdk";
-
-import type { PlanModel } from "../contract.ts";
+import { Directories, type ModelError, type PlanModel } from "@liminal/sdk";
 
 const KeptPlans = Schema.Record(
   Schema.String,

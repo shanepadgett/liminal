@@ -3,7 +3,7 @@
  * Effect upgrade cannot break saved sessions.
  */
 
-import { Schema } from "effect";
+import { type Option, Schema } from "effect";
 
 /** Opaque provider metadata a provider needs back on the next request, such as signatures. */
 const ProviderData = Schema.Record(Schema.String, Schema.Json);
@@ -226,6 +226,12 @@ export const ModelInfo = Schema.Struct({
 });
 
 export type ModelInfo = typeof ModelInfo.Type;
+
+/** A model an account's plan offers; its context window, when given, wins over the catalog's. */
+export interface PlanModel {
+  readonly id: string;
+  readonly contextWindow: Option.Option<number>;
+}
 
 /** `medium` when offered, else the middle option. */
 export const defaultThinkingOf = (options: ReadonlyArray<ThinkingOption>) =>

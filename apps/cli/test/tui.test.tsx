@@ -495,7 +495,9 @@ effectTest(
     setup.mockInput.pressArrow("down");
     setup.mockInput.pressEnter();
 
-    yield* frameWith(setup, "ChatGPT plan (Codex)");
+    // OpenAI's methods are listed by id: chatgpt, codex, then the API key.
+    yield* frameWith(setup, "Sign in with ChatGPT");
+    setup.mockInput.pressArrow("down");
     setup.mockInput.pressArrow("down");
     setup.mockInput.pressEnter();
 

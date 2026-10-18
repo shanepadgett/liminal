@@ -50,6 +50,8 @@ export interface Authorized {
   readonly verifier: string;
   readonly redirectUri: string;
   readonly state: string;
+  /** The client id the reply named, which a provider that registers the app on sign-in issues. */
+  readonly clientId: Option.Option<string>;
 }
 
 /** What a login flow shows the user and asks of them while it runs. */

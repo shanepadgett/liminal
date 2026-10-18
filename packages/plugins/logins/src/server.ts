@@ -1,6 +1,6 @@
 /** Logins' server: the login methods registry, each method's sign-in state, and the login RPCs. */
 
-import { Effect, Layer, Option } from "effect";
+import { Effect, Exit, Layer, Option } from "effect";
 
 import { type CredentialError, CredentialStore } from "@liminal/credential-store/contract";
 import { KeyedRegistry } from "@liminal/sdk";
@@ -45,14 +45,20 @@ const rpcs = LoginsRpcs.toLayer(
         state,
       }));
 
-    /** Runs the method's own sign-out, if any, then removes the saved credential. */
+    /**
+     * Runs the method's own sign-out, if any, then removes the saved credential; a failed sign-out
+     * still removes it, then fails with the sign-out's error.
+     */
     const logout = Effect.fn("Logins.logout")(function* (id: string) {
       const method = yield* runner.find(id);
 
-      if (LoginMethod.$is("Flow")(method) && Option.isSome(method.logOut))
-        yield* method.logOut.value;
+      const signedOut =
+        LoginMethod.$is("Flow")(method) && Option.isSome(method.logOut)
+          ? yield* Effect.exit(method.logOut.value)
+          : Exit.void;
 
       yield* store.remove(id).pipe(Effect.mapError(failed));
+      yield* signedOut;
     });
 
     return LoginsRpcs.of({

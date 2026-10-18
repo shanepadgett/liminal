@@ -24,6 +24,7 @@ import {
   Ask,
   Done,
   FromEnv,
+  LoginFailed,
   LoginFlow,
   LoginMethod,
   LoginMethods,
@@ -135,6 +136,32 @@ effectTest(
     yield* (yield* RpcTest.makeClient(LoginsRpcs))["logins/logout"]({ method: "acme" });
 
     expect(yield* Deferred.isDone(revoked)).toBe(true);
+    expect(yield* stateOf("acme")).toEqual(SignedOut.make({}));
+  }),
+  stack,
+);
+
+effectTest(
+  "a failed sign-out still removes the credential, then reports the failure",
+  Effect.gen(function* () {
+    yield* register(
+      LoginMethod.Flow({
+        id: "acme",
+        vendor,
+        title: "Acme account",
+        ways: [{ id: "browser", title: "Browser" }],
+        logIn: () => Effect.succeed(token),
+        logOut: Option.some(Effect.fail(new LoginFailed({ method: "acme", message: "revoke" }))),
+      }),
+    );
+
+    yield* (yield* CredentialStore).set("acme", token);
+
+    const exit = yield* Effect.exit(
+      (yield* RpcTest.makeClient(LoginsRpcs))["logins/logout"]({ method: "acme" }),
+    );
+
+    expect(Exit.isFailure(exit)).toBe(true);
     expect(yield* stateOf("acme")).toEqual(SignedOut.make({}));
   }),
   stack,

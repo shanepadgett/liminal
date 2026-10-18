@@ -5,17 +5,11 @@ import { expect } from "bun:test";
 import { Effect, Layer, Option, Predicate, Queue, Stream } from "effect";
 
 import { ModelCatalog } from "@liminal/model-catalog/contract";
-import { CatalogUnavailable, ModelError, type ModelInfo } from "@liminal/sdk";
+import { CatalogUnavailable, ModelError, type ModelInfo, type PlanModel } from "@liminal/sdk";
 import { effectTest, testPlugin } from "@liminal/sdk/testing";
 
 import models from "../plugin.ts";
-import {
-  type ModelProvider,
-  ModelProviders,
-  Models,
-  ModelSource,
-  type PlanModel,
-} from "../src/contract.ts";
+import { type ModelProvider, ModelProviders, Models, ModelSource } from "../src/contract.ts";
 
 const info = (id: string, contextWindow = 400_000): ModelInfo => ({
   id,

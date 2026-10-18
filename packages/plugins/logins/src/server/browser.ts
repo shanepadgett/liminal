@@ -21,6 +21,7 @@ interface Reply {
   readonly code: string | undefined;
   readonly state: string | undefined;
   readonly error: string | undefined;
+  readonly clientId: string | undefined;
 }
 
 /** The flow steps a browser login shows and asks. */
@@ -41,6 +42,7 @@ const replyOf = (params: URLSearchParams): Reply => ({
   code: params.get("code") ?? undefined,
   state: params.get("state") ?? undefined,
   error: params.get("error_description") ?? params.get("error") ?? undefined,
+  clientId: params.get("client_id") ?? undefined,
 });
 
 const pastedReply = (address: string) =>
@@ -50,7 +52,7 @@ const pastedReply = (address: string) =>
 const shownReply = (shown: string): Reply => {
   const [code, state] = shown.trim().split("#");
 
-  return { code: code || undefined, state, error: undefined };
+  return { code: code || undefined, state, error: undefined, clientId: undefined };
 };
 
 /** The verifier stays here; the challenge and state go to the authorize page. */
@@ -202,13 +204,15 @@ export const authorizeInBrowser = (steps: BrowserSteps, method: string) =>
       yield* steps.openUrl(url);
       yield* openBrowser(steps, url);
 
-      const code = yield* codeOf(method, yield* returned.reply, pkce.state);
+      const reply = yield* returned.reply;
+      const code = yield* codeOf(method, reply, pkce.state);
 
       return {
         code,
         verifier: pkce.verifier,
         redirectUri: returned.redirectUri,
         state: pkce.state,
+        clientId: Option.fromNullishOr(reply.clientId),
       } satisfies Authorized;
     },
     Effect.catchTag("PlatformError", (error) =>

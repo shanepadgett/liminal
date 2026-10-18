@@ -16,35 +16,50 @@ export const OAuth = Schema.TaggedStruct("OAuth", {
 
 export type OAuth = typeof OAuth.Type;
 
-/** What an OAuth token endpoint answers with. */
-const TokenResponse = Schema.Struct({
+/**
+ * What an OAuth token endpoint answers with; OpenID logins add `id_token`, and some endpoints name
+ * the granted `scope`, space separated.
+ */
+export const TokenReply = Schema.Struct({
   access_token: Schema.String,
   refresh_token: Schema.String,
   expires_in: Schema.Finite,
+  id_token: Schema.optionalKey(Schema.String),
+  scope: Schema.optionalKey(Schema.String),
 });
 
-/** Sends `request` to a token endpoint and gives the tokens it issued, keeping `extra` beside them. */
-export const issuedTokens = Effect.fn("issuedTokens")(function* (
+export type TokenReply = typeof TokenReply.Type;
+
+/** Sends `request` to a token endpoint and gives its reply. */
+export const requestTokens = (
   client: HttpClient.HttpClient,
   request: HttpClientRequest.HttpClientRequest,
-  extra: OAuth["extra"],
-) {
-  const tokens = yield* client
+) =>
+  client
     .execute(request)
     .pipe(
       Effect.flatMap(HttpClientResponse.filterStatusOk),
-      Effect.flatMap(HttpClientResponse.schemaBodyJson(TokenResponse)),
+      Effect.flatMap(HttpClientResponse.schemaBodyJson(TokenReply)),
     );
 
+/** The tokens in `reply` as a saved credential, keeping `extra` beside them. */
+export const oauthOf = Effect.fn("oauthOf")(function* (reply: TokenReply, extra: OAuth["extra"]) {
   const now = yield* Clock.currentTimeMillis;
 
   return OAuth.make({
-    access: Redacted.make(tokens.access_token),
-    refresh: Redacted.make(tokens.refresh_token),
-    expiresAt: now + Math.round(tokens.expires_in * 1000),
+    access: Redacted.make(reply.access_token),
+    refresh: Redacted.make(reply.refresh_token),
+    expiresAt: now + Math.round(reply.expires_in * 1000),
     extra,
   });
 });
+
+/** Sends `request` to a token endpoint and gives the tokens it issued, keeping `extra` beside them. */
+export const issuedTokens = (
+  client: HttpClient.HttpClient,
+  request: HttpClientRequest.HttpClientRequest,
+  extra: OAuth["extra"],
+) => Effect.flatMap(requestTokens(client, request), (reply) => oauthOf(reply, extra));
 
 /** A command whose output, trimmed, is the secret; it runs on every read. */
 export const CommandCredential = Schema.TaggedStruct("Command", { command: Schema.String });

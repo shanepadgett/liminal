@@ -21,6 +21,7 @@ Status: built
 
 - The store refreshes OAuth credentials under an exclusive lock and re-reads before refreshing
 - The login plugin supplies the refresh step
+- `requestTokens` posts a token request and gives the decoded reply, with `id_token` and `scope` when sent; `issuedTokens` turns it into an OAuth credential
 
 ## References
 

@@ -1,6 +1,6 @@
 /** Models: the registry providers join and the service that routes each call to one. */
 
-import { Context, Data, type Effect, type Option, Schema, type Stream } from "effect";
+import { Context, Data, type Effect, Schema, type Stream } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
@@ -10,16 +10,11 @@ import {
   type ModelEvent,
   ModelInfo,
   type ModelRef,
+  type PlanModel,
   type ModelRequest,
   ProviderNotFound,
   ProviderInfo,
 } from "@liminal/sdk";
-
-/** A model an account's plan offers; its context window, when given, wins over the catalog's. */
-export interface PlanModel {
-  readonly id: string;
-  readonly contextWindow: Option.Option<number>;
-}
 
 /** Where a provider's models come from. */
 export type ModelSource = Data.TaggedEnum<{

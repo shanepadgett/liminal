@@ -24,7 +24,7 @@ Status: built
 
 - A login method's id is the credential-store method holding its credential
 - `ApiKey { env }`: logins asks for the key, saves it, and reads environment variable `env` while none is saved
-- `Flow { ways, logIn, logOut }`: the provider's own login returns its credential and logins saves it; `logOut` runs before the credential is removed
+- `Flow { ways, logIn, logOut }`: the provider's own login returns its credential and logins saves it; `logOut` runs before the credential is removed; the credential is removed even when `logOut` fails, then the failure is reported
 - Each method shows one state: signed out, saved, or from an environment variable
 
 ### Flows
@@ -36,7 +36,7 @@ Status: built
 
 ### Browser sign-in
 
-- `authorizeInBrowser` runs PKCE (S256) with a random state, opens the authorize page and returns the code, verifier, redirect address and state; the provider exchanges the code itself
+- `authorizeInBrowser` runs PKCE (S256) with a random state, opens the authorize page and returns the code, verifier, redirect address, state and the `client_id` the reply names, if any; the provider exchanges the code itself
 - The browser returns to a local callback (`LoginReturn.Callback`) or to a page that shows `code#state` to paste (`LoginReturn.Page`)
 - A local server on the callback host, port and path takes the browser's reply and closes when the sign-in ends
 - The browser opens with `open` on macOS and `xdg-open` elsewhere; the link is shown too
