@@ -20,7 +20,8 @@ Status: built
 - A turn that stops on an error saves nothing about the failure; the next message continues from the log
 - A running step finishes on the graph it started on; the turn continues on the new graph from the session log
 - Inbox, retry, cancel and usage are separate plugins
-- Its settings section holds the default `model` and `thinking` for new turns
+- Its settings section holds the default `model` and `thinking` for new turns; `thinking` is one of the model's option ids
+- A turn uses the saved thinking option when the model offers it, else the model's default, else off
 - Plugins join a turn at three named checkpoints, each with a fixed rule: before each model call, after a failed attempt, when the turn would end
 - Any plugin can end the turn before a model call; the loop has no built-in step limit
 - Steering input enters at the next step boundary, sent with the tool results; queued follow-ups enter when the turn would end

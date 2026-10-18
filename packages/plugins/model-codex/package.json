@@ -15,6 +15,7 @@
   "devDependencies": {
     "@liminal/agent-loop": "workspace:*",
     "@liminal/context": "workspace:*",
+    "@liminal/model-catalog": "workspace:*",
     "@liminal/session-log": "workspace:*",
     "@liminal/session-store": "workspace:*",
     "@liminal/settings": "workspace:*",

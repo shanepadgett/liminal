@@ -14,6 +14,8 @@ Step 6 is built ([plans/archive/step-6.md](plans/archive/step-6.md)): the kernel
 
 Reload at turn end is built ([plans/reload.md](plans/reload.md)): each plugin package loads in its own `Bun.ModuleGraph` with the host's shared modules; the kernel's reload machine checks changed code aside and applies it under the `TurnGate` once no turn runs, swapping the graph for plugin changes or exiting 75 for the rest; the `reload` plugin shows a ready reload or a failed check in the chat header and applies it on ctrl+r; `mise run dev` runs the supervisor.
 
+Connect and login step 1 is built ([plans/connect.md](plans/connect.md)): `model-catalog` serves `models.dev` model details from a cache; `models` lists a provider's models from a fixed list, the catalog, or the catalog filtered by a plan list; each model has its own thinking options, picked after the model in `/model`. No login exists yet, so in the running app Codex lists no models.
+
 ## Focus
 
 - Review of the built steps 2 to 6 and the TUI session ([plans/archive/tui-session.md](plans/archive/tui-session.md), its `Open` list).
@@ -27,7 +29,7 @@ Reload at turn end is built ([plans/reload.md](plans/reload.md)): each plugin pa
 
 - Review reload at turn end ([plans/reload.md](plans/reload.md), its `Open` list).
 - Review slash commands and dialogs ([plans/commands.md](plans/commands.md), its `Open` list). Commands per [requirements/05-frontends.md](requirements/05-frontends.md).
-- Review the step 1 code plan for connect and login, `model-catalog`, and its `Open` list ([plans/connect.md](plans/connect.md)). Its build covers every Tau provider and login method plus Anthropic API key; each needs its provider plugin.
+- Review connect and login step 1, `model-catalog` and per-model thinking options, built ([plans/connect.md](plans/connect.md)); step 2 (`logins`, `/connect`, `model-openai`) is next. Its build covers every Tau provider and login method plus Anthropic API key; each needs its provider plugin.
 - Review the transcript in a live terminal ([plans/transcript.md](plans/transcript.md)).
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
@@ -62,4 +64,4 @@ Pi session IDs and the topics each discussed.
 - 01a145a9-703a-7284-8f7a-054aea36ec2c: TUI design (transcript)
 - 01a14649-dee8-74a7-b272-e37fd82f47b6: Sessions, Plugin catalog, docs layout
 - 01a1473c-d9a2-74a7-b272-e383d7bf6e43: session-log contract, entry kinds and visibility, compaction memories, plugin foundation, build order, testing, step 1 build, repository layout
-- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end, slash commands and dialogs
+- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end, slash commands and dialogs, connect and login, model catalog and thinking options

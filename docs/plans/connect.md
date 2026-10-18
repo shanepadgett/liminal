@@ -2,7 +2,7 @@
 
 `/connect` lets the user sign in to every provider Tau supports, from the TUI, and sign out again. Once signed in, the provider's models show up in `/model`.
 
-Not built yet. Today Liminal stores credentials (`credential-store`) and the Codex provider (`model-codex`) uses a `codex` credential if one exists, but nothing can write one. In the running app `/model` lists nothing until this plan is built.
+Step 1 is built; login is not. Today Liminal stores credentials (`credential-store`) and the Codex provider (`model-codex`) uses a `codex` credential if one exists, but nothing can write one. In the running app `/model` lists nothing until this plan is built.
 
 ## Today
 
@@ -82,14 +82,14 @@ One commit each, with gallery updates.
 
 ## Step 1: model-catalog
 
-Lets `/model` list every catalog provider's models with names, limits, thinking levels and prices from `models.dev`, with no provider-specific list code.
+Built. Lets `/model` list every catalog provider's models with names, limits, thinking options and prices from `models.dev`, with no provider-specific list code.
 
 ### Files
 
 ```text
 packages/plugins/model-catalog/          new plugin
   plugin.ts                              provides ModelCatalog; requires nothing
-  src/contract.ts                        ModelCatalog, CatalogUnavailable
+  src/contract.ts                        ModelCatalog
   src/server.ts                          layer: cache, refresh, FetchHttpClient
   src/server/models-dev.ts               models.dev entry Schema; entry -> ModelInfo
   src/server/cache.ts                    read and write <data>/catalog.json
@@ -104,6 +104,7 @@ packages/plugins/model-codex/src/server/
   catalog.ts -> plan.ts                  plan list only: slug and context window
   provider.ts                            source: PlanCatalog("openai", plan)
 packages/plugins/model-scripted/src/server.ts   source: Listed
+packages/sdk/src/core/model.ts           CatalogUnavailable; thinking values and options
 docs/plugins/model-catalog.md            new plugin file
 docs/plugins/models.md                   "Each provider owns its model list" rewritten
 ```
@@ -111,10 +112,11 @@ docs/plugins/models.md                   "Each provider owns its model list" rew
 ### Types
 
 ```ts
-// model-catalog/src/contract.ts
+// sdk/src/core/model.ts (contracts import only Effect and the SDK, so models and agent-loop name it here)
 class CatalogUnavailable extends Schema.TaggedError("CatalogUnavailable", {
   catalogId: Schema.String, message: Schema.String })
 
+// model-catalog/src/contract.ts
 class ModelCatalog extends Context.Service<ModelCatalog, {
   /** Tool-calling models models.dev lists under catalogId; fetches when the cache lacks it. */
   readonly models: (catalogId: string) => Effect<ReadonlyArray<ModelInfo>, CatalogUnavailable>
@@ -173,7 +175,7 @@ Models.listModels(provider)
 | `name`, `contextWindow`, `maxOutput` | `name`, `limit.context`, `limit.output` |
 | `input` | `modalities.input` filtered to `text`, `image` |
 | `price` | `cost.input`, `output`, `cache_read`, `cache_write` |
-| `thinking` | `reasoning` false: none. Effort values map by name (`none` is `off`). Budget and toggle: see Open |
+| `thinking`, `defaultThinking` | See Thinking options |
 
 ### Deletes
 
@@ -182,7 +184,8 @@ Models.listModels(provider)
 
 ### Step 1 decisions
 
-- No bundled snapshot: the first run fetches; offline with no cache shows `CatalogUnavailable` under catalog providers in `/model`.
+- No bundled snapshot: the first run fetches; offline with no cache, a catalog provider's listing fails with `CatalogUnavailable`.
+- `/model` rows for a provider that cannot list (`CatalogUnavailable` or no login) arrive in step 2 with the sign-in rows; until then such a provider is left out.
 - Plan lists are fetched each time `/model` opens, as Codex does today.
 - Models from settings arrive in step 6 with `model-local`.
 
@@ -192,9 +195,9 @@ Each model offers its own options, named as the provider names them (OpenCode `p
 
 | models.dev `reasoning_options` | Options (id: label) |
 | --- | --- |
-| `effort` values | Each value as given, such as `none`, `low`, `high`, `xhigh`, `max` |
+| `effort` values | Each value as given, such as `none`, `low`, `high`, `xhigh`, `max`; effort wins over a budget |
 | `budget_tokens` | `low`: min (1024 when none), `medium`: a quarter, `high`: half, `max`: the output limit less one; labels show tokens |
-| `toggle` | Adds `off`; alone it gives `off` and `on` |
+| `toggle` | Adds `off` unless an effort offers `none`; alone it gives `off` and `on` |
 | `reasoning` false | None |
 
 ```ts

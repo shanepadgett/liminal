@@ -14,6 +14,7 @@
   },
   "devDependencies": {
     "@liminal/context": "workspace:*",
+    "@liminal/model-catalog": "workspace:*",
     "@liminal/model-scripted": "workspace:*",
     "@liminal/models": "workspace:*",
     "@liminal/session-store": "workspace:*",

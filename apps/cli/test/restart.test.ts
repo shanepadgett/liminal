@@ -40,6 +40,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "context",
         "credential-store",
         "inbox",
+        "model-catalog",
         "model-codex",
         "models",
         "palette",

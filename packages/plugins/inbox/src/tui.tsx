@@ -18,7 +18,7 @@ const loading: ModelLine = { set: false, reason: "" };
 
 const modelLine = (view: DefaultsView): ModelLine =>
   Predicate.isTagged(view, "DefaultsSet")
-    ? { set: true, model: view.settings.model.id, thinking: view.settings.thinking }
+    ? { set: true, model: view.settings.model.id, thinking: view.thinkingLabel ?? "" }
     : { set: false, reason: view.message };
 
 export default defineTui({

@@ -329,7 +329,7 @@ effectTest(
 );
 
 effectTest(
-  "/model sets the picked model as the default, and the composer's model line follows",
+  "/model sets the picked model and thinking option as the default, and the composer follows",
   Effect.gen(function* () {
     const { setup } = yield* boot(() => Effect.void);
 
@@ -341,7 +341,11 @@ effectTest(
     expect(yield* frameWith(setup, "Models")).toContain("Scripted");
     setup.mockInput.pressEnter();
 
-    expect(yield* frameWith(setup, "scripted (medium)")).not.toContain("Type to filter");
+    expect(yield* frameWith(setup, "Thinking · ")).toContain("high");
+    setup.mockInput.pressArrow("down");
+    setup.mockInput.pressEnter();
+
+    expect(yield* frameWith(setup, "scripted (high)")).not.toContain("Type to filter");
   }),
   testBaseServices,
 );

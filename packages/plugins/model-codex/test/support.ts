@@ -6,8 +6,16 @@ import type { HttpClient } from "effect/http";
 
 import credentialStore from "@liminal/credential-store";
 import { CredentialStore, OAuth } from "@liminal/credential-store/contract";
+import { ModelCatalog } from "@liminal/model-catalog/contract";
 import models from "@liminal/models";
-import type { ModelContent, ModelEvent, ModelPart, ModelTool } from "@liminal/sdk";
+import {
+  type ModelContent,
+  type ModelEvent,
+  type ModelInfo,
+  type ModelPart,
+  type ModelTool,
+  ThinkingEffort,
+} from "@liminal/sdk";
 import { serverOf, testBaseServices } from "@liminal/sdk/testing";
 
 import { codexLogin } from "../src/contract.ts";
@@ -31,6 +39,29 @@ export const oauth = (access: string, expiresAt: number): OAuth =>
     extra: {},
   });
 
+const catalogModel = (id: string): ModelInfo => ({
+  id,
+  name: id.toUpperCase(),
+  contextWindow: 400_000,
+  maxOutput: 128_000,
+  thinking: ["none", "low", "medium", "high", "xhigh"].map((effort) => ({
+    id: effort,
+    label: effort,
+    value: ThinkingEffort.make({ effort }),
+  })),
+  defaultThinking: "medium",
+  input: ["text", "image"],
+});
+
+/** Catalog id `openai`: two models on the recorded plan, one hidden there, one not on it. */
+const fakeCatalog = Layer.succeed(
+  ModelCatalog,
+  ModelCatalog.of({
+    models: () =>
+      Effect.succeed(["gpt-4o", "gpt-5.6-luna", "gpt-reserve", "gpt-6-sol"].map(catalogModel)),
+  }),
+);
+
 /** Provider `codex`, its credential saved first, over `http`. */
 export const codexStack = (http: Layer.Layer<HttpClient.HttpClient>, credential: OAuth) =>
   codexLayer.pipe(
@@ -44,6 +75,7 @@ export const codexStack = (http: Layer.Layer<HttpClient.HttpClient>, credential:
     ),
     Layer.provideMerge(http),
     Layer.provideMerge(serverOf(models)),
+    Layer.provideMerge(fakeCatalog),
     Layer.provideMerge(serverOf(credentialStore)),
     Layer.provideMerge(testBaseServices),
   );

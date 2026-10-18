@@ -1,12 +1,11 @@
 /**
- * Agent-loop's TUI part: `/model` lists every active provider's models and sets the one picked as
- * the default for new turns.
+ * Agent-loop's TUI part: `/model` lists every active provider's models, then the picked model's
+ * thinking options, and sets both as the default for new turns.
  */
 
 import { Effect, Predicate } from "effect";
 
 import { ModelsRpcs } from "@liminal/models/contract";
-import type { ProviderInfo } from "@liminal/sdk";
 import {
   type DialogProps,
   defineTui,
@@ -18,11 +17,24 @@ import {
 } from "@liminal/sdk/tui";
 
 import { AgentLoopRpcs, DefaultsMissing, type DefaultsView } from "./contract.ts";
-import { modelKey, modelOf, modelOptions, type ProviderModels } from "./tui/models.ts";
+import {
+  currentThinking,
+  listAll,
+  modelKey,
+  modelOf,
+  modelOptions,
+  type PickedModel,
+  type ProviderModels,
+  thinkingOptions,
+} from "./tui/models.ts";
 
 /** The default model's key, if one is set. */
 const currentKey = (view: DefaultsView) =>
   Predicate.isTagged(view, "DefaultsSet") ? modelKey(view.settings.model) : undefined;
+
+/** The saved thinking option, if one is set. */
+const savedThinking = (view: DefaultsView) =>
+  Predicate.isTagged(view, "DefaultsSet") ? view.settings.thinking : undefined;
 
 export default defineTui({
   setup: Effect.gen(function* () {
@@ -38,23 +50,34 @@ export default defineTui({
       DefaultsMissing.make({ message: "" }),
     );
 
-    // A provider that cannot list its models, such as one not logged in, is left out.
-    const listOne = (provider: ProviderInfo) =>
-      models["models/list"]({ provider: provider.id }).pipe(
-        Effect.map((listed): ReadonlyArray<ProviderModels> => [{ provider, models: listed }]),
-        Effect.catch((error) =>
-          Effect.logWarning(`${provider.name} lists no models`, error).pipe(Effect.as([])),
-        ),
-      );
-
-    const listAll = models["models/providers"]().pipe(
-      Effect.flatMap((providers) => Effect.forEach(providers, listOne)),
-      Effect.map((each) => each.flat()),
+    const listing = listAll(models["models/providers"](), (provider) =>
+      models["models/list"]({ provider: provider.id }),
     );
+
+    /** Asks for a thinking option when the model offers any, then sets both. */
+    const pickThinking = ({ ref, info }: PickedModel) => {
+      if (info.thinking.length === 0) {
+        bridge.run(loop["agent-loop/set-default"]({ model: ref }));
+
+        return;
+      }
+
+      dialogs.show((props: DialogProps) => (
+        <SelectDialog
+          title={`Thinking · ${info.name}`}
+          options={thinkingOptions(info)}
+          current={currentThinking(info, savedThinking(defaults()))}
+          close={props.close}
+          onSelect={(thinking) => {
+            bridge.run(loop["agent-loop/set-default"]({ model: ref, thinking }));
+          }}
+        />
+      ));
+    };
 
     const pick = (listed: ReadonlyArray<ProviderModels>) => (key: string) => {
       const model = modelOf(listed, key);
-      if (model !== undefined) bridge.run(loop["agent-loop/set-default"]({ model }));
+      if (model !== undefined) pickThinking(model);
     };
 
     const show = (listed: ReadonlyArray<ProviderModels>) => {
@@ -78,7 +101,7 @@ export default defineTui({
         slash: { name: "model" },
         palette: true,
         run: () => {
-          bridge.run(listAll.pipe(Effect.map(show)));
+          bridge.run(listing.pipe(Effect.map(show)));
         },
       },
     ]);

@@ -197,7 +197,7 @@ export const contextMessage = (message: {
   });
 };
 
-/** A model request without the settings `agent-loop` adds: thinking level, limits, cache key. */
+/** A model request without the settings `agent-loop` adds: thinking, limits, cache key. */
 export const ContextRequest = Schema.Struct({
   model: ModelRef,
   messages: Schema.Array(ModelContent),

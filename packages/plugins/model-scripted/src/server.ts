@@ -2,8 +2,15 @@
 
 import { Effect, Layer, Ref, Stream } from "effect";
 
-import { ModelProviders } from "@liminal/models/contract";
-import type { ModelError, ModelEvent, ModelInfo, ModelRequest } from "@liminal/sdk";
+import { ModelProviders, ModelSource } from "@liminal/models/contract";
+import {
+  type ModelError,
+  type ModelEvent,
+  type ModelInfo,
+  type ModelRequest,
+  ThinkingEffort,
+  ThinkingOff,
+} from "@liminal/sdk";
 
 import { type Script, type ScriptStep, ScriptedModel, scriptedProvider } from "./contract.ts";
 
@@ -12,7 +19,12 @@ const model: ModelInfo = {
   name: "Scripted",
   contextWindow: 200_000,
   maxOutput: 32_000,
-  thinking: ["off", "low", "medium", "high"],
+  thinking: [
+    { id: "off", label: "off", value: ThinkingOff.make({}) },
+    { id: "low", label: "low", value: ThinkingEffort.make({ effort: "low" }) },
+    { id: "high", label: "high", value: ThinkingEffort.make({ effort: "high" }) },
+  ],
+  defaultThinking: "low",
   input: ["text", "image"],
 };
 
@@ -57,7 +69,7 @@ const make = Effect.gen(function* () {
   yield* providers.register({
     id: scriptedProvider,
     name: "Scripted",
-    models: Effect.succeed([model]),
+    source: ModelSource.Listed({ models: Effect.succeed([model]) }),
     stream,
     nativeToolChanges: true,
   });

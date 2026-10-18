@@ -4,7 +4,14 @@ import { Effect, Layer } from "effect";
 
 import { Context } from "@liminal/context/contract";
 import { Models } from "@liminal/models/contract";
-import { type ModelRequest, Registry, type SessionId, type Tool } from "@liminal/sdk";
+import {
+  type ModelRequest,
+  Registry,
+  type SessionId,
+  ThinkingOff,
+  thinkingOptionOf,
+  type Tool,
+} from "@liminal/sdk";
 import { SessionLog } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
 import { ToolPipeline } from "@liminal/tool-pipeline/contract";
@@ -41,10 +48,15 @@ const make = Effect.gen(function* () {
 
   const { runCalls, answerUnanswered } = makeCalls(log, yield* ToolPipeline);
 
-  const callModel = makeCallModel({
-    log,
-    models: yield* Models,
-    afterFailure: yield* AfterFailureHooks,
+  const models = yield* Models;
+
+  const callModel = makeCallModel({ log, models, afterFailure: yield* AfterFailureHooks });
+
+  /** The chosen option when the model offers it, else the model's default, else no thinking. */
+  const thinkingOf = Effect.fn("AgentLoop.thinkingOf")(function* (settings: TurnSettings) {
+    const info = yield* models.describe(settings.model);
+
+    return thinkingOptionOf(info, settings.thinking)?.value ?? ThinkingOff.make({});
   });
 
   const step = Effect.fn("AgentLoop.step")(function* (
@@ -63,7 +75,7 @@ const make = Effect.gen(function* () {
 
     const request: ModelRequest = {
       ...built,
-      thinking: settings.thinking,
+      thinking: yield* thinkingOf(settings),
       cacheKey: sessionId,
       maxOutputTokens: settings.maxOutputTokens,
     };
@@ -95,7 +107,7 @@ const make = Effect.gen(function* () {
     step,
     run,
     start: turns.start,
-    ...(yield* makeDefaults(yield* Settings)),
+    ...(yield* makeDefaults(yield* Settings, models)),
     cancel: turns.cancel,
   });
 });

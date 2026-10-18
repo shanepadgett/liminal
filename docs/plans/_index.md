@@ -9,4 +9,4 @@ One file per piece of work being planned or built. A plan moves to `archive/` on
 | [transcript.md](transcript.md) | Built in the gallery, awaiting review |
 | [reload.md](reload.md) | Built; awaiting review |
 | [commands.md](commands.md) | Built; awaiting review |
-| [connect.md](connect.md) | Rounds 1 and 2 agreed; step 1 code plan awaiting review |
+| [connect.md](connect.md) | Step 1 built; steps 2 to 6 to build |

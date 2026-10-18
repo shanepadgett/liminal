@@ -4,22 +4,23 @@ import { expect } from "bun:test";
 
 import { Effect, Exit, Fiber, Latch, Layer, Predicate, Stream } from "effect";
 
+import modelCatalog from "@liminal/model-catalog";
 import models from "@liminal/models";
 import { Models } from "@liminal/models/contract";
-import { ModelError, type ModelRequest } from "@liminal/sdk";
+import { ModelError, type ModelRequest, ThinkingOff } from "@liminal/sdk";
 import { effectTest, testPlugin } from "@liminal/sdk/testing";
 
 import modelScripted from "../plugin.ts";
 import { replyText, ScriptedModel, scriptedProvider } from "../src/contract.ts";
 
-const modelsLayer = testPlugin(models, Layer.empty);
+const modelsLayer = testPlugin(models, testPlugin(modelCatalog, Layer.empty));
 const testLayer = testPlugin(modelScripted, modelsLayer).pipe(Layer.provideMerge(modelsLayer));
 
 const request = (text: string): ModelRequest => ({
   model: { provider: scriptedProvider, id: "scripted" },
   messages: [{ role: "user", parts: [{ type: "text", text, providerData: {} }] }],
   tools: [],
-  thinking: "off",
+  thinking: ThinkingOff.make({}),
 });
 
 const types = (events: ReadonlyArray<{ readonly type: string }>) =>

@@ -14,6 +14,7 @@ import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/http";
 import { TestClock } from "effect/testing";
 
 import { Models } from "@liminal/models/contract";
+import { ThinkingEffort } from "@liminal/sdk";
 import { effectTest } from "@liminal/sdk/testing";
 
 import { codexProvider } from "../src/contract.ts";
@@ -80,11 +81,8 @@ const ModelFields = Schema.fromJsonString(
     models: Schema.Array(
       Schema.Struct({
         slug: Schema.String,
-        display_name: Schema.String,
         context_window: Schema.Finite,
         visibility: Schema.String,
-        input_modalities: Schema.Array(Schema.String),
-        supported_reasoning_levels: Schema.Array(Schema.Struct({ effort: Schema.String })),
       }),
     ),
   }),
@@ -118,7 +116,7 @@ if (login === undefined) {
               model,
               messages,
               tools: [readTool],
-              thinking: "high",
+              thinking: ThinkingEffort.make({ effort: "high" }),
               cacheKey: "liminal-record",
             }),
           );

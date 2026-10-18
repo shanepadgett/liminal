@@ -1,7 +1,7 @@
 /**
  * Where the user writes: a raised surface with the input and, under it, the model in the accent
- * color with its thinking level. Enter sends; while a turn runs it steers the turn and Tab queues a
- * follow-up instead. Queued input shows above the input until the turn takes it.
+ * color with its thinking option. Enter sends; while a turn runs it steers the turn and Tab queues
+ * a follow-up instead. Queued input shows above the input until the turn takes it.
  */
 
 import type { TextareaRenderable } from "@opentui/core";
@@ -17,7 +17,10 @@ import { SlashMenu } from "./SlashMenu.tsx";
 
 const INPUT_ROWS = 2;
 
-/** The default model and thinking level, or why there is none; empty while loading. */
+/**
+ * The default model and its thinking option's label, empty when it has none, or why no model is
+ * set.
+ */
 export type ModelLine =
   | { readonly set: true; readonly model: string; readonly thinking: string }
   | { readonly set: false; readonly reason: string };
@@ -43,7 +46,7 @@ interface TurnProps {
   readonly running: boolean;
 }
 
-/** The line's model and thinking level when one is set. */
+/** The line's model and thinking option when one is set. */
 const setModel = (line: ModelLine) => (line.set ? line : undefined);
 
 /** Why no model is set; empty when one is. */
@@ -62,7 +65,9 @@ function ModelLine(props: { readonly deps: ComposerDeps }) {
         {(set) => (
           <>
             <span style={{ fg: color("text.accent") }}>{set().model}</span>
-            <span style={{ fg: color("text.muted") }}>{` (${set().thinking})`}</span>
+            <Show when={set().thinking !== ""}>
+              <span style={{ fg: color("text.muted") }}>{` (${set().thinking})`}</span>
+            </Show>
           </>
         )}
       </Show>

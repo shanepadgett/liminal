@@ -7,6 +7,9 @@
     ".": "./plugin.ts",
     "./contract": "./src/contract.ts"
   },
+  "dependencies": {
+    "@liminal/model-catalog": "workspace:*"
+  },
   "peerDependencies": {
     "@liminal/sdk": "workspace:*",
     "effect": "4.0.5"

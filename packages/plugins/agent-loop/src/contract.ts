@@ -3,7 +3,7 @@
  * plugins join it.
  */
 
-import { Context, Data, type Duration, Effect, Schema, type Stream } from "effect";
+import { Context, Data, type Duration, type Effect, Schema, type Stream } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
@@ -17,13 +17,19 @@ import {
   type SessionId,
   type SessionNotFound,
   type StoreError,
-  ThinkingLevel,
+  type CatalogUnavailable,
 } from "@liminal/sdk";
+
+/**
+ * A thinking option's id; a model that does not offer it uses its default, and one with no options
+ * thinks as it does by default.
+ */
+const ThinkingChoice = Schema.String;
 
 /** What a turn's caller chooses for its model calls. */
 export const TurnSettings = Schema.Struct({
   model: ModelRef,
-  thinking: ThinkingLevel,
+  thinking: Schema.optionalKey(ThinkingChoice),
   maxOutputTokens: Schema.optionalKey(Schema.Int),
 });
 
@@ -32,9 +38,7 @@ export type TurnSettings = typeof TurnSettings.Type;
 /** The `agent-loop` settings section: what a new turn uses unless its caller chooses. */
 export const AgentLoopSection = Schema.Struct({
   model: Schema.optionalKey(ModelRef),
-  thinking: ThinkingLevel.pipe(
-    Schema.withDecodingDefaultKey(Effect.succeed<ThinkingLevel>("medium")),
-  ),
+  thinking: Schema.optionalKey(ThinkingChoice),
 });
 
 /** No `agent-loop.model` is set in any settings file. */
@@ -59,7 +63,11 @@ export const DefaultsError = Schema.Union([NoDefaultModel, DefaultsInvalid]);
 export type DefaultsError = typeof DefaultsError.Type;
 
 /** A new turn's settings, as frontends show them. */
-export const DefaultsSet = Schema.TaggedStruct("DefaultsSet", { settings: TurnSettings });
+export const DefaultsSet = Schema.TaggedStruct("DefaultsSet", {
+  settings: TurnSettings,
+  /** The label of the option a turn would use; absent when the model offers none or is not found. */
+  thinkingLabel: Schema.optionalKey(Schema.String),
+});
 
 /** Why no new turn can start: no model is set, or the section does not decode. */
 export const DefaultsMissing = Schema.TaggedStruct("DefaultsMissing", { message: Schema.String });
@@ -165,7 +173,13 @@ export const StepOutcome = Data.taggedEnum<StepOutcome>();
 export type TurnEnd = Exclude<StepOutcome, { readonly _tag: "Continue" }>;
 
 /** Why a turn stopped on an error; nothing about the failure is saved. */
-export type TurnError = ModelError | ProviderNotFound | SessionNotFound | InvalidEntry | StoreError;
+export type TurnError =
+  | ModelError
+  | ProviderNotFound
+  | CatalogUnavailable
+  | SessionNotFound
+  | InvalidEntry
+  | StoreError;
 
 export class AgentLoop extends Context.Service<
   AgentLoop,
@@ -195,10 +209,10 @@ export class AgentLoop extends Context.Service<
     readonly defaults: Effect.Effect<TurnSettings, DefaultsError>;
     /** The defaults now, then again after each `setDefault`. */
     readonly defaultsChanges: Stream.Stream<DefaultsView>;
-    /** Sets the default model, and the thinking level when given, in the global settings file. */
+    /** Sets the default model, and the thinking option when given, in the global settings file. */
     readonly setDefault: (
       model: ModelRef,
-      thinking?: ThinkingLevel,
+      thinking?: string,
     ) => Effect.Effect<void, DefaultSetFailed>;
     /** Interrupts the session's running turn and saves it as cancelled; no turn running is a no-op. */
     readonly cancel: (
@@ -233,7 +247,7 @@ export const LiveRetry = {
 export class AgentLoopRpcs extends RpcGroup.make(
   Rpc.make("agent-loop/defaults", { success: DefaultsView, stream: true }),
   Rpc.make("agent-loop/set-default", {
-    payload: { model: ModelRef, thinking: Schema.optionalKey(ThinkingLevel) },
+    payload: { model: ModelRef, thinking: Schema.optionalKey(ThinkingChoice) },
     error: DefaultSetFailed,
   }),
 ) {}

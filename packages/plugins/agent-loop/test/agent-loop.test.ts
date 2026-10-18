@@ -9,6 +9,7 @@ import { Duration, Effect, Exit, Fiber, Latch, Layer, Option, Schema, Stream } f
 import { TestClock } from "effect/testing";
 
 import context from "@liminal/context";
+import modelCatalog from "@liminal/model-catalog";
 import modelScripted from "@liminal/model-scripted";
 import {
   reply,
@@ -18,7 +19,15 @@ import {
   scriptedProvider,
 } from "@liminal/model-scripted/contract";
 import models from "@liminal/models";
-import { defineTool, draft, type Entry, ModelError, type ModelPart, SessionId } from "@liminal/sdk";
+import {
+  defineTool,
+  draft,
+  type Entry,
+  ModelError,
+  type ModelPart,
+  SessionId,
+  ThinkingEffort,
+} from "@liminal/sdk";
 import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
 import sessionLog from "@liminal/session-log";
 import {
@@ -57,6 +66,7 @@ const stack = serverOf(agentLoop).pipe(
   Layer.provideMerge(serverOf(toolRegistry)),
   Layer.provideMerge(serverOf(modelScripted)),
   Layer.provideMerge(serverOf(models)),
+  Layer.provideMerge(serverOf(modelCatalog)),
   Layer.provideMerge(serverOf(sessionLog)),
   Layer.provideMerge(serverOf(sessionStore)),
   Layer.provideMerge(serverOf(settingsPlugin)),
@@ -434,7 +444,27 @@ effectTest(
     expect(missing).toBeInstanceOf(NoDefaultModel);
 
     yield* (yield* Settings).write("global", ["agent-loop", "model"], settings.model);
-    expect(yield* loop.defaults).toEqual({ model: settings.model, thinking: "medium" });
+    expect(yield* loop.defaults).toEqual({ model: settings.model });
+  }),
+  stack,
+);
+
+effectTest(
+  "a turn sends the chosen thinking option, else the model's default when the model lacks it",
+  Effect.gen(function* () {
+    yield* start("think");
+    const scripted = yield* ScriptedModel;
+    yield* scripted.repeat(replyText("ok"));
+    const loop = yield* AgentLoop;
+
+    for (const thinking of ["high", "xhigh"]) yield* loop.run(s1, { ...settings, thinking });
+
+    const sent = (yield* scripted.requests).map((request) => request.thinking);
+
+    expect(sent).toEqual([
+      ThinkingEffort.make({ effort: "high" }),
+      ThinkingEffort.make({ effort: "low" }),
+    ]);
   }),
   stack,
 );
@@ -460,7 +490,7 @@ effectTest(
 
     expect(seen).toEqual([
       DefaultsMissing.make({ message: new NoDefaultModel().message }),
-      DefaultsSet.make({ settings: turn }),
+      DefaultsSet.make({ settings: turn, thinkingLabel: "high" }),
     ]);
 
     expect(yield* loop.defaults).toEqual(turn);

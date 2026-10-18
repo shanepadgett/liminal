@@ -9,7 +9,7 @@ import { Duration, Effect, Layer, Option, Redacted, Ref, Schema, Stream } from "
 
 import { CredentialStore, OAuth } from "@liminal/credential-store/contract";
 import { Models } from "@liminal/models/contract";
-import { ModelError, type ModelRequest } from "@liminal/sdk";
+import { ModelError, type ModelRequest, ThinkingEffort } from "@liminal/sdk";
 import { effectTest } from "@liminal/sdk/testing";
 
 import { codexLogin, codexProvider } from "../src/contract.ts";
@@ -33,7 +33,7 @@ const request = (messages: ModelRequest["messages"]): ModelRequest => ({
   model,
   messages,
   tools: [readTool],
-  thinking: "high",
+  thinking: ThinkingEffort.make({ effort: "high" }),
   cacheKey: "session-1",
 });
 
@@ -50,14 +50,11 @@ const recorded = stackWith({
 const bodyOf = (index: number) => sentBody(sent, index);
 
 effectTest(
-  "lists the plan's models with their windows and thinking levels, leaving hidden ones out",
+  "lists the catalog's models on the plan with the plan's windows, leaving hidden ones out",
   Effect.gen(function* () {
     const listed = yield* (yield* Models).listModels(codexProvider);
-    const luna = listed.find((info) => info.id === "gpt-5.6-luna");
-
-    expect(luna).toMatchObject({ contextWindow: 272_000, input: ["text", "image"] });
-    expect(luna?.thinking).toEqual(["low", "medium", "high", "xhigh"]);
-    expect(listed.some((info) => info.id === "codex-auto-review")).toBe(false);
+    expect(listed.map((info) => info.id)).toEqual(["gpt-6-sol", "gpt-5.6-luna"]);
+    expect(listed[1]).toMatchObject({ contextWindow: 272_000, defaultThinking: "medium" });
 
     const [list] = yield* Ref.get(sent);
     expect(list?.url).toContain("client_version=0.200.0");

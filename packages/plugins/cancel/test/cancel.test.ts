@@ -9,6 +9,7 @@ import { TestClock } from "effect/testing";
 import agentLoop from "@liminal/agent-loop";
 import { AgentLoop, TurnEndedEntry } from "@liminal/agent-loop/contract";
 import context from "@liminal/context";
+import modelCatalog from "@liminal/model-catalog";
 import modelScripted from "@liminal/model-scripted";
 import { replyText, ScriptedModel, scriptedProvider } from "@liminal/model-scripted/contract";
 import models from "@liminal/models";
@@ -31,6 +32,7 @@ const stack = serverOf(cancel).pipe(
   Layer.provideMerge(serverOf(toolRegistry)),
   Layer.provideMerge(serverOf(modelScripted)),
   Layer.provideMerge(serverOf(models)),
+  Layer.provideMerge(serverOf(modelCatalog)),
   Layer.provideMerge(serverOf(sessionLog)),
   Layer.provideMerge(serverOf(sessionStore)),
   Layer.provideMerge(serverOf(settingsPlugin)),
@@ -50,7 +52,7 @@ effectTest(
 
     yield* (yield* AgentLoop).start(s1, {
       model: { provider: scriptedProvider, id: "scripted" },
-      thinking: "medium",
+      thinking: "low",
     });
 
     // Lets the turn reach its model call, held at the gate.

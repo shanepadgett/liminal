@@ -1,6 +1,6 @@
 /**
  * Where the user writes. A full-width surface of its own holding the input and, right under it, the
- * model in the accent color with its thinking level. Its top row can glide while the agent works.
+ * model in the accent color with its thinking option. Its top row can glide while the agent works.
  * The key hints sit directly below the surface. A draft that is a `/` command, or that ends in an
  * `@` tag, opens a list of suggestions above the input. When the assistant asks the user questions,
  * its form takes the input's place until the answers are sent.

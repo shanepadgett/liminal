@@ -1,23 +1,46 @@
 /** Models: the registry providers join and the service that routes each call to one. */
 
-import { Context, type Effect, Schema, type Stream } from "effect";
+import { Context, Data, type Effect, type Option, Schema, type Stream } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
+  CatalogUnavailable,
   KeyedRegistry,
   ModelError,
   type ModelEvent,
   ModelInfo,
+  type ModelRef,
   type ModelRequest,
   ProviderNotFound,
   ProviderInfo,
 } from "@liminal/sdk";
 
+/** A model an account's plan offers; its context window, when given, wins over the catalog's. */
+export interface PlanModel {
+  readonly id: string;
+  readonly contextWindow: Option.Option<number>;
+}
+
+/** Where a provider's models come from. */
+export type ModelSource = Data.TaggedEnum<{
+  /** A fixed list, such as a test provider's or a local server's. */
+  Listed: { readonly models: Effect.Effect<ReadonlyArray<ModelInfo>, ModelError> };
+  /** Every model the catalog lists under `catalogId`. */
+  Catalog: { readonly catalogId: string };
+  /** The catalog's models that the account's plan offers, the plan read on each listing. */
+  PlanCatalog: {
+    readonly catalogId: string;
+    readonly plan: Effect.Effect<ReadonlyArray<PlanModel>, ModelError>;
+  };
+}>;
+
+export const ModelSource = Data.taggedEnum<ModelSource>();
+
 /** What a provider plugin registers. */
 export interface ModelProvider {
   readonly id: string;
   readonly name: string;
-  readonly models: Effect.Effect<ReadonlyArray<ModelInfo>, ModelError>;
+  readonly source: ModelSource;
   /** One attempt; accepts model ids `models` does not list; interruption cancels the call. */
   readonly stream: (request: ModelRequest) => Stream.Stream<ModelEvent, ModelError>;
   /** Whether `tool-change` parts become native items; otherwise every declared tool is sent. */
@@ -37,9 +60,17 @@ export class Models extends Context.Service<
       request: ModelRequest,
     ) => Stream.Stream<ModelEvent, ModelError | ProviderNotFound>;
     readonly listProviders: Effect.Effect<ReadonlyArray<ProviderInfo>>;
+    /** The provider's models; a plan is read again on each call. */
     readonly listModels: (
       provider: string,
-    ) => Effect.Effect<ReadonlyArray<ModelInfo>, ModelError | ProviderNotFound>;
+    ) => Effect.Effect<
+      ReadonlyArray<ModelInfo>,
+      ModelError | ProviderNotFound | CatalogUnavailable
+    >;
+    /** One model's details, without reading a plan. */
+    readonly describe: (
+      model: ModelRef,
+    ) => Effect.Effect<ModelInfo, ModelError | ProviderNotFound | CatalogUnavailable>;
   }
 >()("liminal/models/Models") {}
 
@@ -49,6 +80,6 @@ export class ModelsRpcs extends RpcGroup.make(
   Rpc.make("models/list", {
     payload: { provider: Schema.String },
     success: Schema.Array(ModelInfo),
-    error: Schema.Union([ModelError, ProviderNotFound]),
+    error: Schema.Union([ModelError, ProviderNotFound, CatalogUnavailable]),
   }),
 ) {}

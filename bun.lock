@@ -84,6 +84,7 @@
         "@liminal/tool-registry": "workspace:*",
       },
       "devDependencies": {
+        "@liminal/model-catalog": "workspace:*",
         "@liminal/model-scripted": "workspace:*",
         "@liminal/session-store": "workspace:*",
       },
@@ -104,6 +105,7 @@
       },
       "devDependencies": {
         "@liminal/context": "workspace:*",
+        "@liminal/model-catalog": "workspace:*",
         "@liminal/model-scripted": "workspace:*",
         "@liminal/models": "workspace:*",
         "@liminal/session-log": "workspace:*",
@@ -179,6 +181,7 @@
       },
       "devDependencies": {
         "@liminal/context": "workspace:*",
+        "@liminal/model-catalog": "workspace:*",
         "@liminal/model-scripted": "workspace:*",
         "@liminal/models": "workspace:*",
         "@liminal/session-store": "workspace:*",
@@ -194,6 +197,14 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/model-catalog": {
+      "name": "@liminal/model-catalog",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
     "packages/plugins/model-codex": {
       "name": "@liminal/model-codex",
       "version": "0.1.0",
@@ -205,6 +216,7 @@
       "devDependencies": {
         "@liminal/agent-loop": "workspace:*",
         "@liminal/context": "workspace:*",
+        "@liminal/model-catalog": "workspace:*",
         "@liminal/session-log": "workspace:*",
         "@liminal/session-store": "workspace:*",
         "@liminal/settings": "workspace:*",
@@ -223,6 +235,9 @@
       "dependencies": {
         "@liminal/models": "workspace:*",
       },
+      "devDependencies": {
+        "@liminal/model-catalog": "workspace:*",
+      },
       "peerDependencies": {
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
@@ -231,6 +246,9 @@
     "packages/plugins/models": {
       "name": "@liminal/models",
       "version": "0.1.0",
+      "dependencies": {
+        "@liminal/model-catalog": "workspace:*",
+      },
       "peerDependencies": {
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
@@ -494,6 +512,8 @@
     "@liminal/inbox": ["@liminal/inbox@workspace:packages/plugins/inbox"],
 
     "@liminal/kernel": ["@liminal/kernel@workspace:packages/kernel"],
+
+    "@liminal/model-catalog": ["@liminal/model-catalog@workspace:packages/plugins/model-catalog"],
 
     "@liminal/model-codex": ["@liminal/model-codex@workspace:packages/plugins/model-codex"],
 

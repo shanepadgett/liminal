@@ -14,7 +14,7 @@ import {
   FORM_WRITING,
 } from "./chat/formSamples.ts";
 import type { FormState } from "./chat/formState.ts";
-import { ModelPicker } from "./chat/ModelPicker.tsx";
+import { ModelPicker, ThinkingPicker } from "./chat/ModelPicker.tsx";
 import type { ReloadShown } from "./chat/ReloadStatus.tsx";
 import { Sidebar } from "./chat/Sidebar.tsx";
 import { Toast, type ToastKind, type ToastMessage } from "./chat/Toast.tsx";
@@ -125,6 +125,12 @@ const modelsState = (name: string, selected: string): EntryState => ({
   view: withRoles((color) => <ModelPicker color={color} selected={selected} />),
 });
 
+const thinkingState = (name: string, selected: string): EntryState => ({
+  name,
+  fill: "screen",
+  view: withRoles((color) => <ThinkingPicker color={color} selected={selected} />),
+});
+
 export const GROUPS: Groups = [
   {
     title: "Tokens",
@@ -219,6 +225,7 @@ export const GROUPS: Groups = [
             states: [
               modelsState("Current model", "gpt-5.5"),
               modelsState("Another provider", "claude-sonnet-4-6"),
+              thinkingState("Thinking options", "medium"),
             ],
           },
         ],

@@ -1,23 +1,35 @@
 /** Provider `codex`: one streamed Responses call per request on the ChatGPT plan's Codex backend. */
 
-import { OpenAiClient, OpenAiLanguageModel } from "@effect/ai-openai";
-import { Effect, FileSystem, Layer, Stream } from "effect";
+import { Generated, OpenAiClient, OpenAiLanguageModel } from "@effect/ai-openai";
+import { Effect, FileSystem, Layer, Predicate, Schema, Stream } from "effect";
 import { HttpClient } from "effect/http";
 
 import { CredentialStore } from "@liminal/credential-store/contract";
-import { ModelProviders } from "@liminal/models/contract";
-import type { ModelError, ModelEvent, ModelRequest, ThinkingLevel } from "@liminal/sdk";
+import { ModelProviders, ModelSource } from "@liminal/models/contract";
+import { ModelError, type ModelEvent, type ModelRequest, type ThinkingValue } from "@liminal/sdk";
 
 import { codexProvider } from "../contract.ts";
 import { makeSigner, type Signer } from "./auth.ts";
-import { listModels } from "./catalog.ts";
 import { toModelError } from "./errors.ts";
 import { check, noProgress, translate } from "./events.ts";
+import { readPlan } from "./plan.ts";
 import { promptOf, toolkitOf } from "./prompt.ts";
 
 export const apiUrl = "https://chatgpt.com/backend-api/codex";
 
-const effortOf = (level: ThinkingLevel) => (level === "off" ? "none" : level);
+const isEffort = Schema.is(Generated.ReasoningEffort);
+const none: Generated.ReasoningEffort = "none";
+
+/** The effort the backend takes; it takes only efforts, so `On`, a budget or an unknown effort fail. */
+const effortOf = Effect.fn("codex.effortOf")(function* (thinking: ThinkingValue) {
+  if (Predicate.isTagged(thinking, "Off")) return none;
+  if (Predicate.isTagged(thinking, "Effort") && isEffort(thinking.effort)) return thinking.effort;
+
+  return yield* new ModelError({
+    reason: "invalid-request",
+    message: `Codex takes no thinking ${JSON.stringify(thinking)}`,
+  });
+});
 
 const start: ModelEvent = { type: "start" };
 
@@ -25,6 +37,7 @@ const start: ModelEvent = { type: "start" };
 const languageModel = (request: ModelRequest, http: HttpClient.HttpClient, sign: Signer) =>
   Effect.gen(function* () {
     const signer = yield* sign(request.cacheKey);
+    const effort = yield* effortOf(request.thinking);
 
     const client = yield* OpenAiClient.make({
       apiUrl,
@@ -40,7 +53,7 @@ const languageModel = (request: ModelRequest, http: HttpClient.HttpClient, sign:
         store: false,
         include: ["reasoning.encrypted_content"],
         prompt_cache_key: request.cacheKey,
-        reasoning: { effort: effortOf(request.thinking), summary: "auto" },
+        reasoning: { effort, summary: "auto" },
         strictJsonSchema: false,
       },
     }).pipe(Effect.provideService(OpenAiClient.OpenAiClient, client));
@@ -85,7 +98,7 @@ export const codexLayer = Layer.effectDiscard(
     yield* providers.register({
       id: codexProvider,
       name: "Codex",
-      models: listModels(apiUrl, http, sign),
+      source: ModelSource.PlanCatalog({ catalogId: "openai", plan: readPlan(apiUrl, http, sign) }),
       stream: makeStream(http, sign, fs),
       nativeToolChanges: false,
     });

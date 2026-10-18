@@ -1,0 +1,84 @@
+{
+  "openai": {
+    "id": "openai",
+    "name": "OpenAI",
+    "models": {
+      "gpt-5.2": {
+        "id": "gpt-5.2",
+        "name": "GPT-5.2",
+        "reasoning": true,
+        "reasoning_options": [
+          { "type": "effort", "values": ["none", "low", "medium", "high", "xhigh"] }
+        ],
+        "tool_call": true,
+        "modalities": { "input": ["text", "image"], "output": ["text"] },
+        "limit": { "context": 400000, "input": 272000, "output": 128000 },
+        "cost": { "input": 1.75, "output": 14, "cache_read": 0.175 }
+      },
+      "gpt-4o": {
+        "id": "gpt-4o",
+        "name": "GPT-4o",
+        "reasoning": false,
+        "tool_call": true,
+        "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
+        "limit": { "context": 128000, "output": 16384 },
+        "cost": { "input": 2.5, "output": 10, "cache_read": 1.25 }
+      },
+      "text-embedding-3-small": {
+        "id": "text-embedding-3-small",
+        "name": "text-embedding-3-small",
+        "reasoning": false,
+        "tool_call": false,
+        "modalities": { "input": ["text"], "output": ["text"] },
+        "limit": { "context": 8191, "output": 1536 },
+        "cost": { "input": 0.02, "output": 0 }
+      },
+      "broken": { "id": "broken", "name": "Broken" }
+    }
+  },
+  "anthropic": {
+    "id": "anthropic",
+    "name": "Anthropic",
+    "models": {
+      "claude-sonnet-4-5": {
+        "id": "claude-sonnet-4-5",
+        "name": "Claude Sonnet 4.5 (latest)",
+        "reasoning": true,
+        "reasoning_options": [{ "type": "budget_tokens", "min": 1024 }],
+        "tool_call": true,
+        "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
+        "limit": { "context": 200000, "output": 64000 },
+        "cost": { "input": 3, "output": 15, "cache_read": 0.3, "cache_write": 3.75 }
+      },
+      "claude-opus-4-6": {
+        "id": "claude-opus-4-6",
+        "name": "Claude Opus 4.6",
+        "reasoning": true,
+        "reasoning_options": [
+          { "type": "effort", "values": ["low", "medium", "high", "max"] },
+          { "type": "budget_tokens", "min": 1024 }
+        ],
+        "tool_call": true,
+        "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
+        "limit": { "context": 1000000, "output": 128000 },
+        "cost": { "input": 5, "output": 25, "cache_read": 0.5, "cache_write": 6.25 }
+      }
+    }
+  },
+  "deepinfra": {
+    "id": "deepinfra",
+    "name": "DeepInfra",
+    "models": {
+      "XiaomiMiMo/MiMo-V2.6-Pro": {
+        "id": "XiaomiMiMo/MiMo-V2.6-Pro",
+        "name": "MiMo-V2.6-Pro",
+        "reasoning": true,
+        "reasoning_options": [{ "type": "toggle" }],
+        "tool_call": true,
+        "modalities": { "input": ["text", "image", "audio", "video"], "output": ["text"] },
+        "limit": { "context": 1048576, "output": 131072 },
+        "cost": { "input": 0.43, "output": 0.87, "cache_read": 0.0036 }
+      }
+    }
+  }
+}

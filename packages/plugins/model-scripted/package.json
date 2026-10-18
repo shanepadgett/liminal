@@ -10,6 +10,9 @@
   "dependencies": {
     "@liminal/models": "workspace:*"
   },
+  "devDependencies": {
+    "@liminal/model-catalog": "workspace:*"
+  },
   "peerDependencies": {
     "@liminal/sdk": "workspace:*",
     "effect": "4.0.5"

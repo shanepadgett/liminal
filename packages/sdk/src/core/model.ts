@@ -66,8 +66,33 @@ export type ModelContent = typeof ModelContent.Type;
 export const ModelRef = Schema.Struct({ provider: Schema.String, id: Schema.String });
 export type ModelRef = typeof ModelRef.Type;
 
-export const ThinkingLevel = Schema.Literals(["off", "minimal", "low", "medium", "high", "xhigh"]);
-export type ThinkingLevel = typeof ThinkingLevel.Type;
+export const ThinkingOff = Schema.TaggedStruct("Off", {});
+export const ThinkingOn = Schema.TaggedStruct("On", {});
+
+/** An effort as the provider names it, such as `low`, `xhigh` or `max`. */
+export const ThinkingEffort = Schema.TaggedStruct("Effort", { effort: Schema.String });
+
+/** A token budget for thinking. */
+export const ThinkingBudget = Schema.TaggedStruct("Budget", { tokens: Schema.Int });
+
+/** What a request asks of the model's thinking, in the terms its provider takes. */
+export const ThinkingValue = Schema.Union([
+  ThinkingOff,
+  ThinkingOn,
+  ThinkingEffort,
+  ThinkingBudget,
+]);
+
+export type ThinkingValue = typeof ThinkingValue.Type;
+
+/** One thinking choice a model offers, named as its provider names it. */
+export const ThinkingOption = Schema.Struct({
+  id: Schema.String,
+  label: Schema.String,
+  value: ThinkingValue,
+});
+
+export type ThinkingOption = typeof ThinkingOption.Type;
 
 /** A tool declared on the request; one not offered at the start waits for a `tool-change` offer. */
 export const ModelTool = Schema.Struct({ ...ToolSpec.fields, offered: Schema.Boolean });
@@ -77,7 +102,7 @@ export const ModelRequest = Schema.Struct({
   model: ModelRef,
   messages: Schema.Array(ModelContent),
   tools: Schema.Array(ModelTool),
-  thinking: ThinkingLevel,
+  thinking: ThinkingValue,
   maxOutputTokens: Schema.optional(Schema.Int),
   /** Groups requests that share a prefix, such as one session's. */
   cacheKey: Schema.optional(Schema.String),
@@ -160,6 +185,15 @@ export class ProviderNotFound extends Schema.TaggedError<
   { readonly brand: unique symbol }
 >()("ProviderNotFound", { provider: Schema.String }) {}
 
+/**
+ * The model catalog cannot list `catalogId`: it could not be fetched and is not cached, or it does
+ * not exist.
+ */
+export class CatalogUnavailable extends Schema.TaggedError<
+  CatalogUnavailable,
+  { readonly brand: unique symbol }
+>()("CatalogUnavailable", { catalogId: Schema.String, message: Schema.String }) {}
+
 /** US dollars per million tokens. */
 export const ModelPrice = Schema.Struct({
   input: Schema.Finite,
@@ -173,12 +207,30 @@ export const ModelInfo = Schema.Struct({
   name: Schema.String,
   contextWindow: Schema.Int,
   maxOutput: Schema.Int,
-  thinking: Schema.Array(ThinkingLevel),
+  /** The model's thinking choices; empty when it cannot think or its thinking cannot be set. */
+  thinking: Schema.Array(ThinkingOption),
+  /**
+   * The option used when none is chosen or the chosen one is not offered; set when `thinking` is
+   * not empty.
+   */
+  defaultThinking: Schema.optional(Schema.String),
   input: Schema.Array(Schema.Literals(["text", "image"])),
   price: Schema.optional(ModelPrice),
 });
 
 export type ModelInfo = typeof ModelInfo.Type;
+
+/** `medium` when offered, else the middle option. */
+export const defaultThinkingOf = (options: ReadonlyArray<ThinkingOption>) =>
+  (options.find((option) => option.id === "medium") ?? options[Math.floor(options.length / 2)])?.id;
+
+/**
+ * The option `id` names when `info` offers it, else the model's default; `undefined` when it offers
+ * none.
+ */
+export const thinkingOptionOf = (info: ModelInfo, id: string | undefined) =>
+  info.thinking.find((option) => option.id === id)
+  ?? info.thinking.find((option) => option.id === info.defaultThinking);
 
 export const ProviderInfo = Schema.Struct({ id: Schema.String, name: Schema.String });
 export type ProviderInfo = typeof ProviderInfo.Type;

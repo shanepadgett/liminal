@@ -16,6 +16,7 @@
     "@liminal/tool-registry": "workspace:*"
   },
   "devDependencies": {
+    "@liminal/model-catalog": "workspace:*",
     "@liminal/model-scripted": "workspace:*",
     "@liminal/session-store": "workspace:*"
   },
