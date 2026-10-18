@@ -15,6 +15,7 @@ import { start } from "@liminal/kernel";
 import { Directories } from "@liminal/sdk";
 
 import { pluginFolders, sharedModules } from "./boot.ts";
+import { compositionSource, projectTrust } from "./composition.ts";
 import { giveHandoff, handoffVariable, takeHandoff } from "./handoff.ts";
 import { reloadOptions } from "./reload.ts";
 import { exitWithCode, restartExitCode } from "./supervisor.ts";
@@ -37,20 +38,18 @@ const directories = Layer.effect(
 
 /** Starts the kernel with no frontend and no reloads, then stops. */
 const check = Effect.gen(function* () {
-  yield* start({ folders: yield* pluginFolders, shared: sharedModules, parts: ["tui"] });
+  yield* start({ composition: yield* compositionSource, shared: sharedModules, parts: ["tui"] });
 
   return 0;
 });
 
 /** Runs the TUI until the user quits (0) or a restart applies (the restart code). */
 const run = Effect.gen(function* () {
-  const folders = yield* pluginFolders;
-
   const kernel = yield* start({
-    folders,
+    composition: yield* compositionSource,
     shared: sharedModules,
     parts: ["tui"],
-    reload: yield* reloadOptions(folders),
+    reload: yield* reloadOptions(yield* pluginFolders),
   });
 
   const terminal = yield* makeTerminal(yield* openRenderer);
@@ -87,7 +86,9 @@ BunRuntime.runMain(
   main.pipe(
     Effect.scoped,
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- the CLI's entry point.
-    Effect.provide(directories.pipe(Layer.provideMerge(BunServices.layer))),
+    Effect.provide(
+      projectTrust.pipe(Layer.provideMerge(directories), Layer.provideMerge(BunServices.layer)),
+    ),
   ),
   { teardown: exitWithCode },
 );

@@ -9,7 +9,7 @@ export interface Resolution {
   /** In discovery order; each one's required providers are active too. */
   readonly active: ReadonlyArray<Manifest>;
   readonly inactive: ReadonlyMap<string, InactiveReason>;
-  /** The single enabled provider of each service key. */
+  /** The provider picked for each service key. */
   readonly providers: ReadonlyMap<string, string>;
 }
 
@@ -24,17 +24,43 @@ const providersByKey = (plugins: ReadonlyArray<Manifest>): Map<string, Array<str
   return byKey;
 };
 
-const markDuplicates = (
+/** Why `name` does not provide `service`, given who does. */
+const loserReason = (service: string, active: string, isChosen: boolean) =>
+  isChosen
+    ? InactiveReason.Replaced({ service, by: active })
+    : InactiveReason.Competing({ service, active });
+
+/**
+ * One provider per service: the one chosen in `plugins.json`, else the first found. Two chosen
+ * leave the service with none. Every other provider is marked inactive.
+ */
+const pickProviders = (
   byKey: ReadonlyMap<string, ReadonlyArray<string>>,
+  choices: ReadonlyMap<string, boolean>,
   inactive: Map<string, InactiveReason>,
 ) => {
-  for (const [service, plugins] of byKey) {
-    if (plugins.length < 2) continue;
+  const providers = new Map<string, string>();
 
-    for (const plugin of plugins) {
-      inactive.set(plugin, InactiveReason.DuplicateProvider({ service, plugins }));
+  for (const [service, plugins] of byKey) {
+    const chosen = plugins.filter((name) => choices.get(name) === true);
+
+    if (chosen.length > 1) {
+      for (const name of plugins)
+        inactive.set(name, InactiveReason.DuplicateProvider({ service, plugins: chosen }));
+
+      continue;
+    }
+
+    const [active] = chosen.length === 1 ? chosen : plugins;
+    if (active === undefined) continue;
+    providers.set(service, active);
+
+    for (const name of plugins) {
+      if (name !== active) inactive.set(name, loserReason(service, active, chosen.length === 1));
     }
   }
+
+  return providers;
 };
 
 /** Every strongly connected group with more than one plugin, or a plugin that needs itself. */
@@ -109,23 +135,26 @@ const markUnmet = (
   }
 };
 
-export const resolve = (plugins: ReadonlyArray<Manifest>): Resolution => {
+/**
+ * Which of `plugins`, in discovery order, can activate; `choices` turns plugins on or off by name
+ * over their manifests' `enabledByDefault`.
+ */
+export const resolve = (
+  plugins: ReadonlyArray<Manifest>,
+  choices: ReadonlyMap<string, boolean>,
+): Resolution => {
   const inactive = new Map<string, InactiveReason>();
 
   for (const plugin of plugins) {
-    if (!plugin.enabledByDefault) inactive.set(plugin.name, InactiveReason.Disabled());
+    const choice = choices.get(plugin.name);
+
+    if (choice === false) inactive.set(plugin.name, InactiveReason.Disabled({ by: "choice" }));
+    else if (choice === undefined && !plugin.enabledByDefault)
+      inactive.set(plugin.name, InactiveReason.Disabled({ by: "default" }));
   }
 
   const enabled = plugins.filter((plugin) => !inactive.has(plugin.name));
-  const byKey = providersByKey(enabled);
-  markDuplicates(byKey, inactive);
-
-  const providers = new Map<string, string>();
-
-  for (const [key, names] of byKey) {
-    const [only] = names;
-    if (names.length === 1 && only !== undefined) providers.set(key, only);
-  }
+  const providers = pickProviders(providersByKey(enabled), choices, inactive);
 
   markCycles(enabled, providers, inactive);
   markUnmet(plugins, providers, inactive);

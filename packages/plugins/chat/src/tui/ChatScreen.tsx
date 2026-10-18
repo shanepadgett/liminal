@@ -47,6 +47,7 @@ function SessionView(props: ScreenProps & { readonly running: boolean }) {
       </box>
       <SlotView of={ChatSlots.composer} props={turn()} />
       <box flexDirection="row" flexShrink={0} paddingX={PADDING_X} gap={3}>
+        <SlotView of={ChatSlots.composerHints} props={turn()} />
         <SlotView of={ChatSlots.hints} props={turn()} />
       </box>
     </>

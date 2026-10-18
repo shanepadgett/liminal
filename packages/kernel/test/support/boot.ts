@@ -7,9 +7,15 @@ import type { ReloadState } from "@liminal/sdk";
 
 import type { BootOptions, Kernel, ReloadOptions } from "../../src/index.ts";
 
-/** A locked plugin set over `folders`; fixtures import `effect` and `@liminal/sdk` bare. */
-export const testBoot = (folders: ReadonlyArray<string>): BootOptions => ({
-  folders,
+/**
+ * A locked plugin set over `folders`, with no choices unless given; fixtures import `effect` and
+ * `@liminal/sdk` bare.
+ */
+export const testBoot = (
+  folders: ReadonlyArray<string>,
+  choices: ReadonlyMap<string, boolean> = new Map(),
+): BootOptions => ({
+  composition: Effect.succeed({ folders, choices }),
   shared: { from: import.meta.dir, packages: ["effect", "@liminal/sdk"] },
   parts: [],
 });
@@ -23,6 +29,8 @@ export const testReload = Effect.fn("testReload")(function* (
   const reload: ReloadOptions = {
     changes: Stream.fromQueue(changes),
     restartRoots: [],
+    pluginFolders: [],
+    compositionFiles: [],
     typecheck: Option.none(),
     startCheck: ChildProcess.make("/bin/sh", ["-c", "exit 0"]),
     mode: () => Effect.succeed("automatic"),

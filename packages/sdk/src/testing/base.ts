@@ -3,7 +3,7 @@
  * scope.
  */
 import { BunServices } from "@effect/platform-bun";
-import { Effect, FileSystem, Layer, Path } from "effect";
+import { Effect, FileSystem, Layer, Path, Ref } from "effect";
 import type { PlatformError } from "effect/PlatformError";
 
 import {
@@ -12,6 +12,7 @@ import {
   EventBus,
   makeTurnGate,
   makeWork,
+  ProjectTrust,
   TurnGate,
   Work,
 } from "../core/index.ts";
@@ -53,9 +54,18 @@ const openGate = Layer.effect(
   Effect.map(makeTurnGate, (made) => made.gate),
 );
 
+/** Trust held in memory: untrusted until `trust` runs. */
+const memoryTrust = Layer.effect(
+  ProjectTrust,
+  Effect.map(Ref.make(false), (trusted) =>
+    ProjectTrust.of({ trusted: Ref.get(trusted), trust: Ref.set(trusted, true) }),
+  ),
+);
+
 /** Every base service, with each test's folders in a fresh temp folder. */
 export const testBaseServices: Layer.Layer<BaseServices, PlatformError> = Layer.mergeAll(
   temporaryDirectories,
+  memoryTrust,
   EventBus.layer,
   callerWork,
   openGate,

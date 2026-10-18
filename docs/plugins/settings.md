@@ -14,12 +14,12 @@ Status: built
 ### Layers
 
 - Layers merge objects key by key; a higher layer's list replaces the lower one
-- Project plugins and project settings load only after the user trusts the folder once
+- Project settings load only after the user trusts the folder once
+- Trust is `trustedFolders` in the global `plugins.json`
 
 ### Changes
 
 - App-written changes edit the same file in place and keep comments (`jsonc-parser`)
-- Turning a plugin on or off, or replacing it, is a graph change
 - Other values are read on each use; changing them rebuilds nothing
 
 ### Credentials

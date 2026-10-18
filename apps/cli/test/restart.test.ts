@@ -34,6 +34,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
 
       expect(active.toSorted()).toEqual([
         "agent-loop",
+        "approval",
         "cache-hints",
         "cancel",
         "chat",
@@ -64,6 +65,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "tools-edit",
         "tools-read",
         "tools-shell",
+        "trust",
       ]);
 
       return yield* kernel.use(use);

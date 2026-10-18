@@ -12,6 +12,7 @@ import {
   Inspectable,
   Option,
   Path,
+  Predicate,
   Queue,
   Schema,
   Stream,
@@ -20,6 +21,7 @@ import {
 import { type ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import {
+  type CompositionInvalid,
   type HoldGraph,
   ReloadApplying,
   ReloadChecking,
@@ -29,7 +31,7 @@ import {
   type ReloadState,
 } from "@liminal/sdk";
 
-import type { ChangeFailed } from "../graph/change.ts";
+import { ChangeFailed } from "../graph/change.ts";
 import type { Candidate, Graphs } from "../graph/graphs.ts";
 import { Change, classify } from "./changes.ts";
 import { Command, Event, initialState, Phase, type State, transition } from "./machine.ts";
@@ -43,6 +45,10 @@ export interface ReloadOptions {
   readonly changes: Stream.Stream<ReadonlyArray<string>>;
   /** Folders of code loaded at start; a change there needs a new process. */
   readonly restartRoots: ReadonlyArray<string>;
+  /** Every folder whose packages may load, whether or not the composition loads it now. */
+  readonly pluginFolders: ReadonlyArray<string>;
+  /** The `plugins.json` files; an edit reads the composition again. */
+  readonly compositionFiles: ReadonlyArray<string>;
   /** Run before any other check; a non-zero exit fails the change. */
   readonly typecheck: Option.Option<ChildProcess.Command>;
   /** Starts the changed app without a frontend; a non-zero exit fails a restart. */
@@ -97,8 +103,10 @@ const runCommand = (command: ChildProcess.Command) =>
     ),
   );
 
-const describeChange = (error: ChangeFailed) =>
-  error.failed.map(({ name, reason }) => `${name}: ${reason}`).join("\n");
+const describeChange = (error: ChangeFailed | CompositionInvalid) =>
+  Predicate.isTagged(error, "ChangeFailed")
+    ? error.failed.map(({ name, reason }) => `${name}: ${reason}`).join("\n")
+    : `${error.file}: ${error.message}`;
 
 /** What the runner's steps share. */
 interface Runner {
@@ -148,12 +156,16 @@ const startCheck = (runner: Runner, check: number) =>
     }),
   );
 
-/** Typechecks, then start-checks a restart or builds a plugin change aside. */
+/** Whether `change` changed code; a `plugins.json` edit alone did not. */
+const changesCode = (change: Change) =>
+  Change.$match(change, { Restart: () => true, Plugins: ({ packages }) => packages.size > 0 });
+
+/** Typechecks changed code, then start-checks a restart or builds a plugin change aside. */
 const runCheck = (runner: Runner, change: Change, check: number) => {
-  const typecheck = Option.match(runner.options.typecheck, {
-    onNone: () => Effect.void,
-    onSome: runCommand,
-  });
+  const typecheck = Option.match(
+    Option.filter(runner.options.typecheck, () => changesCode(change)),
+    { onNone: () => Effect.void, onSome: runCommand },
+  );
 
   const next = Change.$match(change, {
     Restart: () => startCheck(runner, check),
@@ -200,9 +212,10 @@ const toReloadState: (phase: Phase) => ReloadState = Phase.$match({
 });
 
 /** Feeds each batch of changed files that touches watched code to the machine as one change. */
-const watch = Effect.fn("watch")(function* (runner: Runner, folders: ReadonlyArray<string>) {
+const watch = Effect.fn("watch")(function* (runner: Runner) {
   const path = yield* Path.Path;
-  const watched = { folders, restartRoots: runner.options.restartRoots };
+  const { pluginFolders, restartRoots, compositionFiles } = runner.options;
+  const watched = { folders: pluginFolders, restartRoots, compositionFiles };
 
   yield* runner.options.changes.pipe(
     Stream.runForEach((files) => {
@@ -216,11 +229,7 @@ const watch = Effect.fn("watch")(function* (runner: Runner, folders: ReadonlyArr
 /** Starts the reload machine for `graphs` until the scope closes. */
 export const runReloads = Effect.fn("runReloads")(function* (
   options: ReloadOptions,
-  context: {
-    readonly graphs: Graphs;
-    readonly folders: ReadonlyArray<string>;
-    readonly close: Runner["close"];
-  },
+  context: { readonly graphs: Graphs; readonly close: Runner["close"] },
 ) {
   const runner: Runner = {
     options,
@@ -244,7 +253,7 @@ export const runReloads = Effect.fn("runReloads")(function* (
   });
 
   yield* Queue.take(runner.events).pipe(Effect.flatMap(step), Effect.forever, Effect.forkScoped);
-  yield* Effect.forkScoped(watch(runner, context.folders));
+  yield* Effect.forkScoped(watch(runner));
 
   const reloads: Reloads = {
     state: SubscriptionRef.changes(published),

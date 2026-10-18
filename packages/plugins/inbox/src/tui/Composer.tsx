@@ -10,8 +10,16 @@ import { useTerminalDimensions } from "@opentui/solid";
 import type { Accessor } from "solid-js";
 import { For, onMount, Show, untrack } from "solid-js";
 
+import { ChatSlots } from "@liminal/chat/contract";
 import type { SessionId } from "@liminal/sdk";
-import { type Hint, Hints, type TuiCommandsService, useBindings, useColor } from "@liminal/sdk/tui";
+import {
+  type Hint,
+  Hints,
+  SlotView,
+  type TuiCommandsService,
+  useBindings,
+  useColor,
+} from "@liminal/sdk/tui";
 
 import type { Queued, SendMode } from "../contract.ts";
 import { useSlash } from "./slash.ts";
@@ -157,6 +165,23 @@ const clearDraft = (input: TextareaRenderable | undefined, underDialog: boolean)
 /** While a turn runs, tab queues the draft as a follow-up. */
 const queueKeys = (running: boolean) => (running ? [{ key: "tab", cmd: "inbox.queue" }] : []);
 
+/** The model line with the plugins' items after it, then the last send's failure. */
+function StatusLines(props: { readonly deps: ComposerDeps; readonly turn: TurnProps }) {
+  const color = useColor();
+
+  return (
+    <>
+      <box flexDirection="row" gap={2}>
+        <ModelLine deps={props.deps} />
+        <SlotView of={ChatSlots.composerLine} props={props.turn} />
+      </box>
+      <Show when={props.deps.problem() !== ""}>
+        <text fg={color("feedback.danger")}>{props.deps.problem()}</text>
+      </Show>
+    </>
+  );
+}
+
 export const makeComposer = (deps: ComposerDeps) =>
   function Composer(props: TurnProps) {
     const color = useColor();
@@ -213,10 +238,7 @@ export const makeComposer = (deps: ComposerDeps) =>
             setDraft(input?.plainText ?? "");
           }}
         />
-        <ModelLine deps={deps} />
-        <Show when={deps.problem() !== ""}>
-          <text fg={color("feedback.danger")}>{deps.problem()}</text>
-        </Show>
+        <StatusLines deps={deps} turn={props} />
       </box>
     );
   };

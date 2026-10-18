@@ -1,6 +1,8 @@
 /** The root `@liminal/sdk` surface: what manifests, contracts and servers import. */
+export * from "./composition.ts";
 export * from "./decision.ts";
 export { Directories } from "./directories.ts";
+export * from "./jsonc.ts";
 
 export {
   type BaseServices,

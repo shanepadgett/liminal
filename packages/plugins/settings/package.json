@@ -6,9 +6,6 @@
     ".": "./plugin.ts",
     "./contract": "./src/contract.ts"
   },
-  "dependencies": {
-    "jsonc-parser": "3.3.1"
-  },
   "peerDependencies": {
     "@liminal/sdk": "workspace:*",
     "effect": "4.0.5"

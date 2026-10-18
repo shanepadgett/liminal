@@ -96,6 +96,35 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/approval": {
+      "name": "@liminal/approval",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/context": "workspace:*",
+        "@liminal/model-catalog": "workspace:*",
+        "@liminal/model-scripted": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/chat": "workspace:*",
+        "@liminal/command-runner": "workspace:*",
+        "@liminal/decisions": "workspace:*",
+        "@liminal/files": "workspace:*",
+        "@liminal/models": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@liminal/settings": "workspace:*",
+        "@liminal/shell-safety": "workspace:*",
+        "@liminal/tools": "workspace:*",
+        "@liminal/tools-edit": "workspace:*",
+        "@liminal/tools-read": "workspace:*",
+        "@liminal/tools-shell": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/cache-hints": {
       "name": "@liminal/cache-hints",
       "version": "0.1.0",
@@ -421,9 +450,6 @@
     "packages/plugins/settings": {
       "name": "@liminal/settings",
       "version": "0.1.0",
-      "dependencies": {
-        "jsonc-parser": "3.3.1",
-      },
       "peerDependencies": {
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
@@ -508,11 +534,24 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/trust": {
+      "name": "@liminal/trust",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@liminal/chat": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/sdk": {
       "name": "@liminal/sdk",
       "version": "0.1.0",
       "dependencies": {
         "diff": "9.0.0",
+        "jsonc-parser": "3.3.1",
       },
       "devDependencies": {
         "@effect/ai-anthropic": "4.0.5",
@@ -660,6 +699,8 @@
 
     "@liminal/agent-loop": ["@liminal/agent-loop@workspace:packages/plugins/agent-loop"],
 
+    "@liminal/approval": ["@liminal/approval@workspace:packages/plugins/approval"],
+
     "@liminal/cache-hints": ["@liminal/cache-hints@workspace:packages/plugins/cache-hints"],
 
     "@liminal/cancel": ["@liminal/cancel@workspace:packages/plugins/cancel"],
@@ -731,6 +772,8 @@
     "@liminal/tools-read": ["@liminal/tools-read@workspace:packages/plugins/tools-read"],
 
     "@liminal/tools-shell": ["@liminal/tools-shell@workspace:packages/plugins/tools-shell"],
+
+    "@liminal/trust": ["@liminal/trust@workspace:packages/plugins/trust"],
 
     "@opentui/core": ["@opentui/core@0.6.6", "", { "dependencies": { "bun-ffi-structs": "0.3.1", "diff": "9.0.0", "marked": "17.0.1", "string-width": "7.2.0" }, "optionalDependencies": { "@opentui/core-darwin-arm64": "0.6.6", "@opentui/core-darwin-x64": "0.6.6", "@opentui/core-linux-arm64": "0.6.6", "@opentui/core-linux-arm64-musl": "0.6.6", "@opentui/core-linux-x64": "0.6.6", "@opentui/core-linux-x64-musl": "0.6.6", "@opentui/core-win32-arm64": "0.6.6", "@opentui/core-win32-x64": "0.6.6" }, "peerDependencies": { "web-tree-sitter": "0.25.10" } }, "sha512-GhlGB8iG4YDzL6hIaxAYUZpHXDy76sQKuI6mQiCFCKXjfv6xH53pEcPX5gn+qYYYPjfjSaUevAVZBaS5Srtl/g=="],
 

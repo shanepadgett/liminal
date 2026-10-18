@@ -13,7 +13,8 @@
     "./tui": "./src/tui/index.ts"
   },
   "dependencies": {
-    "diff": "9.0.0"
+    "diff": "9.0.0",
+    "jsonc-parser": "3.3.1"
   },
   "devDependencies": {
     "@effect/ai-anthropic": "4.0.5",

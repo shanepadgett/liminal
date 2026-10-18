@@ -9,7 +9,7 @@ agent-loop ─▶ tools: ToolPipeline.run(call)
                ├─ ToolChecks (registered by approval)
                │    ├─ shell: askCommands → Ask; ShellSafety.isSafe(command, safeCommands) → Allow, else Ask
                │    └─ files: write/edit outside the workspace → Ask
-               └─ Ask ─▶ Approvals (approval plugin)
+               └─ Ask ─▶ Approvers (approval plugin)
                          1. decisions: Jev (OpenRouter) → Luna Decisions → skip
                             approves or hands off (unsure, user should decide, runs unseen code)
                          2. reviewer: session provider's cheap model, one-off call
@@ -24,9 +24,10 @@ agent-loop ─▶ tools: ToolPipeline.run(call)
 | provider plugins | changed | Cheap model: Anthropic `claude-haiku-5-5`; OpenAI providers Luna 6; OpenCode Go and OpenRouter DeepSeek 4.1 Flash latest; map `toolChoice` |
 | `decisions` | new | `Decisions.classify(questions, state)`; Jev via OpenRouter (`~typesafe/jev-latest`, System One at `/systemone`) first, else Luna Decisions (`POST /v1/decisions`, OpenAI API key only, or OpenRouter `openai/gpt-6-luna-decisions`); protocols in `@liminal/sdk/ai` |
 | `shell-safety` | new | Own plugin; `unbash` 6.0.0 parse and the safe list; `ShellSafety.isSafe(command, extra)` and `matchesAny(command, prefixes)`; reads no settings and registers no check |
-| `approval` | new | Provides `Approvals`; registers every `ToolChecks` entry and reads the `approval` settings; the three-step chain; context is the last two user prompts and final assistant messages; private record entry; TUI dialog; per-session mode |
+| `approval` | new | Provides `Approval`; registers an `Approvers` entry and every `ToolChecks` entry and reads the `approval` settings; the three-step chain; context is the last two user prompts and final assistant messages; private record entry; TUI dialog; per-session mode |
 | `inbox` | changed | Composer shows the session's approval mode next to the model |
-| `tools`, `files` | unchanged | `ToolChecks`, `Ask`, `Approvals` exist; reviewer `read` uses `WorkspaceFiles` |
+| `tools` | changed | `Approvers` registry: the newest registration answers asks; with none, an ask is denied |
+| `files` | unchanged | reviewer `read` uses `WorkspaceFiles` |
 
 Facts from Tau main to carry:
 
@@ -51,7 +52,7 @@ Section `approval` in `settings.json`:
 
 ## Session mode
 
-- `/approval-mode` opens a dialog with `auto`, `ask` and `full`; the choice applies to the current session only; settings are not written
+- `/approvals` opens a dialog with `auto`, `ask` and `full`; the choice applies to the current session only; settings are not written
 - `shift+tab` cycles the session mode: `auto`, `ask`, `full`
 - The composer shows the session's approval mode next to the model
 
@@ -63,7 +64,7 @@ Section `approval` in `settings.json`:
 | 2 | `decisions` | built |
 | 3 | `models`: one-off calls and structured output for any model | built |
 | 4 | `shell-safety` | built |
-| 5 | `approval`: chain, dialog, session mode, composer label | |
+| 5 | `approval`: chain, dialog, session mode, composer label | built |
 
 ## Step 2: decision models
 
@@ -138,6 +139,39 @@ Decisions.classify(state, questions, prefer)
 - The `approval` setting `decisionModel` maps to `prefer`; `off` skips the call
 - Tests: the SDK wires over `packages/sdk/src/testing/http.ts`; `decisions` over fake registered models with `TestClock` for the timeout
 - Guide: `docs/guides/providers.md` adds registering a decision model
+
+## Step 5: approval
+
+The `approval` plugin answers every call a check marks Ask, and owns the checks. Decision model, then reviewer, then user; each answer is saved as a hidden entry.
+
+```text
+packages/plugins/approval/
+  plugin.ts               provides Approval; requires ToolChecks, Approvers, ShellSafety, Settings, SessionLog, EntryKinds,
+                          Models, ModelTask, WorkspaceFiles, CommandRunner; uses Decisions; rpcs ApprovalRpcs
+  src/contract.ts         ApprovalMode auto|ask|full; ApprovalSettings; ApprovalEntry (model: false, user: hidden);
+                          Pending { id, sessionId, callId, tool, params, reason, summary? };
+                          ApprovalRpcs: approval/pending(session) stream, approval/answer { id, approve, note },
+                          approval/mode(session) stream, approval/set-mode { session, mode }
+  src/server.ts           layer: check registered in ToolChecks, approver in Approvers, Approval, rpcs
+  src/server/checks.ts    shell: full → Allow; askCommands → Ask; isSafe(command, safeCommands) → Allow; else Ask
+                          write, edit: path outside the workspace → Ask (full → Allow)
+  src/server/chain.ts     ask(call, reason): askCommands or mode ask → reviewer summary, then user;
+                          auto → decisions (unless off) → reviewer → user
+  src/server/classify.ts  hidden, impact, intent questions; approve when hidden ≤ 0.5, none + workspace ≥ 0.8,
+                          and none ≥ 0.8 or intent ≥ 0.5
+  src/server/review.ts    ModelTask on Models.cheap(session provider); tools read and shell (safe list only);
+                          submit_review { decision approved|ask, summary ≤ 600, reason ≤ 300 }
+  src/server/pending.ts   SubscriptionRef of pending asks; a Deferred per ask; removed when the turn is interrupted
+  src/server/modes.ts     session modes in memory, over the settings mode
+  src/tui.tsx             dialog for the session's oldest pending ask; /approvals; shift+tab; composer label
+chat contract             ChatSlots.composerLine: items next to the composer's model line
+inbox Composer            draws ChatSlots.composerLine
+gallery                   Composer mode label; approval dialog states
+```
+
+- Context for the decision model and reviewer: the session's last two user prompts and last two assistant texts
+- The reviewer runs on the session's provider only; a failed review goes to the user without a summary
+- `full` and project `safeCommands` apply only in a trusted project; the settings server loads project settings only when trusted
 
 ## Step 4: shell-safety
 

@@ -36,9 +36,5 @@ export class Settings extends Context.Service<
       path: ReadonlyArray<string>,
       value?: Schema.Json,
     ) => Effect.Effect<void, SettingsWriteFailed>;
-    /** Whether the user trusts the workspace, so its project settings and plugins load. */
-    readonly projectTrusted: Effect.Effect<boolean, SettingsInvalid>;
-    /** Trusts the workspace from now on. */
-    readonly trustProject: Effect.Effect<void, SettingsWriteFailed | SettingsInvalid>;
   }
 >()("liminal/settings/Settings") {}

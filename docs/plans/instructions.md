@@ -34,7 +34,7 @@ flowchart LR
 | `context` | Expands: update entries reach the model as a user-role `<reminder kind="instructions">`; a changed file renders as a diff against the text the model saw |
 | `system-prompt` | New: the built-in base prompt; users add through `AGENTS.md`; replacing it means replacing the plugin |
 | `environment` | New: workspace, git or not, platform, shell, date, and a two-level file listing capped at 200 lines, updated as files are added or removed |
-| `agents-files` | New, on by default: `AGENTS.md` only; the user's and those from the repository root down to the workspace; no subfolder files; off by removing the plugin or by a `settings.json` setting (global or per folder) |
+| `agents-files` | New, on by default: `AGENTS.md` only; the user's and those from the repository root down to the workspace; no subfolder files; off by `"agents-files": false` in `plugins.json` (global or project) |
 | `tool-guidance` | New: a tool's definition carries optional `guidance` (rule lines); one section renders the guidance of the registered tools, removing duplicate lines |
 | `notices` | New: a session-log entry kind any server plugin appends (kind, title, body); the context view skips it; its TUI part renders it in the transcript |
 | `instruction-files` | New: Markdown files in `~/.liminal/instructions/` and `<folder>/.liminal/instructions/` with front matter `always: true` or `read-when: <situation>`; works with `agents-files` turned off; folder-specific rules are `read-when` files naming the folder |
@@ -66,7 +66,7 @@ Each section holding files keeps a record of path to text, so a file appearing, 
 ```text
 agent-loop -> context.build(session)
   for each PromptSection: read({ sessionId, model })
-    agents-files: skip when the setting is off
+    agents-files: (inactive when "agents-files": false in plugins.json)
       folders from the repository root down to the workspace
       read each file; missing -> left out; unreadable -> unavailable (saved value kept) + notice
   compare with saved values -> baseline (first call) | update (changes) | nothing
@@ -406,7 +406,6 @@ context.build -> environment/files read
 
 ## Open
 
-- The `settings.json` key that turns off `agents-files`
 - Step 2: the copy button is not covered by a test; the test renderer rejects clipboard writes (`ot_session_clipboard failed: InvalidPhase`)
 
 ## Deletes or replaces

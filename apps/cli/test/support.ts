@@ -13,18 +13,27 @@ export const bootOptions = (
   path: Path.Path,
   options: { readonly extra?: ReadonlyArray<string>; readonly parts?: BootOptions["parts"] } = {},
 ): BootOptions => ({
-  folders: [pluginsFolder(path), ...(options.extra ?? [])],
+  composition: Effect.succeed({
+    folders: [pluginsFolder(path), ...(options.extra ?? [])],
+    choices: new Map(),
+  }),
   shared: sharedModules,
   parts: options.parts ?? [],
 });
 
-/** Reloads that check each batch of files the test offers, with no typecheck, under `mode`. */
+/**
+ * Reloads that check each batch of files the test offers, in the built-in or test plugins, with no
+ * typecheck, under `mode`.
+ */
 export const testReload = (
+  path: Path.Path,
   changes: Queue.Queue<ReadonlyArray<string>>,
   mode: ReloadMode = "automatic",
 ): ReloadOptions => ({
   changes: Stream.fromQueue(changes),
   restartRoots: [],
+  pluginFolders: [pluginsFolder(path), path.resolve(import.meta.dir, "plugins")],
+  compositionFiles: [],
   typecheck: Option.none(),
   startCheck: ChildProcess.make("/bin/sh", ["-c", "exit 0"]),
   mode: () => Effect.succeed(mode),

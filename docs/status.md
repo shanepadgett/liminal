@@ -28,6 +28,10 @@ Instructions steps 1 to 5 are built ([plans/instructions.md](plans/instructions.
 
 Tool packages are built ([plans/tools.md](plans/tools.md)): `tools` holds the registry, pipeline and guidance; `context` takes tool lists through `ToolSources`; `files` gives `WorkspaceFiles`; `tools-read`, `tools-edit` (`edit` and `write`) and `tools-shell`.
 
+Approvals are built ([plans/approvals.md](plans/approvals.md)): `models` runs one-off typed calls on any model; `decisions` asks Jev or Luna; `shell-safety` tells read-only commands apart; `approval` owns the tool checks and answers asks through the decision model, the reviewer and the user, with a per-session mode in the composer. No live decision or review call has run yet.
+
+The trust prompt is built ([plans/trust.md](plans/trust.md)): the `trust` plugin takes the composer's place in an untrusted workspace; trusting a folder trusts its subfolders; the composer's key hints follow whoever holds the composer through `ChatSlots.composerHints`.
+
 Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model providers and testing, each matching the built code.
 
 ## Focus
@@ -41,7 +45,6 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 
 ## Next
 
-- Plan plugin toggles: user and project config enable, disable and replace plugins, so third parties can replace built-ins
 - Build instructions step 6 ([plans/instructions.md](plans/instructions.md)), then plan folding; Liminal is not usable day to day without them.
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
@@ -51,13 +54,6 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 - Code conventions: port Tau's standards and custom lint rules, reviewed per rule
 - Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`); [plans/reload.md](plans/reload.md) serves them into each build's `Bun.ModuleGraph`, and plugin packages' exports come from the folder the host loaded them from; an import of a package no plugin folder holds still resolves the plugin's own copy
 - ACP adapter as a server plugin
-- Approvals: safe shell commands (split with `unbash`, an extensive default safe list including pipes) run without review; others go to a decision model (Jev or Luna) when one is available, which approves or hands off when unsure, when the user should decide, or when the call runs code it cannot see; the hand-off goes to the provider's cheap model, which approves or writes a plain-language description for the user; reviewers approve anything on task that is not destructive and irreversible, and ask only for state changes outside what the user asked for; context is the last two user prompts and the final assistant messages; cheap models: Anthropic `claude-haiku-5-5`, OpenAI providers Luna 6, OpenCode Go and OpenRouter DeepSeek 4.1 Flash latest
-  - Reviewed: `shell` always; `write` and `edit` only for paths outside the workspace
-  - Decision model: Jev through OpenRouter when signed in, else Luna Decisions when it is the only one available
-  - Reviewer: always the session provider's cheap model
-  - Every provider names a cheap model that any plugin can use
-  - The review is one model call with structured output and only `read` and safe-list shell; any other shell command is blocked for the reviewer, and its guidance says so
-  - Per-session mode through an `/approval-mode` dialog and `shift+tab`; the composer shows the mode next to the model
 - Collab-style session sharing through an encrypted relay
 - TUI: built per [plans/archive/tui-session.md](plans/archive/tui-session.md); its `Open` list holds the choices made while building (entry kinds drawn by `chat`, tokens moved into `@liminal/sdk/tui`).
 - Gallery: its own isolated app, a minimal Storybook for the TUI; built before any TUI components or screens; every element, primitives through screens, is approved there first; houses its own components, duplication accepted; keep Tau's tier, state and width rules, redesign the shell
@@ -83,4 +79,4 @@ Pi session IDs and the topics each discussed.
 - 01a145a9-703a-7284-8f7a-054aea36ec2c: TUI design (transcript)
 - 01a14649-dee8-74a7-b272-e37fd82f47b6: Sessions, Plugin catalog, docs layout
 - 01a1473c-d9a2-74a7-b272-e383d7bf6e43: session-log contract, entry kinds and visibility, compaction memories, plugin foundation, build order, testing, step 1 build, repository layout
-- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end, slash commands and dialogs, connect and login, model catalog and thinking options, contracts importing contracts, TUI keys, blank launch and restart handoff, connect step 6 (SDK protocol subpaths, no local provider), instructions plan, notices, one package per tool
+- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end, slash commands and dialogs, connect and login, model catalog and thinking options, contracts importing contracts, TUI keys, blank launch and restart handoff, connect step 6 (SDK protocol subpaths, no local provider), instructions plan, notices, one package per tool, approvals, plugin toggles, trust prompt

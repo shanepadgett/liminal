@@ -4,6 +4,7 @@ import type { Context, Crypto, FileSystem, Layer, Path } from "effect";
 import type { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
 import type { Rpc, RpcGroup } from "effect/rpc";
 
+import type { ProjectTrust } from "./composition.ts";
 import type { Directories } from "./directories.ts";
 import type { FrontendPart } from "./frontend.ts";
 import type { EventBus } from "./protocol.ts";
@@ -17,6 +18,7 @@ export type BaseServices =
   | ChildProcessSpawner
   | Crypto.Crypto
   | Directories
+  | ProjectTrust
   | EventBus
   | TurnGate
   | Work;

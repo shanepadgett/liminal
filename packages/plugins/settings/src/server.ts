@@ -2,7 +2,7 @@
 
 import { Effect, FileSystem, Layer, Path, Result, Schema, Semaphore } from "effect";
 
-import { Directories } from "@liminal/sdk";
+import { Directories, editJson, parseJsonObject, ProjectTrust } from "@liminal/sdk";
 
 import {
   type SectionSchema,
@@ -11,14 +11,7 @@ import {
   type SettingsLayer,
   SettingsWriteFailed,
 } from "./contract.ts";
-import { editSettings, mergeSection, parseSettings } from "./server/files.ts";
-
-/** This plugin's own section, in the global file only: the folders the user trusts. */
-const OwnSection = Schema.Struct({
-  trustedFolders: Schema.Array(Schema.String).pipe(
-    Schema.withDecodingDefaultKey(Effect.succeed([])),
-  ),
-});
+import { mergeSection } from "./server/files.ts";
 
 const decode = <S extends SectionSchema>(name: string, schema: S, value: Schema.Json) =>
   Schema.decodeEffect(Schema.toCodecJson(schema))(value).pipe(
@@ -45,7 +38,7 @@ const settingsFiles = Effect.gen(function* () {
   const load = (layer: SettingsLayer, section: string) =>
     text(files[layer]).pipe(
       Effect.mapError((error) => error.message),
-      Effect.flatMap((content) => Effect.fromResult(parseSettings(content))),
+      Effect.flatMap((content) => Effect.fromResult(parseJsonObject(content))),
       Effect.mapError(
         (message) => new SettingsInvalid({ section, message: `${files[layer]}: ${message}` }),
       ),
@@ -61,32 +54,34 @@ const settingsFiles = Effect.gen(function* () {
     const failed = (message: string) => new SettingsWriteFailed({ file, message });
 
     const current = yield* Effect.mapError(text(file), (error) => failed(error.message));
-    yield* Effect.fromResult(Result.mapError(parseSettings(current), failed));
+    yield* Effect.fromResult(Result.mapError(parseJsonObject(current), failed));
 
     yield* fs.makeDirectory(path.dirname(file), { recursive: true }).pipe(
-      Effect.andThen(fs.writeFileString(file, editSettings(current, at, value))),
+      Effect.andThen(fs.writeFileString(file, editJson(current, at, value))),
       Effect.mapError((error) => failed(error.message)),
     );
   });
 
-  return { load, write, workspace: directories.workspace };
+  return { load, write };
 });
 
 const make = Effect.gen(function* () {
-  const { load, write, workspace } = yield* settingsFiles;
+  const { load, write } = yield* settingsFiles;
+  const trust = yield* ProjectTrust;
   const writes = yield* Semaphore.make(1);
-
-  const trustedFolders = Effect.flatMap(load("global", "settings"), (global) =>
-    decode("settings", OwnSection, global["settings"] ?? {}),
-  ).pipe(Effect.map((own) => own.trustedFolders));
-
-  const projectTrusted = Effect.map(trustedFolders, (folders) => folders.includes(workspace));
 
   /** The layers that load: global always, project only in a trusted workspace. */
   const layers = (section: string) =>
     Effect.gen(function* () {
       const global = yield* load("global", section);
-      if (!(yield* projectTrusted)) return [global];
+
+      const trusted = yield* trust.trusted.pipe(
+        Effect.mapError(
+          (error) => new SettingsInvalid({ section, message: `${error.file}: ${error.message}` }),
+        ),
+      );
+
+      if (!trusted) return [global];
 
       return [global, yield* load("project", section)];
     });
@@ -94,17 +89,9 @@ const make = Effect.gen(function* () {
   const section = <S extends SectionSchema>(name: string, schema: S) =>
     Effect.flatMap(layers(name), (loaded) => decode(name, schema, mergeSection(loaded, name)));
 
-  const trustProject = Effect.flatMap(trustedFolders, (folders) =>
-    folders.includes(workspace)
-      ? Effect.void
-      : write("global", ["settings", "trustedFolders"], [...folders, workspace]),
-  );
-
   return Settings.of({
     section,
     write: (layer, at, value) => writes.withPermits(1)(write(layer, at, value)),
-    projectTrusted,
-    trustProject: writes.withPermits(1)(trustProject),
   });
 });
 

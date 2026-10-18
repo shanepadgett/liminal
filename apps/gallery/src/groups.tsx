@@ -1,9 +1,10 @@
 /** Everything the gallery shows, in review order: tokens first, scenarios last. */
 
+import { type ApprovalAsk, ApprovalDialog } from "./chat/ApprovalDialog.tsx";
 import { ChatHeader } from "./chat/ChatHeader.tsx";
 import { ChatScreen, type GlideAt } from "./chat/ChatScreen.tsx";
 import { CommandPalette } from "./chat/CommandPalette.tsx";
-import { Composer } from "./chat/Composer.tsx";
+import { type ApprovalMode, Composer } from "./chat/Composer.tsx";
 import { CONNECT_STATES } from "./chat/connectStates.tsx";
 import {
   FORM_CHOOSING,
@@ -19,6 +20,7 @@ import { ModelPicker, ThinkingPicker } from "./chat/ModelPicker.tsx";
 import type { ReloadShown } from "./chat/ReloadStatus.tsx";
 import { Sidebar } from "./chat/Sidebar.tsx";
 import { Toast, type ToastMessage } from "./chat/Toast.tsx";
+import { TrustPrompt } from "./chat/TrustPrompt.tsx";
 import { only, withRoles } from "./entryViews.ts";
 import { PRIMITIVES } from "./primitives.tsx";
 import type { EntryState, Groups } from "./shell/entries.ts";
@@ -39,7 +41,12 @@ const LINES = [
   "3. the header says the check failed",
 ].join("\n");
 
-const composerState = (name: string, isWorking: boolean, draft: string): EntryState => ({
+const composerState = (
+  name: string,
+  isWorking: boolean,
+  draft: string,
+  approval: ApprovalMode = "auto",
+): EntryState => ({
   name,
   fill: "width",
   view: withRoles((color) => (
@@ -47,6 +54,7 @@ const composerState = (name: string, isWorking: boolean, draft: string): EntrySt
       color={color}
       model="claude-opus-4"
       thinking="high"
+      approval={approval}
       draft={draft}
       isWorking={isWorking}
       isGliding={isWorking}
@@ -64,11 +72,21 @@ const questionsState = (name: string, form: FormState): EntryState => ({
       color={color}
       model="claude-opus-4"
       thinking="high"
+      approval="auto"
       draft=""
       isWorking={false}
       isGliding={false}
       form={form}
     />
+  )),
+});
+
+/** The trust prompt, with the reason its save failed when it did. */
+const trustState = (name: string, problem: string): EntryState => ({
+  name,
+  fill: "width",
+  view: withRoles((color) => (
+    <TrustPrompt color={color} workspace="/Users/shane/dev/plugin-host" problem={problem} />
   )),
 });
 
@@ -138,6 +156,34 @@ const modelsState = (name: string, selected: string, hasFailure = false): EntryS
   )),
 });
 
+/** A shell call the reviewer explained, and a write it had nothing to add to. */
+const SHELL_ASK: ApprovalAsk = {
+  tool: "shell",
+  subject: "rm -rf node_modules dist && bun install",
+  reason: "the command is not on the safe list",
+  summary:
+    "Deletes the installed packages and the build output, then installs the packages again. Nothing outside the workspace changes.",
+};
+
+const WRITE_ASK: ApprovalAsk = {
+  tool: "write",
+  subject: "~/.zshrc",
+  reason: "it changes ~/.zshrc, outside the workspace",
+};
+
+const approvalState = (
+  name: string,
+  ask: ApprovalAsk,
+  isRejecting: boolean,
+  note = "",
+): EntryState => ({
+  name,
+  fill: "screen",
+  view: withRoles((color) => (
+    <ApprovalDialog color={color} ask={ask} isRejecting={isRejecting} note={note} />
+  )),
+});
+
 const thinkingState = (name: string, selected: string): EntryState => ({
   name,
   fill: "screen",
@@ -188,6 +234,8 @@ export const GROUPS: Groups = [
               composerState("Idle, several lines", false, LINES),
               composerState("Working", true, ""),
               composerState("Working, with text", true, DRAFT),
+              composerState("Approval ask", false, "", "ask"),
+              composerState("Approval full", false, "", "full"),
               composerState("Slash commands", false, "/"),
               composerState("Slash commands, filtered", false, "/co"),
               composerState("File tags", false, "explain how @"),
@@ -199,6 +247,17 @@ export const GROUPS: Groups = [
               questionsState("Questions, own answer", FORM_OWN),
               questionsState("Questions, additional context", FORM_CONTEXT),
               questionsState("Questions, one skipped", FORM_SKIPPING),
+            ],
+          },
+          {
+            id: "trust",
+            title: "Trust prompt",
+            states: [
+              trustState("Asking", ""),
+              trustState(
+                "Couldn't save",
+                "EACCES: permission denied, open '/Users/shane/.liminal/plugins.json'",
+              ),
             ],
           },
           {
@@ -244,6 +303,15 @@ export const GROUPS: Groups = [
             ],
           },
           { id: "connect", title: "Connect", states: CONNECT_STATES },
+          {
+            id: "approval",
+            title: "Approval",
+            states: [
+              approvalState("Reviewed command", SHELL_ASK, false),
+              approvalState("Rejecting with a note", SHELL_ASK, true, "keep dist, only reinstall"),
+              approvalState("Write outside the workspace", WRITE_ASK, false),
+            ],
+          },
         ],
       },
     ],

@@ -84,9 +84,10 @@ Every plugin gets these base services without listing them:
 | `ChildProcessSpawner` | `effect/process` | Child processes |
 | `Crypto` | `effect` | Random bytes and hashes |
 | `Directories` | `@liminal/sdk` | `global` (`~/.liminal`), `workspace` (`<cwd>`), `project` (`<cwd>/.liminal`), `data` (`~/.liminal/data`) |
+| `ProjectTrust` | `@liminal/sdk` | Whether the user trusts the workspace, and trusting it |
 | `EventBus`, `TurnGate`, `Work` | `@liminal/sdk` | Kernel events, the turn gate, and background work |
 
-Examples: `packages/plugins/tools/plugin.ts` (`uses: [Approvals]`), `packages/plugins/tools/src/server/pipeline.ts` (`Effect.serviceOption(Approvals)`).
+Examples: `packages/plugins/model-openrouter/plugin.ts` (`uses: [DecisionModels]`), `packages/plugins/model-openrouter/src/server/provider.ts` (`Effect.serviceOption(DecisionModels)`).
 
 ## Write the contract
 
@@ -137,7 +138,7 @@ Example: `packages/plugins/cache-hints/src/server.ts`.
 
 Declare one when other plugins should add to your feature.
 
-1. Pick the kind. `Registry<A>` from `@liminal/sdk` keeps items sorted by `order`; `KeyedRegistry<A>` keeps one item per name, the newest registration winning. Use a plain `Context.Service` for one implementation, such as `Approvals`.
+1. Pick the kind. `Registry<A>` from `@liminal/sdk` keeps items sorted by `order`; `KeyedRegistry<A>` keeps one item per name, the newest registration winning. Use a plain `Context.Service` for one implementation, such as `WorkspaceFiles`.
 2. Declare the tag in your contract.
 
    ```ts
@@ -358,7 +359,17 @@ The host loads every package with a `liminal` field from these folders:
 | --- | --- |
 | `packages/plugins/` | Built-in plugins |
 | `~/.liminal/plugins/` | The user's plugins |
-| `<project>/.liminal/plugins/` | The project's plugins |
+| `<project>/.liminal/plugins/` | The project's plugins, once the user trusts the workspace |
+
+`~/.liminal/plugins.json` and `<project>/.liminal/plugins.json` turn plugins on or off by name. Of two plugins that provide one service, the one set `true` replaces the other:
+
+```jsonc
+{
+  "plugins": { "tools-shell": false, "acme-shell": true },
+  // global file only
+  "trustedFolders": ["/Users/me/dev/project"]
+}
+```
 
 - An outside plugin imports built-in contracts as `@liminal/<name>/contract` and gets the host's loaded copy.
 - Two packages with the same name: only the first loads; the other shows as inactive with `PackageNameTaken`.

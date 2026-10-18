@@ -3,7 +3,10 @@
 import { Data, type Path } from "effect";
 
 export type Change = Data.TaggedEnum<{
-  /** Files in these plugin package folders changed; the kernel swaps in a new graph. */
+  /**
+   * The plugin set may differ: files in these package folders changed, or none when only a
+   * `plugins.json` did. The kernel reads the composition again and swaps in a new graph.
+   */
   Plugins: { readonly packages: ReadonlySet<string> };
   /** Code the running process loaded at start changed; only a new process picks it up. */
   Restart: {};
@@ -13,8 +16,10 @@ export const Change = Data.taggedEnum<Change>();
 
 /** Where watched files live. */
 export interface Watched {
-  /** Folders whose packages hold plugins. */
+  /** Folders whose packages may hold plugins. */
   readonly folders: ReadonlyArray<string>;
+  /** The `plugins.json` files. */
+  readonly compositionFiles: ReadonlyArray<string>;
   /** Folders of code loaded at start, such as the kernel's own. */
   readonly restartRoots: ReadonlyArray<string>;
 }
@@ -45,7 +50,9 @@ export const classify = (
 
   const packages = new Set(files.flatMap((file) => packageOf(path, watched.folders, file) ?? []));
 
-  return packages.size === 0 ? undefined : Change.Plugins({ packages });
+  const isComposition = files.some((file) => watched.compositionFiles.includes(file));
+
+  return packages.size === 0 && !isComposition ? undefined : Change.Plugins({ packages });
 };
 
 /** Both changes as one; a restart picks up everything. */

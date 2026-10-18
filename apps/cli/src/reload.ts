@@ -11,6 +11,7 @@ import type { HoldGraph } from "@liminal/sdk";
 import { Settings } from "@liminal/settings/contract";
 
 import { repoRoot, restartRoots } from "./boot.ts";
+import { compositionFiles } from "./composition.ts";
 
 /** The `reload` settings section; checked code applies on its own unless `mode` is `confirmed`. */
 const ReloadSection = Schema.Struct({
@@ -38,15 +39,33 @@ const exists = (fs: FileSystem.FileSystem) => (folder: string) =>
 
 const isWatched = (file: string) => !file.split("/").includes("node_modules");
 
-/** Changed files under `folders`, absolute, in batches gathered over 100 ms. */
-const watchAll = (fs: FileSystem.FileSystem, path: Path.Path, folders: ReadonlyArray<string>) =>
+/** Changes under `folder`, absolute, in its subfolders too when `isRecursive`. */
+const watchFolder = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  folder: string,
+  isRecursive: boolean,
+) =>
+  fs.watch(folder, { recursive: isRecursive }).pipe(
+    Stream.map((event) => path.resolve(folder, event.path)),
+    Stream.filter(isWatched),
+  );
+
+/**
+ * Changed files under `folders`, and directly inside `shallow`, absolute, in batches gathered over
+ * 100 ms.
+ */
+const watchAll = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  folders: ReadonlyArray<string>,
+  shallow: ReadonlyArray<string>,
+) =>
   Stream.mergeAll(
-    folders.map((folder) =>
-      fs.watch(folder, { recursive: true }).pipe(
-        Stream.map((event) => path.resolve(folder, event.path)),
-        Stream.filter(isWatched),
-      ),
-    ),
+    [
+      ...folders.map((folder) => watchFolder(fs, path, folder, true)),
+      ...shallow.map((folder) => watchFolder(fs, path, folder, false)),
+    ],
     { concurrency: "unbounded" },
   ).pipe(
     Stream.groupedWithin(1000, "100 millis"),
@@ -56,19 +75,24 @@ const watchAll = (fs: FileSystem.FileSystem, path: Path.Path, folders: ReadonlyA
   );
 
 /**
- * Reload options for the app run from source, watching the plugin `folders` that exist at start; a
- * folder made later is watched from the next start.
+ * Reload options for the app run from source, watching the plugin `folders` and the folders of the
+ * `plugins.json` files that exist at start; a folder made later is watched from the next start.
  */
 export const reloadOptions = Effect.fn("reloadOptions")(function* (folders: ReadonlyArray<string>) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const root = repoRoot(path);
   const roots = restartRoots(path);
+  const files = yield* compositionFiles;
   const options = { cwd: root, extendEnv: true };
+  const existing = (each: ReadonlyArray<string>) => Effect.filter(each, exists(fs));
+  const shallow = yield* existing([path.dirname(files.global), path.dirname(files.project)]);
 
   const reload: ReloadOptions = {
-    changes: watchAll(fs, path, [...(yield* Effect.filter(folders, exists(fs))), ...roots]),
+    changes: watchAll(fs, path, [...(yield* existing(folders)), ...roots], shallow),
     restartRoots: roots,
+    pluginFolders: folders,
+    compositionFiles: [files.global, files.project],
     typecheck: Option.some(
       ChildProcess.make("bunx", ["--bun", "--no-install", "tsc", "--noEmit"], options),
     ),

@@ -8,10 +8,17 @@
 import { Context, Deferred, Effect, Exit, Scope, Semaphore, SubscriptionRef } from "effect";
 import type { RpcGroup } from "effect/rpc";
 
-import { type BaseServices, type GraphMember, type HoldGraph, makeWork, Work } from "@liminal/sdk";
+import {
+  type BaseServices,
+  type CompositionInvalid,
+  type GraphMember,
+  type HoldGraph,
+  makeWork,
+  Work,
+} from "@liminal/sdk";
 
 import { build, type PartName, type PluginBuild } from "../host/build.ts";
-import { load } from "../host/host.ts";
+import { type Composition, load } from "../host/host.ts";
 import type { PluginPackage } from "../host/packages.ts";
 import type { PluginStatus } from "../host/status.ts";
 import { ChangeFailed, keptBuilds, newlyFailing, packagesToLoad, pluginsOf } from "./change.ts";
@@ -122,7 +129,8 @@ const discardFresh = (fresh: Candidate["fresh"]) =>
   );
 
 export interface GraphOptions {
-  readonly folders: ReadonlyArray<string>;
+  /** Read for every graph, so each change picks up the user's latest choices. */
+  readonly composition: Effect.Effect<Composition, CompositionInvalid>;
   /** The frontend parts each build imports. */
   readonly parts: ReadonlyArray<PartName>;
 }
@@ -143,9 +151,9 @@ const makeCandidate = Effect.fn("makeCandidate")(function* (
   const toLoad = base === undefined ? new Set<string>() : packagesToLoad(base, changed);
   const kept = new Map(base?.packages.map((loaded) => [loaded.dir, loaded]));
 
-  const loaded = yield* load(builder.options.folders, (dir) =>
-    toLoad.has(dir) ? undefined : kept.get(dir),
-  );
+  const composition = yield* builder.options.composition;
+
+  const loaded = yield* load(composition, (dir) => (toLoad.has(dir) ? undefined : kept.get(dir)));
 
   const freshPackages = loaded.packages.filter((one) => !base?.packages.includes(one));
   const names = new Set(freshPackages.flatMap(pluginsOf));
@@ -181,7 +189,7 @@ const makeCandidate = Effect.fn("makeCandidate")(function* (
   return { graph, fresh };
 });
 
-/** The graphs of the plugins in the options' folders; the first is built before this returns. */
+/** The graphs of the composition's plugins; the first is built before this returns. */
 export const makeGraphs = Effect.fn("makeGraphs")(function* (options: GraphOptions) {
   // Builds live in a scope made before the work tasks, so closing the kernel stops tasks first.
   const root = yield* Scope.fork(yield* Effect.scope);
@@ -205,7 +213,11 @@ export const makeGraphs = Effect.fn("makeGraphs")(function* (options: GraphOptio
 
   const work = yield* makeWork(hold);
   const builder: Builder = { options, root, nextId: makeCounter(), work };
-  const made = yield* makeCandidate(builder, undefined, new Set()).pipe(Effect.orDie);
+
+  const made = yield* makeCandidate(builder, undefined, new Set()).pipe(
+    Effect.catchTag("ChangeFailed", (error) => Effect.die(error)),
+  );
+
   const initial = yield* counts.open(made.graph);
   current = initial;
   yield* Deferred.succeed(first, initial);
@@ -213,7 +225,10 @@ export const makeGraphs = Effect.fn("makeGraphs")(function* (options: GraphOptio
   const platform = yield* Effect.context<Exclude<BaseServices, Work>>();
   const currentGraph = () => current ?? initial;
 
-  /** Loads `changed` package folders fresh and builds the new graph aside. */
+  /**
+   * Reads the composition again, loads `changed` package folders fresh and builds the new graph
+   * aside.
+   */
   const prepare = (changed: ReadonlySet<string>) =>
     lock.withPermit(
       Effect.gen(function* () {

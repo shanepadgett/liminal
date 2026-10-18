@@ -88,6 +88,15 @@ export const ChatSlots = {
   }),
   /** Where the user writes; the first registration whose `select` matches takes it. */
   composer: Slot.chain<TurnProps, true, "session">("chat/composer", { scope: "session" }),
-  /** Key hints under the composer, one group per registration. */
+  /** Short items after the composer's model line, such as the approval mode; drawn by the composer. */
+  composerLine: Slot.list<TurnProps, "session">("chat/composer-line", { scope: "session" }),
+  /**
+   * The composer's key hints, first under the composer; the first registration whose `select`
+   * matches, so they follow whoever holds the composer.
+   */
+  composerHints: Slot.chain<TurnProps, true, "session">("chat/composer-hints", {
+    scope: "session",
+  }),
+  /** Further key hints after the composer's, one group per registration. */
   hints: Slot.list<TurnProps, "session">("chat/hints", { scope: "session" }),
 };

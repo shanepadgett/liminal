@@ -1,0 +1,37 @@
+{
+  "name": "@liminal/approval",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./plugin.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "devDependencies": {
+    "@liminal/context": "workspace:*",
+    "@liminal/model-catalog": "workspace:*",
+    "@liminal/model-scripted": "workspace:*",
+    "@liminal/session-store": "workspace:*"
+  },
+  "peerDependencies": {
+    "@liminal/chat": "workspace:*",
+    "@liminal/command-runner": "workspace:*",
+    "@liminal/decisions": "workspace:*",
+    "@liminal/files": "workspace:*",
+    "@liminal/models": "workspace:*",
+    "@liminal/sdk": "workspace:*",
+    "@liminal/session-log": "workspace:*",
+    "@liminal/settings": "workspace:*",
+    "@liminal/shell-safety": "workspace:*",
+    "@liminal/tools": "workspace:*",
+    "@liminal/tools-edit": "workspace:*",
+    "@liminal/tools-read": "workspace:*",
+    "@liminal/tools-shell": "workspace:*",
+    "@opentui/core": "0.6.6",
+    "@opentui/solid": "0.6.6",
+    "effect": "4.0.5",
+    "solid-js": "1.9.12"
+  },
+  "liminal": [
+    "./plugin.ts"
+  ]
+}

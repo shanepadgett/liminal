@@ -12,7 +12,7 @@ import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 import { InactiveReason, type PluginStatus, start } from "../src/index.ts";
 import { testBoot } from "./support/boot.ts";
 
-const tagNames = ["A", "B", "C", "D", "E", "F", "Z"];
+const tagNames = ["A", "B", "C", "D", "E", "F", "G", "H", "Z"];
 
 interface FixturePlugin {
   readonly name: string;
@@ -64,14 +64,29 @@ const plugins: ReadonlyArray<FixturePlugin> = [
   { name: "disabled", enabled: false, server: "throws" },
   { name: "needs-missing", requires: ["B"], server: "throws" },
   { name: "missing", provides: ["B"], requires: ["Z"], server: "throws" },
-  { name: "duplicate-1", provides: ["C"], server: "throws" },
-  { name: "duplicate-2", provides: ["C"], server: "throws" },
+  { name: "competing-a", provides: ["C"], server: "builds" },
+  { name: "competing-b", provides: ["C"], server: "throws" },
+  { name: "replaced", provides: ["G"], server: "throws" },
+  { name: "replacer", provides: ["G"], server: "builds" },
+  { name: "chosen-1", provides: ["H"], server: "throws" },
+  { name: "chosen-2", provides: ["H"], server: "throws" },
+  { name: "turned-off", server: "throws" },
+  { name: "turned-on", enabled: false, server: "builds" },
   { name: "cycle-1", provides: ["D"], requires: ["E"], server: "throws" },
   { name: "cycle-2", provides: ["E"], requires: ["D"], server: "throws" },
   { name: "import-fails", server: "throws" },
   { name: "build-fails", provides: ["F"], server: "fails" },
   { name: "needs-build-fails", requires: ["F"], server: "builds" },
 ];
+
+/** The user's choices in `plugins.json`. */
+const choices = new Map([
+  ["replacer", true],
+  ["chosen-1", true],
+  ["chosen-2", true],
+  ["turned-off", false],
+  ["turned-on", true],
+]);
 
 /** Writes each fixture as a package in a temp folder, plus one whose manifest is missing. */
 const writeFixtures = Effect.gen(function* () {
@@ -123,7 +138,7 @@ describe("start", () => {
     "activates what resolves and builds, and gives every other plugin its reason",
     Effect.gen(function* () {
       const folder = yield* writeFixtures;
-      const kernel = yield* start(testBoot([folder]));
+      const kernel = yield* start(testBoot([folder], choices));
       const status = yield* kernel.status;
       const reasons = reasonsOf(status);
 
@@ -131,9 +146,18 @@ describe("start", () => {
         Predicate.isTagged(plugin, "Active") ? [plugin.name] : [],
       );
 
-      expect(active.toSorted()).toEqual(["needs-ok", "ok"]);
-      expect(reasons.size).toBe(plugins.length - 1);
-      expect(reasons.get("disabled")).toEqual(InactiveReason.Disabled());
+      expect(active.toSorted()).toEqual(["competing-a", "needs-ok", "ok", "replacer", "turned-on"]);
+      expect(reasons.size).toBe(plugins.length - 4);
+      expect(reasons.get("disabled")).toEqual(InactiveReason.Disabled({ by: "default" }));
+      expect(reasons.get("turned-off")).toEqual(InactiveReason.Disabled({ by: "choice" }));
+
+      expect(reasons.get("competing-b")).toEqual(
+        InactiveReason.Competing({ service: "fixture/C", active: "competing-a" }),
+      );
+
+      expect(reasons.get("replaced")).toEqual(
+        InactiveReason.Replaced({ service: "fixture/G", by: "replacer" }),
+      );
 
       expect(reasons.get("missing")).toEqual(
         InactiveReason.MissingService({ service: "fixture/Z" }),
@@ -147,9 +171,13 @@ describe("start", () => {
         InactiveReason.DependencyInactive({ plugin: "build-fails" }),
       );
 
-      for (const name of ["duplicate-1", "duplicate-2"]) {
-        const reason = reasons.get(name);
-        expect(Predicate.isTagged(reason, "DuplicateProvider") && reason.service).toBe("fixture/C");
+      for (const name of ["chosen-1", "chosen-2"]) {
+        expect(reasons.get(name)).toEqual(
+          InactiveReason.DuplicateProvider({
+            service: "fixture/H",
+            plugins: ["chosen-1", "chosen-2"],
+          }),
+        );
       }
 
       for (const name of ["cycle-1", "cycle-2"]) {

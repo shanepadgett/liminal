@@ -4,7 +4,7 @@ import { expect } from "bun:test";
 
 import { Effect, FileSystem, Layer, Path, Schema } from "effect";
 
-import { Directories } from "@liminal/sdk";
+import { Directories, ProjectTrust } from "@liminal/sdk";
 import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
 
 import settings from "../plugin.ts";
@@ -46,11 +46,7 @@ effectTest(
 
     const globalOnly = { theme: "dark", font: { size: 12, family: "Mono" }, rulers: [80, 100] };
     expect(yield* store.section("editor", Editor)).toEqual(globalOnly);
-    expect(yield* store.projectTrusted).toBe(false);
-
-    yield* store.trustProject;
-    yield* store.trustProject;
-    expect(yield* store.projectTrusted).toBe(true);
+    yield* Effect.flatMap(ProjectTrust, (trust) => trust.trust);
 
     expect(yield* store.section("editor", Editor)).toEqual({
       theme: "dark",

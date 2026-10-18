@@ -12,8 +12,8 @@ export const repoRoot = (path: Path.Path) => path.resolve(import.meta.dir, "../.
 export const pluginsFolder = (path: Path.Path) => path.join(repoRoot(path), "packages/plugins");
 
 /**
- * Every folder the app loads plugins from: the built-ins, then the user's and the project's own. A
- * package named like one in an earlier folder does not load.
+ * Every folder the app may load plugins from: the built-ins, then the user's and the project's own.
+ * The composition decides which load; the project's loads only in a trusted workspace.
  */
 export const pluginFolders = Effect.gen(function* () {
   const path = yield* Path.Path;

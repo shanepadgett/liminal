@@ -1,9 +1,10 @@
 /**
  * Where the user writes. A full-width surface of its own holding the input and, right under it, the
- * model in the accent color with its thinking option. Its top row can glide while the agent works.
- * The key hints sit directly below the surface. A draft that is a `/` command, or that ends in an
- * `@` tag, opens a list of suggestions above the input. When the assistant asks the user questions,
- * its form takes the input's place until the answers are sent.
+ * model in the accent color with its thinking option, then the session's approval mode, `full` in
+ * the warning color. Its top row can glide while the agent works. The key hints sit directly below
+ * the surface. A draft that is a `/` command, or that ends in an `@` tag, opens a list of
+ * suggestions above the input. When the assistant asks the user questions, its form takes the
+ * input's place until the answers are sent.
  */
 
 import { useTerminalDimensions } from "@opentui/solid";
@@ -16,6 +17,9 @@ import { FileSuggestions } from "./FileSuggestions.tsx";
 import { type FormState, formHintsOf } from "./formState.ts";
 import { QuestionForm } from "./QuestionForm.tsx";
 import { ScanLine } from "./ScanLine.tsx";
+
+/** How the session's tool calls are approved. */
+export type ApprovalMode = "auto" | "ask" | "full";
 
 /** Which list a draft opens: commands for a lone `/` word, files for a trailing `@` word. */
 type Suggesting = { readonly kind: "commands" | "files" | "none"; readonly typed: string };
@@ -91,6 +95,7 @@ export function Composer(props: {
   readonly color: RoleColor;
   readonly model: string;
   readonly thinking: string;
+  readonly approval: ApprovalMode;
   readonly draft: string;
   readonly isWorking: boolean;
   /** Whether the top edge glides. Off while working when the header carries the motion. */
@@ -125,10 +130,22 @@ export function Composer(props: {
           >
             {(form) => <QuestionForm color={props.color} form={form()} />}
           </Show>
-          <text wrapMode="none" marginTop={props.form === undefined ? 0 : 1}>
-            <span style={{ fg: props.color("text.accent") }}>{props.model}</span>
-            <span style={{ fg: props.color("text.muted") }}>{` (${props.thinking})`}</span>
-          </text>
+          <box flexDirection="row" gap={2} marginTop={props.form === undefined ? 0 : 1}>
+            <text wrapMode="none">
+              <span style={{ fg: props.color("text.accent") }}>{props.model}</span>
+              <span style={{ fg: props.color("text.muted") }}>{` (${props.thinking})`}</span>
+            </text>
+            <text wrapMode="none">
+              <span style={{ fg: props.color("text.faint") }}>{"approval "}</span>
+              <span
+                style={{
+                  fg: props.color(props.approval === "full" ? "feedback.warning" : "text.muted"),
+                }}
+              >
+                {props.approval}
+              </span>
+            </text>
+          </box>
         </box>
       </box>
       <box paddingX={2}>

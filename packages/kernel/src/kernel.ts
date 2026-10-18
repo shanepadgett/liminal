@@ -4,10 +4,18 @@ import { Effect, Layer, type Scope, Stream } from "effect";
 import { RpcClient, RpcSerialization, RpcServer } from "effect/rpc";
 import { Socket, SocketServer } from "effect/socket";
 
-import { EventBus, type GraphMember, type HoldGraph, makeTurnGate, TurnGate } from "@liminal/sdk";
+import {
+  type CompositionInvalid,
+  EventBus,
+  type GraphMember,
+  type HoldGraph,
+  makeTurnGate,
+  TurnGate,
+} from "@liminal/sdk";
 
 import { makeGraphs, membersOf } from "./graph/graphs.ts";
 import type { PartName } from "./host/build.ts";
+import type { Composition } from "./host/host.ts";
 import { type SharedModules, serveShared } from "./host/modules.ts";
 import type { PluginStatus } from "./host/status.ts";
 import { lockedReloads, type ReloadOptions, type Reloads, runReloads } from "./reload/run.ts";
@@ -16,8 +24,11 @@ import { route } from "./server/router.ts";
 import { serveKernel } from "./server/serve.ts";
 
 export interface BootOptions {
-  /** Folders whose packages hold plugins. */
-  readonly folders: ReadonlyArray<string>;
+  /**
+   * Which plugins run; read for the first graph and again for each graph change. A failed first
+   * read fails `start`; a later one fails that change's check.
+   */
+  readonly composition: Effect.Effect<Composition, CompositionInvalid>;
   /**
    * Packages the host imports once and serves to every plugin: `effect`, `@liminal/sdk`, and the
    * frontend's own.
@@ -48,7 +59,7 @@ export const start = Effect.fn("start")(function* (options: BootOptions) {
   const bus = yield* Layer.build(EventBus.layer);
   const turns = yield* makeTurnGate;
 
-  const graphs = yield* makeGraphs({ folders: options.folders, parts: options.parts }).pipe(
+  const graphs = yield* makeGraphs({ composition: options.composition, parts: options.parts }).pipe(
     Effect.provideContext(bus),
     Effect.provideService(TurnGate, turns.gate),
   );
@@ -56,7 +67,7 @@ export const start = Effect.fn("start")(function* (options: BootOptions) {
   const reloads =
     options.reload === undefined
       ? lockedReloads
-      : yield* runReloads(options.reload, { graphs, folders: options.folders, close: turns.close });
+      : yield* runReloads(options.reload, { graphs, close: turns.close });
 
   const memory = yield* makeMemoryServer;
 

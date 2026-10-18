@@ -2,7 +2,7 @@
 
 import { expect } from "bun:test";
 
-import { Effect, Layer, Option, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 
 import { defineTool, SessionId, type Tool } from "@liminal/sdk";
 import { effectTest, testPlugin } from "@liminal/sdk/testing";
@@ -10,7 +10,7 @@ import { effectTest, testPlugin } from "@liminal/sdk/testing";
 import tools from "../plugin.ts";
 import {
   ApprovalAnswer,
-  Approvals,
+  Approvers,
   type ToolCall,
   ToolChecks,
   ToolDecision,
@@ -109,14 +109,12 @@ effectTest(
 
 const saysYes = Schema.is(Schema.Struct({ text: Schema.Literal("yes") }));
 
-const approvals = Layer.succeed(Approvals)({
-  ask: (call, reason) =>
-    Effect.succeed(
-      saysYes(call.params)
-        ? ApprovalAnswer.Allow()
-        : ApprovalAnswer.Deny({ reason: `user said no to ${reason}` }),
-    ),
-});
+const approver = (call: ToolCall, reason: string) =>
+  Effect.succeed(
+    saysYes(call.params)
+      ? ApprovalAnswer.Allow()
+      : ApprovalAnswer.Deny({ reason: `user said no to ${reason}` }),
+  );
 
 effectTest(
   "an ask goes to the approval plugin, and wrappers run around allowed calls",
@@ -125,6 +123,8 @@ effectTest(
       () => Effect.succeed(ToolDecision.Ask({ reason: "writes" })),
       { order: 0 },
     );
+
+    yield* (yield* Approvers).register(approver, { order: 0 });
 
     yield* (yield* ToolWrappers).register(
       (_allowed, next) =>
@@ -149,5 +149,5 @@ effectTest(
       message: "user said no to writes",
     });
   }),
-  testPlugin(tools, contextFakes).pipe(Layer.provide(approvals)),
+  pipelineLayer,
 );

@@ -9,16 +9,13 @@ Status: built
 - `PromptSections`
 - `ToolSources`
 
-## Uses
-
-- `Approvals`
-
 ## Provides
 
 - `Tools`, keyed by tool name
 - `ToolPipeline`
 - `ToolChecks`
 - `ToolWrappers`
+- `Approvers`: the newest registration answers asks; with none, an ask is denied
 
 ## Requirements
 

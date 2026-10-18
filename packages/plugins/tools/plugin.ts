@@ -3,13 +3,13 @@
 import { PromptSections, ToolSources } from "@liminal/context/contract";
 import { definePlugin } from "@liminal/sdk";
 
-import { Approvals, ToolChecks, ToolPipeline, Tools, ToolWrappers } from "./src/contract.ts";
+import { Approvers, ToolChecks, ToolPipeline, Tools, ToolWrappers } from "./src/contract.ts";
 
 export default definePlugin({
   name: "tools",
-  provides: [Tools, ToolPipeline, ToolChecks, ToolWrappers],
+  provides: [Tools, ToolPipeline, ToolChecks, ToolWrappers, Approvers],
   requires: [PromptSections, ToolSources],
-  uses: [Approvals],
+  uses: [],
   enabledByDefault: true,
   server: () => import("./src/server.ts"),
 });

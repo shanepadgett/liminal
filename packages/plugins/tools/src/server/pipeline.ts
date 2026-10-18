@@ -1,13 +1,13 @@
 /** The tool pipeline: checks, approvals, wrappers, then the tool's run. */
 
-import { Effect, Layer, Option } from "effect";
+import { Array as Arr, Effect, Layer, Option } from "effect";
 
 import { Pipeline, Registry, type Tool } from "@liminal/sdk";
 
 import {
   type AllowedCall,
-  Approvals,
   ApprovalAnswer,
+  Approvers,
   type ToolCall,
   ToolChecks,
   ToolDecision,
@@ -40,7 +40,7 @@ const runTool = ({ call, tool }: AllowedCall): Effect.Effect<ToolOutcome> =>
 const make = Effect.gen(function* () {
   const checks = yield* ToolChecks;
   const wrappers = yield* ToolWrappers;
-  const approvals = yield* Effect.serviceOption(Approvals);
+  const approvers = yield* Approvers;
 
   /** The checks in order: the first deny ends them; asks are gathered. */
   const decide = Effect.fn("ToolPipeline.decide")(function* (call: ToolCall, tool: Tool) {
@@ -57,12 +57,12 @@ const make = Effect.gen(function* () {
 
     if (asks.length === 0) return ApprovalAnswer.Allow();
 
-    return yield* Option.match(approvals, {
+    return yield* Option.match(Arr.last(yield* approvers.list), {
       onNone: () =>
         Effect.succeed(
           ApprovalAnswer.Deny({ reason: "the call needs approval and no approval plugin is on" }),
         ),
-      onSome: (service) => service.ask(call, asks.join("; ")),
+      onSome: (approver) => approver(call, asks.join("; ")),
     });
   });
 
@@ -81,8 +81,9 @@ const make = Effect.gen(function* () {
   return ToolPipeline.of({ run });
 });
 
-/** The pipeline with its empty check and wrapper registries. */
+/** The pipeline with its empty check, approver and wrapper registries. */
 export const pipeline = Layer.effect(ToolPipeline, make).pipe(
   Layer.provideMerge(Registry.layer(ToolChecks)),
+  Layer.provideMerge(Registry.layer(Approvers)),
   Layer.provideMerge(Registry.layer(ToolWrappers)),
 );

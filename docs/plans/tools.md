@@ -6,7 +6,7 @@ One `tools` plugin owns the tool plumbing; a `files` plugin owns workspace file 
 
 | Package | Holds | Replaces |
 | --- | --- | --- |
-| `tools` | `Tools`, `ToolPipeline`, `ToolChecks`, `ToolWrappers`, `Approvals`; the `tools/guidance` prompt section; the tool list for context | `tool-registry`, `tool-pipeline`, `tool-guidance` |
+| `tools` | `Tools`, `ToolPipeline`, `ToolChecks`, `ToolWrappers`, `Approvers`; the `tools/guidance` prompt section; the tool list for context | `tool-registry`, `tool-pipeline`, `tool-guidance` |
 | `files` | `WorkspaceFiles`: resolve, read and write files in the workspace | file access inside each tool |
 | `tools-read` | `read` | unchanged package, now over `WorkspaceFiles` |
 | `tools-edit` | `edit` and `write`: the tools that change files | `tools-write` |

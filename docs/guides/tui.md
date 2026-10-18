@@ -53,7 +53,10 @@ The chat screen's slots, from `@liminal/chat/contract`:
 | `ChatSlots.tool` | keyed | tool name, `meta: ToolRows` | `{ call: ToolCall, sessionId }` |
 | `ChatSlots.live` | keyed | live kind | `{ live: LiveState, sessionId }` |
 | `ChatSlots.composer` | chain | | `{ running, sessionId, matched }` |
+| `ChatSlots.composerHints` | chain | | `{ running, sessionId, matched }` |
 | `ChatSlots.hints` | list | | `{ running, sessionId }` |
+
+- Take `ChatSlots.composer` and `ChatSlots.composerHints` with the same `select` and a priority below 0, so your keys replace the composer's.
 
 - To declare your own slot, export `Slot.single|list|keyed|chain("<plugin>/<place>", { scope })` from your contract and pass it as `declares` when you register the component that draws it. `scope` is `"root"` or `"session"`; session slots get `sessionId`.
 

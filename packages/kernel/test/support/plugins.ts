@@ -3,7 +3,7 @@
  * `reader` and `steady` from `swap.ts`, and `fresh`, whose value comes from its own `value.ts`.
  */
 
-import { Context, Effect, FileSystem, Path, Queue, Stream } from "effect";
+import { Context, Effect, FileSystem, Path, Queue, Ref, Stream } from "effect";
 
 import type { GraphMember } from "@liminal/sdk";
 
@@ -92,14 +92,34 @@ export const started = Effect.fn("started")(function* (
   yield* writePlugins(folder);
   yield* writeSource("one");
   yield* writeFresh(folder, "one");
-  const { reload, changes } = yield* testReload(overrides);
-  const kernel = yield* start({ ...testBoot([folder]), reload });
+  const compositionFile = path.join(folder, "plugins.json");
+  const choices = yield* Ref.make<ReadonlyMap<string, boolean>>(new Map());
+
+  const { reload, changes } = yield* testReload({
+    pluginFolders: [folder],
+    compositionFiles: [compositionFile],
+    ...overrides,
+  });
+
+  const composition = Effect.map(Ref.get(choices), (chosen) => ({
+    folders: [folder],
+    choices: chosen,
+  }));
+
+  const kernel = yield* start({ ...testBoot([folder]), composition, reload });
 
   /** Reports a change to the files of plugin package `name`. */
   const touch = (name: string) =>
     Queue.offer(changes, [path.join(folder, name, "plugin.ts")]).pipe(Effect.asVoid);
 
-  return { kernel, folder, changes, touch };
+  /** Turns plugin `name` on or off, as an edit to `plugins.json` does. */
+  const choose = (name: string, isOn: boolean) =>
+    Ref.update(choices, (chosen) => new Map([...chosen, [name, isOn]])).pipe(
+      Effect.andThen(Queue.offer(changes, [compositionFile])),
+      Effect.asVoid,
+    );
+
+  return { kernel, folder, changes, touch, choose };
 });
 
 export type Started = Effect.Success<ReturnType<typeof started>>;

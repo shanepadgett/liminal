@@ -72,6 +72,7 @@ export function ChatScreen(props: {
           color={props.color}
           model="claude-opus-4"
           thinking="high"
+          approval="auto"
           draft=""
           isWorking={props.isWorking}
           isGliding={props.isWorking && props.glideAt === "composer"}

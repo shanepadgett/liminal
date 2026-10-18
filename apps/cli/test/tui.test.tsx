@@ -11,6 +11,7 @@ import {
   Deferred,
   Effect,
   Latch,
+  Layer,
   Option,
   Path,
   Predicate,
@@ -30,7 +31,7 @@ import {
   ScriptedModel,
   scriptedProvider,
 } from "@liminal/model-scripted/contract";
-import { ModelError, type ModelPart, SessionId } from "@liminal/sdk";
+import { ModelError, type ModelPart, ProjectTrust, SessionId } from "@liminal/sdk";
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 import { SessionLog, userMessage } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
@@ -52,7 +53,13 @@ const parts = [
   "tools-edit",
   "tools-read",
   "tools-shell",
+  "trust",
 ];
+
+/** The base services with the workspace trusted, so the composer shows. */
+const trustedServices = testBaseServices.pipe(
+  Layer.tap((services) => Context.get(services, ProjectTrust).trust),
+);
 
 /**
  * Boots the kernel, with `reload` when given, prepares it with `before`, then mounts the TUI once
@@ -134,7 +141,7 @@ effectTest(
     expect(frame).toContain("Ask anything");
     expect(frame).not.toContain("hello there");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 /** Boots with the scripted model as the default, answering each call with the next of `scripts`. */
@@ -169,7 +176,7 @@ effectTest(
 
     expect(yield* frameWith(setup, "hi, how can I help")).toContain("hello");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -190,7 +197,7 @@ effectTest(
     const frame = yield* frameWith(setup, "read it");
     expect(frame).toContain("◆ Read");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -208,7 +215,7 @@ effectTest(
     expect(after).toContain("wait for it");
     expect(after).not.toContain("never");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -216,7 +223,12 @@ effectTest(
   Effect.gen(function* () {
     const path = yield* Path.Path;
     const changes = yield* Queue.unbounded<ReadonlyArray<string>>();
-    const { kernel, setup } = yield* boot(() => Effect.void, testReload(changes, "confirmed"));
+
+    const { kernel, setup } = yield* boot(
+      () => Effect.void,
+      testReload(path, changes, "confirmed"),
+    );
+
     const file = path.resolve(import.meta.dir, "../../../packages/plugins/cancel/src/tui.tsx");
 
     const reload = Effect.gen(function* () {
@@ -230,7 +242,7 @@ effectTest(
     const after = yield* frameWhere(setup, (frame) => !frame.includes("ctrl+r reload"));
     expect(after).toContain("liminal");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -238,7 +250,8 @@ effectTest(
   Effect.gen(function* () {
     const path = yield* Path.Path;
     const changes = yield* Queue.unbounded<ReadonlyArray<string>>();
-    const { kernel, setup } = yield* boot(() => Effect.void, testReload(changes));
+
+    const { kernel, setup } = yield* boot(() => Effect.void, testReload(path, changes));
     const file = path.resolve(import.meta.dir, "../../../packages/plugins/inbox/src/tui.tsx");
 
     yield* frameWith(setup, "Ask anything");
@@ -250,7 +263,7 @@ effectTest(
 
     expect(yield* frameWith(setup, "keep me too")).not.toContain("Ask anything");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -259,7 +272,7 @@ effectTest(
     const path = yield* Path.Path;
     const changes = yield* Queue.unbounded<ReadonlyArray<string>>();
     const broken = ChildProcess.make("/bin/sh", ["-c", "echo 'error TS2322: broken'; exit 1"]);
-    const reload = { ...testReload(changes, "confirmed"), typecheck: Option.some(broken) };
+    const reload = { ...testReload(path, changes, "confirmed"), typecheck: Option.some(broken) };
     const { setup } = yield* boot(() => Effect.void, reload);
     const file = path.resolve(import.meta.dir, "../../../packages/plugins/cancel/src/tui.tsx");
 
@@ -267,7 +280,7 @@ effectTest(
 
     expect(yield* frameWith(setup, "reload failed")).toContain("error TS2322: broken");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -280,7 +293,7 @@ effectTest(
 
     expect(yield* frameWith(setup, "/reload")).toContain("Apply a reload that waits");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -288,7 +301,12 @@ effectTest(
   Effect.gen(function* () {
     const path = yield* Path.Path;
     const changes = yield* Queue.unbounded<ReadonlyArray<string>>();
-    const { kernel, setup } = yield* boot(() => Effect.void, testReload(changes, "confirmed"));
+
+    const { kernel, setup } = yield* boot(
+      () => Effect.void,
+      testReload(path, changes, "confirmed"),
+    );
+
     const file = path.resolve(import.meta.dir, "../../../packages/plugins/cancel/src/tui.tsx");
 
     const reload = Effect.gen(function* () {
@@ -304,7 +322,7 @@ effectTest(
     const after = yield* frameWhere(setup, (frame) => !frame.includes("ctrl+r reload"));
     expect(after).not.toContain("/reload");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -316,7 +334,7 @@ effectTest(
 
     expect(yield* frameWith(setup, "not a command")).toContain("/nope hi");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -337,7 +355,7 @@ effectTest(
     const grown = /one *\n *two *\n *three *\n *four *\n *\n *No model is set/;
     expect(yield* frameWhere(setup, (frame) => grown.test(frame))).toMatch(grown);
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -361,7 +379,7 @@ effectTest(
     setup.mockInput.pressKey("c", { ctrl: true });
     yield* Deferred.await(quit);
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -376,7 +394,7 @@ effectTest(
 
     expect(yield* frameWith(setup, "got it")).toContain("hello");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -400,7 +418,7 @@ effectTest(
       "Ask anything",
     );
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -416,7 +434,7 @@ effectTest(
     yield* frameWith(setup, "hi there");
     expect(yield* sessions).toHaveLength(1);
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -439,7 +457,7 @@ effectTest(
 
     expect(yield* frameWith(setup, "hi there")).toContain("half written");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -457,7 +475,7 @@ effectTest(
     expect(fresh).toContain("Ask anything");
     expect(fresh).not.toContain("/new");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -474,7 +492,7 @@ effectTest(
     expect(title).toContain("copy");
     expect(frame).toContain("token expired");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -496,7 +514,7 @@ effectTest(
 
     expect(yield* frameWith(setup, "pinned: remember this")).toContain("hi there");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -518,7 +536,7 @@ effectTest(
 
     expect(yield* frameWith(setup, "scripted (high)")).not.toContain("Type to filter");
   }),
-  testBaseServices,
+  trustedServices,
 );
 
 effectTest(
@@ -555,6 +573,35 @@ effectTest(
     setup.mockInput.pressEnter();
 
     expect(yield* frameWith(setup, "signed in")).toContain("OpenAI");
+  }),
+  trustedServices,
+);
+
+effectTest(
+  "an untrusted workspace opens with the trust prompt, and esc brings the composer back",
+  Effect.gen(function* () {
+    const { setup } = yield* boot(() => Effect.void);
+
+    const frame = yield* frameWith(setup, "Trust this folder?");
+    expect(frame).toContain("esc not now");
+    expect(frame).not.toContain("Ask anything");
+
+    setup.mockInput.pressEscape();
+    yield* frameWith(setup, "Ask anything");
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "enter on the trust prompt trusts the workspace",
+  Effect.gen(function* () {
+    const { setup } = yield* boot(() => Effect.void);
+
+    yield* frameWith(setup, "Trust this folder?");
+    setup.mockInput.pressEnter();
+    yield* frameWith(setup, "Ask anything");
+
+    expect(yield* (yield* ProjectTrust).trusted).toBe(true);
   }),
   testBaseServices,
 );

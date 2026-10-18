@@ -6,7 +6,7 @@
 
 import { describe, expect } from "bun:test";
 
-import { Context, Deferred, Effect, Exit, Fiber, Predicate, Ref } from "effect";
+import { Context, Deferred, Effect, Exit, Fiber, Predicate, Ref, Stream } from "effect";
 
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 
@@ -31,6 +31,29 @@ describe("graph changes", () => {
       expect(yield* Ref.get(before.source.closed)).toBe(true);
       expect(yield* Ref.get(before.reader.closed)).toBe(true);
       expect(yield* Ref.get(before.steady.closed)).toBe(false);
+    }),
+    testBaseServices,
+  );
+
+  effectTest(
+    "a plugins.json edit turns a plugin off and on again, keeping every other build",
+    Effect.gen(function* () {
+      const run = yield* started();
+      const before = yield* current(run);
+
+      yield* run.choose("steady", false);
+
+      yield* run.kernel.graph.pipe(
+        Stream.filter((members) => members.every((member) => member.name !== "steady")),
+        Stream.runHead,
+      );
+
+      expect(yield* Ref.get(before.steady.closed)).toBe(true);
+      yield* rebuilt(run, "steady", run.choose("steady", true));
+      const after = yield* current(run);
+
+      expect(after.source).toBe(before.source);
+      expect(after.steady).not.toBe(before.steady);
     }),
     testBaseServices,
   );

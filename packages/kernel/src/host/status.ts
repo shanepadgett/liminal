@@ -3,12 +3,16 @@
 import { Cause, Data } from "effect";
 
 export type InactiveReason = Data.TaggedEnum<{
-  /** The manifest sets `enabledByDefault: false`. */
-  Disabled: {};
-  /** No enabled plugin provides a required service, or several do. */
+  /** Off: by the manifest's `enabledByDefault`, or by the user's choice in `plugins.json`. */
+  Disabled: { readonly by: "default" | "choice" };
+  /** No enabled plugin provides a required service, or several chosen ones do. */
   MissingService: { readonly service: string };
-  /** This plugin and others provide the same service; none is chosen silently. */
+  /** Several plugins chosen in `plugins.json` provide the same service; none is picked silently. */
   DuplicateProvider: { readonly service: string; readonly plugins: ReadonlyArray<string> };
+  /** Another plugin chosen in `plugins.json` provides the same service. */
+  Replaced: { readonly service: string; readonly by: string };
+  /** Another plugin, from an earlier folder, provides the same service and none is chosen. */
+  Competing: { readonly service: string; readonly active: string };
   /** The plugin's requirements lead back to itself. */
   Cycle: { readonly plugins: ReadonlyArray<string> };
   /** The provider of a required service is inactive. */
@@ -30,9 +34,13 @@ export const PluginStatus = Data.taggedEnum<PluginStatus>();
 
 /** A reason as one line of text, for clients that show why a plugin is off. */
 export const describeReason: (reason: InactiveReason) => string = InactiveReason.$match({
-  Disabled: () => "disabled by default",
+  Disabled: ({ by }) => (by === "default" ? "disabled by default" : "turned off in plugins.json"),
   MissingService: ({ service }) => `no enabled plugin provides ${service}`,
-  DuplicateProvider: ({ service, plugins }) => `${service} is provided by ${plugins.join(", ")}`,
+  DuplicateProvider: ({ service, plugins }) =>
+    `${service} is provided by ${plugins.join(", ")}, all chosen in plugins.json`,
+  Replaced: ({ service, by }) => `${by} provides ${service} instead`,
+  Competing: ({ service, active }) =>
+    `${active} already provides ${service}; choose one in plugins.json`,
   Cycle: ({ plugins }) => `its requirements cycle through ${plugins.join(", ")}`,
   DependencyInactive: ({ plugin }) => `${plugin} is inactive`,
   ImportFailed: ({ cause }) => `failed to load: ${Cause.pretty(cause)}`,

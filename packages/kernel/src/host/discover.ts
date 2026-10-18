@@ -14,7 +14,7 @@ const isDirectory = Effect.fn("isDirectory")(function* (path: string) {
   );
 });
 
-/** The package folders directly inside `folders`; missing folders are skipped. */
+/** The package folders directly inside `folders`, sorted in each; missing folders are skipped. */
 const packageDirs = Effect.fn("packageDirs")(function* (folders: ReadonlyArray<string>) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
@@ -24,7 +24,7 @@ const packageDirs = Effect.fn("packageDirs")(function* (folders: ReadonlyArray<s
     if (!(yield* fs.exists(folder).pipe(Effect.orDie))) continue;
 
     const entries = yield* fs.readDirectory(folder).pipe(Effect.orDie);
-    const paths = entries.map((entry) => path.join(folder, entry));
+    const paths = entries.toSorted().map((entry) => path.join(folder, entry));
     dirs.push(...(yield* Effect.filter(paths, isDirectory)));
   }
 

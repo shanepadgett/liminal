@@ -81,7 +81,7 @@ effectTest(
     const path = yield* Path.Path;
 
     const changes = yield* Queue.unbounded<ReadonlyArray<string>>();
-    const kernel = yield* start({ ...bootOptions(path), reload: testReload(changes) });
+    const kernel = yield* start({ ...bootOptions(path), reload: testReload(path, changes) });
 
     const client = yield* RpcClient.make(KernelRpcs).pipe(
       Effect.provideService(RpcClient.Protocol, yield* kernel.connect),

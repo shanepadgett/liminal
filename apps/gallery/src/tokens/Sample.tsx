@@ -25,6 +25,7 @@ export function Sample(props: { readonly color: RoleColor }) {
         color={props.color}
         model="claude-opus-4"
         thinking="high"
+        approval="auto"
         draft=""
         isWorking={false}
         isGliding={false}

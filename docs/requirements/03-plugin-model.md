@@ -28,7 +28,7 @@ What a plugin is, where plugins load from, and how the host wires them together.
 - Optional and experimental plugins ship disabled but available; the manifest sets the default
 - Plugins load from three places: built-in, user global, project
 - User global directory is `~/.liminal/`; project directory is `.liminal/`; data directory is `~/.liminal/data/`
-- Each holds `plugins/` and `settings.json`
+- Each holds `plugins/`, `plugins.json` and `settings.json`
 - An annex is the distribution unit: an npm, git, or local package containing one or more plugins
 - An annex's `package.json` `liminal` key lists paths to its plugin manifests
 - A plugin manifest is a typed `plugin.ts` at the package root using `definePlugin`
@@ -50,11 +50,20 @@ What a plugin is, where plugins load from, and how the host wires them together.
 - Each plugin is built in its own scope
 - The host finds plugins by scanning folders for `package.json` `liminal` keys; the app supplies the built-in folder, `~/.liminal/plugins/` and `<project>/.liminal/plugins/`, in that order
 - Of two packages with one name, the one in the earlier folder loads; the other is inactive with a reason
-- The host supplies base services to every plugin without manifest entries: file system, paths, child processes, and `Directories`
+- The host supplies base services to every plugin without manifest entries: file system, paths, child processes, `Directories` and `ProjectTrust`
 - Dependency cycles are errors
 - Boot order comes from the dependency graph; independent plugins activate concurrently
 - Order within a registry is an explicit `order` on each registration
-- Config layers: built-in defaults, user global, project; each can enable, disable, replace, or configure
+- `plugins.json` holds the composition: a `plugins` map of plugin name to on or off, and `trustedFolders`
+- The project `plugins.json` overrides the global one key by key; a missing key keeps the manifest default
+- `trustedFolders` is read only from the global `plugins.json`
+- An untrusted project's `plugins/` and `plugins.json` are ignored
+- A trusted folder trusts its subfolders
+- Every untrusted workspace, with or without `.liminal/`, opens with a trust prompt in place of the composer
+- Denying trust keeps the run untrusted and brings the composer back; nothing is saved, so the next launch asks again
+- A provider set `true` replaces the others; with no choice, the earliest folder's provider stays active; two set `true` are both inactive
+- Each inactive provider shows why: replaced, competing or duplicate
+- A `plugins.json` change is a graph change applied once no turn runs
 - Server is ready when required plugins are active; slow plugins activate in the background
 - Code edits, toggles, and replacements are all graph changes applied in process
 - A graph change builds the changed plugins and their dependents aside, then swaps; failure keeps the old graph

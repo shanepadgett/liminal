@@ -160,7 +160,7 @@ OpenRouter provider for effect/ai: OpenRouterClient (apiKey, apiUrl, transformCl
 Parses JSON with comments and edits it in place: parse, modify and applyEdits keep comments and formatting. The settings plugin uses it.
 
 - Docs: `docs/reference/copies/jsonc-parser/3.3.1/` (1 file: README.md)
-- API (types): `packages/plugins/settings/node_modules/jsonc-parser/lib/umd/main.d.ts`
+- API (types): `packages/sdk/node_modules/jsonc-parser/lib/umd/main.d.ts`
 
 ## unbash 6.0.0
 

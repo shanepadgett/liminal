@@ -75,7 +75,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | [files](files.md) | Reads and writes workspace files for the file tools | built |
 | [shell-safety](shell-safety.md) | Tells read-only shell commands apart from ones that can change things | built |
 | permissions | Rules for what tools may do | to plan |
-| approval | Asks the user before a tool runs | to plan |
+| [approval](approval.md) | Decides the tool calls a check asks about: decision model, reviewer, then the user | built |
 | tool-output-spill | Moves large tool output to a file | to plan |
 | checks | The checks tool, and runs the checks itself, with its own entry kind, when the model ends its turn without them | to plan |
 | command-runner | Runs one command to its end, with a timeout | built |
@@ -90,6 +90,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | Plugin | Does | Status |
 | --- | --- | --- |
 | [settings](settings.md) | Layered settings store and schemas; each plugin owns its settings UI parts | built |
+| [trust](trust.md) | Asks the user to trust an untrusted workspace, in the composer's place | built |
 
 ## Plugin file shape
 

@@ -1,77 +1,156 @@
 # Plugin toggles
 
-Lets the user turn any plugin on or off and replace a built-in with another plugin, in `~/.liminal/settings.json` or `<project>/.liminal/settings.json`, applied as a graph change without a restart. Lets the project folder's plugins load only once the user trusts the folder.
-
-## Today
-
-| Piece | Where | What it does |
-| --- | --- | --- |
-| `enabledByDefault` | `packages/sdk/src/core/plugin.ts` | The only on/off switch; `resolve` marks `false` as `Disabled` |
-| `resolve` | `packages/kernel/src/host/resolve.ts` | Two enabled providers of one service: both `DuplicateProvider`, both off |
-| `pluginFolders` | `apps/cli/src/boot.ts` | Loads `<project>/.liminal/plugins/` with no trust check |
-| `settings` plugin | `packages/plugins/settings/` | Reads layered `settings.json`; keeps `trustedFolders` in its own section; `trustProject` has no UI |
-| reload machine | `packages/kernel/src/reload/` | `classify` turns changed files into `Plugins` or `Restart`; settings files are not watched |
-
-Gap: project plugins load without trust, against `docs/plugins/settings.md`. This plan closes it.
+Lets the user turn any plugin on or off and replace a built-in with another plugin, in `~/.liminal/plugins.json` or `<project>/.liminal/plugins.json`, applied as a graph change without a restart. Lets the project folder's plugins load only once the user trusts the folder.
 
 ## Round 1: architecture
 
-### 1. The host reads plugin choices, not the `settings` plugin
+### 1. A composition file, read by the host
 
 ```mermaid
 flowchart LR
-  files["settings.json<br/>global, project"] --> choices["app: readChoices"]
+  comp["plugins.json<br/>global, project"] --> choices["app: readComposition"]
   choices --> kernel["kernel: resolve(manifests, choices)"]
   kernel --> graph["plugin graph"]
-  graph --> settings["settings plugin<br/>other sections, writes"]
-  settings -- "write plugins.x" --> files
+  graph --> settings["settings plugin<br/>settings.json sections"]
 ```
-
-The kernel needs the choices before any plugin is built, and `settings` is itself a plugin that could be off or replaced. `BootOptions` gains `choices: Effect<PluginChoices>`; the app reads it from the files; tests pass a fixed value. `settings` still writes the `plugins` section, so a later `/plugins` dialog writes through `Settings.write`.
-
-- The JSONC helpers in `packages/plugins/settings/src/server/files.ts` (`parseSettings`, `merge`) move to `@liminal/sdk` so the app and `settings` share them; `jsonc-parser` moves to the SDK's dependencies.
-- Alternative: boot `settings` first in a phase of its own. It would make `settings` a plugin that cannot be turned off or replaced, a special case under the plugin name.
-
-### 2. Shape: one `plugins` section, name to on/off
 
 ```jsonc
-{ "plugins": { "tools-shell": false, "acme-shell": true } }
+// ~/.liminal/plugins.json
+{
+  "plugins": { "tools-shell": false, "acme-shell": true },
+  "trustedFolders": ["/Users/shane/dev/liminal"]
+}
+
+// <project>/.liminal/plugins.json, read only in a trusted folder
+{ "plugins": { "agents-files": false } }
 ```
 
-Keyed by manifest `name`. The project file overrides the global file key by key, as every section merges today. A missing key keeps the manifest's `enabledByDefault`.
+- `plugins.json` holds which plugins run and which folders are trusted; `settings.json` holds only plugin sections.
+- The app reads it before any plugin is built; `BootOptions` gains `composition: Effect<Composition>`; tests pass a fixed value.
+- `plugins` is keyed by manifest `name`; the project file overrides the global file key by key; a missing key keeps the manifest's `enabledByDefault`.
+- `trustedFolders` is read only from the global file.
+- The app parses it with `jsonc-parser` and writes it in place, keeping comments; a later `/plugins` dialog writes it through a kernel RPC.
 
-- Alternative: a `providers` map from service key to plugin name. It names service keys users never see and cannot turn off a plugin that provides nothing.
-
-### 3. Competing providers: a choice beats a default; no choice keeps the earlier folder
+### 2. Competing providers: a choice beats a default; no choice keeps the earlier folder
 
 | Providers of one service | Result |
 | --- | --- |
-| One set `true` in settings, others on by default | The one set `true` is active; the others are inactive, `Replaced { by }` |
+| One set `true`, others on by default | The one set `true` is active; the others are inactive, `Replaced { by }` |
 | None chosen | The one from the earliest folder is active; the others are inactive, `Competing { service, active }` |
 | Two set `true` | Both inactive, `DuplicateProvider`, as today |
 
-Replacing a built-in is one line: `"acme-shell": true`. Installing a competing plugin never takes down the working one. Each inactive plugin shows why, so nothing changes silently.
+### 3. Trust gates the project's plugins and choices
 
-- Alternative: keep today's rule, both off until the user chooses. Installing a shell plugin would leave the agent with no shell until the settings are edited.
+- An untrusted project: `<project>/.liminal/plugins/` is not loaded and the project `plugins.json` is ignored.
+- Trust is the base service `ProjectTrust`, which reads and writes `trustedFolders` in the global `plugins.json`.
+- The `trust` plugin asks the user to trust the folder ([trust.md](trust.md)).
 
-### 4. Trust gates the project's plugins and choices
+### 4. A composition change is a graph change
 
-- Trusted folders live in a host-read `trustedFolders` list in `~/.liminal/settings.json`, moved out of the `settings` plugin's own section; the plugin's `projectTrusted` and `trustProject` read and write that list.
-- An untrusted project: `<project>/.liminal/plugins/` is not loaded and the project `plugins` section is ignored.
-- Asking the user to trust a folder is a later TUI step; until then the user adds the folder to the list by hand.
+The app watches both `plugins.json` files. `classify` turns an edit to either into a plugin change with no package reloaded: the kernel reads the composition again and resolves the loaded manifests again; the swap waits for the `TurnGate`. Trusting a folder loads its plugins the same way. `settings.json` edits never change the graph.
 
-### 5. A settings change is a graph change
+## Round 2: code
 
-The app also watches both `settings.json` files. `classify` gains a `Choices` change: the kernel reads `choices` again and resolves the loaded manifests again, with no package reloaded; the swap waits for the `TurnGate` like any other graph change. Trusting a folder starts loading its plugins the same way.
+The app owns `plugins.json`: it reads the composition for the kernel and gives every plugin trust as a base service. The `settings` plugin reads trust from that service instead of its own section.
+
+```mermaid
+flowchart LR
+  file["plugins.json"] --> app["apps/cli/src/composition.ts"]
+  app -- "composition: Effect<Composition>" --> kernel["kernel: makeCandidate"]
+  app -- "ProjectTrust (base service)" --> settings["settings plugin"]
+  kernel --> resolve["resolve(manifests, choices)"]
+```
+
+### sdk
+
+```ts
+// packages/sdk/src/core/jsonc.ts, moved from settings' files.ts; sdk takes jsonc-parser 3.3.1
+export type JsonObject = Readonly<Record<string, Schema.Json>>;
+export const parseJsonObject: (text: string) => Result<JsonObject, string>; // empty text is {}
+export const editJson: (text, path: ReadonlyArray<string>, value: Schema.Json | undefined) => string;
+
+// packages/sdk/src/core/composition.ts
+export class CompositionInvalid extends Schema.TaggedError("CompositionInvalid", { file, message })
+export class CompositionWriteFailed extends Schema.TaggedError("CompositionWriteFailed", { file, message })
+/** A base service: whether the user trusts the workspace, and trusting it. */
+export class ProjectTrust extends Context.Service<ProjectTrust, {
+  readonly trusted: Effect<boolean, CompositionInvalid>;
+  readonly trust: Effect<void, CompositionInvalid | CompositionWriteFailed>;
+}>()("liminal/sdk/ProjectTrust") {}
+```
+
+- `BaseServices` gains `ProjectTrust`; `testBaseServices` gives an in-memory one, untrusted until `trust` runs.
+
+### kernel
+
+```ts
+// packages/kernel/src/kernel.ts
+export interface Composition {
+  readonly folders: ReadonlyArray<string>;           // plugin folders, earliest first
+  readonly choices: ReadonlyMap<string, boolean>;   // plugin name to on or off
+}
+BootOptions { composition: Effect<Composition, CompositionInvalid>; shared; parts; reload? }  // `folders` removed
+ReloadOptions gains pluginFolders (every folder that may load, watched) and compositionFiles
+```
+
+- `makeCandidate` reads `composition` on every build; `load(composition, reuse)` discovers `composition.folders` and calls `resolve(manifests, composition.choices)`.
+- `start` fails with `CompositionInvalid` when the first read fails; a later failed read fails the check, and the current graph stays.
+- `discover` sorts package folders inside each folder, so "earliest" is stable.
+
+```ts
+// resolve.ts
+enabled(plugin) = choices.get(plugin.name) ?? plugin.enabledByDefault
+off -> Disabled({ by: choices.has(name) ? "choice" : "default" })
+per service with several enabled providers:
+  chosen = providers set true
+  chosen.length > 1  -> every provider DuplicateProvider({ service, plugins: chosen }); no provider
+  chosen.length == 1 -> it provides; others Replaced({ service, by })
+  none chosen        -> first in discovery order provides; others Competing({ service, active })
+```
+
+- A plugin that loses one service and is picked for another stays inactive; its dependents get `DependencyInactive`, as today.
+
+```ts
+// reload/changes.ts
+classify: a file in compositionFiles, or in a plugin package -> Plugins({ packages }), packages may be empty
+```
+
+- `runCheck` skips the typecheck when no package changed; `prepare` with no packages re-reads the composition and keeps every build whose inputs did not change.
+
+### app
+
+```ts
+// apps/cli/src/composition.ts
+const PluginsFile = Schema.Struct({ plugins: Record(String, Boolean) = {}, trustedFolders: Array(String) = [] })
+export const compositionFiles: Effect<{ global; project }, never, Path | Directories>
+export const readComposition: Effect<Composition, CompositionInvalid, FileSystem | Path | Directories>
+  // project file and <project>/plugins read only when trustedFolders (global) holds the workspace
+export const projectTrust: Layer<ProjectTrust, never, FileSystem | Path | Directories>
+  // trust adds the workspace to the global trustedFolders with editJson, one write at a time
+```
+
+- `boot.ts` `pluginFolders` becomes every folder that may load; `main.ts` passes `composition: readComposition` and provides `projectTrust` with `Directories`.
+- `reload.ts` also watches `<global>` and `<project>` without recursion, for the two `plugins.json` files.
+
+### settings
+
+- `Settings` loses `projectTrusted` and `trustProject`; the server reads `ProjectTrust.trusted`, a failure becoming `SettingsInvalid`.
+- `files.ts` keeps `merge` and `mergeSection`; parsing and editing come from the sdk; the package drops `jsonc-parser`.
+
+### Tests
+
+- kernel: `resolve` cases for `Replaced`, `Competing`, two choices and an off choice; a reload test where a `plugins.json` edit turns a plugin off with no package reloaded.
+- app: `readComposition` with and without trust, and `trust` keeping comments.
+- settings: trust through `ProjectTrust`.
 
 ## Deletes or replaces
 
-- `InactiveReason.Disabled` covers off by default and off in settings; its text names which.
+- `BootOptions.folders` is replaced by `composition`.
+- `InactiveReason.Disabled` covers off by default and off in `plugins.json`; its text names which.
 - `DuplicateProvider` applies only to two explicit choices.
-- `settings` plugin: `OwnSection.trustedFolders` and the JSONC helpers move out.
-- `pluginFolders` takes the trust decision.
+- `settings` plugin: `OwnSection.trustedFolders`, `projectTrusted` and `trustProject` are replaced by `ProjectTrust` and the global `plugins.json`.
+- `pluginFolders` no longer decides what loads; the composition does.
 
 ## Open
 
 - A `/plugins` dialog to list, toggle and replace plugins: after this plan, designed in the gallery first.
-- A trust prompt for a new project folder.

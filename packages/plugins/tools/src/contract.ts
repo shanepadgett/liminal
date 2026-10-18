@@ -30,7 +30,7 @@ export type ToolDecision = Data.TaggedEnum<{
   Allow: {};
   /** Final: no later check can turn it back to allow. */
   Deny: { readonly reason: string };
-  /** The user decides through `Approvals`. */
+  /** The newest registered `Approvers` entry decides. */
   Ask: { readonly reason: string };
 }>;
 
@@ -45,7 +45,7 @@ export const ApprovalAnswer = Data.taggedEnum<ApprovalAnswer>();
 export type ToolCheck = (call: ToolCall, tool: Tool) => Effect.Effect<ToolDecision>;
 
 /**
- * The checks, run in order: the first deny is final; otherwise any ask goes to `Approvals`;
+ * The checks, run in order: the first deny is final; otherwise any ask goes to `Approvers`;
  * otherwise the call runs.
  */
 export class ToolChecks extends Registry.Service<ToolChecks, ToolCheck>()(
@@ -73,11 +73,14 @@ export class ToolWrappers extends Registry.Service<
   Pipeline.Middleware<AllowedCall, ToolOutcome, never>
 >()("liminal/tools/ToolWrappers") {}
 
-/** Asks the user about a call a check marked `Ask`; the approval plugin provides it. */
-export class Approvals extends Context.Service<
-  Approvals,
-  { readonly ask: (call: ToolCall, reason: string) => Effect.Effect<ApprovalAnswer> }
->()("liminal/tools/Approvals") {}
+/** Answers a call a check marked `Ask`; `reason` joins every check's reason. */
+export type Approver = (call: ToolCall, reason: string) => Effect.Effect<ApprovalAnswer>;
+
+/**
+ * Who answers asks; the newest registration answers, such as the approval plugin's. With none, an
+ * ask is denied.
+ */
+export class Approvers extends Registry.Service<Approvers, Approver>()("liminal/tools/Approvers") {}
 
 export class ToolPipeline extends Context.Service<
   ToolPipeline,

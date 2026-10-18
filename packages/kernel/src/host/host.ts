@@ -7,6 +7,14 @@ import type { PluginPackage } from "./packages.ts";
 import { type Resolution, resolve } from "./resolve.ts";
 import { InactiveReason, PluginStatus } from "./status.ts";
 
+/** Which plugins run: the folders to load, and the user's on or off choice per plugin name. */
+export interface Composition {
+  /** Folders whose packages hold plugins, earliest first. */
+  readonly folders: ReadonlyArray<string>;
+  /** Plugin name to on or off, over the manifest's `enabledByDefault`. */
+  readonly choices: ReadonlyMap<string, boolean>;
+}
+
 export interface Loaded {
   readonly resolution: Resolution;
   /** Plugins that cannot activate: broken manifests and resolution failures. */
@@ -16,14 +24,14 @@ export interface Loaded {
 }
 
 /**
- * Loads the packages in `folders`, reusing the loads `reuse` returns, and resolves which plugins
- * can activate; never fails.
+ * Loads the packages in the composition's folders, reusing the loads `reuse` returns, and resolves
+ * which plugins can activate; never fails.
  */
 export const load = Effect.fn("load")(function* (
-  folders: ReadonlyArray<string>,
+  composition: Composition,
   reuse: (dir: string) => PluginPackage | undefined,
 ) {
-  const packages = yield* discover(folders, reuse);
+  const packages = yield* discover(composition.folders, reuse);
   const discovered = packages.flatMap((found) => found.discovered);
 
   const manifests = discovered.flatMap((found) =>
@@ -41,7 +49,7 @@ export const load = Effect.fn("load")(function* (
       : [],
   );
 
-  const resolution = resolve(manifests);
+  const resolution = resolve(manifests, composition.choices);
 
   const unresolved = [...resolution.inactive].map(([name, reason]) =>
     PluginStatus.Inactive({ name, reason }),

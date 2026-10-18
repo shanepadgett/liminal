@@ -1,6 +1,6 @@
 /**
  * Inbox's TUI part: the composer, which takes chat's composer slot at priority 0 and always
- * matches, and its key hints.
+ * matches, and its key hints, which take the composer hints slot the same way.
  */
 
 import { Effect, Predicate, Record, Schema, Stream } from "effect";
@@ -76,6 +76,10 @@ export default defineTui({
       makeComposer(deps),
     );
 
-    yield* host.register(ChatSlots.hints, { id: "inbox", order: 0 }, makeHints(deps));
+    yield* host.register(
+      ChatSlots.composerHints,
+      { select: () => true, priority: 0 },
+      makeHints(deps),
+    );
   }),
 });
