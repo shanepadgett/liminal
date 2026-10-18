@@ -19,6 +19,7 @@
     "solid-js": "1.9.12"
   },
   "devDependencies": {
+    "@liminal/chat": "workspace:*",
     "@liminal/context": "workspace:*",
     "@liminal/model-scripted": "workspace:*",
     "@liminal/session-log": "workspace:*"

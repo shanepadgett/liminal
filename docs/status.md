@@ -14,6 +14,8 @@ Step 6 is built ([plans/archive/step-6.md](plans/archive/step-6.md)): the kernel
 
 Reload at turn end is built ([plans/reload.md](plans/reload.md)): each plugin package loads in its own `Bun.ModuleGraph` with the host's shared modules; the kernel's reload machine checks changed code aside and applies it under the `TurnGate` once no turn runs, swapping the graph for plugin changes or exiting 75 for the rest; the `reload` plugin shows a ready reload or a failed check in the chat header and applies it on ctrl+r; `mise run dev` runs the supervisor.
 
+Third-party parity is built ([plans/archive/third-party.md](plans/archive/third-party.md)): plugin packages are publishable with other plugins as peers, enforced by the anatomy check; the kernel serves each plugin package's exports from the folder it loaded that package from, so a plugin never reads its own installed copy; the app loads plugins from the built-in folder, `~/.liminal/plugins/` and `<project>/.liminal/plugins/`; `apps/cli/test/plugins/pins` is a third-party plugin that saves its own entry kind and draws it in the transcript.
+
 Connect and login step 1 is built ([plans/connect.md](plans/connect.md)): `model-catalog` serves `models.dev` model details from a cache; `models` lists a provider's models from a fixed list, the catalog, or the catalog filtered by a plan list; each model has its own thinking options, picked after the model in `/model`. No login exists yet, so in the running app Codex lists no models.
 
 Connect and login step 2 is built ([plans/connect.md](plans/connect.md)): `@liminal/sdk/ai` holds the shared `effect/ai` translation; `logins` runs login flows on the server and draws `/connect`; `model-openai` signs in with an API key; `/model` lists only signed-in providers, with the failure under one whose list failed.
@@ -33,6 +35,7 @@ Connect and login step 6 is built ([plans/connect.md](plans/connect.md)): `@limi
 
 ## Next
 
+- Plan plugin toggles: user and project config enable, disable and replace plugins, so third parties can replace built-ins
 - Plan the code for system prompt and instructions ([plans/instructions.md](plans/instructions.md)), then folding; Liminal is not usable day to day without them.
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
@@ -40,7 +43,7 @@ Connect and login step 6 is built ([plans/connect.md](plans/connect.md)): `@limi
 ## Open topics
 
 - Code conventions: port Tau's standards and custom lint rules, reviewed per rule
-- Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`); [plans/reload.md](plans/reload.md) serves them into each build's `Bun.ModuleGraph`; rejecting a plugin's own copies stays open
+- Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`); [plans/reload.md](plans/reload.md) serves them into each build's `Bun.ModuleGraph`, and plugin packages' exports come from the folder the host loaded them from; an import of a package no plugin folder holds still resolves the plugin's own copy
 - ACP adapter as a server plugin
 - Collab-style session sharing through an encrypted relay
 - TUI: built per [plans/archive/tui-session.md](plans/archive/tui-session.md); its `Open` list holds the choices made while building (entry kinds drawn by `chat`, tokens moved into `@liminal/sdk/tui`).
@@ -67,4 +70,4 @@ Pi session IDs and the topics each discussed.
 - 01a145a9-703a-7284-8f7a-054aea36ec2c: TUI design (transcript)
 - 01a14649-dee8-74a7-b272-e37fd82f47b6: Sessions, Plugin catalog, docs layout
 - 01a1473c-d9a2-74a7-b272-e383d7bf6e43: session-log contract, entry kinds and visibility, compaction memories, plugin foundation, build order, testing, step 1 build, repository layout
-- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end, slash commands and dialogs, connect and login, model catalog and thinking options, contracts importing contracts, TUI keys, blank launch and restart handoff, connect step 6 (SDK protocol subpaths, no local provider)
+- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end, slash commands and dialogs, connect and login, model catalog and thinking options, contracts importing contracts, TUI keys, blank launch and restart handoff, connect step 6 (SDK protocol subpaths, no local provider), instructions plan, notices

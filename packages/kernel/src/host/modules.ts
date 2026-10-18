@@ -23,9 +23,9 @@ interface ExportTargets {
   readonly [condition: string]: ExportTarget;
 }
 
-type ExportTarget = string | null | ExportTargets | ReadonlyArray<ExportTarget>;
+export type ExportTarget = string | null | ExportTargets | ReadonlyArray<ExportTarget>;
 
-const ExportTarget: Schema.Codec<ExportTarget> = Schema.Union([
+export const ExportTarget: Schema.Codec<ExportTarget> = Schema.Union([
   Schema.String,
   Schema.Null,
   Schema.Record(
@@ -45,11 +45,11 @@ const PackageJson = Schema.fromJsonString(
 /** The conditions Bun picks for a runtime import, in its order. */
 const conditions = ["bun", "import", "default"];
 
-/** The file an export maps to under Bun's runtime conditions; none when blocked. */
 const isTargetList = (target: ExportTarget): target is ReadonlyArray<ExportTarget> =>
   Array.isArray(target);
 
-const targetOf = (target: ExportTarget): string | undefined => {
+/** The file an export maps to under Bun's runtime conditions; none when blocked. */
+export const targetOf = (target: ExportTarget): string | undefined => {
   if (Predicate.isString(target) || target === null) return target ?? undefined;
   if (isTargetList(target)) return target.map(targetOf).find(Predicate.isString);
 
@@ -142,6 +142,9 @@ const exportsOf = Effect.fn("exportsOf")(function* (name: string, from: string) 
  * the process shares one record of what it has served.
  */
 const served = new Set<string>();
+
+/** Whether `specifier` is served from the host's own copy. */
+export const isServedShared = (specifier: string) => served.has(specifier);
 
 /**
  * Loads `path` in the host: a plugin callback's `import()` loads into the host, not the graph. An

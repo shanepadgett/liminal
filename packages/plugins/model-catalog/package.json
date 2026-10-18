@@ -1,7 +1,6 @@
 {
   "name": "@liminal/model-catalog",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "exports": {
     ".": "./plugin.ts",

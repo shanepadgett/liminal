@@ -1,7 +1,7 @@
 /**
  * Checks every package under packages/plugins/ has the plugin anatomy: plugin.ts, src/contract.ts,
- * test/, exports limited to the manifest, contract and an optional conformance suite, host-supplied
- * packages as peers, and no kernel.
+ * test/, exports limited to the manifest, contract and an optional conformance suite, published
+ * (not private), host-supplied packages and other plugins as peers, and no kernel.
  */
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -24,6 +24,7 @@ const hostPeers = new Set([
 const Dependencies = Schema.optional(Schema.Record(Schema.String, Schema.String));
 
 const Manifest = Schema.Struct({
+  private: Schema.optional(Schema.Boolean),
   exports: Schema.optional(Schema.Record(Schema.String, Schema.String)),
   dependencies: Dependencies,
   devDependencies: Dependencies,
@@ -65,6 +66,19 @@ const checkExports = (dir: string, manifest: Manifest): Problem[] => {
   return [];
 };
 
+/** Fields whose packages the plugin installs itself, rather than taking from the host. */
+const installedFields = new Set(["dependencies", "optionalDependencies"]);
+
+/** Why `name` cannot be installed by the plugin itself; none when it can. */
+const installedProblem = (name: string): string | undefined => {
+  if (hostPeers.has(name)) return `${name} is supplied by the host; declare it in peerDependencies`;
+
+  if (name.startsWith("@liminal/"))
+    return `${name} is another plugin, supplied by the host; declare it in peerDependencies`;
+
+  return undefined;
+};
+
 const checkDependencies = (dir: string, manifest: Manifest): Problem[] => {
   const path = join(dir, "package.json");
   const problems: Problem[] = [];
@@ -76,15 +90,11 @@ const checkDependencies = (dir: string, manifest: Manifest): Problem[] => {
       problems.push({ path, message: `${field} cannot include @liminal/kernel` });
     }
 
-    if (field !== "dependencies") continue;
+    if (!installedFields.has(field)) continue;
 
     for (const name of names) {
-      if (!hostPeers.has(name)) continue;
-
-      problems.push({
-        path,
-        message: `${name} is supplied by the host; declare it in peerDependencies`,
-      });
+      const message = name === "@liminal/kernel" ? undefined : installedProblem(name);
+      if (message !== undefined) problems.push({ path, message });
     }
   }
 
@@ -126,7 +136,21 @@ const checkPlugin = (dir: string): Problem[] => {
   if (manifest === undefined)
     return [{ path: join(dir, "package.json"), message: "missing or invalid" }];
 
-  return checkFiles(dir).concat(checkExports(dir, manifest), checkDependencies(dir, manifest));
+  const published: Problem[] =
+    manifest.private === true
+      ? [
+          {
+            path: join(dir, "package.json"),
+            message: "plugin packages are published; remove private",
+          },
+        ]
+      : [];
+
+  return checkFiles(dir).concat(
+    published,
+    checkExports(dir, manifest),
+    checkDependencies(dir, manifest),
+  );
 };
 
 /** Every anatomy problem in the plugins directory under `root`. */

@@ -39,6 +39,7 @@
         "solid-js": "1.9.12",
       },
       "devDependencies": {
+        "@liminal/chat": "workspace:*",
         "@liminal/context": "workspace:*",
         "@liminal/model-scripted": "workspace:*",
         "@liminal/session-log": "workspace:*",
@@ -75,21 +76,19 @@
     "packages/plugins/agent-loop": {
       "name": "@liminal/agent-loop",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/context": "workspace:*",
-        "@liminal/models": "workspace:*",
-        "@liminal/session-log": "workspace:*",
-        "@liminal/settings": "workspace:*",
-        "@liminal/tool-pipeline": "workspace:*",
-        "@liminal/tool-registry": "workspace:*",
-      },
       "devDependencies": {
         "@liminal/model-catalog": "workspace:*",
         "@liminal/model-scripted": "workspace:*",
         "@liminal/session-store": "workspace:*",
       },
       "peerDependencies": {
+        "@liminal/context": "workspace:*",
+        "@liminal/models": "workspace:*",
         "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@liminal/settings": "workspace:*",
+        "@liminal/tool-pipeline": "workspace:*",
+        "@liminal/tool-registry": "workspace:*",
         "@opentui/core": "0.6.6",
         "@opentui/solid": "0.6.6",
         "effect": "4.0.5",
@@ -99,14 +98,12 @@
     "packages/plugins/cache-hints": {
       "name": "@liminal/cache-hints",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/context": "workspace:*",
-      },
       "devDependencies": {
         "@liminal/session-log": "workspace:*",
         "@liminal/session-store": "workspace:*",
       },
       "peerDependencies": {
+        "@liminal/context": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
       },
@@ -114,10 +111,6 @@
     "packages/plugins/cancel": {
       "name": "@liminal/cancel",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/agent-loop": "workspace:*",
-        "@liminal/chat": "workspace:*",
-      },
       "devDependencies": {
         "@liminal/context": "workspace:*",
         "@liminal/model-catalog": "workspace:*",
@@ -130,6 +123,8 @@
         "@liminal/tool-registry": "workspace:*",
       },
       "peerDependencies": {
+        "@liminal/agent-loop": "workspace:*",
+        "@liminal/chat": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "@opentui/core": "0.6.6",
         "@opentui/solid": "0.6.6",
@@ -140,12 +135,10 @@
     "packages/plugins/chat": {
       "name": "@liminal/chat",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/agent-loop": "workspace:*",
-        "@liminal/session-log": "workspace:*",
-      },
       "peerDependencies": {
+        "@liminal/agent-loop": "workspace:*",
         "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
         "@opentui/core": "0.6.6",
         "@opentui/solid": "0.6.6",
         "effect": "4.0.5",
@@ -163,15 +156,13 @@
     "packages/plugins/context": {
       "name": "@liminal/context",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/session-log": "workspace:*",
-        "@liminal/tool-registry": "workspace:*",
-      },
       "devDependencies": {
         "@liminal/session-store": "workspace:*",
       },
       "peerDependencies": {
         "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@liminal/tool-registry": "workspace:*",
         "effect": "4.0.5",
       },
     },
@@ -189,11 +180,6 @@
     "packages/plugins/inbox": {
       "name": "@liminal/inbox",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/agent-loop": "workspace:*",
-        "@liminal/chat": "workspace:*",
-        "@liminal/session-log": "workspace:*",
-      },
       "devDependencies": {
         "@liminal/context": "workspace:*",
         "@liminal/model-catalog": "workspace:*",
@@ -205,7 +191,10 @@
         "@liminal/tool-registry": "workspace:*",
       },
       "peerDependencies": {
+        "@liminal/agent-loop": "workspace:*",
+        "@liminal/chat": "workspace:*",
         "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
         "@opentui/core": "0.6.6",
         "@opentui/solid": "0.6.6",
         "effect": "4.0.5",
@@ -215,10 +204,8 @@
     "packages/plugins/logins": {
       "name": "@liminal/logins",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/credential-store": "workspace:*",
-      },
       "peerDependencies": {
+        "@liminal/credential-store": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "@opentui/core": "0.6.6",
         "@opentui/solid": "0.6.6",
@@ -229,16 +216,14 @@
     "packages/plugins/model-anthropic": {
       "name": "@liminal/model-anthropic",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/credential-store": "workspace:*",
-        "@liminal/logins": "workspace:*",
-        "@liminal/models": "workspace:*",
-      },
       "devDependencies": {
         "@liminal/model-catalog": "workspace:*",
       },
       "peerDependencies": {
         "@effect/ai-anthropic": "4.0.5",
+        "@liminal/credential-store": "workspace:*",
+        "@liminal/logins": "workspace:*",
+        "@liminal/models": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
       },
@@ -256,9 +241,6 @@
       "version": "0.1.0",
       "dependencies": {
         "@effect/ai-openai": "4.0.5",
-        "@liminal/credential-store": "workspace:*",
-        "@liminal/logins": "workspace:*",
-        "@liminal/models": "workspace:*",
       },
       "devDependencies": {
         "@liminal/agent-loop": "workspace:*",
@@ -272,6 +254,9 @@
         "@liminal/tools-file": "workspace:*",
       },
       "peerDependencies": {
+        "@liminal/credential-store": "workspace:*",
+        "@liminal/logins": "workspace:*",
+        "@liminal/models": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
       },
@@ -279,16 +264,14 @@
     "packages/plugins/model-openai": {
       "name": "@liminal/model-openai",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/credential-store": "workspace:*",
-        "@liminal/logins": "workspace:*",
-        "@liminal/models": "workspace:*",
-      },
       "devDependencies": {
         "@liminal/model-catalog": "workspace:*",
       },
       "peerDependencies": {
         "@effect/ai-openai": "4.0.5",
+        "@liminal/credential-store": "workspace:*",
+        "@liminal/logins": "workspace:*",
+        "@liminal/models": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
       },
@@ -296,16 +279,14 @@
     "packages/plugins/model-opencode-go": {
       "name": "@liminal/model-opencode-go",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/credential-store": "workspace:*",
-        "@liminal/logins": "workspace:*",
-        "@liminal/model-catalog": "workspace:*",
-        "@liminal/models": "workspace:*",
-      },
       "peerDependencies": {
         "@effect/ai-anthropic": "4.0.5",
         "@effect/ai-openai": "4.0.5",
         "@effect/ai-openai-compat": "4.0.5",
+        "@liminal/credential-store": "workspace:*",
+        "@liminal/logins": "workspace:*",
+        "@liminal/model-catalog": "workspace:*",
+        "@liminal/models": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
       },
@@ -315,14 +296,14 @@
       "version": "0.1.0",
       "dependencies": {
         "@effect/ai-openrouter": "4.0.5",
-        "@liminal/credential-store": "workspace:*",
-        "@liminal/logins": "workspace:*",
-        "@liminal/models": "workspace:*",
       },
       "devDependencies": {
         "@liminal/model-catalog": "workspace:*",
       },
       "peerDependencies": {
+        "@liminal/credential-store": "workspace:*",
+        "@liminal/logins": "workspace:*",
+        "@liminal/models": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
       },
@@ -330,13 +311,11 @@
     "packages/plugins/model-scripted": {
       "name": "@liminal/model-scripted",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/models": "workspace:*",
-      },
       "devDependencies": {
         "@liminal/model-catalog": "workspace:*",
       },
       "peerDependencies": {
+        "@liminal/models": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
       },
@@ -344,10 +323,8 @@
     "packages/plugins/models": {
       "name": "@liminal/models",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/model-catalog": "workspace:*",
-      },
       "peerDependencies": {
+        "@liminal/model-catalog": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
       },
@@ -366,10 +343,8 @@
     "packages/plugins/reload": {
       "name": "@liminal/reload",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/chat": "workspace:*",
-      },
       "peerDependencies": {
+        "@liminal/chat": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "@opentui/core": "0.6.6",
         "@opentui/solid": "0.6.6",
@@ -380,11 +355,9 @@
     "packages/plugins/session-log": {
       "name": "@liminal/session-log",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/session-store": "workspace:*",
-      },
       "peerDependencies": {
         "@liminal/sdk": "workspace:*",
+        "@liminal/session-store": "workspace:*",
         "effect": "4.0.5",
       },
     },
@@ -429,12 +402,10 @@
     "packages/plugins/tools-file": {
       "name": "@liminal/tools-file",
       "version": "0.1.0",
-      "dependencies": {
-        "@liminal/chat": "workspace:*",
-        "@liminal/tool-registry": "workspace:*",
-      },
       "peerDependencies": {
+        "@liminal/chat": "workspace:*",
         "@liminal/sdk": "workspace:*",
+        "@liminal/tool-registry": "workspace:*",
         "@opentui/core": "0.6.6",
         "@opentui/solid": "0.6.6",
         "effect": "4.0.5",
@@ -444,13 +415,11 @@
     "packages/plugins/tools-shell": {
       "name": "@liminal/tools-shell",
       "version": "0.1.0",
-      "dependencies": {
+      "peerDependencies": {
         "@liminal/chat": "workspace:*",
         "@liminal/command-runner": "workspace:*",
-        "@liminal/tool-registry": "workspace:*",
-      },
-      "peerDependencies": {
         "@liminal/sdk": "workspace:*",
+        "@liminal/tool-registry": "workspace:*",
         "@opentui/core": "0.6.6",
         "@opentui/solid": "0.6.6",
         "effect": "4.0.5",

@@ -1,7 +1,6 @@
 {
   "name": "@liminal/settings",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "exports": {
     ".": "./plugin.ts",

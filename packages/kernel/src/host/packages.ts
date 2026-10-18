@@ -55,13 +55,26 @@ const manifestPaths = Effect.fn("manifestPaths")(function* (packageDir: string) 
   return (liminal ?? []).map((manifest) => path.resolve(packageDir, manifest));
 });
 
-/** A package whose `package.json` cannot be read is one broken plugin, named by its folder. */
-export const loadPackage = Effect.fn("loadPackage")(function* (dir: string) {
+/** A package that cannot load at all: one broken plugin, named by its folder. */
+export const brokenPackage = (dir: string, cause: Cause.Cause<unknown>): PluginPackage => ({
+  dir,
+  discovered: [Discovered.Broken({ name: dir, cause })],
+  dispose: Effect.void,
+});
+
+/**
+ * A package whose `package.json` cannot be read is one broken plugin, named by its folder.
+ * `release` runs when the load is disposed.
+ */
+export const loadPackage = Effect.fn("loadPackage")(function* (
+  dir: string,
+  release: Effect.Effect<void>,
+) {
   const graph = yield* Effect.sync(() => new Bun.ModuleGraph());
 
   const dispose = Effect.sync(() => {
     graph.dispose();
-  });
+  }).pipe(Effect.andThen(release));
 
   const paths = yield* Effect.exit(manifestPaths(dir));
 
@@ -69,7 +82,7 @@ export const loadPackage = Effect.fn("loadPackage")(function* (dir: string) {
     ? yield* Effect.forEach(paths.value, (path) => importManifest(graph, path), {
         concurrency: "unbounded",
       })
-    : [Discovered.Broken({ name: dir, cause: paths.cause })];
+    : brokenPackage(dir, paths.cause).discovered;
 
   const loaded: PluginPackage = { dir, discovered, dispose };
 

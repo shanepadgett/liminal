@@ -36,6 +36,7 @@ import { SessionLog, userMessage } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
 
 import { makeTerminal, mount, tuiServices } from "../src/tui/run.tsx";
+import { Pins } from "./plugins/pins/src/contract.ts";
 import { awaitRebuild, bootOptions, testReload } from "./support.ts";
 
 const s1 = SessionId.make("s1");
@@ -454,6 +455,28 @@ effectTest(
     const fresh = yield* frameWhere(setup, (frame) => !frame.includes("hello there"));
     expect(fresh).toContain("Ask anything");
     expect(fresh).not.toContain("/new");
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "a third-party plugin from a plugin folder saves its own entry kind and draws it in the transcript",
+  Effect.gen(function* () {
+    const { setup, kernel } = yield* bootScripted(replyText("hi there"));
+
+    yield* send(setup, "hello there");
+    yield* frameWith(setup, "hi there");
+
+    yield* kernel.use((services) =>
+      Effect.gen(function* () {
+        const [session] = yield* Context.getUnsafe(services, SessionLog).list;
+        if (session === undefined) return yield* Effect.die("no session");
+
+        return yield* Context.getUnsafe(services, Pins).pin(session.id, "remember this");
+      }),
+    );
+
+    expect(yield* frameWith(setup, "pinned: remember this")).toContain("hi there");
   }),
   testBaseServices,
 );

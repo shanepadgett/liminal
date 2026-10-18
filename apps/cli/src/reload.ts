@@ -10,7 +10,7 @@ import type { ReloadMode, ReloadOptions } from "@liminal/kernel";
 import type { HoldGraph } from "@liminal/sdk";
 import { Settings } from "@liminal/settings/contract";
 
-import { pluginsFolder, repoRoot, restartRoots } from "./boot.ts";
+import { repoRoot, restartRoots } from "./boot.ts";
 
 /** The `reload` settings section; checked code applies on its own unless `mode` is `confirmed`. */
 const ReloadSection = Schema.Struct({
@@ -33,6 +33,9 @@ const readMode = (use: HoldGraph): Effect.Effect<ReloadMode> =>
     }),
   );
 
+const exists = (fs: FileSystem.FileSystem) => (folder: string) =>
+  fs.exists(folder).pipe(Effect.orElseSucceed(() => false));
+
 const isWatched = (file: string) => !file.split("/").includes("node_modules");
 
 /** Changed files under `folders`, absolute, in batches gathered over 100 ms. */
@@ -52,8 +55,11 @@ const watchAll = (fs: FileSystem.FileSystem, path: Path.Path, folders: ReadonlyA
     Stream.catchCause(() => Stream.empty),
   );
 
-/** Reload options for the app run from source. */
-export const reloadOptions = Effect.fn("reloadOptions")(function* () {
+/**
+ * Reload options for the app run from source, watching the plugin `folders` that exist at start; a
+ * folder made later is watched from the next start.
+ */
+export const reloadOptions = Effect.fn("reloadOptions")(function* (folders: ReadonlyArray<string>) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const root = repoRoot(path);
@@ -61,7 +67,7 @@ export const reloadOptions = Effect.fn("reloadOptions")(function* () {
   const options = { cwd: root, extendEnv: true };
 
   const reload: ReloadOptions = {
-    changes: watchAll(fs, path, [pluginsFolder(path), ...roots]),
+    changes: watchAll(fs, path, [...(yield* Effect.filter(folders, exists(fs))), ...roots]),
     restartRoots: roots,
     typecheck: Option.some(
       ChildProcess.make("bunx", ["--bun", "--no-install", "tsc", "--noEmit"], options),

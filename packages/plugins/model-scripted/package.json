@@ -1,19 +1,16 @@
 {
   "name": "@liminal/model-scripted",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "exports": {
     ".": "./plugin.ts",
     "./contract": "./src/contract.ts"
   },
-  "dependencies": {
-    "@liminal/models": "workspace:*"
-  },
   "devDependencies": {
     "@liminal/model-catalog": "workspace:*"
   },
   "peerDependencies": {
+    "@liminal/models": "workspace:*",
     "@liminal/sdk": "workspace:*",
     "effect": "4.0.5"
   },

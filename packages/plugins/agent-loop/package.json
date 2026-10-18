@@ -1,19 +1,10 @@
 {
   "name": "@liminal/agent-loop",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "exports": {
     ".": "./plugin.ts",
     "./contract": "./src/contract.ts"
-  },
-  "dependencies": {
-    "@liminal/context": "workspace:*",
-    "@liminal/models": "workspace:*",
-    "@liminal/session-log": "workspace:*",
-    "@liminal/settings": "workspace:*",
-    "@liminal/tool-pipeline": "workspace:*",
-    "@liminal/tool-registry": "workspace:*"
   },
   "devDependencies": {
     "@liminal/model-catalog": "workspace:*",
@@ -21,7 +12,13 @@
     "@liminal/session-store": "workspace:*"
   },
   "peerDependencies": {
+    "@liminal/context": "workspace:*",
+    "@liminal/models": "workspace:*",
     "@liminal/sdk": "workspace:*",
+    "@liminal/session-log": "workspace:*",
+    "@liminal/settings": "workspace:*",
+    "@liminal/tool-pipeline": "workspace:*",
+    "@liminal/tool-registry": "workspace:*",
     "@opentui/core": "0.6.6",
     "@opentui/solid": "0.6.6",
     "effect": "4.0.5",

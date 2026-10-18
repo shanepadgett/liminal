@@ -1,8 +1,9 @@
 /** Finds plugin packages in folders: each folder directly inside one is a package. */
 
-import { Effect, FileSystem, Path } from "effect";
+import { Effect, Exit, FileSystem, Path } from "effect";
 
-import { loadPackage, type PluginPackage } from "./packages.ts";
+import { claimPackage } from "./contracts.ts";
+import { brokenPackage, loadPackage, type PluginPackage } from "./packages.ts";
 
 const isDirectory = Effect.fn("isDirectory")(function* (path: string) {
   const fs = yield* FileSystem.FileSystem;
@@ -31,8 +32,22 @@ const packageDirs = Effect.fn("packageDirs")(function* (folders: ReadonlyArray<s
 });
 
 /**
+ * Claims a fresh package's name, then returns how to load it: claiming every name before any
+ * manifest loads lets each contract import resolve. A refused name is a broken package.
+ */
+const claim = (dir: string) =>
+  Effect.exit(claimPackage(dir)).pipe(
+    Effect.map((exit) =>
+      Exit.isSuccess(exit)
+        ? loadPackage(dir, exit.value.release)
+        : Effect.succeed(brokenPackage(dir, exit.cause)),
+    ),
+  );
+
+/**
  * Every package in `folders`: the load `reuse` returns for a package, or a fresh one. A package
- * with no `package.json` loads with no manifests.
+ * with no `package.json` loads with no manifests. Names are claimed in folder order, so of two
+ * packages with one name the one in the earlier folder loads.
  */
 export const discover = Effect.fn("discover")(function* (
   folders: ReadonlyArray<string>,
@@ -40,13 +55,11 @@ export const discover = Effect.fn("discover")(function* (
 ) {
   const dirs = yield* packageDirs(folders);
 
-  return yield* Effect.forEach(
-    dirs,
-    (dir) => {
-      const kept = reuse(dir);
+  const loads = yield* Effect.forEach(dirs, (dir) => {
+    const kept = reuse(dir);
 
-      return kept === undefined ? loadPackage(dir) : Effect.succeed(kept);
-    },
-    { concurrency: "unbounded" },
-  );
+    return kept === undefined ? claim(dir) : Effect.succeed(Effect.succeed(kept));
+  });
+
+  return yield* Effect.all(loads, { concurrency: "unbounded" });
 });

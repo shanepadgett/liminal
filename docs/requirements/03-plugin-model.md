@@ -43,7 +43,8 @@ What a plugin is, where plugins load from, and how the host wires them together.
 - A plugin missing a required service is inactive with a reason
 - A plugin that fails to import or build is inactive with a reason; its dependents are inactive; boot continues
 - Each plugin is built in its own scope
-- The host finds plugins by scanning folders for `package.json` `liminal` keys; the app supplies the built-in folder
+- The host finds plugins by scanning folders for `package.json` `liminal` keys; the app supplies the built-in folder, `~/.liminal/plugins/` and `<project>/.liminal/plugins/`, in that order
+- Of two packages with one name, the one in the earlier folder loads; the other is inactive with a reason
 - The host supplies base services to every plugin without manifest entries: file system, paths, child processes, and `Directories`
 - Dependency cycles are errors
 - Boot order comes from the dependency graph; independent plugins activate concurrently

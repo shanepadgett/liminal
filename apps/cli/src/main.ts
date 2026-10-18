@@ -14,7 +14,7 @@ import { startFrontend } from "@liminal/frontend";
 import { start } from "@liminal/kernel";
 import { Directories } from "@liminal/sdk";
 
-import { pluginsFolder, sharedModules } from "./boot.ts";
+import { pluginFolders, sharedModules } from "./boot.ts";
 import { giveHandoff, handoffVariable, takeHandoff } from "./handoff.ts";
 import { reloadOptions } from "./reload.ts";
 import { exitWithCode, restartExitCode } from "./supervisor.ts";
@@ -36,21 +36,20 @@ const directories = Layer.effect(
 
 /** Starts the kernel with no frontend and no reloads, then stops. */
 const check = Effect.gen(function* () {
-  const path = yield* Path.Path;
-  yield* start({ folders: [pluginsFolder(path)], shared: sharedModules, parts: ["tui"] });
+  yield* start({ folders: yield* pluginFolders, shared: sharedModules, parts: ["tui"] });
 
   return 0;
 });
 
 /** Runs the TUI until the user quits (0) or a restart applies (the restart code). */
 const run = Effect.gen(function* () {
-  const path = yield* Path.Path;
+  const folders = yield* pluginFolders;
 
   const kernel = yield* start({
-    folders: [pluginsFolder(path)],
+    folders,
     shared: sharedModules,
     parts: ["tui"],
-    reload: yield* reloadOptions(),
+    reload: yield* reloadOptions(folders),
   });
 
   const terminal = yield* makeTerminal(yield* openRenderer);

@@ -22,6 +22,8 @@ Workspace layout, the checks that guard it, and how code is tested.
 - `@effect/ai-anthropic`, `@effect/ai-openai` and `@effect/ai-openai-compat` are optional peer dependencies of the SDK, each needed only by its `/ai` protocol subpath
 - `@liminal/sdk`, `effect`, and OpenTUI are peer dependencies supplied by the host
 - Plugin contracts are published; plugins import other plugins' contracts and get the host's copy at runtime
+- Plugin packages are not private; other plugins are peer dependencies
+- A plugin imports another package's exports from the folder the host loaded that package from, never its own installed copy
 - Built-in plugins depend only on the SDK and other plugins' contracts, never on `kernel/`
 - Local plugin folders hot reload the same way built-ins do
 - Every plugin follows the same anatomy

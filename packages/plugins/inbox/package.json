@@ -1,16 +1,10 @@
 {
   "name": "@liminal/inbox",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "exports": {
     ".": "./plugin.ts",
     "./contract": "./src/contract.ts"
-  },
-  "dependencies": {
-    "@liminal/agent-loop": "workspace:*",
-    "@liminal/chat": "workspace:*",
-    "@liminal/session-log": "workspace:*"
   },
   "devDependencies": {
     "@liminal/context": "workspace:*",
@@ -23,7 +17,10 @@
     "@liminal/tool-registry": "workspace:*"
   },
   "peerDependencies": {
+    "@liminal/agent-loop": "workspace:*",
+    "@liminal/chat": "workspace:*",
     "@liminal/sdk": "workspace:*",
+    "@liminal/session-log": "workspace:*",
     "@opentui/core": "0.6.6",
     "@opentui/solid": "0.6.6",
     "effect": "4.0.5",

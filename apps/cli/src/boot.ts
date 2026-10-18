@@ -1,14 +1,28 @@
 /** Where the app finds its plugins and code, and the packages its plugins share with it. */
 
-import type { Path } from "effect";
+import { Effect, Path } from "effect";
 
 import type { SharedModules } from "@liminal/kernel";
+import { Directories } from "@liminal/sdk";
 
 /** The repository root, when run from source. */
 export const repoRoot = (path: Path.Path) => path.resolve(import.meta.dir, "../../..");
 
 /** The built-in plugins' folder. */
 export const pluginsFolder = (path: Path.Path) => path.join(repoRoot(path), "packages/plugins");
+
+/**
+ * Every folder the app loads plugins from: the built-ins, then the user's and the project's own. A
+ * package named like one in an earlier folder does not load.
+ */
+export const pluginFolders = Effect.gen(function* () {
+  const path = yield* Path.Path;
+  const directories = yield* Directories;
+  const user = path.join(directories.global, "plugins");
+  const project = path.join(directories.project, "plugins");
+
+  return [...new Set([pluginsFolder(path), user, project])];
+});
 
 /** The code the app loads at start; a change there needs a new process. */
 export const restartRoots = (path: Path.Path) =>

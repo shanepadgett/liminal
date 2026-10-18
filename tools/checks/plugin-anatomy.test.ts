@@ -21,6 +21,8 @@ test("a broken plugin reports each anatomy problem", () => {
     "broken/packages/plugins/demo/src/contract.ts: missing",
     "broken/packages/plugins/demo/src/helpers.ts: src/ holds only contract.ts, server.ts or server/, tui.tsx or tui/",
     "broken/packages/plugins/demo/test: missing test directory",
+    "broken/packages/plugins/suite/package.json: @liminal/session-log is another plugin, supplied by the host; declare it in peerDependencies",
+    "broken/packages/plugins/suite/package.json: plugin packages are published; remove private",
     "broken/packages/plugins/suite/test/conformance.ts: exported but missing",
   ]);
 });

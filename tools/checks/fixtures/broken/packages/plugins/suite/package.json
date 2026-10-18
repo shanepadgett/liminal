@@ -1,10 +1,14 @@
 {
   "name": "@liminal/suite",
+  "private": true,
   "type": "module",
   "exports": {
     ".": "./plugin.ts",
     "./contract": "./src/contract.ts",
     "./conformance": "./test/conformance.ts"
+  },
+  "dependencies": {
+    "@liminal/session-log": "*"
   },
   "peerDependencies": {
     "@liminal/sdk": "*",

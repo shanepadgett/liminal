@@ -8,6 +8,7 @@
   },
   "peerDependencies": {
     "@liminal/sdk": "*",
+    "@liminal/session-log": "*",
     "effect": "*"
   }
 }
