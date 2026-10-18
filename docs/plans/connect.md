@@ -173,19 +173,22 @@ Models.listModels(provider)
 | `name`, `contextWindow`, `maxOutput` | `name`, `limit.context`, `limit.output` |
 | `input` | `modalities.input` filtered to `text`, `image` |
 | `price` | `cost.input`, `output`, `cache_read`, `cache_write` |
-| `thinking` | `reasoning` false: none. Effort values map by name (`none` is `off`). Budget or toggle: see Open |
+| `thinking` | `reasoning` false: none. Effort values map by name (`none` is `off`). Budget and toggle: see Open |
 
 ### Deletes
 
 - `model-codex` `catalog.ts`: `modelInfo`, `outputLimit` and the reasoning-level mapping; Codex details come from the catalog.
 - `ModelProvider.models`.
 
+### Step 1 decisions
+
+- No bundled snapshot: the first run fetches; offline with no cache shows `CatalogUnavailable` under catalog providers in `/model`.
+- Plan lists are fetched each time `/model` opens, as Codex does today.
+- Models from settings arrive in step 6 with `model-local`.
+
 ### Open
 
-- **Bundled snapshot.** Recommend none: first run fetches; offline with no cache shows `CatalogUnavailable` under catalog providers. Tau bundles one (`catalog-snapshot.json`, refreshed by a mise task).
-- **Budget and toggle thinking.** Recommend budget models offer `low`, `medium`, `high` (plus `off` when they can turn off), and the provider maps each to tokens; toggle models offer `off` and `medium`.
-- **Plan list caching.** Recommend fetching the plan list on each `/model` open, as Codex does today; Tau caches it with the catalog.
-- **Models from settings.** Tau lets settings add or correct models; recommend leaving it to step 6 with `model-local`.
+- **Thinking levels.** Recommend Pi's shape (`packages/ai/src/models.ts` `clampThinkingLevel`): the user may pick any level from `off` to `xhigh`; `ModelInfo.thinking` lists the levels the model truly has; a shared `clampThinking(levels, wanted)` picks the nearest, trying higher first, then lower. Effort models list their mapped effort names. Budget models list `minimal` to `high` from a default token table (Pi: 1024, 2048, 8192, 16384), plus `xhigh` at the model's largest budget, plus `off` when it can turn off. Toggle models list `off` and `medium`. OpenCode instead builds per-model named variants (`packages/core/src/variant.ts`: budget gives `high` at half the output limit and `max`), which drops a shared level ladder.
 
 ## Deletes or replaces
 
