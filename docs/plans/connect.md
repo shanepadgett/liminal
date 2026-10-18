@@ -50,7 +50,8 @@ flowchart LR
 | Provider plugins | Expand `model-codex`; add one per provider row; each registers its login methods |
 | `credential-store` | Unchanged; storage and refresh only |
 | SDK TUI | Adds prompt (text and secret) and confirm dialogs beside `SelectDialog` |
-| `models` / `/model` | Re-lists when a credential changes |
+| `model-catalog` (new plugin) | `models.dev` catalog and cache; source of model details for `/model` |
+| `models` / `/model` | Lists from the catalog, filtered by sign-in and plan lists; re-lists when a credential changes |
 
 ## Decisions
 
@@ -61,7 +62,10 @@ flowchart LR
 | Provider plugins | One per provider: `model-codex` (exists), `model-chatgpt`, `model-openai`, `model-anthropic`, `model-openrouter`, `model-opencode-go`, `model-local` |
 | Anthropic | One `model-anthropic` plugin with two login methods: Claude subscription and API key |
 | API packages | `@effect/ai-openai`, `@effect/ai-anthropic`, `@effect/ai-openrouter`, `@effect/ai-openai-compat` (per `docs/plugins/models.md`). Native tool changes come from a provider layer that wraps the package client (`docs/plans/core-contracts.md`); OpenCode Go Messages replies get their missing `usage` fields filled before decoding |
-| Model lists | A `models.dev` catalog with a local cache, as Tau `src/ai/Catalog.ts` does |
+| Model lists | A new `model-catalog` plugin owns the `models.dev` catalog and its local cache; `models` depends on it; replaceable like `credential-store` |
+| Catalog refresh | Startup uses the cached copy; a background refresh runs when the cache is older than a set age |
+| Plan-limited logins | Codex, ChatGPT and Claude subscription fetch their live plan list; `/model` shows only catalog models on that list (Tau `fetchPlanLists`) |
+| Callback server | `BunHttpServer.layer` (`@effect/platform-bun`) with `HttpServer.serve`, scoped to the login so the port closes when it ends; the browser opens through the platform `open` command |
 | Sign-out | Confirm dialog, then remove the credential. `chatgpt` revokes first; a failed revoke still removes it and tells the user to disconnect the app by hand |
 | Live test credentials | Live recording tests read Liminal's own credential store only |
 
@@ -69,21 +73,17 @@ flowchart LR
 
 One commit each, with gallery updates.
 
-1. SDK prompt and confirm dialogs, `logins` plugin, `/connect`, `model-openai` with its API key
-2. Codex browser and device code login
-3. `model-anthropic`: Claude subscription and API key
-4. `model-chatgpt`: Sign in with ChatGPT
-5. `model-openrouter`, `model-opencode-go`, `model-local`
-
-## Round 2
-
-1. **Catalog home.** Which plugin owns the `models.dev` catalog and its cache (`models`, or a new `model-catalog`), when it refreshes, and how it joins providers that list models live (Codex plan lists).
-2. **Catalog place in the build order.** Before step 1, or inside it.
-3. **Local callback server.** Recommend `BunHttpServer.layer` from `@effect/platform-bun` (already a dependency) with `HttpServer.serve`, scoped to the login so the port closes when it ends; the browser opens through the platform `open` command.
+1. `model-catalog`: `models.dev` catalog, cache and background refresh; `/model` lists from it
+2. SDK prompt and confirm dialogs, `logins` plugin, `/connect`, `model-openai` with its API key
+3. Codex browser and device code login
+4. `model-anthropic`: Claude subscription and API key
+5. `model-chatgpt`: Sign in with ChatGPT
+6. `model-openrouter`, `model-opencode-go`, `model-local`
 
 ## Deletes or replaces
 
 - Live Codex tests stop reading Tau's `~/.tau/credentials.db`; they read Liminal's store.
+- `model-codex` `src/server/catalog.ts` stops being the source of the Codex model list; it supplies the plan list the catalog filters.
 - `/model` stops leaving failed providers out silently; it shows "sign in with /connect" under them.
 
 ## References
