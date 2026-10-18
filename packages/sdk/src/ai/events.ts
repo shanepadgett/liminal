@@ -1,6 +1,6 @@
 /** `effect/ai` response parts as Liminal model events, numbering each reply part from 0. */
 
-import { Effect, Predicate, Schema } from "effect";
+import { Effect, Predicate, Schema, Stream } from "effect";
 import type { Response, Tool } from "effect/ai";
 
 import {
@@ -10,9 +10,10 @@ import {
   type ModelEvent,
   type ModelPart,
   type PartKind,
-} from "@liminal/sdk";
+} from "../core/index.ts";
+import { keptData, type ProviderData } from "./data.ts";
 
-import { codexData } from "./prompt.ts";
+type Kept = ReturnType<typeof keptData>;
 
 /** The response parts that become events as they are. */
 type Forwarded =
@@ -45,7 +46,7 @@ const isForwarded = <P extends { readonly type: string }>(part: P): part is Extr
  * A response part once checked: tool-call params are JSON; parts Liminal does not model are
  * ignored.
  */
-export type Part =
+type Part =
   | Forwarded
   | {
       readonly type: "tool-call";
@@ -62,12 +63,12 @@ interface OpenPart {
 }
 
 /** The parts streaming now, by response part id, and the next free index. */
-export interface Progress {
+interface Progress {
   readonly next: number;
   readonly open: ReadonlyMap<string, OpenPart>;
 }
 
-export const noProgress: Progress = { next: 0, open: new Map() };
+const noProgress: Progress = { next: 0, open: new Map() };
 
 type Step = readonly [Progress, ReadonlyArray<ModelEvent>];
 
@@ -101,7 +102,7 @@ const close = (progress: Progress, id: string, finished: (text: string) => Model
   ];
 };
 
-const textual = (progress: Progress, part: Part): Step | undefined => {
+const textual = (progress: Progress, part: Part, kept: Kept): Step | undefined => {
   if (part.type === "text-start") return begin(progress, part.id, { type: "text" });
   if (part.type === "reasoning-start") return begin(progress, part.id, { type: "reasoning" });
 
@@ -111,7 +112,7 @@ const textual = (progress: Progress, part: Part): Step | undefined => {
 
   if (part.type === "text-end" || part.type === "reasoning-end") {
     const type = part.type === "text-end" ? "text" : "reasoning";
-    const providerData = codexData(part.metadata);
+    const providerData = kept(part.metadata);
 
     return close(progress, part.id, (text) => ({ type, text, providerData }));
   }
@@ -119,7 +120,7 @@ const textual = (progress: Progress, part: Part): Step | undefined => {
   return undefined;
 };
 
-const toolCall = (progress: Progress, part: Part): Step | undefined => {
+const toolCall = (progress: Progress, part: Part, kept: Kept): Step | undefined => {
   if (part.type === "tool-params-start") {
     return begin(progress, part.id, { type: "tool-call", id: part.id, name: part.name });
   }
@@ -132,7 +133,7 @@ const toolCall = (progress: Progress, part: Part): Step | undefined => {
     : begin(progress, part.id, { type: "tool-call", id: part.id, name: part.name });
 
   const { id, name, params } = part;
-  const providerData = codexData(part.metadata);
+  const providerData = kept(part.metadata);
 
   const [ended, ends] = close(started, id, () => ({
     type: "tool-call",
@@ -171,15 +172,18 @@ const finish = (part: Part): ReadonlyArray<ModelEvent> | undefined => {
 };
 
 /** The events one response part adds; parts Liminal does not model add none. */
-export const translate = (progress: Progress, part: Part): Step =>
-  textual(progress, part) ?? toolCall(progress, part) ?? [progress, finish(part) ?? []];
+const translate =
+  (kept: Kept) =>
+  (progress: Progress, part: Part): Step =>
+    textual(progress, part, kept)
+    ?? toolCall(progress, part, kept) ?? [progress, finish(part) ?? []];
 
 /** What an error the backend streams says, and the reason it stands for. */
-const streamedError = ({ error }: Response.ErrorPart): ModelError => {
+const streamedError = (name: string, { error }: Response.ErrorPart): ModelError => {
   const message =
     Predicate.hasProperty(error, "message") && Predicate.isString(error.message)
       ? error.message
-      : "Codex failed the response";
+      : `${name} failed the response`;
 
   const code =
     Predicate.hasProperty(error, "code") && Predicate.isString(error.code) ? error.code : "";
@@ -198,17 +202,41 @@ const reasonOfCode = (code: string): ModelErrorReason => {
 const isJson = Schema.is(Schema.Json);
 
 /** Fails on an error part, and checks that tool-call params are JSON. */
-export const check = <Tools extends Record<string, Tool.Any>>(
-  part: Response.StreamPart<Tools, "deferred">,
-): Effect.Effect<Part, ModelError> => {
-  if (isForwarded(part)) return Effect.succeed(part);
-  if (part.type === "error") return Effect.fail(streamedError(part));
-  if (part.type !== "tool-call") return Effect.succeed({ type: "ignored" });
+const check =
+  (name: string) =>
+  <Tools extends Record<string, Tool.Any>>(
+    part: Response.StreamPart<Tools, "deferred">,
+  ): Effect.Effect<Part, ModelError> => {
+    if (isForwarded(part)) return Effect.succeed(part);
+    if (part.type === "error") return Effect.fail(streamedError(name, part));
+    if (part.type !== "tool-call") return Effect.succeed({ type: "ignored" });
 
-  const { id, name, params, metadata } = part;
-  if (isJson(params)) return Effect.succeed({ type: "tool-call", id, name, params, metadata });
+    const { id, params, metadata } = part;
 
-  return Effect.fail(
-    new ModelError({ reason: "provider", message: `Codex sent unreadable params for ${name}` }),
+    if (isJson(params))
+      return Effect.succeed({ type: "tool-call", id, name: part.name, params, metadata });
+
+    return Effect.fail(
+      new ModelError({
+        reason: "provider",
+        message: `${name} sent unreadable params for ${part.name}`,
+      }),
+    );
+  };
+
+const start: ModelEvent = { type: "start" };
+
+/**
+ * A reply's response parts as model events, starting with `start`. `name` names the provider in
+ * errors; `data` is the metadata its parts keep for the next request.
+ */
+export const streamOf = <Tools extends Record<string, Tool.Any>, R>(
+  name: string,
+  data: ProviderData,
+  parts: Stream.Stream<Response.StreamPart<Tools, "deferred">, ModelError, R>,
+): Stream.Stream<ModelEvent, ModelError, R> =>
+  parts.pipe(
+    Stream.mapEffect(check(name)),
+    Stream.mapAccum(() => noProgress, translate(keptData(data))),
+    Stream.prepend([start]),
   );
-};

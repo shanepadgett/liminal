@@ -17,6 +17,8 @@ testRule("contract-imports", contractImports, {
     { filename: contract, code: 'import { Context } from "effect";' },
     { filename: contract, code: 'import * as Schema from "effect/Schema";' },
     { filename: contract, code: 'import type { Sdk } from "@liminal/sdk";' },
+    { filename: contract, code: 'import type { Other } from "@liminal/other/contract";' },
+    { filename: contract, code: 'export type { Other } from "@liminal/other/contract";' },
     {
       filename: "packages/plugins/demo/src/server.ts",
       code: 'import { readFile } from "node:fs";',
@@ -25,11 +27,9 @@ testRule("contract-imports", contractImports, {
   invalid: [
     { filename: contract, code: 'import { readFile } from "node:fs";', errors: 1 },
     { filename: contract, code: 'export { x } from "./server.ts";', errors: 1 },
-    {
-      filename: contract,
-      code: 'export type { Other } from "@liminal/other/contract";',
-      errors: 1,
-    },
+    { filename: contract, code: 'import { x } from "@liminal/other/server";', errors: 1 },
+    { filename: contract, code: 'import { x } from "@liminal/other";', errors: 1 },
+    { filename: contract, code: 'const m = import("@liminal/other/contract");', errors: 1 },
     { filename: contract, code: 'const m = import("zod");', errors: 1 },
     { filename: contract, code: 'import { effectTest } from "@liminal/sdk/testing";', errors: 1 },
   ],

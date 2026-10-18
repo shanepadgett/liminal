@@ -1,30 +1,12 @@
 /** Liminal's model request as an `effect/ai` prompt and toolkit. */
 
-import { Effect, FileSystem, Option, Predicate, Schema } from "effect";
-import { type Prompt, type Response, Tool, Toolkit } from "effect/ai";
+import { Effect, FileSystem, Predicate, type Schema } from "effect";
+import { type Prompt, Tool, Toolkit } from "effect/ai";
 
-import { ModelError, type ModelContent, type ModelPart, type ModelTool } from "@liminal/sdk";
+import { ModelError, type ModelContent, type ModelPart, type ModelTool } from "../core/index.ts";
+import { keptData, type ProviderData } from "./data.ts";
 
-/** What a Codex reply part keeps for the next request: its item id and encrypted reasoning. */
-export const CodexData = Schema.Struct({
-  openai: Schema.Struct({
-    itemId: Schema.optionalKey(Schema.NullOr(Schema.String)),
-    encryptedContent: Schema.optionalKey(Schema.NullOr(Schema.String)),
-  }),
-});
-
-export type CodexData = typeof CodexData.Type;
-
-const decodeData = Schema.decodeUnknownOption(CodexData);
-
-/** The Codex data in a reply part's metadata, or none. */
-export const codexData = (
-  metadata: Response.ProviderMetadata | Readonly<Record<string, Schema.Json>>,
-): CodexData | Record<string, never> => Option.getOrElse(decodeData(metadata), () => ({}));
-
-/** The part options the OpenAI protocol reads back, from a part's provider data. */
-const optionsOf = (part: Extract<ModelPart, { providerData: unknown }>) =>
-  codexData(part.providerData);
+type Kept = ReturnType<typeof keptData>;
 
 type ToolChangePart = Extract<ModelPart, { type: "tool-change" }>;
 
@@ -44,7 +26,7 @@ const systemText = (parts: ReadonlyArray<ModelPart>) =>
     })
     .join("\n\n");
 
-const userParts = Effect.fn("Codex.userParts")(function* (parts: ReadonlyArray<ModelPart>) {
+const userParts = Effect.fn("Ai.userParts")(function* (parts: ReadonlyArray<ModelPart>) {
   const fs = yield* FileSystem.FileSystem;
   const content: Array<Prompt.UserMessagePartEncoded> = [];
 
@@ -71,10 +53,10 @@ const userParts = Effect.fn("Codex.userParts")(function* (parts: ReadonlyArray<M
   return content;
 });
 
-const assistantParts = (parts: ReadonlyArray<ModelPart>) =>
+const assistantParts = (parts: ReadonlyArray<ModelPart>, kept: Kept) =>
   parts.flatMap((part): ReadonlyArray<Prompt.AssistantMessagePartEncoded> => {
     if (part.type === "text" || part.type === "reasoning") {
-      return [{ type: part.type, text: part.text, options: optionsOf(part) }];
+      return [{ type: part.type, text: part.text, options: kept(part.providerData) }];
     }
 
     if (part.type === "tool-call") {
@@ -84,7 +66,7 @@ const assistantParts = (parts: ReadonlyArray<ModelPart>) =>
           id: part.id,
           name: part.name,
           params: part.params,
-          options: optionsOf(part),
+          options: kept(part.providerData),
         },
       ];
     }
@@ -107,7 +89,7 @@ const toolParts = (parts: ReadonlyArray<ModelPart>) =>
       : [],
   );
 
-const message = Effect.fn("Codex.message")(function* (content: ModelContent) {
+const message = Effect.fn("Ai.message")(function* (content: ModelContent, kept: Kept) {
   const { role, parts } = content;
 
   if (role === "system")
@@ -117,14 +99,17 @@ const message = Effect.fn("Codex.message")(function* (content: ModelContent) {
     return { role, content: yield* userParts(parts) } satisfies Prompt.MessageEncoded;
 
   if (role === "assistant")
-    return { role, content: assistantParts(parts) } satisfies Prompt.MessageEncoded;
+    return { role, content: assistantParts(parts, kept) } satisfies Prompt.MessageEncoded;
 
   return { role, content: toolParts(parts) } satisfies Prompt.MessageEncoded;
 });
 
-/** The request's messages as prompt messages, reading images from disk. */
-export const promptOf = (messages: ReadonlyArray<ModelContent>) =>
-  Effect.forEach(messages, message);
+/** The request's messages as prompt messages, reading images from disk; parts carry back `data`. */
+export const promptOf = (messages: ReadonlyArray<ModelContent>, data: ProviderData) => {
+  const kept = keptData(data);
+
+  return Effect.forEach(messages, (content) => message(content, kept));
+};
 
 const isSchemaObject = (value: Schema.Json): value is { readonly [key: string]: Schema.Json } =>
   Predicate.isObject(value) && !Array.isArray(value);
@@ -144,6 +129,6 @@ const dynamicTool = (tool: ModelTool) => {
 };
 
 /** Every declared tool, offered or not; a later offer arrives as system text. */
-export const toolkitOf = Effect.fn("Codex.toolkitOf")(function* (tools: ReadonlyArray<ModelTool>) {
+export const toolkitOf = Effect.fn("Ai.toolkitOf")(function* (tools: ReadonlyArray<ModelTool>) {
   return Toolkit.make(...(yield* Effect.forEach(tools, dynamicTool)));
 });

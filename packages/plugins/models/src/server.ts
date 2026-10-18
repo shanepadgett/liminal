@@ -39,7 +39,8 @@ const make = Effect.gen(function* () {
     ModelSource.$is("Listed")(source) ? source.models : catalog.models(source.catalogId);
 
   const listModels = Effect.fn("Models.listModels")(function* (id: string) {
-    const { source } = yield* provider(id);
+    const { source, checkLogin } = yield* provider(id);
+    if (checkLogin !== undefined) yield* checkLogin;
     if (!ModelSource.$is("PlanCatalog")(source)) return yield* listed(source);
 
     const [models, plan] = yield* Effect.all([catalog.models(source.catalogId), source.plan], {

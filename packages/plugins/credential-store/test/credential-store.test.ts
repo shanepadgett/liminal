@@ -3,6 +3,7 @@
 import { expect } from "bun:test";
 
 import {
+  ConfigProvider,
   Context,
   Duration,
   Effect,
@@ -62,7 +63,6 @@ effectTest(
   "a secret comes from the store, then the environment; a command credential runs its command",
   Effect.gen(function* () {
     const store = yield* CredentialStore;
-    process.env["LIMINAL_TEST_KEY"] = "from-env";
 
     expect(reveal(yield* store.secret("openai", {}))).toEqual(Option.none());
 
@@ -78,7 +78,13 @@ effectTest(
 
     yield* store.set("openai", CommandCredential.make({ command: "echo ' from-command '" }));
     expect(reveal(yield* store.secret("openai", {}))).toEqual(Option.some("from-command"));
-  }),
+  }).pipe(
+    // The default provider reads the environment once per process, so set it here instead.
+    Effect.provideService(
+      ConfigProvider.ConfigProvider,
+      ConfigProvider.fromEnv({ env: { LIMINAL_TEST_KEY: "from-env" } }),
+    ),
+  ),
   stack,
 );
 

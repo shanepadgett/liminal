@@ -3,7 +3,7 @@
 import { Predicate } from "effect";
 import type { AiError } from "effect/ai";
 
-import { ModelError, type ModelErrorReason } from "@liminal/sdk";
+import { ModelError, type ModelErrorReason } from "../core/index.ts";
 
 const overflow = /context(_length| window| length)|too many tokens|maximum context/i;
 

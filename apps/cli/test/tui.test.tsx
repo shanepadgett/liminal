@@ -34,6 +34,7 @@ const parts = [
   "cancel",
   "chat",
   "inbox",
+  "logins",
   "palette",
   "reload",
   "tools-file",
@@ -346,6 +347,28 @@ effectTest(
     setup.mockInput.pressEnter();
 
     expect(yield* frameWith(setup, "scripted (high)")).not.toContain("Type to filter");
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "/connect saves an OpenAI API key and lists OpenAI as signed in",
+  Effect.gen(function* () {
+    const { setup } = yield* boot(() => Effect.void);
+
+    yield* frameWith(setup, "Ask anything");
+    yield* Effect.promise(() => setup.mockInput.typeText("/connect"));
+    yield* frameWith(setup, "Sign in to a provider");
+    setup.mockInput.pressEnter();
+
+    expect(yield* frameWith(setup, "Connect a provider")).toContain("OpenAI");
+    setup.mockInput.pressEnter();
+
+    yield* frameWith(setup, "API key");
+    yield* Effect.promise(() => setup.mockInput.typeText("sk-test"));
+    setup.mockInput.pressEnter();
+
+    expect(yield* frameWith(setup, "signed in")).toContain("OpenAI");
   }),
   testBaseServices,
 );

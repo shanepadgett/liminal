@@ -41,6 +41,11 @@ export interface ModelProvider {
   readonly id: string;
   readonly name: string;
   readonly source: ModelSource;
+  /**
+   * Fails with an `auth` ModelError while the provider has no usable login, such as no API key;
+   * listing its models checks it first. Providers without a login leave it out.
+   */
+  readonly checkLogin?: Effect.Effect<void, ModelError>;
   /** One attempt; accepts model ids `models` does not list; interruption cancels the call. */
   readonly stream: (request: ModelRequest) => Stream.Stream<ModelEvent, ModelError>;
   /** Whether `tool-change` parts become native items; otherwise every declared tool is sent. */

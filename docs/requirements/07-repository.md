@@ -49,10 +49,10 @@ Workspace layout, the checks that guard it, and how code is tested.
 - Plugin packages export only `plugin.ts`, `./contract` and `./conformance`
 - `./conformance` is imported only from other plugins' `test/` folders
 - `packages/plugins/*` cannot import `packages/kernel/`; `packages/kernel/` cannot import `packages/plugins/*`
-- `contract.ts` imports only Effect and the SDK and has no side effects
+- `contract.ts` statically imports only Effect, the SDK and other plugins' contracts, and has no side effects
 - `plugin.ts` imports only contracts
 - `server` and `tui` parts never import each other
-- SDK folders `core`, `testing`, `tui`, `desktop` are fallow zones; `core` imports none of the others, the rest import only `core`
+- SDK folders `core`, `ai`, `testing`, `tui`, `desktop` are fallow zones; `core` imports none of the others, the rest import only `core`
 - Plugin manifests and contracts import only the SDK root; `server` never imports `/tui`, `/desktop` or OpenTUI; only `test/` imports `/testing`
 - A structure check enforces plugin anatomy
 - A version check enforces one shared version across workspace packages

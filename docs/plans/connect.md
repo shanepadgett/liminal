@@ -58,7 +58,9 @@ flowchart LR
 | Topic | Decision |
 | --- | --- |
 | Who owns login | A new `logins` plugin holds the `LoginMethods` registry (a `KeyedRegistry`, like `ModelProviders`), the shared OAuth pieces (PKCE, local callback server, paste a code, device code polling) and `/connect`. Provider plugins register `{ id, vendor, title, ways, logIn, logOut }` |
-| Running a login | The flow runs on the server as a state machine and streams steps over RPC: `OpenUrl`, `ShowCode`, `Ask`, `AskSecret`, `Waiting`, `Done`, `Failed`. The TUI draws the current step, answers by an `answer` RPC and stops it by `cancel` |
+| Login methods | A tagged union. `ApiKey { env }` is a declaration that `logins` handles fully: ask, save, remove, saved or environment state. `Flow { ways, logIn, logOut? }` is for OAuth; `logIn` runs against a `LoginFlow` service from `logins` (`openUrl`, `showCode`, `ask`, `askSecret`, `waiting`) |
+| `effect/ai` translation | A new SDK zone `@liminal/sdk/ai` holds the translation every provider shares (`promptOf`, `toolkitOf`, `streamOf`, `toModelError`), moved out of `model-codex`; each provider supplies its own metadata Schema |
+| Running a login | The flow runs on the server and streams steps over RPC (see Step 2 Types). The TUI draws the current step, answers by an `answer` RPC and stops it by closing the stream; the RPC client's `Interrupt` stops the server flow, so there is no `cancel` RPC |
 | Provider plugins | One per provider: `model-codex` (exists), `model-chatgpt`, `model-openai`, `model-anthropic`, `model-openrouter`, `model-opencode-go`, `model-local` |
 | Anthropic | One `model-anthropic` plugin with two login methods: Claude subscription and API key |
 | API packages | `@effect/ai-openai`, `@effect/ai-anthropic`, `@effect/ai-openrouter`, `@effect/ai-openai-compat` (per `docs/plugins/models.md`). Native tool changes come from a provider layer that wraps the package client (`docs/plans/core-contracts.md`); OpenCode Go Messages replies get their missing `usage` fields filled before decoding |
@@ -74,7 +76,7 @@ flowchart LR
 One commit each, with gallery updates.
 
 1. `model-catalog`: `models.dev` catalog, cache and background refresh; `/model` lists from it
-2. SDK prompt and confirm dialogs, `logins` plugin, `/connect`, `model-openai` with its API key
+2. `@liminal/sdk/ai` with `model-codex` moved onto it, SDK prompt and confirm dialogs, `logins` plugin, `/connect`, `/model` sign-in rows, `model-openai` with its API key; one commit
 3. Codex browser and device code login
 4. `model-anthropic`: Claude subscription and API key
 5. `model-chatgpt`: Sign in with ChatGPT
@@ -112,7 +114,7 @@ docs/plugins/models.md                   "Each provider owns its model list" rew
 ### Types
 
 ```ts
-// sdk/src/core/model.ts (contracts import only Effect and the SDK, so models and agent-loop name it here)
+// sdk/src/core/model.ts (shared by models and agent-loop)
 class CatalogUnavailable extends Schema.TaggedError("CatalogUnavailable", {
   catalogId: Schema.String, message: Schema.String })
 
@@ -217,6 +219,139 @@ Models.describe(ref): Effect<ModelInfo, ModelError | ProviderNotFound | CatalogU
 | `/model` | Shows each model's options; the composer line shows the chosen option's label |
 | `model-codex` | `Effort` sends that effort; `Off` sends `none` |
 | `ThinkingLevel` | Deleted |
+
+## Step 2: logins, /connect, model-openai
+
+Status: built.
+
+Lets the user save an OpenAI API key from `/connect`, sign out again, and see OpenAI's models in `/model`; `/model` shows a sign-in row under a provider that cannot list.
+
+### Files
+
+```text
+packages/sdk/src/ai/                     new SDK zone `@liminal/sdk/ai`, moved from model-codex
+  index.ts                               exports below
+  prompt.ts                              promptOf, toolkitOf (from codex prompt.ts)
+  events.ts                              streamOf: effect/ai parts -> ModelEvent (from codex events.ts)
+  errors.ts                              toModelError (from codex errors.ts)
+  data.ts                                ProviderData, OpenAiData, keptData
+  reply.ts                               replyOf: request -> ModelEvent stream
+  effort.ts                              effortOf: thinking -> a provider's effort
+packages/sdk/src/tui/
+  PromptField.tsx                        one text or secret line, inside another dialog
+  ConfirmDialog.tsx                      a question, enter confirms
+  SelectDialog.tsx                       option tone: notice or warning rows
+packages/plugins/logins/                 new plugin
+  plugin.ts                              provides LoginMethods; requires CredentialStore
+  src/contract.ts                        LoginMethod, LoginMethods, LoginFlow, LoginStep, LoginsRpcs
+  src/server.ts                          registry, sign-in state, RPC handlers
+  src/server/flow.ts                     runs one login: steps out, answers in
+  src/tui.tsx                            /connect
+  src/tui/connect.tsx                    providers -> ways -> methods -> login; sign-out
+  src/tui/ChoiceDialog.tsx               rows with a note at the right; enter, ctrl+d
+  src/tui/LoginDialog.tsx                draws the steps; retry after a failure
+  src/tui/steps.ts                       the steps shown, with the local Failed
+  test/logins.test.ts                    API key flow, state, sign-out, closing the stream cancels
+packages/plugins/model-openai/           new plugin
+  plugin.ts                              requires ModelProviders, CredentialStore, LoginMethods
+  src/server/provider.ts                 provider `openai`, Catalog("openai"), checkLogin; login ApiKey OPENAI_API_KEY
+  test/openai.test.ts                    a hand-written Responses stream at HttpClient
+packages/plugins/model-codex/src/server/ prompt.ts, events.ts, errors.ts moved to @liminal/sdk/ai
+packages/plugins/models/src/             ModelProvider.checkLogin, checked before listing
+packages/plugins/agent-loop/src/tui/     sign-in rows in /model
+apps/gallery/src/chat/                   PromptDialog, ConfirmDialog, Connect, Login states; /model sign-in row
+.fallowrc.jsonc, tools/lint/plugin-rules.ts, docs/requirements/07-repository.md   zone `ai`
+docs/plugins/logins.md, docs/plugins/model-openai.md
+```
+
+### Types
+
+```ts
+// sdk/src/ai
+promptOf(messages, data: ProviderData): Effect<Prompt.RawInput, ModelError, FileSystem>
+toolkitOf(tools): Effect<Toolkit, ModelError>
+streamOf(name: string, data: ProviderData, parts: Stream<Response.StreamPart, AiError>): Stream<ModelEvent, ModelError>
+toModelError(error: AiError): ModelError
+/** What a provider keeps from a reply part's metadata for the next request, and reads back. */
+type ProviderData = Schema.Codec<Record<string, Json>>   // codex and openai: { openai: { itemId, encryptedContent } }
+
+// logins/src/contract.ts
+type Vendor = { id: string; name: string }
+type LoginWay = { id: string; title: string }                     // "browser", "device", "paste"
+type LoginMethod = Data.TaggedEnum<{
+  ApiKey: { id: string; vendor: Vendor; title: string; env: string }
+  Flow: { id; vendor; title; ways: ReadonlyArray<LoginWay>;
+    logIn: (way: string) => Effect<Credential, LoginFailed, LoginFlow>   // logins saves it
+    logOut: Option<Effect<void, LoginFailed>> }
+}>                                                                // id is the credential-store method
+class LoginMethods extends KeyedRegistry.Service<LoginMethods, LoginMethod>
+class LoginFlow extends Context.Service<{ openUrl(url): Effect<void>; showCode(code, url): Effect<void>;
+  ask(question): Effect<string>; askSecret(question): Effect<Redacted>; waiting(text): Effect<void>; tell(text): Effect<void> }>
+class LoginFailed extends Schema.TaggedError("LoginFailed", { method, message })
+SignIn = SignedOut | Saved | FromEnv { variable }
+LoginStep = OpenUrl { url } | ShowCode { code, url } | Ask { question, secret } | Waiting { text } | Told { text } | Done
+MethodInfo = { id, vendor, title, ways, state: SignIn }
+LoginsRpcs:
+  "logins/list"    success Array<MethodInfo>
+  "logins/start"   { method, way? } stream LoginStep, error LoginFailed
+  "logins/answer"  { method, text }      // the open flow's pending ask
+  "logins/logout"  { method } error LoginFailed
+```
+
+### Call path
+
+```text
+/connect -> logins/list -> providers list "Connect a provider": vendors, "signed in" when any way is
+  enter  -> ways list titled with the vendor: its methods, state at the right; skipped when one method
+    enter  -> methods list titled with the method when ways > 1 -> LoginDialog titled with the vendor
+  ctrl+d on a signed-in vendor or method -> SignOutDialog "Sign out of <vendor> (<method>)?" -> logins/logout
+  esc    -> back one list; closes from the providers list
+LoginDialog watches logins/start(method, way)
+  Ask        -> PromptField; enter -> logins/answer
+  OpenUrl, ShowCode, Waiting, Told -> lines
+  Done       -> back to the ways list; Failed -> the message, enter retries, esc goes back
+  esc        -> closes; the stream ends; the client sends Interrupt; the server flow stops
+
+logins/start (server)
+  one open flow per method; a second start replaces the first
+  steps: Queue; pending ask: Deferred, completed by logins/answer
+  ApiKey: askSecret(title) -> store.set(id, ApiKey { key }) -> Done
+  Flow:   logIn(way) with LoginFlow over the queue, saving its credential -> Done
+logins/logout: Flow logOut when given -> store.remove(id)
+state: store.get(id) Some -> Saved; ApiKey with env set (Config.option(Config.Redacted(env))) -> FromEnv; else SignedOut
+
+/model: a provider whose list fails with ModelError auth or CatalogUnavailable -> one row under it,
+  "Sign in with /connect" (auth) or the catalog message; picking the sign-in row runs /connect
+
+model-openai stream
+  key: store.secret("openai", { env: "OPENAI_API_KEY" }); none -> ModelError auth
+  OpenAiClient.make({ apiKey }) + OpenAiLanguageModel.make({ store: false, include encrypted reasoning,
+    prompt_cache_key, reasoning.effort when Effect, none when Off })
+  replyOf("OpenAI", OpenAiData, ...); On or a budget -> ModelError invalid-request
+  checkLogin: the same key read; listing fails with ModelError auth while none
+```
+
+| Injection | Production | Tests |
+| --- | --- | --- |
+| `HttpClient` (model-openai) | `FetchHttpClient` | a hand-written Responses stream; no OpenAI key to record with |
+| `CredentialStore` | SQLite store | SQLite store in the test directories |
+| Login answers | TUI over RPC | `logins/answer` called by the test |
+
+### Step 2 open
+
+- No `PromptDialog`: the login dialog holds a `PromptField`, and nothing else asks for one line yet.
+- `ModelProvider.checkLogin` is new: a catalog provider lists without its key, so `/model` would offer OpenAI models that fail at the first turn.
+- Codex shows a sign-in row in `/model` until step 3 registers its login method; `/connect` lists only OpenAI meanwhile.
+- The `model-openai` reply test uses a hand-written Responses stream; record a real one once a key is at hand.
+
+### Step 2 build order
+
+- Gallery states first: prompt, confirm, `/connect`, login steps and the `/model` sign-in row; the user reviews them before the wiring. One commit for the whole step.
+
+### Deletes
+
+- `model-codex` `prompt.ts`, `events.ts`, `errors.ts` translation code, moved to `@liminal/sdk/ai`.
+- `agent-loop` UI: leaving out a provider whose list fails.
 
 ## Deletes or replaces
 

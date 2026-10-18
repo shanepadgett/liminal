@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/core/index.ts",
+    "./ai": "./src/ai/index.ts",
     "./testing": "./src/testing/index.ts",
     "./tui": "./src/tui/index.ts"
   },

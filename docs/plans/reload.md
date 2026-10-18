@@ -233,7 +233,6 @@ apply: gate.close(Plugins → graphs.commit · Restart → restartDue, never ope
 
 ## Open
 
-- The `reload` slash command waits for slash commands
 - `Bun.ModuleGraph` is experimental; a Bun upgrade reruns the spike questions as tests
 - Typechecking production plugin folders, which ship with no compiler
 - Unsent composer text across a kernel restart (Tau hands the draft to the new process)

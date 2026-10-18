@@ -33,8 +33,9 @@
       { "name": "kernel", "patterns": ["packages/kernel/**"] },
       // The renderer-free frontend host; renderers in apps/ build on it.
       { "name": "frontend", "patterns": ["packages/frontend/**"] },
-      // The SDK's subpaths: core is the root export; testing, tui and desktop build on it.
+      // The SDK's subpaths: core is the root export; ai, testing, tui and desktop build on it.
       { "name": "sdk-core", "patterns": ["packages/sdk/src/core/**"] },
+      { "name": "sdk-ai", "patterns": ["packages/sdk/src/ai/**"] },
       { "name": "sdk-testing", "patterns": ["packages/sdk/src/testing/**"] },
       { "name": "sdk-tui", "patterns": ["packages/sdk/src/tui/**"] },
       { "name": "sdk-desktop", "patterns": ["packages/sdk/src/desktop/**"] },
@@ -58,12 +59,13 @@
       { "from": "kernel", "allow": ["sdk-core", "sdk-testing"] },
       { "from": "frontend", "allow": ["sdk-core", "sdk-testing"] },
       { "from": "sdk-core", "allow": [] },
+      { "from": "sdk-ai", "allow": ["sdk-core"] },
       { "from": "sdk-testing", "allow": ["sdk-core"] },
       { "from": "sdk-tui", "allow": ["sdk-core"] },
       { "from": "sdk-desktop", "allow": ["sdk-core"] },
       {
         "from": "plugins",
-        "allow": ["sdk-core", "sdk-testing", "sdk-tui", "sdk-desktop", "plugins"],
+        "allow": ["sdk-core", "sdk-ai", "sdk-testing", "sdk-tui", "sdk-desktop", "plugins"],
       },
       { "from": "tools", "allow": [] },
     ],

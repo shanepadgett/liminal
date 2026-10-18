@@ -4,6 +4,7 @@ import { ChatHeader } from "./chat/ChatHeader.tsx";
 import { ChatScreen, type GlideAt } from "./chat/ChatScreen.tsx";
 import { CommandPalette } from "./chat/CommandPalette.tsx";
 import { Composer } from "./chat/Composer.tsx";
+import { CONNECT_STATES } from "./chat/connectStates.tsx";
 import {
   FORM_CHOOSING,
   FORM_CONFIRMING,
@@ -119,10 +120,12 @@ const commandsState = (name: string, selected: string): EntryState => ({
   view: withRoles((color) => <CommandPalette color={color} selected={selected} />),
 });
 
-const modelsState = (name: string, selected: string): EntryState => ({
+const modelsState = (name: string, selected: string, hasUnlisted = false): EntryState => ({
   name,
   fill: "screen",
-  view: withRoles((color) => <ModelPicker color={color} selected={selected} />),
+  view: withRoles((color) => (
+    <ModelPicker color={color} selected={selected} hasUnlisted={hasUnlisted} />
+  )),
 });
 
 const thinkingState = (name: string, selected: string): EntryState => ({
@@ -226,8 +229,10 @@ export const GROUPS: Groups = [
               modelsState("Current model", "gpt-5.5"),
               modelsState("Another provider", "claude-sonnet-4-6"),
               thinkingState("Thinking options", "medium"),
+              modelsState("Providers that list nothing", "sign-in:openai", true),
             ],
           },
+          { id: "connect", title: "Connect", states: CONNECT_STATES },
         ],
       },
     ],

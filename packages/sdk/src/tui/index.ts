@@ -50,4 +50,6 @@ export {
 } from "./dialogs.tsx";
 
 export { SelectDialog, type SelectDialogProps, type SelectOption } from "./SelectDialog.tsx";
+export { ConfirmDialog, type ConfirmDialogProps } from "./ConfirmDialog.tsx";
+export { PromptField, type PromptFieldProps } from "./PromptField.tsx";
 export { matchIndices, type MatchRun, matchRuns } from "./match.ts";

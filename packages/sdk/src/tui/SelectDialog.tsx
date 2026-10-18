@@ -22,6 +22,11 @@ export interface SelectOption<V> {
   readonly category?: string;
   /** The keys that run it, shown at the right. */
   readonly keys?: string;
+  /**
+   * A row that says something instead of naming a choice: `notice` reads muted, accent when
+   * highlighted, such as a sign-in row; `warning` reads in the warning color, such as a failure.
+   */
+  readonly tone?: "notice" | "warning";
 }
 
 export interface SelectDialogProps<V> extends DialogProps {
@@ -86,7 +91,13 @@ function OptionRow<V>(props: {
   readonly row: Row<V>;
   readonly isSelected: boolean;
 }) {
-  const fg = () => props.color(props.isSelected ? "text.base" : "text.muted");
+  const fg = () => {
+    if (props.row.option.tone === "warning") return props.color("feedback.warning");
+    if (props.row.option.tone === "notice" && props.isSelected) return props.color("text.accent");
+
+    return props.color(props.isSelected ? "text.base" : "text.muted");
+  };
+
   const faint = () => props.color(props.isSelected ? "text.muted" : "text.faint");
 
   return (

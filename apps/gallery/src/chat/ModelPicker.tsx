@@ -1,11 +1,13 @@
 /**
  * The model picker, opened by `/model`: a dialog titled Models with a filter line and each
  * provider's models in its own section, every model's name then its id. The current model is
- * highlighted when it opens. Picking a model that offers thinking options opens a second dialog,
- * titled with the model's name, listing that model's own options with the saved one highlighted.
+ * highlighted when it opens. A provider that lists nothing shows why in one row: a sign-in row that
+ * opens /connect, or the catalog's failure. Picking a model that offers thinking options opens a
+ * second dialog, titled with the model's name, listing that model's own options with the saved one
+ * highlighted.
  */
 
-import { For } from "solid-js";
+import { For, Show } from "solid-js";
 
 import type { Hint, RoleColor } from "@liminal/sdk/tui";
 
@@ -15,7 +17,12 @@ import { Section } from "./Section.tsx";
 
 type Model = { readonly id: string; readonly name: string };
 
-type Provider = { readonly name: string; readonly models: readonly Model[] };
+/** A provider and its models, or why it lists none: it needs a sign-in, or its catalog failed. */
+type Provider = {
+  readonly name: string;
+  readonly models: readonly Model[];
+  readonly notice?: { readonly id: string; readonly text: string; readonly isSignIn: boolean };
+};
 
 const PROVIDERS: readonly Provider[] = [
   {
@@ -34,6 +41,45 @@ const PROVIDERS: readonly Provider[] = [
     ],
   },
 ];
+
+/** Providers that list nothing, shown under the ones that list. */
+const UNLISTED: readonly Provider[] = [
+  {
+    name: "OpenAI",
+    models: [],
+    notice: { id: "sign-in:openai", text: "Sign in with /connect", isSignIn: true },
+  },
+  {
+    name: "OpenRouter",
+    models: [],
+    notice: {
+      id: "catalog:openrouter",
+      text: "models.dev is unreachable and no copy is saved",
+      isSignIn: false,
+    },
+  },
+];
+
+/** Why a provider lists nothing; a sign-in row can be picked to open /connect. */
+function NoticeRow(props: {
+  readonly color: RoleColor;
+  readonly notice: NonNullable<Provider["notice"]>;
+  readonly isSelected: boolean;
+}) {
+  const fg = () => {
+    if (!props.notice.isSignIn) return props.color("feedback.warning");
+
+    return props.color(props.isSelected ? "text.accent" : "text.muted");
+  };
+
+  return (
+    <ListRow color={props.color} isSelected={props.isSelected}>
+      <text flexGrow={1} wrapMode="none" fg={fg()}>
+        {props.notice.text}
+      </text>
+    </ListRow>
+  );
+}
 
 const HINTS: readonly Hint[] = [
   ["↑↓", "choose"],
@@ -109,12 +155,18 @@ export function ThinkingPicker(props: { readonly color: RoleColor; readonly sele
   );
 }
 
-export function ModelPicker(props: { readonly color: RoleColor; readonly selected: string }) {
+export function ModelPicker(props: {
+  readonly color: RoleColor;
+  readonly selected: string;
+  readonly hasUnlisted: boolean;
+}) {
+  const providers = () => (props.hasUnlisted ? [...PROVIDERS, ...UNLISTED] : PROVIDERS);
+
   return (
     <Dialog color={props.color} title="Models" hints={HINTS}>
       <FilterLine color={props.color} />
       <box flexDirection="column" gap={1}>
-        <For each={PROVIDERS}>
+        <For each={providers()}>
           {(provider) => (
             <box flexDirection="column">
               <Section color={props.color} title={provider.name} />
@@ -127,6 +179,15 @@ export function ModelPicker(props: { readonly color: RoleColor; readonly selecte
                   />
                 )}
               </For>
+              <Show when={provider.notice}>
+                {(notice) => (
+                  <NoticeRow
+                    color={props.color}
+                    notice={notice()}
+                    isSelected={notice().id === props.selected}
+                  />
+                )}
+              </Show>
             </box>
           )}
         </For>

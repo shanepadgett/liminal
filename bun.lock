@@ -197,6 +197,20 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/logins": {
+      "name": "@liminal/logins",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/credential-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/model-catalog": {
       "name": "@liminal/model-catalog",
       "version": "0.1.0",
@@ -223,6 +237,23 @@
         "@liminal/tool-pipeline": "workspace:*",
         "@liminal/tool-registry": "workspace:*",
         "@liminal/tools-file": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
+    "packages/plugins/model-openai": {
+      "name": "@liminal/model-openai",
+      "version": "0.1.0",
+      "dependencies": {
+        "@effect/ai-openai": "4.0.5",
+        "@liminal/credential-store": "workspace:*",
+        "@liminal/logins": "workspace:*",
+        "@liminal/models": "workspace:*",
+      },
+      "devDependencies": {
+        "@liminal/model-catalog": "workspace:*",
       },
       "peerDependencies": {
         "@liminal/sdk": "workspace:*",
@@ -513,9 +544,13 @@
 
     "@liminal/kernel": ["@liminal/kernel@workspace:packages/kernel"],
 
+    "@liminal/logins": ["@liminal/logins@workspace:packages/plugins/logins"],
+
     "@liminal/model-catalog": ["@liminal/model-catalog@workspace:packages/plugins/model-catalog"],
 
     "@liminal/model-codex": ["@liminal/model-codex@workspace:packages/plugins/model-codex"],
+
+    "@liminal/model-openai": ["@liminal/model-openai@workspace:packages/plugins/model-openai"],
 
     "@liminal/model-scripted": ["@liminal/model-scripted@workspace:packages/plugins/model-scripted"],
 

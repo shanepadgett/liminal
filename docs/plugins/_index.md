@@ -49,6 +49,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | [models](models.md) | The seam every provider plugs into | built |
 | [model-catalog](model-catalog.md) | Model details from the `models.dev` catalog, cached on disk | built |
 | model-codex | Provider `codex`: OpenAI models on a ChatGPT plan login | built |
+| [model-openai](model-openai.md) | Provider `openai`: the OpenAI API with an API key | built |
 | one plugin per provider | Talks to one model provider | to plan |
 | model-select | Chooses the model for a session | to plan |
 
@@ -57,7 +58,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | Plugin | Does | Status |
 | --- | --- | --- |
 | [credential-store](credential-store.md) | Stores secrets | built |
-| logins | The login methods provider plugins register (API key, browser OAuth, device code), their flows and `/connect`; `credential-store` stays storage only | to plan |
+| [logins](logins.md) | The login methods provider plugins register, their flows and `/connect`; `credential-store` stays storage only | built |
 
 ## Tools
 

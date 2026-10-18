@@ -6,7 +6,10 @@ import { locate, repoPath, resolveRelative } from "./plugin-parts.ts";
 
 const isEffect = (specifier: string) => specifier === "effect" || specifier.startsWith("effect/");
 
-/** Only the SDK root: its subpaths carry test, terminal or desktop code a manifest must not load. */
+/**
+ * Only the SDK root: its subpaths carry model, test, terminal or desktop code a manifest must not
+ * load.
+ */
 const isSdkRoot = (specifier: string) => specifier === "@liminal/sdk";
 
 const isUiOnly = (specifier: string) =>
@@ -26,17 +29,22 @@ const isOwnContract = (specifier: string) => /^\.\/src\/contract(\.ts)?$/.test(s
 const isPackageContract = (specifier: string) =>
   /^(@[^/]+\/)?[^/@.][^/]*\/contract$/.test(specifier);
 
-/** `src/contract.ts` imports only Effect and the SDK. */
+/** `src/contract.ts` statically imports only Effect, the SDK and other plugins' contracts. */
 export const contractImports = defineRule({
   meta: {
     type: "problem",
-    messages: { banned: "A contract imports only Effect and @liminal/sdk, not '{{specifier}}'." },
+    messages: {
+      banned: "A contract imports only Effect, @liminal/sdk and contracts, not '{{specifier}}'.",
+    },
   },
   create(context) {
     if (locate(repoPath(context.cwd, context.filename))?.part !== "contract") return {};
 
-    return visitSources(({ specifier, node }) => {
-      if (isEffect(specifier) || isSdkRoot(specifier)) return;
+    return visitSources(({ specifier, node, dynamic }) => {
+      const isAllowed =
+        isEffect(specifier) || isSdkRoot(specifier) || (!dynamic && isPackageContract(specifier));
+
+      if (isAllowed) return;
       context.report({ node, messageId: "banned", data: { specifier } });
     });
   },
