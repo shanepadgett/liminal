@@ -60,6 +60,12 @@ dir = "{{config_root}}/apps/gallery"
 # watch.ts restarts the gallery on each save; --hot misses files the Solid plugin loads.
 run = "bun src/watch.ts"
 
+[tasks.dev]
+description = "Run Liminal from the repo; plugin edits reload at turn end, other edits restart it"
+# The TUI reads the terminal's keys, so it gets the terminal directly.
+raw = true
+run = "bun apps/cli/src/supervisor.ts"
+
 [tasks.docs]
 description = "Copy version-matched dependency docs into docs/reference/copies/ and rebuild the index"
 run = "bun tools/reference/sync.ts"

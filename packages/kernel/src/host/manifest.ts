@@ -3,12 +3,17 @@
 import { Context, Layer, Predicate, Schema } from "effect";
 import type { RpcGroup } from "effect/rpc";
 
-import type { ServiceTag } from "@liminal/sdk";
+import type { PartModule, ServiceTag } from "@liminal/sdk";
 
-/** A manifest's `server` or `tui`; the module its Promise holds is checked where it is loaded. */
+/** A manifest's `server`; the module its Promise holds is checked where it is loaded. */
 type LoadServer = () => Promise<object>;
 
 const isLoadServer = (input: unknown): input is LoadServer => Predicate.isFunction(input);
+
+/** A manifest's frontend part; the frontend that runs the module checks its default export. */
+type LoadPart = () => Promise<PartModule>;
+
+const isLoadPart = (input: unknown): input is LoadPart => Predicate.isFunction(input);
 
 const isServiceTag = (input: unknown): input is ServiceTag => Context.isKey(input);
 
@@ -33,7 +38,7 @@ export const Manifest = Schema.Struct({
   enabledByDefault: Schema.Boolean,
   rpcs: Schema.optionalKey(Schema.declare(isRpcGroup, { title: "RpcGroup" })),
   server: Schema.optionalKey(Schema.declare(isLoadServer, { title: "server loader" })),
-  tui: Schema.optionalKey(Schema.declare(isLoadServer, { title: "tui loader" })),
+  tui: Schema.optionalKey(Schema.declare(isLoadPart, { title: "tui loader" })),
 });
 
 export type Manifest = typeof Manifest.Type;

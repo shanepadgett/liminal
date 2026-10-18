@@ -14,6 +14,9 @@ import { type FollowEvent, KernelRpcs, SessionId } from "@liminal/sdk";
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 import { SessionLog, SessionLogRpcs, userMessage } from "@liminal/session-log/contract";
 
+import { pluginsFolder } from "../src/boot.ts";
+import { awaitRebuild, bootOptions, testReload } from "./support.ts";
+
 const s1 = SessionId.make("s1");
 const model = { provider: "codex", id: "gpt-5.5" };
 
@@ -30,9 +33,7 @@ effectTest(
   Effect.gen(function* () {
     const path = yield* Path.Path;
 
-    const kernel = yield* start({
-      folders: [path.resolve(import.meta.dir, "../../../packages/plugins")],
-    });
+    const kernel = yield* start(bootOptions(path));
 
     const client = yield* RpcClient.make(KernelRpcs.merge(SessionLogRpcs, ContextRpcs)).pipe(
       Effect.provideService(RpcClient.Protocol, yield* kernel.connect),
@@ -79,9 +80,8 @@ effectTest(
   Effect.gen(function* () {
     const path = yield* Path.Path;
 
-    const kernel = yield* start({
-      folders: [path.resolve(import.meta.dir, "../../../packages/plugins")],
-    });
+    const changes = yield* Queue.unbounded<ReadonlyArray<string>>();
+    const kernel = yield* start({ ...bootOptions(path), reload: testReload(changes) });
 
     const client = yield* RpcClient.make(KernelRpcs).pipe(
       Effect.provideService(RpcClient.Protocol, yield* kernel.connect),
@@ -105,7 +105,15 @@ effectTest(
 
     yield* append("before");
     expect(yield* Queue.take(saved)).toBe("saved 1 before");
-    yield* kernel.reload(["session-log"]);
+
+    const edited = path.join(pluginsFolder(path), "session-log", "plugin.ts");
+
+    yield* awaitRebuild(
+      kernel.graph,
+      "session-log",
+      Queue.offer(changes, [edited]).pipe(Effect.asVoid),
+    );
+
     yield* append("after");
     expect(yield* Queue.take(saved)).toBe("saved 2 after");
     yield* append("last");

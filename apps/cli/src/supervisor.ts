@@ -11,6 +11,15 @@ import { ChildProcess, ChildProcessSpawner } from "effect/process";
 /** The exit code the app uses to ask the supervisor for a fresh process. */
 export const restartExitCode = 75;
 
+/** Exits with the program's number result; any other end exits as the default teardown does. */
+export const exitWithCode: Runtime.Teardown = (exit, onExit) => {
+  if (Exit.isSuccess(exit) && Predicate.isNumber(exit.value)) {
+    onExit(exit.value);
+  } else {
+    Runtime.defaultTeardown(exit, onExit);
+  }
+};
+
 /** Runs `command` until it exits with a code other than {@link restartExitCode}, then returns it. */
 export const supervise = Effect.fn("supervise")(function* (command: ChildProcess.Command) {
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
@@ -40,14 +49,6 @@ if (import.meta.main) {
   BunRuntime.runMain(
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- the supervisor's entry point.
     main.pipe(Effect.provide(BunServices.layer)),
-    {
-      teardown: (exit, onExit) => {
-        if (Exit.isSuccess(exit) && Predicate.isNumber(exit.value)) {
-          onExit(exit.value);
-        } else {
-          Runtime.defaultTeardown(exit, onExit);
-        }
-      },
-    },
+    { teardown: exitWithCode },
   );
 }

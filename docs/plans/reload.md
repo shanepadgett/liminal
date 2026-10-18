@@ -17,30 +17,30 @@ Lets Liminal pick up its own code changes, plugins in process and kernel code by
 ```mermaid
 flowchart LR
   watch[Source watcher] -->|changed paths| machine[Reload machine]
-  gate[Turn gate] -->|idle / busy| machine
   cmd[Reload command] --> machine
   machine -->|plugin names| check[Check aside]
   check -->|candidate graph| machine
-  machine -->|swap| graphs[Graphs]
+  machine -->|close, then swap| gate[Turn gate]
+  gate --> graphs[Graphs]
   machine -->|exit 75| sup[Supervisor]
 ```
 
 | System | Change | Role |
 | --- | --- | --- |
-| Kernel | Expands | Owns the watcher, the reload machine and the check; `Kernel.reload` goes through the machine |
+| Kernel | Expands | Owns the reload machine and the check; `apps/cli` passes the watcher |
 | SDK core | Expands | New base service: the turn gate |
 | agent-loop | Changes | Holds the gate for each turn |
 | Supervisor | Unchanged | Restarts on exit 75 |
 | `apps/cli` | Changes | Passes dev restart roots and mode; exits 75 when the kernel asks |
-| Frontend / TUI | Expands | Shows "new code ready" and binds the reload command |
+| `reload` plugin | New | UI-only: shows a ready reload or a failed check in the chat header; binds the reload command |
 
 **Pattern: a state machine** (pure `transition(state, event) → [state, commands]`, run by one fiber), as Tau's `supervisor/internal/restart-machine.ts`. It beat ad hoc flags (`pending`, `checking`, `isIdle`, `mode`) because those combine into states that are easy to get wrong, and a pure transition is testable without processes.
 
 ```text
 Phases: Current → Checking → Ready(candidate) → Applying → Current
                     ↘ Failed(reason) ── next change ──→ Checking
-Events: Changed(paths) · Checked(candidate | failure) · Turns(idle) · ReloadRequested · Mode(automatic | confirmed)
-Apply:  Ready and Turns(idle) and (automatic or ReloadRequested)
+Events: Changed(change) · Passed(check, candidate, mode) · CheckFailed(check, reason) · Requested · Applied
+Apply:  Ready and (automatic or Requested), under gate.close, which waits until no turn runs
         plugin-only candidate → swap graph · any kernel path → exit 75
 ```
 
@@ -93,7 +93,7 @@ What this sets:
 
 ```text
 packages/sdk/src/core/
-  turn-gate.ts          new: TurnGate service; makeTurnGate (hold, close, idle)
+  turn-gate.ts          new: TurnGate service; makeTurnGate (hold, close)
   plugin.ts             BaseServices gains TurnGate; GraphMember.plugin.tui resolves the preloaded module
   protocol.ts           ReloadState schema; KernelRpcs gains kernel/reload, kernel/reload-now
 packages/sdk/src/testing/base.ts   provides a real TurnGate
@@ -123,12 +123,12 @@ class TurnGate extends Context.Service<TurnGate, {
 }>()("liminal/TurnGate") {}
 
 /** Kernel side: close waits for zero holders, blocks new holds, runs apply, opens. */
-makeTurnGate: Effect<{ gate: TurnGate["Service"]; close: <A, E>(apply: Effect<A, E>) => Effect<A, E>; idle: Stream<boolean> }>
+makeTurnGate: Effect<{ gate: TurnGate["Service"]; close: <A, E>(apply: Effect<A, E>) => Effect<A, E> }>
 
 interface BootOptions {
   readonly folders: ReadonlyArray<string>
-  /** Imported by the host and served to every graph: effect, @liminal/sdk, and the frontend's own. */
-  readonly shared: Readonly<Record<string, object>>
+  /** Packages the host resolves from `from` and serves to every graph: effect, @liminal/sdk, and the frontend's own. */
+  readonly shared: { readonly from: string; readonly packages: ReadonlyArray<string> }
   /** Manifest parts imported at build, such as ["tui"]. */
   readonly parts: ReadonlyArray<"tui">
   /** Absent: a locked plugin set, no reload (tests, web). */
@@ -158,7 +158,7 @@ interface Kernel {
   }
 }
 
-Candidate = { graph: Graph; packages: ReadonlySet<string> }
+Candidate = { graph: Unopened; base: Graph; fresh: { builds; packages } }   // fresh closes on discard
 Change = Plugins { packages } | Restart
 ```
 

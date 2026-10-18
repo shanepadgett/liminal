@@ -3,6 +3,7 @@
 import { Predicate, Schema } from "effect";
 
 import type { PluginBuild } from "../host/build.ts";
+import type { PluginPackage } from "../host/packages.ts";
 import type { Resolution } from "../host/resolve.ts";
 import { describeReason, type PluginStatus } from "../host/status.ts";
 
@@ -19,7 +20,53 @@ export class ChangeFailed extends Schema.TaggedError<
 export interface Previous {
   readonly builds: ReadonlyArray<PluginBuild>;
   readonly providers: ReadonlyMap<string, string>;
+  readonly packages: ReadonlyArray<PluginPackage>;
 }
+
+/** The names of the plugins a package load found. */
+export const pluginsOf = (loaded: PluginPackage) =>
+  loaded.discovered.flatMap((found) =>
+    Predicate.isTagged(found, "Found") ? [found.manifest.name] : [],
+  );
+
+/** Plugins in `names` and every active plugin that needs or uses one, directly or not. */
+const withDependents = (previous: Previous, names: ReadonlySet<string>) => {
+  const reached = new Set(names);
+
+  // Builds come in dependency order, so one pass reaches every dependent.
+  for (const build of previous.builds) {
+    const { manifest } = build;
+
+    const needsReached = [...manifest.requires, ...manifest.uses].some(({ key }) =>
+      reached.has(previous.providers.get(key) ?? ""),
+    );
+
+    if (needsReached) reached.add(manifest.name);
+  }
+
+  return reached;
+};
+
+/**
+ * The package folders a change loads fresh: the changed ones, and those of every plugin that
+ * depends on a plugin in them, so a dependent reads a changed contract from the same files.
+ */
+export const packagesToLoad = (
+  previous: Previous,
+  changed: ReadonlySet<string>,
+): ReadonlySet<string> => {
+  const changedPlugins = previous.packages.flatMap((loaded) =>
+    changed.has(loaded.dir) ? pluginsOf(loaded) : [],
+  );
+
+  const reached = withDependents(previous, new Set(changedPlugins));
+  const dirs = new Set(changed);
+
+  for (const loaded of previous.packages)
+    if (pluginsOf(loaded).some((name) => reached.has(name))) dirs.add(loaded.dir);
+
+  return dirs;
+};
 
 /** Whether every service `build` needs comes from the same, kept, provider as before. */
 const sameInputs = (

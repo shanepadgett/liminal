@@ -10,9 +10,7 @@ import { Effect, FileSystem, Path, Predicate } from "effect";
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 
 import { InactiveReason, type PluginStatus, start } from "../src/index.ts";
-
-/** Fixture files import Effect by absolute URL, since the temp folder has no node_modules. */
-const effectUrl = import.meta.resolve("effect");
+import { testBoot } from "./support/boot.ts";
 
 const tagNames = ["A", "B", "C", "D", "E", "F", "Z"];
 
@@ -26,7 +24,7 @@ interface FixturePlugin {
 }
 
 const tagsSource = [
-  `import { Context } from "${effectUrl}";`,
+  `import { Context } from "effect";`,
   ...tagNames.map(
     (tag) => `export class ${tag} extends Context.Service<${tag}, {}>()("fixture/${tag}") {}`,
   ),
@@ -54,7 +52,7 @@ const serverSource = (plugin: FixturePlugin) => {
       : `Layer.mergeAll(Layer.empty, ${(plugin.provides ?? []).map((tag) => `Layer.succeed(${tag}, {})`).join(", ")})`;
 
   return [
-    `import { Effect, Layer } from "${effectUrl}";`,
+    `import { Effect, Layer } from "effect";`,
     `import { ${tagNames.join(", ")} } from "../tags.ts";`,
     `export const layer = ${layer};`,
   ].join("\n");
@@ -125,7 +123,7 @@ describe("start", () => {
     "activates what resolves and builds, and gives every other plugin its reason",
     Effect.gen(function* () {
       const folder = yield* writeFixtures;
-      const kernel = yield* start({ folders: [folder] });
+      const kernel = yield* start(testBoot([folder]));
       const status = yield* kernel.status;
       const reasons = reasonsOf(status);
 
@@ -173,7 +171,7 @@ describe("start", () => {
   effectTest(
     "a missing folder boots nothing",
     Effect.gen(function* () {
-      const kernel = yield* start({ folders: ["/nonexistent/liminal-plugins"] });
+      const kernel = yield* start(testBoot(["/nonexistent/liminal-plugins"]));
       expect(yield* kernel.status).toEqual([]);
     }),
     testBaseServices,

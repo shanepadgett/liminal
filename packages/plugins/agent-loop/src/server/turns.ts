@@ -5,7 +5,7 @@
 
 import { Effect, Schema } from "effect";
 
-import { draft, type Entry, type SessionId, Work } from "@liminal/sdk";
+import { draft, type Entry, type SessionId, TurnGate, Work } from "@liminal/sdk";
 import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
 
 import {
@@ -27,10 +27,14 @@ const isStarted = (entry: Entry) => entry.kind === TurnStartedEntry.kind;
 
 export const makeTurns = Effect.fn("makeTurns")(function* (log: SessionLog["Service"]) {
   const work = yield* Work;
+  const gate = yield* TurnGate;
   const kinds = yield* EntryKinds;
   for (const kind of markers) yield* kinds.register(kind);
 
-  /** Runs steps until the turn ends, each on the graph current when it starts. */
+  /**
+   * Runs steps until the turn ends, each on the graph current when it starts. The turn holds the
+   * gate, so new code applies only once it ends.
+   */
   const drive = (sessionId: SessionId, settings: TurnSettings) =>
     Effect.gen(function* () {
       for (;;) {
@@ -46,6 +50,7 @@ export const makeTurns = Effect.fn("makeTurns")(function* (log: SessionLog["Serv
       ),
       Effect.tapError((error) => Effect.logError("turn end not saved", error)),
       Effect.ignore,
+      gate.hold,
     );
 
   const start = Effect.fn("AgentLoop.start")(function* (

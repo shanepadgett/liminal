@@ -127,6 +127,32 @@ export const GraphPlugin = Schema.Struct({ name: Schema.String, build: Schema.In
 
 export type GraphPlugin = typeof GraphPlugin.Type;
 
+/** The running code is the newest checked code. */
+export const ReloadCurrent = Schema.TaggedStruct("Current", {});
+
+/** Changed code is being checked out of sight. */
+export const ReloadChecking = Schema.TaggedStruct("Checking", {});
+
+/** Changed code passed its check and waits for the reload command; `restart` needs a new process. */
+export const ReloadReady = Schema.TaggedStruct("Ready", { restart: Schema.Boolean });
+
+/** Changed code failed its check; the running code stays. */
+export const ReloadFailed = Schema.TaggedStruct("Failed", { reason: Schema.String });
+
+/** Checked code applies once no turn runs. */
+export const ReloadApplying = Schema.TaggedStruct("Applying", {});
+
+/** Where the kernel is in picking up changed code. */
+export const ReloadState = Schema.Union([
+  ReloadCurrent,
+  ReloadChecking,
+  ReloadReady,
+  ReloadFailed,
+  ReloadApplying,
+]);
+
+export type ReloadState = typeof ReloadState.Type;
+
 /** The kernel's own commands, served beside every active plugin's group. */
 export class KernelRpcs extends RpcGroup.make(
   Rpc.make("kernel/follow", {
@@ -139,4 +165,8 @@ export class KernelRpcs extends RpcGroup.make(
   Rpc.make("kernel/plugins", { success: Schema.Array(PluginState) }),
   /** The active plugins, then the set after each graph change. */
   Rpc.make("kernel/graph", { success: Schema.Array(GraphPlugin), stream: true }),
+  /** The reload state, then each change. */
+  Rpc.make("kernel/reload", { success: ReloadState, stream: true }),
+  /** Applies checked code once no turn runs; does nothing unless code is ready. */
+  Rpc.make("kernel/reload-now"),
 ) {}

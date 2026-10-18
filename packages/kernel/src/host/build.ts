@@ -3,7 +3,7 @@
 import { Cause, Context, Deferred, Effect, Exit, Layer, Option, Schema, Scope } from "effect";
 import type { RpcGroup } from "effect/rpc";
 
-import type { BaseServices } from "@liminal/sdk";
+import type { BaseServices, PartModule } from "@liminal/sdk";
 
 import { type Manifest, ServerModule, type ServerLayer } from "./manifest.ts";
 import type { Resolution } from "./resolve.ts";
@@ -87,6 +87,12 @@ const buildInScope = Effect.fn("buildInScope")(function* (
   return yield* Effect.fail(InactiveReason.BuildFailed({ cause: exit.cause }));
 });
 
+/** A frontend part of a manifest the kernel imports at build, such as the TUI's. */
+export type PartName = "tui";
+
+/** A build's imported frontend parts, by name; each module is checked by the frontend. */
+export type Parts = { readonly [Name in PartName]?: PartModule };
+
 /** One plugin's built services and the scope that holds them; graphs may share it. */
 export interface PluginBuild {
   /** Unique per build across the kernel's life; a kept build keeps its number. */
@@ -94,6 +100,8 @@ export interface PluginBuild {
   readonly manifest: Manifest;
   readonly services: Built;
   readonly scope: Scope.Closeable;
+  /** Imported with the server, so a frontend uses only code the build checked. */
+  readonly parts: Parts;
 }
 
 export interface BuildOptions {
@@ -103,7 +111,28 @@ export interface BuildOptions {
   readonly root: Scope.Scope;
   /** Numbers each new build. */
   readonly nextId: Effect.Effect<number>;
+  /** The frontend parts to import with each new build. */
+  readonly parts: ReadonlyArray<PartName>;
 }
+
+/** Imports each named part the manifest has; a part that fails to import fails the build. */
+const importParts = Effect.fn("importParts")(function* (
+  plugin: Manifest,
+  names: ReadonlyArray<PartName>,
+) {
+  const parts: { [Name in PartName]?: PartModule } = {};
+
+  for (const name of names) {
+    const load = plugin[name];
+    if (load === undefined) continue;
+
+    parts[name] = yield* Effect.tryPromise(load).pipe(
+      Effect.catchCause((cause) => Effect.fail(InactiveReason.ImportFailed({ cause }))),
+    );
+  }
+
+  return parts;
+});
 
 const buildPlugin = Effect.fn("buildPlugin")(function* (
   plugin: Manifest,
@@ -117,10 +146,11 @@ const buildPlugin = Effect.fn("buildPlugin")(function* (
 
   const base = yield* Effect.context<BaseServices>();
   const server = yield* importServer(plugin);
+  const parts = yield* importParts(plugin, options.parts);
 
   const built = yield* buildInScope(server.layer, Context.merge(base, dependencies), options.root);
 
-  const build: PluginBuild = { id: yield* options.nextId, manifest: plugin, ...built };
+  const build: PluginBuild = { id: yield* options.nextId, manifest: plugin, parts, ...built };
 
   return build;
 });

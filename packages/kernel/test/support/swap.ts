@@ -1,15 +1,20 @@
 /**
  * Plugins for graph change tests: `source` reads its value from a file when it builds, `reader`
- * needs `source`, and `steady` needs nothing. Each build gets a new id, recorded when it closes.
+ * needs `source`, and `steady` needs nothing. Each graph loads its own copy of this module, so a
+ * build carries a flag its scope sets on close, for the test to read.
  */
 
-import { Context, Effect, FileSystem, Layer, Path } from "effect";
+import { Context, Effect, FileSystem, Layer, Path, Ref } from "effect";
 
-import { Directories } from "@liminal/sdk";
+import { Directories, TurnGate } from "@liminal/sdk";
+
+/** One build of a plugin; `closed` turns true when the build's scope closes. */
+interface Built {
+  readonly closed: Ref.Ref<boolean>;
+}
 
 /** One build of a plugin that carries a value. */
-interface Valued {
-  readonly id: number;
+interface Valued extends Built {
   readonly value: string;
 }
 
@@ -17,20 +22,20 @@ export class Source extends Context.Service<Source, Valued>()("fixture/Source") 
 
 export class Reader extends Context.Service<Reader, Valued>()("fixture/Reader") {}
 
-export class Steady extends Context.Service<Steady, { readonly id: number }>()("fixture/Steady") {}
+export class Steady extends Context.Service<
+  Steady,
+  Built & { readonly hold: TurnGate["Service"]["hold"] }
+>()("fixture/Steady") {}
 
-let made = 0;
+/** A plugin whose value comes from a file in its own package. */
+export class Fresh extends Context.Service<Fresh, { readonly value: string }>()("fixture/Fresh") {}
 
-/** The ids of the builds that have closed. */
-export const closed = new Set<number>();
+/** A flag set when the build's scope closes. */
+const closedFlag = Effect.gen(function* () {
+  const closed = yield* Ref.make(false);
+  yield* Effect.addFinalizer(() => Ref.set(closed, true));
 
-/** A new build id, recorded in `closed` when the build's scope closes. */
-const buildId = Effect.gen(function* () {
-  made += 1;
-  const id = made;
-  yield* Effect.addFinalizer(() => Effect.sync(() => closed.add(id)));
-
-  return id;
+  return closed;
 });
 
 /** The file `source` reads; the text `fail` makes its build fail. */
@@ -47,7 +52,7 @@ export const sourceLayer = Layer.effect(
     const value = yield* fs.readFileString(yield* sourceFile);
     if (value === "fail") return yield* Effect.fail("source refused to build");
 
-    return { id: yield* buildId, value };
+    return { closed: yield* closedFlag, value };
   }),
 );
 
@@ -56,11 +61,15 @@ export const readerLayer = Layer.effect(
   Effect.gen(function* () {
     const source = yield* Source;
 
-    return { id: yield* buildId, value: source.value };
+    return { closed: yield* closedFlag, value: source.value };
   }),
 );
 
 export const steadyLayer = Layer.effect(
   Steady,
-  Effect.map(buildId, (id) => ({ id })),
+  Effect.gen(function* () {
+    const gate = yield* TurnGate;
+
+    return { closed: yield* closedFlag, hold: gate.hold };
+  }),
 );

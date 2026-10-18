@@ -12,6 +12,8 @@ Step 5 is built ([plans/archive/step-5.md](plans/archive/step-5.md), [plans/arch
 
 Step 6 is built ([plans/archive/step-6.md](plans/archive/step-6.md)): the kernel holds plugin graphs by reference count and `Kernel.reload` rebuilds changed plugins and their dependents beside the running graph; requests, steps and `Work` tasks finish on the graph they hold; `agent-loop` turns run as kernel-held work and resume at boot; `apps/cli/src/supervisor.ts` restarts the app on exit code 75.
 
+Reload at turn end is built ([plans/reload.md](plans/reload.md)): each plugin package loads in its own `Bun.ModuleGraph` with the host's shared modules; the kernel's reload machine checks changed code aside and applies it under the `TurnGate` once no turn runs, swapping the graph for plugin changes or exiting 75 for the rest; the `reload` plugin shows a ready reload or a failed check in the chat header and applies it on ctrl+r; `mise run dev` runs the supervisor.
+
 ## Focus
 
 - Review of the built steps 2 to 6 and the TUI session ([plans/archive/tui-session.md](plans/archive/tui-session.md), its `Open` list).
@@ -23,7 +25,7 @@ Step 6 is built ([plans/archive/step-6.md](plans/archive/step-6.md)): the kernel
 
 ## Next
 
-- Reload at turn end: [plans/reload.md](plans/reload.md), code-level plan agreed; build next.
+- Review reload at turn end ([plans/reload.md](plans/reload.md), its `Open` list).
 - Review the transcript in a live terminal ([plans/transcript.md](plans/transcript.md)).
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).

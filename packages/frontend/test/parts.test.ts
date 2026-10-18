@@ -44,11 +44,7 @@ const toolSetup = (plugin: string, runs: Array<string>): Setup =>
   });
 
 const member = (name: string, build: number, setup: Setup) => {
-  const loaded: GraphMember = {
-    name,
-    build,
-    plugin: { tui: () => Promise.resolve({ default: { setup } }) },
-  };
+  const loaded: GraphMember = { name, build, parts: { tui: { default: { setup } } } };
 
   return loaded;
 };
@@ -60,7 +56,7 @@ const boot = Effect.fn("boot")(function* (members: ReadonlyArray<GraphMember>) {
     graph: SubscriptionRef.changes(graph),
     connect: Effect.die("the tests never call the kernel"),
     host: TestHost,
-    part: (each) => each.plugin.tui,
+    part: (each) => each.parts.tui,
   });
 
   const settled = (check: (statuses: ReadonlyMap<string, PartStatus>) => boolean) =>

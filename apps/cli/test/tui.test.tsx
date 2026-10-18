@@ -6,11 +6,12 @@
 import { expect } from "bun:test";
 
 import { createTestRenderer, type TestRendererSetup } from "@opentui/core/testing";
-import { Context, Effect, Latch, Path, Predicate, Schedule, Stream } from "effect";
+import { Context, Effect, Latch, Option, Path, Predicate, Queue, Schedule, Stream } from "effect";
+import { ChildProcess } from "effect/process";
 import { TestClock } from "effect/testing";
 
 import { startFrontend } from "@liminal/frontend";
-import { type Kernel, start } from "@liminal/kernel";
+import { type Kernel, type ReloadOptions, start } from "@liminal/kernel";
 import {
   reply,
   replyText,
@@ -25,21 +26,28 @@ import { SessionLog, userMessage } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
 
 import { mount } from "../src/tui/run.tsx";
+import { awaitRebuild, bootOptions, testReload } from "./support.ts";
 
 const s1 = SessionId.make("s1");
 
-const parts = ["cancel", "chat", "inbox", "tools-file", "tools-shell"];
+const parts = ["cancel", "chat", "inbox", "reload", "tools-file", "tools-shell"];
 
-/** Boots the kernel, prepares it with `before`, then mounts the TUI once every part runs. */
-const boot = Effect.fn("boot")(function* <E>(before: (kernel: Kernel) => Effect.Effect<void, E>) {
+/**
+ * Boots the kernel, with `reload` when given, prepares it with `before`, then mounts the TUI once
+ * every part runs.
+ */
+const boot = Effect.fn("boot")(function* <E>(
+  before: (kernel: Kernel) => Effect.Effect<void, E>,
+  reload?: ReloadOptions,
+) {
   const path = yield* Path.Path;
 
-  const kernel = yield* start({
-    folders: [
-      path.resolve(import.meta.dir, "../../../packages/plugins"),
-      path.resolve(import.meta.dir, "plugins"),
-    ],
+  const options = bootOptions(path, {
+    extra: [path.resolve(import.meta.dir, "plugins")],
+    parts: ["tui"],
   });
+
+  const kernel = yield* start(reload === undefined ? options : { ...options, reload });
 
   yield* before(kernel);
 
@@ -47,7 +55,7 @@ const boot = Effect.fn("boot")(function* <E>(before: (kernel: Kernel) => Effect.
     graph: kernel.graph,
     connect: kernel.connect,
     host: TuiHost,
-    part: (member) => member.plugin.tui,
+    part: (member) => member.parts.tui,
   });
 
   // Parts that load before chat declares its slots wait, then run once it does.
@@ -171,6 +179,45 @@ effectTest(
 
     expect(after).toContain("wait for it");
     expect(after).not.toContain("never");
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "the header offers ctrl+r once a checked reload waits, and ctrl+r applies it",
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const changes = yield* Queue.unbounded<ReadonlyArray<string>>();
+    const { kernel, setup } = yield* boot(() => Effect.void, testReload(changes, "confirmed"));
+    const file = path.resolve(import.meta.dir, "../../../packages/plugins/cancel/src/tui.tsx");
+
+    const reload = Effect.gen(function* () {
+      yield* Queue.offer(changes, [file]);
+      yield* frameWith(setup, "ctrl+r reload");
+      setup.mockInput.pressKey("r", { ctrl: true });
+    });
+
+    yield* awaitRebuild(kernel.graph, "cancel", reload);
+
+    const after = yield* frameWhere(setup, (frame) => !frame.includes("ctrl+r reload"));
+    expect(after).toContain("liminal");
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "the header shows why a reload's check failed",
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const changes = yield* Queue.unbounded<ReadonlyArray<string>>();
+    const broken = ChildProcess.make("/bin/sh", ["-c", "echo 'error TS2322: broken'; exit 1"]);
+    const reload = { ...testReload(changes, "confirmed"), typecheck: Option.some(broken) };
+    const { setup } = yield* boot(() => Effect.void, reload);
+    const file = path.resolve(import.meta.dir, "../../../packages/plugins/cancel/src/tui.tsx");
+
+    yield* Queue.offer(changes, [file]);
+
+    expect(yield* frameWith(setup, "reload failed")).toContain("error TS2322: broken");
   }),
   testBaseServices,
 );

@@ -9,6 +9,8 @@ import { defineEntry, draft, Seq, SessionId } from "@liminal/sdk";
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
 
+import { bootOptions } from "./support.ts";
+
 const Note = defineEntry({
   kind: "test/note",
   data: Schema.Struct({ body: Schema.String }),
@@ -24,9 +26,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
     Effect.gen(function* () {
       const path = yield* Path.Path;
 
-      const kernel = yield* start({
-        folders: [path.resolve(import.meta.dir, "../../../packages/plugins")],
-      });
+      const kernel = yield* start(bootOptions(path));
 
       const active = (yield* kernel.status).flatMap((plugin) =>
         Predicate.isTagged(plugin, "Active") ? [plugin.name] : [],
@@ -42,6 +42,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "inbox",
         "model-codex",
         "models",
+        "reload",
         "session-log",
         "session-store",
         "settings",

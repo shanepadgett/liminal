@@ -6,7 +6,15 @@ import { BunServices } from "@effect/platform-bun";
 import { Effect, FileSystem, Layer, Path } from "effect";
 import type { PlatformError } from "effect/PlatformError";
 
-import { type BaseServices, Directories, EventBus, makeWork, Work } from "../core/index.ts";
+import {
+  type BaseServices,
+  Directories,
+  EventBus,
+  makeTurnGate,
+  makeWork,
+  TurnGate,
+  Work,
+} from "../core/index.ts";
 
 const temporaryDirectories = Layer.effect(
   Directories,
@@ -38,9 +46,16 @@ const callerWork = Layer.effect(
   makeWork((f) => Effect.flatMap(Effect.context(), f)),
 );
 
+/** A gate no reload ever closes, since tests run no kernel. */
+const openGate = Layer.effect(
+  TurnGate,
+  Effect.map(makeTurnGate, (made) => made.gate),
+);
+
 /** Every base service, with each test's folders in a fresh temp folder. */
 export const testBaseServices: Layer.Layer<BaseServices, PlatformError> = Layer.mergeAll(
   temporaryDirectories,
   EventBus.layer,
   callerWork,
+  openGate,
 ).pipe(Layer.provideMerge(BunServices.layer));

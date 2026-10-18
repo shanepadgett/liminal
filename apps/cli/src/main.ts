@@ -1,7 +1,9 @@
 #!/usr/bin/env bun
 /**
  * Liminal command-line entry point: starts the kernel over the built-in plugins, loads their TUI
- * parts and draws them in the terminal until the user quits.
+ * parts and draws them in the terminal until the user quits. Exits with the restart code when
+ * changed app code is ready, so the supervisor starts it again. With `--check`, only starts the
+ * kernel and exits 0, which checks that changed code boots.
  */
 
 import { BunRuntime, BunServices } from "@effect/platform-bun";
@@ -12,6 +14,9 @@ import { start } from "@liminal/kernel";
 import { Directories } from "@liminal/sdk";
 import { TuiHost } from "@liminal/sdk/tui";
 
+import { pluginsFolder, sharedModules } from "./boot.ts";
+import { reloadOptions } from "./reload.ts";
+import { exitWithCode, restartExitCode } from "./supervisor.ts";
 import { runTui } from "./tui/run.tsx";
 
 const directories = Layer.effect(
@@ -28,22 +33,39 @@ const directories = Layer.effect(
   }),
 );
 
-const main = Effect.gen(function* () {
+/** Starts the kernel with no frontend and no reloads, then stops. */
+const check = Effect.gen(function* () {
+  const path = yield* Path.Path;
+  yield* start({ folders: [pluginsFolder(path)], shared: sharedModules, parts: ["tui"] });
+
+  return 0;
+});
+
+/** Runs the TUI until the user quits (0) or a restart applies (the restart code). */
+const run = Effect.gen(function* () {
   const path = yield* Path.Path;
 
   const kernel = yield* start({
-    folders: [path.resolve(import.meta.dir, "../../../packages/plugins")],
+    folders: [pluginsFolder(path)],
+    shared: sharedModules,
+    parts: ["tui"],
+    reload: yield* reloadOptions(),
   });
 
   const frontend = yield* startFrontend({
     graph: kernel.graph,
     connect: kernel.connect,
     host: TuiHost,
-    part: (member) => member.plugin.tui,
+    part: (member) => member.parts.tui,
   });
 
-  yield* runTui(frontend);
+  return yield* Effect.raceFirst(
+    runTui(frontend).pipe(Effect.as(0)),
+    kernel.reloads.restartDue.pipe(Effect.as(restartExitCode)),
+  );
 });
+
+const main = process.argv.includes("--check") ? check : run;
 
 BunRuntime.runMain(
   main.pipe(
@@ -51,4 +73,5 @@ BunRuntime.runMain(
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- the CLI's entry point.
     Effect.provide(directories.pipe(Layer.provideMerge(BunServices.layer))),
   ),
+  { teardown: exitWithCode },
 );

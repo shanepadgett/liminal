@@ -10,6 +10,8 @@ import { createSignal, Show } from "solid-js";
 
 import { FADE, HeaderRule, type RoleColor } from "@liminal/sdk/tui";
 
+import { type ReloadShown, ReloadStatus } from "./ReloadStatus.tsx";
+
 const WORDMARK = "liminal ";
 
 /** The header's padding on each side. */
@@ -25,6 +27,8 @@ export function ChatHeader(props: {
   readonly color: RoleColor;
   readonly title: string;
   readonly isWorking: boolean;
+  /** A pending reload, shown at the right end. */
+  readonly reload?: ReloadShown;
 }) {
   const [row, setRow] = createSignal<BoxRenderable>();
   const [columns, setColumns] = createSignal(0);
@@ -51,6 +55,9 @@ export function ChatHeader(props: {
         <text wrapMode="none" flexShrink={0} fg={props.color("text.base")}>
           {shownTitle()}
         </text>
+      </Show>
+      <Show when={props.reload}>
+        {(reload) => <ReloadStatus color={props.color} reload={reload()} />}
       </Show>
     </box>
   );

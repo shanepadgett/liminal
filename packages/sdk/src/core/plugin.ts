@@ -7,6 +7,7 @@ import type { Rpc, RpcGroup } from "effect/rpc";
 import type { Directories } from "./directories.ts";
 import type { FrontendPart } from "./frontend.ts";
 import type { EventBus } from "./protocol.ts";
+import type { TurnGate } from "./turn-gate.ts";
 import type { Work } from "./work.ts";
 
 /** Services the host gives every plugin without listing them in `requires`. */
@@ -16,6 +17,7 @@ export type BaseServices =
   | ChildProcessSpawner
   | Directories
   | EventBus
+  | TurnGate
   | Work;
 
 /** A service tag a plugin provides, requires or uses. */
@@ -68,10 +70,16 @@ export interface Plugin<
    */
   readonly server?: ServerLoader<Provides, Requires, Error, Rpcs>;
   /**
-   * The plugin's TUI part, a module whose default export is `defineTui(...)`; loaded by the TUI
-   * only while the plugin is active.
+   * The plugin's TUI part, a module whose default export is `defineTui(...)`; imported when the
+   * kernel builds the plugin for a TUI. Load the plugin's own files here or in `server`, never with
+   * a later `import()`: only what loads at build is checked before new code applies.
    */
-  readonly tui?: () => Promise<{ readonly default: FrontendPart<unknown> }>;
+  readonly tui?: () => Promise<PartModule>;
+}
+
+/** A frontend part's module: its default export is the part, such as `defineTui(...)`. */
+export interface PartModule {
+  readonly default: FrontendPart<unknown>;
 }
 
 /** An active plugin of the kernel's current graph, as an in-process frontend sees it. */
@@ -79,8 +87,11 @@ export interface GraphMember {
   readonly name: string;
   /** Changes each time the plugin is rebuilt. */
   readonly build: number;
-  /** The manifest's part loaders; each module is checked when loaded. */
-  readonly plugin: { readonly tui?: () => Promise<object> };
+  /**
+   * The manifest's frontend parts, imported when the kernel built the plugin; each module is
+   * checked by the frontend that runs it.
+   */
+  readonly parts: { readonly tui?: PartModule };
 }
 
 /** A plugin with a server part, as its tests build it. */

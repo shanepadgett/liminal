@@ -5,6 +5,7 @@ export {
   type BaseServices,
   definePlugin,
   type GraphMember,
+  type PartModule,
   type Plugin,
   type ServerLoader,
   type ServerPlugin,
@@ -24,4 +25,5 @@ export * from "./slot.ts";
 export * as Registry from "./registry.ts";
 export { whileLocked } from "./sqlite.ts";
 export * from "./tool.ts";
+export * from "./turn-gate.ts";
 export * from "./work.ts";

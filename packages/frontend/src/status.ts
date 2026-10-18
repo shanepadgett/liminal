@@ -9,8 +9,8 @@ export type PartFailure = Data.TaggedEnum<{
   Conflict: { readonly error: SlotConflict };
   /** The slot it registers into is not declared; the part runs again once it is. */
   Undeclared: { readonly error: SlotUndeclared };
-  /** The module failed to load or has the wrong shape. */
-  ImportFailed: { readonly cause: Cause.Cause<unknown> };
+  /** The module the kernel imported is not a part for this frontend. */
+  Invalid: { readonly cause: Cause.Cause<unknown> };
   /** `setup` failed. */
   SetupFailed: { readonly cause: Cause.Cause<unknown> };
 }>;

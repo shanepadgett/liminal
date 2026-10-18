@@ -7,4 +7,4 @@ One file per piece of work being planned or built. A plan moves to `archive/` on
 | [milestones.md](milestones.md) | Build order; steps 1 to 6 built |
 | [core-contracts.md](core-contracts.md) | All eight rounds agreed |
 | [transcript.md](transcript.md) | Built in the gallery, awaiting review |
-| [reload.md](reload.md) | Code-level plan agreed; building |
+| [reload.md](reload.md) | Built; awaiting review |

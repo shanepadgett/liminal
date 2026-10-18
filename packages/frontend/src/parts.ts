@@ -25,6 +25,7 @@ import {
   type FrontendHost,
   type FrontendPart,
   type GraphMember,
+  type PartModule,
   RootSlot,
   type SessionId,
   SlotConflict,
@@ -40,7 +41,7 @@ type Setup<H> = FrontendPart<H>["setup"];
 
 const isEffect = (input: unknown): input is Setup<never> => Effect.isEffect(input);
 
-const PartModule = Schema.Struct({
+const PartSchema = Schema.Struct({
   default: Schema.Struct({ setup: Schema.declare(isEffect, { title: "Effect" }) }),
 });
 
@@ -59,8 +60,8 @@ export interface FrontendOptions<K extends ComponentKind, H> {
   readonly connect: Effect.Effect<RpcClient.Protocol["Service"], never, Scope.Scope>;
   /** The service a part's `setup` reads its host from. */
   readonly host: Context.Key<H, FrontendHost<K>>;
-  /** The member's loader for this frontend's part, if it has one. */
-  readonly part: (member: GraphMember) => (() => Promise<object>) | undefined;
+  /** The member's module for this frontend's part, if it has one. */
+  readonly part: (member: GraphMember) => PartModule | undefined;
 }
 
 export interface Frontend<C> {
@@ -85,11 +86,8 @@ const failureOf = (cause: Cause.Cause<Cause.YieldableError>): PartFailure => {
 };
 
 /** Every part module is `defineTui(...)` or another frontend's equivalent for this host. */
-const importPart = (load: () => Promise<object>) =>
-  Effect.tryPromise(load).pipe(
-    Effect.flatMap(Schema.decodeUnknownEffect(PartModule)),
-    Effect.map((module) => module.default.setup),
-  );
+const setupOf = (module: PartModule) =>
+  Schema.decodeUnknownEffect(PartSchema)(module).pipe(Effect.map((part) => part.default.setup));
 
 /** What the loader's steps share; one fiber applies every change, so `parts` needs no lock. */
 interface Loader<K extends ComponentKind, H> {
@@ -162,12 +160,12 @@ const leave = Effect.fn("leave")(function* <K extends ComponentKind, H>(
 const enter = Effect.fn("enter")(function* <K extends ComponentKind, H>(
   loader: Loader<K, H>,
   member: GraphMember,
-  load: () => Promise<object>,
+  module: PartModule,
 ) {
-  const setup = yield* Effect.exit(importPart(load));
+  const setup = yield* Effect.exit(setupOf(module));
 
   if (Exit.isFailure(setup)) {
-    const failure = PartFailure.ImportFailed({ cause: setup.cause });
+    const failure = PartFailure.Invalid({ cause: setup.cause });
 
     return yield* setStatus(loader, member.name, PartStatus.Failed({ failure }));
   }
@@ -188,8 +186,10 @@ const onGraph = Effect.fn("onGraph")(function* <K extends ComponentKind, H>(
     if (builds.get(name) !== part.build) yield* leave(loader, name);
 
   for (const member of members) {
-    const load = loader.options.part(member);
-    if (load !== undefined && !loader.parts.has(member.name)) yield* enter(loader, member, load);
+    const module = loader.options.part(member);
+
+    if (module !== undefined && !loader.parts.has(member.name))
+      yield* enter(loader, member, module);
   }
 });
 

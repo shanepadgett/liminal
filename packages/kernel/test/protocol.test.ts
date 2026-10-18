@@ -13,6 +13,7 @@ import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 
 import { start } from "../src/index.ts";
 import { EchoRpcs, Refused, Said } from "./fixtures/echo.ts";
+import { testBoot } from "./support/boot.ts";
 
 const echoUrl = import.meta.resolve("./fixtures/echo.ts");
 
@@ -51,7 +52,7 @@ const writeFixtures = Effect.gen(function* () {
 
 /** A client of the kernel's and the echo plugin's commands. */
 const connected = Effect.gen(function* () {
-  const kernel = yield* start({ folders: [yield* writeFixtures] });
+  const kernel = yield* start(testBoot([yield* writeFixtures]));
   const protocol = yield* kernel.connect;
 
   return yield* RpcClient.make(KernelRpcs.merge(EchoRpcs)).pipe(

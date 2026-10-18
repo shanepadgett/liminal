@@ -7,6 +7,7 @@ import { ActivePlugin, EventBus, InactivePlugin, KernelRpcs, type PluginState } 
 
 import { type Graphs, membersOf } from "../graph/graphs.ts";
 import { describeReason, PluginStatus } from "../host/status.ts";
+import type { Reloads } from "../reload/run.ts";
 import { followAcross } from "./follow.ts";
 
 const toState: (status: PluginStatus) => PluginState = PluginStatus.$match({
@@ -15,7 +16,7 @@ const toState: (status: PluginStatus) => PluginState = PluginStatus.$match({
 });
 
 /** Runs until interrupted, answering the kernel's commands from the Protocol it is given. */
-export const serveKernel = Effect.fn("serveKernel")(function* (graphs: Graphs) {
+export const serveKernel = Effect.fn("serveKernel")(function* (graphs: Graphs, reloads: Reloads) {
   const bus = yield* EventBus;
 
   const handlers = yield* KernelRpcs.toHandlers(
@@ -33,6 +34,8 @@ export const serveKernel = Effect.fn("serveKernel")(function* (graphs: Graphs) {
         graphs.changes.pipe(
           Stream.map((graph) => membersOf(graph).map(({ name, build }) => ({ name, build }))),
         ),
+      "kernel/reload": () => reloads.state,
+      "kernel/reload-now": () => reloads.request,
     }),
   );
 

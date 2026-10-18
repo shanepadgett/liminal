@@ -14,6 +14,7 @@ import {
   FORM_WRITING,
 } from "./chat/formSamples.ts";
 import type { FormState } from "./chat/formState.ts";
+import type { ReloadShown } from "./chat/ReloadStatus.tsx";
 import { Sidebar } from "./chat/Sidebar.tsx";
 import { Toast, type ToastKind, type ToastMessage } from "./chat/Toast.tsx";
 import { only, withRoles } from "./entryViews.ts";
@@ -59,13 +60,22 @@ const questionsState = (name: string, form: FormState): EntryState => ({
   )),
 });
 
-const headerState = (name: string, isWorking: boolean): EntryState => ({
+const headerState = (name: string, isWorking: boolean, reload?: ReloadShown): EntryState => ({
   name,
   fill: "width",
   view: withRoles((color) => (
-    <ChatHeader color={color} title="Explain how the plugin host boots" isWorking={isWorking} />
+    <ChatHeader
+      color={color}
+      title="Explain how the plugin host boots"
+      isWorking={isWorking}
+      {...(reload === undefined ? {} : { reload })}
+    />
   )),
 });
+
+/** A failed check's reason, as the typecheck reports it. */
+const TYPECHECK_FAILED =
+  "packages/plugins/inbox/src/server.ts(42,7): error TS2322: Type 'string' is not assignable to type 'number'.";
 
 type ChatOptions = {
   readonly isWorking: boolean;
@@ -135,7 +145,13 @@ export const GROUPS: Groups = [
           {
             id: "header",
             title: "Header",
-            states: [headerState("Idle", false), headerState("Working", true)],
+            states: [
+              headerState("Idle", false),
+              headerState("Working", true),
+              headerState("Reload ready", false, { kind: "ready", restart: false }),
+              headerState("Restart ready", false, { kind: "ready", restart: true }),
+              headerState("Reload failed", false, { kind: "failed", reason: TYPECHECK_FAILED }),
+            ],
           },
           {
             id: "composer",
