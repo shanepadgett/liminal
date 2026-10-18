@@ -26,8 +26,8 @@ Reload at turn end is built ([plans/reload.md](plans/reload.md)): each plugin pa
 ## Next
 
 - Review reload at turn end ([plans/reload.md](plans/reload.md), its `Open` list).
-- Review slash commands and dialogs ([plans/commands.md](plans/commands.md), its `Open` list), then plan connect and login as its own plan. Commands per [requirements/05-frontends.md](requirements/05-frontends.md).
-- Connect and login's first build: Codex (browser and device code), OpenAI API key, Anthropic API key, Claude subscription, OpenRouter API key; each needs its provider plugin.
+- Review slash commands and dialogs ([plans/commands.md](plans/commands.md), its `Open` list). Commands per [requirements/05-frontends.md](requirements/05-frontends.md).
+- Answer round 1 of connect and login ([plans/connect.md](plans/connect.md)). Its build covers every Tau provider and login method plus Anthropic API key; each needs its provider plugin.
 - Review the transcript in a live terminal ([plans/transcript.md](plans/transcript.md)).
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
@@ -62,4 +62,4 @@ Pi session IDs and the topics each discussed.
 - 01a145a9-703a-7284-8f7a-054aea36ec2c: TUI design (transcript)
 - 01a14649-dee8-74a7-b272-e37fd82f47b6: Sessions, Plugin catalog, docs layout
 - 01a1473c-d9a2-74a7-b272-e383d7bf6e43: session-log contract, entry kinds and visibility, compaction memories, plugin foundation, build order, testing, step 1 build, repository layout
-- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end
+- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end, slash commands and dialogs
