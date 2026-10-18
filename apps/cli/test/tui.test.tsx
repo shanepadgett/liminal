@@ -30,7 +30,7 @@ import {
   ScriptedModel,
   scriptedProvider,
 } from "@liminal/model-scripted/contract";
-import { type ModelPart, SessionId } from "@liminal/sdk";
+import { ModelError, type ModelPart, SessionId } from "@liminal/sdk";
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 import { SessionLog, userMessage } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
@@ -455,6 +455,23 @@ effectTest(
     const fresh = yield* frameWhere(setup, (frame) => !frame.includes("hello there"));
     expect(fresh).toContain("Ask anything");
     expect(fresh).not.toContain("/new");
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "a turn stopped by a model error shows an error notice with a copy button",
+  Effect.gen(function* () {
+    const error = new ModelError({ reason: "auth", message: "token expired" });
+    const { setup } = yield* bootScripted([{ type: "fail", error }]);
+
+    yield* send(setup, "hello there");
+
+    const frame = yield* frameWith(setup, "Sign-in rejected");
+    const title = frame.split("\n").find((line) => line.includes("Sign-in rejected"));
+
+    expect(title).toContain("copy");
+    expect(frame).toContain("token expired");
   }),
   testBaseServices,
 );

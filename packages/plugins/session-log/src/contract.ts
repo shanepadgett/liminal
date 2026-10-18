@@ -17,6 +17,7 @@ import {
   type InvalidEntry,
   KeyedRegistry,
   type LiveState,
+  ModelRef,
   type Seq,
   SessionId,
   type SessionNotFound,
@@ -173,6 +174,41 @@ export const ToolResultEntry = defineEntry({
   user: "shown",
 });
 
+/** What a turn's caller chooses for its model calls; `thinking` is a thinking option's id. */
+export const TurnSettings = Schema.Struct({
+  model: ModelRef,
+  thinking: Schema.optionalKey(Schema.String),
+  maxOutputTokens: Schema.optionalKey(Schema.Int),
+});
+
+export type TurnSettings = typeof TurnSettings.Type;
+
+/** A turn began with these settings; without a later TurnEndedEntry it is still running. */
+export const TurnStartedEntry = defineEntry({
+  kind: "session-log/turn-started",
+  data: TurnSettings,
+  model: false,
+  user: "hidden",
+});
+
+/** How a started turn ended; a turn stopped by an error has a notice saved before its end. */
+export const TurnEndReason = Schema.Literals([
+  "answered",
+  "ended-by-plugin",
+  "cancelled",
+  "stopped",
+]);
+
+export type TurnEndReason = typeof TurnEndReason.Type;
+
+/** A started turn ended. */
+export const TurnEndedEntry = defineEntry({
+  kind: "session-log/turn-ended",
+  data: Schema.Struct({ end: TurnEndReason }),
+  model: false,
+  user: "hidden",
+});
+
 /** The core entry kinds, registered by session-log's server. */
 export const coreEntries: ReadonlyArray<EntryDefinition> = [
   UserEntry,
@@ -180,6 +216,8 @@ export const coreEntries: ReadonlyArray<EntryDefinition> = [
   ReasoningEntry,
   ToolCallEntry,
   ToolResultEntry,
+  TurnStartedEntry,
+  TurnEndedEntry,
 ];
 
 /** A user message, sent to the model as user text. */

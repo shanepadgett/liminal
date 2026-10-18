@@ -1,11 +1,12 @@
 /**
  * Agent-loop's TUI part: `/model` lists every signed-in provider's models, then the picked model's
  * thinking options, and sets both as the default for new turns. A provider whose list failed shows
- * the failure.
+ * the failure. It draws the streaming reply and the retry line at the transcript's end.
  */
 
 import { Effect, Predicate } from "effect";
 
+import { ChatSlots } from "@liminal/chat/contract";
 import { ModelsRpcs } from "@liminal/models/contract";
 import {
   type DialogProps,
@@ -17,7 +18,14 @@ import {
   TuiHost,
 } from "@liminal/sdk/tui";
 
-import { AgentLoopRpcs, DefaultsMissing, type DefaultsView } from "./contract.ts";
+import {
+  AgentLoopRpcs,
+  DefaultsMissing,
+  type DefaultsView,
+  LiveReply,
+  LiveRetry,
+} from "./contract.ts";
+import { Reply, Retry } from "./tui/live.tsx";
 import {
   currentThinking,
   listAll,
@@ -109,5 +117,8 @@ export default defineTui({
         },
       },
     ]);
+
+    yield* host.register(ChatSlots.live, { key: LiveReply.kind, meta: {} }, Reply);
+    yield* host.register(ChatSlots.live, { key: LiveRetry.kind, meta: {} }, Retry);
   }),
 });

@@ -19,6 +19,7 @@ import {
   scriptedProvider,
 } from "@liminal/model-scripted/contract";
 import models from "@liminal/models";
+import { NoticeEntry } from "@liminal/notices/contract";
 import {
   defineTool,
   draft,
@@ -35,6 +36,8 @@ import {
   TextEntry,
   ToolCallEntry,
   ToolResultEntry,
+  TurnEndedEntry,
+  TurnStartedEntry,
   userMessage,
 } from "@liminal/session-log/contract";
 import sessionStore from "@liminal/session-store";
@@ -55,9 +58,7 @@ import {
   DefaultsSet,
   NoDefaultModel,
   StepOutcome,
-  TurnEndedEntry,
   TurnEndingHooks,
-  TurnStartedEntry,
 } from "../src/contract.ts";
 
 const stack = serverOf(agentLoop).pipe(
@@ -395,6 +396,44 @@ effectTest(
 
     expect(markersOf(entries)).toEqual(["started", "answered"]);
     expect(kinds(entries)).toContain(TextEntry.kind);
+  }),
+  stack,
+);
+
+effectTest(
+  "a turn stopped by a model error saves an error notice, titled by reason, before its end",
+  Effect.gen(function* () {
+    const log = yield* start("hello");
+
+    const error = new ModelError({
+      reason: "rate-limit",
+      message: "slow down",
+      status: 429,
+      requestId: "r1",
+    });
+
+    yield* (yield* ScriptedModel).enqueue([{ type: "fail", error }]);
+    yield* (yield* AgentLoop).start(s1, settings);
+
+    yield* until(
+      Effect.map(Effect.orDie(log.read(s1, {})), (entries) => markersOf(entries).length === 2),
+    );
+
+    const entries = yield* log.read(s1, {});
+    const [notice, end] = entries.slice(-2);
+
+    expect(markersOf(entries)).toEqual(["started", "stopped"]);
+    expect(notice?.kind).toBe(NoticeEntry.kind);
+
+    expect(notice?.data).toEqual({
+      kind: "error",
+      title: "Rate limited",
+      body: "slow down\nstatus 429, request r1",
+    });
+
+    expect(notice?.model).toBeUndefined();
+    expect(notice?.user).toBe("shown");
+    expect(end?.kind).toBe(TurnEndedEntry.kind);
   }),
   stack,
 );

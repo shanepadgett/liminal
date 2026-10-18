@@ -21,11 +21,12 @@
 - Assume the reader is new to the code. Say in a few words what each system, file or term is and where it lives on first use.
 - State what the change lets the user or the code do before how it works.
 - Name what the change deletes or replaces. A plan that only adds code is incomplete.
+- Name the guide sections in `docs/guides/` the change adds or changes.
 
 ## Rounds
 
 - Plan in rounds. Each round asks a small batch of related decisions.
-- Lasting plans live in `docs/plans/`, one file per piece of work. Once its work is built and verified, move the file to `docs/plans/archive/` right away, without asking: fix its relative links and remove its row from `docs/plans/_index.md`.
+- Lasting plans live in `docs/plans/`, one file per piece of work. Once its work is built and verified and its guide sections match the code, move the file to `docs/plans/archive/` right away, without asking: fix its relative links and remove its row from `docs/plans/_index.md`.
 - Record each agreed decision in the plan file in the same reply. A correction rewrites the affected part; no history.
 - Requirements that outlive the plan go in `docs/requirements/` or the plugin's file in `docs/plugins/`. Open topics and deferred items go in `docs/status.md`.
 

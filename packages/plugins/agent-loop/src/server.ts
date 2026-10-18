@@ -12,7 +12,7 @@ import {
   thinkingOptionOf,
   type Tool,
 } from "@liminal/sdk";
-import { SessionLog } from "@liminal/session-log/contract";
+import { SessionLog, type TurnSettings } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
 import { ToolPipeline } from "@liminal/tool-pipeline/contract";
 import { Tools } from "@liminal/tool-registry/contract";
@@ -26,7 +26,6 @@ import {
   type Turn,
   type TurnEnd,
   TurnEndingHooks,
-  type TurnSettings,
 } from "./contract.ts";
 import { makeCalls } from "./server/calls.ts";
 import { makeDefaults } from "./server/defaults.ts";

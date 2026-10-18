@@ -24,6 +24,8 @@ Connect and login step 3 is built ([plans/connect.md](plans/connect.md)): `Login
 
 Connect and login step 6 is built ([plans/connect.md](plans/connect.md)): `@liminal/sdk/ai/{messages,responses,chat}` hold the protocol streams; `model-openrouter` and `model-opencode-go` sign in with API keys; neither has had a live request yet.
 
+Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model providers and testing, each matching the built code.
+
 ## Focus
 
 - Each step's code plan goes in `docs/plans/` and is built right away; the user reviews plan and code afterwards.

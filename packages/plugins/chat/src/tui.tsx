@@ -1,13 +1,12 @@
 /**
  * Chat's TUI part: starts on a new session, which the first prompt creates, follows it, and draws
  * the chat screen into the root slot, declaring the chat slots. The session is kept across reloads
- * and restarts. `/new` switches to a new session. It draws the entries and live states of the
- * plugins it builds on; other plugins register theirs.
+ * and restarts. `/new` switches to a new session. It draws the user's and the model's words; every
+ * other plugin registers views for its own entry and live kinds.
  */
 
 import { Effect, Stream, SubscriptionRef } from "effect";
 
-import { LiveReply, LiveRetry } from "@liminal/agent-loop/contract";
 import { RootSlot, SessionId } from "@liminal/sdk";
 import { defineTui, makeBridge, TuiCommands, TuiHost } from "@liminal/sdk/tui";
 import { ReasoningEntry, TextEntry, UserEntry } from "@liminal/session-log/contract";
@@ -15,7 +14,6 @@ import { ReasoningEntry, TextEntry, UserEntry } from "@liminal/session-log/contr
 import { ChatSlots } from "./contract.ts";
 import { ChatScreen } from "./tui/ChatScreen.tsx";
 import { Prompt, Said, Thought } from "./tui/entries.tsx";
-import { Reply, Retry } from "./tui/live.tsx";
 import { emptyTranscript, fold } from "./tui/transcript-state.ts";
 
 /** A session id no session has yet. */
@@ -74,7 +72,5 @@ export default defineTui({
     yield* host.register(ChatSlots.entry, { key: UserEntry.kind, meta: {} }, Prompt);
     yield* host.register(ChatSlots.entry, { key: TextEntry.kind, meta: {} }, Said);
     yield* host.register(ChatSlots.entry, { key: ReasoningEntry.kind, meta: {} }, Thought);
-    yield* host.register(ChatSlots.live, { key: LiveReply.kind, meta: {} }, Reply);
-    yield* host.register(ChatSlots.live, { key: LiveRetry.kind, meta: {} }, Retry);
   }),
 });

@@ -1,6 +1,6 @@
 # System prompt and instructions
 
-Status: rounds 1 and 2 agreed; step 1 built; step 2 code plan proposed.
+Status: rounds 1 and 2 agreed; steps 1 to 3 built.
 
 Gives every session a base system prompt, the facts of its environment, and the user's and project's instruction files, kept current as files change without breaking the prompt cache.
 
@@ -76,10 +76,11 @@ agent-loop -> context.build(session)
 ## Steps
 
 1. `context`: user-role reminder, diffs for changed files, section order
-2. `notices`: its own step, before the instruction plugins
-3. `tool-registry` guidance
-4. `system-prompt` and `environment`; the base prompt is drafted from Tau's `soul.ts` for the user to edit
-5. `agents-files` and `instruction-files`
+2. `notices`: its own step, before the instruction plugins; `notice()` in the contract is the whole writing surface
+3. Transcript ownership: `chat` stops depending on `agent-loop`; each plugin draws its own entries and live states
+4. `tool-registry` guidance
+5. `system-prompt` and `environment`; the base prompt is drafted from Tau's `soul.ts` for the user to edit
+6. `agents-files` and `instruction-files`
 
 ## Step 1: `context`
 
@@ -165,15 +166,16 @@ Prior art: Tau keeps notices in TUI state only (`tui/internal/chat-state.ts`), s
 
 ```text
 packages/plugins/notices/
-  plugin.ts            requires SessionLog; server and tui parts
-  package.json         exports . and ./contract
-  src/contract.ts      NoticeEntry, NoticeKind, Notice, notice()
+  plugin.ts            requires EntryKinds; server part only
+  package.json         exports . and ./contract; peers @liminal/sdk, @liminal/session-log, effect
+  src/contract.ts      NoticeEntry, NoticeKind, Notice, noticeText(), notice()
   src/server.ts        registers NoticeEntry with EntryKinds
-  src/tui.tsx          registers NoticeView in ChatSlots.entry under NoticeEntry.kind
-  src/tui/Notice.tsx   the gallery's Notice and LiveNotice, as the TUI component
   test/notices.test.ts
+packages/plugins/chat/src/tui/Notice.tsx          NoticeEntryView, registered in ChatSlots.entry under NoticeEntry.kind
+packages/plugins/chat/package.json                peer @liminal/notices
 packages/plugins/agent-loop/src/server/turns.ts   a stopped turn appends stoppedNotice(error) before turn-ended
 packages/plugins/agent-loop/src/server/stopped.ts new: stoppedNotice(error: TurnError): EntryDraft
+packages/plugins/agent-loop/package.json          peer @liminal/notices
 ```
 
 ### Types
@@ -201,9 +203,9 @@ agent-loop drive (turns.ts)
 stoppedNotice(error)
   ModelError -> title by reason, body = message, then "status N, request R" when known
   other      -> title "Turn stopped", body = message
-chat Transcript -> ChatSlots.entry["notices/notice"] -> NoticeView
+chat Transcript -> ChatSlots.entry["notices/notice"] -> NoticeEntryView
   decode data as Notice; none -> plain text
-  LiveNotice: mark and bold title in the kind's color, muted body indented 2, copy button
+  NoticeBlock: mark and bold title in the kind's color, muted body indented 2, copy button
 ```
 
 | `ModelError` reason | Title |
@@ -221,17 +223,78 @@ chat Transcript -> ChatSlots.entry["notices/notice"] -> NoticeView
 
 - `notices.test.ts`: a notice draft saves with `user: "shown"`, no model content, and the context's preview leaves it out
 - `agent-loop.test.ts`: a scripted model error stops the turn with one error notice before `turn-ended`, titled by reason, body with the message
-- `chat` or `notices` TUI test: a saved notice draws its mark, title and body; clicking `copy` reads `copied`
+- `apps/cli` TUI test: a turn stopped by a model error draws the notice's title, copy button and body
 
 ### Deletes or replaces
 
 - `docs/plugins/context.md`: the shared context message line drops "notices" (those are model-facing nudges)
 - New `docs/plugins/notices.md`; `_index.md` links it
 
+## Step 3: Transcript ownership
+
+`chat` draws the transcript and owns the slots plugins draw into, but it imports `@liminal/agent-loop/contract` in three places. That makes `agent-loop` → `notices` → `chat` → `agent-loop` a package cycle, so notices are drawn by `chat` instead of `notices`. After this step `chat` depends only on `@liminal/sdk` and `session-log`, and every plugin that defines an entry or live kind registers its own view.
+
+DeepSeek splits the same way: `ui-conversation` holds the registries and draws nothing; `ui-chat`, `ui-tool` and `ui-trajectory` register into it (`references/deepseek-harness/packages/client/`). `chat` keeps its name; a separate `transcript` plugin waits for a second screen that needs the same registries.
+
+### Today
+
+| Import from `agent-loop` | Where | Use |
+| --- | --- | --- |
+| `TurnStartedEntry`, `TurnEndedEntry` | `chat/src/tui/transcript-state.ts` `withEntry` | Sets `running` |
+| `LiveReply`, `LiveRetry`, `LivePart` | `chat/src/tui/live.tsx`, `chat/src/tui.tsx` | Draws the streaming reply and the retry line |
+
+The turn markers are not in `coreEntries`, so nothing registers them with `EntryKinds`.
+
+### Moves
+
+| What | From | To |
+| --- | --- | --- |
+| `TurnSettings`, `TurnStartedEntry`, `TurnEndReason`, `TurnEndedEntry` | `agent-loop` contract | `session-log` contract, added to `coreEntries`; kinds `session-log/turn-started`, `session-log/turn-ended` |
+| `Reply`, `Retry` (`live.tsx`) | `chat/src/tui/` | `agent-loop/src/tui/live.tsx`, registered in `ChatSlots.live` by agent-loop's TUI part |
+| `NoticeEntryView` (`Notice.tsx`) | `chat/src/tui/` | `notices/src/tui/Notice.tsx`, registered in `ChatSlots.entry` by a new `notices/src/tui.tsx` |
+
+A turn's start and end are conversation facts the transcript, inbox, cancel and later folding all read, like the user and tool entries `session-log` already owns. `agent-loop` still writes them and resumes from them.
+
+### Dependencies after
+
+```text
+chat        -> sdk, session-log
+notices     -> sdk, session-log, chat (tui)
+agent-loop  -> ..., notices, chat (tui)
+cancel      -> agent-loop, chat           unchanged
+inbox       -> agent-loop, session-log    imports the markers from session-log
+```
+
+### Files
+
+```text
+packages/plugins/session-log/src/contract.ts   gains the turn types and entries; coreEntries lists them
+packages/plugins/agent-loop/src/contract.ts    loses them; imports TurnSettings for Turn and its RPCs
+packages/plugins/agent-loop/src/server/turns.ts, inbox/src/server.ts   import from session-log
+packages/plugins/agent-loop/src/tui.tsx        registers Reply and Retry in ChatSlots.live
+packages/plugins/agent-loop/package.json       peer @liminal/chat
+packages/plugins/notices/plugin.ts             gains tui: () => import("./src/tui.tsx")
+packages/plugins/notices/src/tui.tsx           registers NoticeEntryView in ChatSlots.entry
+packages/plugins/notices/package.json          peers @liminal/chat, @opentui/core, @opentui/solid, solid-js
+packages/plugins/chat/src/tui.tsx              registers only UserEntry, TextEntry, ReasoningEntry
+packages/plugins/chat/package.json             drops peers @liminal/agent-loop, @liminal/notices
+```
+
+### Tests
+
+- Existing tests keep passing with imports moved: `chat` transcript, `agent-loop`, `inbox`, `cancel`, and the `apps/cli` TUI tests for the streaming reply, the retry line and the error notice
+- `session-log`: the turn markers are registered core kinds
+
+### Deletes or replaces
+
+- `chat/src/tui/live.tsx` and `chat/src/tui/Notice.tsx` move out of `chat`
+- `docs/plugins/agent-loop.md`, `session-log.md`, `notices.md`: who owns and draws each kind
+- `session-store` migrations condense into one, `0001_create_tables`
+
 ## Open
 
 - The `settings.json` key that turns off `agents-files`
-- Step 2: whether `notice()` in the contract is the whole writing surface, or a `Notices` service wraps the append
+- Step 2: the copy button is not covered by a test; the test renderer rejects clipboard writes (`ot_session_clipboard failed: InvalidPhase`)
 
 ## Deletes or replaces
 

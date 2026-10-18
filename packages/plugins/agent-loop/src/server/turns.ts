@@ -5,23 +5,27 @@
 
 import { Effect, Schema } from "effect";
 
-import { draft, type Entry, type SessionId, TurnGate, Work } from "@liminal/sdk";
-import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
-
+import { draft, type Entry, type EntryDraft, type SessionId, TurnGate, Work } from "@liminal/sdk";
 import {
-  AgentLoop,
-  StepOutcome,
+  EntryKinds,
+  SessionLog,
   TurnEndedEntry,
   type TurnEndReason,
   TurnSettings,
   TurnStartedEntry,
-} from "../contract.ts";
+} from "@liminal/session-log/contract";
+
+import { AgentLoop, StepOutcome } from "../contract.ts";
+import { stoppedNotice } from "./stopped.ts";
 
 const markers = [TurnStartedEntry, TurnEndedEntry];
 
 const keyOf = (sessionId: SessionId) => `agent-loop/turn/${sessionId}`;
 
 const ended = (end: TurnEndReason) => draft(TurnEndedEntry, { data: { end }, text: "" });
+
+/** What a held turn saves when it ends: a notice first when an error stopped it. */
+type Drafts = readonly [EntryDraft, ...ReadonlyArray<EntryDraft>];
 
 const isStarted = (entry: Entry) => entry.kind === TurnStartedEntry.kind;
 
@@ -44,9 +48,10 @@ export const makeTurns = Effect.fn("makeTurns")(function* (log: SessionLog["Serv
       }
     }).pipe(
       Effect.tapError((error) => Effect.logError("turn stopped", error)),
-      Effect.orElseSucceed((): TurnEndReason => "stopped"),
-      Effect.flatMap((end) =>
-        work.use(SessionLog, (current) => current.append(sessionId, [ended(end)])),
+      Effect.map((end): Drafts => [ended(end)]),
+      Effect.catch((error) => Effect.succeed<Drafts>([stoppedNotice(error), ended("stopped")])),
+      Effect.flatMap((drafts) =>
+        work.use(SessionLog, (current) => current.append(sessionId, drafts)),
       ),
       Effect.tapError((error) => Effect.logError("turn end not saved", error)),
       Effect.ignore,

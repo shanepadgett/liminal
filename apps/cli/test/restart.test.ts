@@ -49,6 +49,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "model-opencode-go",
         "model-openrouter",
         "models",
+        "notices",
         "palette",
         "reload",
         "session-log",

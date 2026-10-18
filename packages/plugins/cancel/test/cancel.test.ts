@@ -7,7 +7,7 @@ import { RpcTest } from "effect/rpc";
 import { TestClock } from "effect/testing";
 
 import agentLoop from "@liminal/agent-loop";
-import { AgentLoop, TurnEndedEntry } from "@liminal/agent-loop/contract";
+import { AgentLoop } from "@liminal/agent-loop/contract";
 import context from "@liminal/context";
 import modelCatalog from "@liminal/model-catalog";
 import modelScripted from "@liminal/model-scripted";
@@ -16,7 +16,7 @@ import models from "@liminal/models";
 import { SessionId } from "@liminal/sdk";
 import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
 import sessionLog from "@liminal/session-log";
-import { SessionLog, userMessage } from "@liminal/session-log/contract";
+import { SessionLog, TurnEndedEntry, userMessage } from "@liminal/session-log/contract";
 import sessionStore from "@liminal/session-store";
 import settingsPlugin from "@liminal/settings";
 import toolPipeline from "@liminal/tool-pipeline";

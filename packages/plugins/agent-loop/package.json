@@ -12,8 +12,10 @@
     "@liminal/session-store": "workspace:*"
   },
   "peerDependencies": {
+    "@liminal/chat": "workspace:*",
     "@liminal/context": "workspace:*",
     "@liminal/models": "workspace:*",
+    "@liminal/notices": "workspace:*",
     "@liminal/sdk": "workspace:*",
     "@liminal/session-log": "workspace:*",
     "@liminal/settings": "workspace:*",

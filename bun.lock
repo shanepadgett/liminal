@@ -82,8 +82,10 @@
         "@liminal/session-store": "workspace:*",
       },
       "peerDependencies": {
+        "@liminal/chat": "workspace:*",
         "@liminal/context": "workspace:*",
         "@liminal/models": "workspace:*",
+        "@liminal/notices": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "@liminal/session-log": "workspace:*",
         "@liminal/settings": "workspace:*",
@@ -136,7 +138,6 @@
       "name": "@liminal/chat",
       "version": "0.1.0",
       "peerDependencies": {
-        "@liminal/agent-loop": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "@liminal/session-log": "workspace:*",
         "@opentui/core": "0.6.6",
@@ -327,6 +328,24 @@
         "@liminal/model-catalog": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
+      },
+    },
+    "packages/plugins/notices": {
+      "name": "@liminal/notices",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/context": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+        "@liminal/tool-registry": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/chat": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
       },
     },
     "packages/plugins/palette": {
@@ -617,6 +636,8 @@
     "@liminal/model-scripted": ["@liminal/model-scripted@workspace:packages/plugins/model-scripted"],
 
     "@liminal/models": ["@liminal/models@workspace:packages/plugins/models"],
+
+    "@liminal/notices": ["@liminal/notices@workspace:packages/plugins/notices"],
 
     "@liminal/palette": ["@liminal/palette@workspace:packages/plugins/palette"],
 

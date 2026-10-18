@@ -6,9 +6,13 @@
 
 import { Option, Predicate, Schema } from "effect";
 
-import { TurnEndedEntry, TurnStartedEntry } from "@liminal/agent-loop/contract";
 import type { FollowEvent, LiveState, SavedEntry } from "@liminal/sdk";
-import { ToolCallEntry, ToolResultEntry } from "@liminal/session-log/contract";
+import {
+  ToolCallEntry,
+  ToolResultEntry,
+  TurnEndedEntry,
+  TurnStartedEntry,
+} from "@liminal/session-log/contract";
 
 import type { ToolCall, ToolOutcome } from "../contract.ts";
 

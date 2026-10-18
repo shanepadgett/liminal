@@ -7,7 +7,6 @@
     "./contract": "./src/contract.ts"
   },
   "peerDependencies": {
-    "@liminal/agent-loop": "workspace:*",
     "@liminal/sdk": "workspace:*",
     "@liminal/session-log": "workspace:*",
     "@opentui/core": "0.6.6",

@@ -65,7 +65,7 @@ const read: ToolRows = {
 describe("transcript", () => {
   test("gathers consecutive tool calls and pairs their results", () => {
     const events = [
-      saved("agent-loop/turn-started", {}, "hidden"),
+      saved("session-log/turn-started", {}, "hidden"),
       saved("session-log/user", { text: "hi" }),
       call("c1", "read", "a.ts"),
       call("c2", "read", "b.ts"),
@@ -94,9 +94,9 @@ describe("transcript", () => {
 
   test("a turn's end stops it running; unworded tools read as their name", () => {
     const transcript = folded([
-      saved("agent-loop/turn-started", {}, "hidden"),
+      saved("session-log/turn-started", {}, "hidden"),
       call("c1", "shell", "x"),
-      saved("agent-loop/turn-ended", { end: "answered" }, "hidden"),
+      saved("session-log/turn-ended", { end: "answered" }, "hidden"),
     ]);
 
     expect(transcript.running).toBe(false);

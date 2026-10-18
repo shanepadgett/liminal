@@ -7,7 +7,6 @@ import { Context, Data, type Duration, type Effect, Schema, type Stream } from "
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
-  defineEntry,
   type EntryDraft,
   type InvalidEntry,
   type ModelError,
@@ -19,21 +18,13 @@ import {
   type StoreError,
   type CatalogUnavailable,
 } from "@liminal/sdk";
+import { TurnSettings } from "@liminal/session-log/contract";
 
 /**
  * A thinking option's id; a model that does not offer it uses its default, and one with no options
  * thinks as it does by default.
  */
 const ThinkingChoice = Schema.String;
-
-/** What a turn's caller chooses for its model calls. */
-export const TurnSettings = Schema.Struct({
-  model: ModelRef,
-  thinking: Schema.optionalKey(ThinkingChoice),
-  maxOutputTokens: Schema.optionalKey(Schema.Int),
-});
-
-export type TurnSettings = typeof TurnSettings.Type;
 
 /** The `agent-loop` settings section: what a new turn uses unless its caller chooses. */
 export const AgentLoopSection = Schema.Struct({
@@ -81,31 +72,6 @@ export class DefaultSetFailed extends Schema.TaggedError<
   DefaultSetFailed,
   { readonly brand: unique symbol }
 >()("DefaultSetFailed", { message: Schema.String }) {}
-
-/** A turn began with these settings; without a later TurnEndedEntry it resumes at boot. */
-export const TurnStartedEntry = defineEntry({
-  kind: "agent-loop/turn-started",
-  data: TurnSettings,
-  model: false,
-  user: "hidden",
-});
-
-/** How a started turn ended; `stopped` is an error, of which nothing is saved. */
-export const TurnEndReason = Schema.Literals([
-  "answered",
-  "ended-by-plugin",
-  "cancelled",
-  "stopped",
-]);
-
-export type TurnEndReason = typeof TurnEndReason.Type;
-
-export const TurnEndedEntry = defineEntry({
-  kind: "agent-loop/turn-ended",
-  data: Schema.Struct({ end: TurnEndReason }),
-  model: false,
-  user: "hidden",
-});
 
 /** The turn a hook is called for. */
 export interface Turn {

@@ -7,10 +7,9 @@
  * "copied" for a moment; the body is muted beneath it.
  */
 
-import { useRenderer } from "@opentui/solid";
-import { createSignal, onCleanup, Show } from "solid-js";
+import { Show } from "solid-js";
 
-import type { RoleColor, RoleName } from "@liminal/sdk/tui";
+import { type RoleColor, type RoleName, useCopy } from "@liminal/sdk/tui";
 
 export type NoticeKind = "info" | "success" | "warning" | "error";
 
@@ -38,9 +37,6 @@ const NOTICE_MARKS: Readonly<Record<NoticeKind, string>> = {
 
 /** The body sits under the title's words, past the mark and its space. */
 const BODY_INDENT = 2;
-
-/** How long the copy button reads "copied" after a click. */
-const COPIED_MS = 1500;
 
 /** The plain text the copy button puts on the clipboard: the title, a blank line, the body. */
 export const noticeText = (notice: NoticeMessage): string =>
@@ -83,20 +79,16 @@ export function Notice(props: {
 
 /** A notice whose copy button writes to the terminal's clipboard and reads "copied" for a moment. */
 export function LiveNotice(props: { readonly color: RoleColor; readonly notice: NoticeMessage }) {
-  const renderer = useRenderer();
-  const [isCopied, setCopied] = createSignal(false);
-  let timer: ReturnType<typeof setTimeout> | undefined;
+  const { isCopied, copy } = useCopy();
 
-  onCleanup(() => {
-    clearTimeout(timer);
-  });
-
-  const copy = () => {
-    renderer.copyToClipboardOSC52(noticeText(props.notice));
-    setCopied(true);
-    clearTimeout(timer);
-    timer = setTimeout(() => setCopied(false), COPIED_MS);
-  };
-
-  return <Notice color={props.color} notice={props.notice} isCopied={isCopied()} onCopy={copy} />;
+  return (
+    <Notice
+      color={props.color}
+      notice={props.notice}
+      isCopied={isCopied()}
+      onCopy={() => {
+        copy(noticeText(props.notice));
+      }}
+    />
+  );
 }

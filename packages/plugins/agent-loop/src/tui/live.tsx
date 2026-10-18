@@ -6,9 +6,10 @@
 import { Option, Schema } from "effect";
 import { Index, Show } from "solid-js";
 
-import { type LivePart, LiveReply, LiveRetry } from "@liminal/agent-loop/contract";
 import type { LiveState } from "@liminal/sdk";
 import { useColor, useMarkdownStyle } from "@liminal/sdk/tui";
+
+import { type LivePart, LiveReply, LiveRetry } from "../contract.ts";
 
 interface LiveProps {
   readonly live: LiveState;

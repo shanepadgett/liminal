@@ -10,4 +10,5 @@ One file per piece of work being planned or built. A plan moves to `archive/` on
 | [reload.md](reload.md) | Built; awaiting review |
 | [commands.md](commands.md) | Built; awaiting review |
 | [connect.md](connect.md) | Steps 1 to 6 built |
-| [instructions.md](instructions.md) | Step 1 built |
+| [instructions.md](instructions.md) | Steps 1 to 3 built |
+| [toggles.md](toggles.md) | Round 1 (architecture) proposed |

@@ -11,6 +11,8 @@ Read an instruction file only when you are about to change something it covers. 
 | [instructions.md](docs/instructions/instructions.md) | Changing `AGENTS.md` or any file in `docs/instructions/`. |
 | [code.md](docs/instructions/code.md) | Writing or changing code in `apps/`, `packages/` or `tools/`. |
 | [planning.md](docs/instructions/planning.md) | Planning work, in chat or in `docs/plans/`. |
+| [guides.md](docs/instructions/guides.md) | Writing or changing a file in `docs/guides/`. |
+| [guides/](docs/guides/_index.md) | Building a plugin, TUI part, model provider or test; read the guide for that job first. |
 
 ## Grounding
 

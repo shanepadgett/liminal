@@ -7,6 +7,7 @@ import { Effect, Option, Stream, SubscriptionRef } from "effect";
 
 import type { Models } from "@liminal/models/contract";
 import { type ModelRef, thinkingOptionOf } from "@liminal/sdk";
+import type { TurnSettings } from "@liminal/session-log/contract";
 import type { Settings } from "@liminal/settings/contract";
 
 import {
@@ -16,7 +17,6 @@ import {
   DefaultsMissing,
   DefaultsSet,
   NoDefaultModel,
-  type TurnSettings,
 } from "../contract.ts";
 
 export const makeDefaults = Effect.fn("makeDefaults")(function* (

@@ -28,7 +28,7 @@ Status: built
 - A plugin defines its entry kinds in its contract with `defineEntry`; kind names carry the plugin's name as a prefix
 - Entry kinds have no version field before release
 - Each kind sets whether the model sees its entries and whether the user sees them shown, hidden or only in debug; a kind may let each entry set the user setting
-- Turns and steps are derived from the order of entries; the log stores no boundaries or turn labels
+- A turn's start (with its settings) and end (with its reason) are core entries, `session-log/turn-started` and `session-log/turn-ended`; steps are derived from the order of entries
 - Each entry saves, when written, the text the model sees and a plain text for the user, so it keeps its place in the transcript and context when its plugin is off
 - A plugin that is on may show its entries with a richer display
 - An entry carries the plugin's structured data, the model content and the plain user text

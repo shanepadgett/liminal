@@ -6,7 +6,6 @@ import { Effect, Latch, Layer, Stream } from "effect";
 import { TestClock } from "effect/testing";
 
 import agentLoop from "@liminal/agent-loop";
-import { TurnEndedEntry } from "@liminal/agent-loop/contract";
 import context from "@liminal/context";
 import modelCatalog from "@liminal/model-catalog";
 import modelScripted from "@liminal/model-scripted";
@@ -15,7 +14,7 @@ import models from "@liminal/models";
 import { type Entry, SessionId } from "@liminal/sdk";
 import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
 import sessionLog from "@liminal/session-log";
-import { SessionLog, UserEntry } from "@liminal/session-log/contract";
+import { SessionLog, TurnEndedEntry, UserEntry } from "@liminal/session-log/contract";
 import sessionStore from "@liminal/session-store";
 import settingsPlugin from "@liminal/settings";
 import { Settings } from "@liminal/settings/contract";
