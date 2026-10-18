@@ -8,7 +8,7 @@ import { CredentialStore } from "@liminal/credential-store/contract";
 import { LoginMethod, LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
 import { ModelError, type ModelRequest } from "@liminal/sdk";
-import { effortOf, OpenAiData, replyOf } from "@liminal/sdk/ai";
+import { effortOf, OpenAiPrompt, replyOf } from "@liminal/sdk/ai";
 
 import { openAiKeyVariable, openAiLogin, openAiProvider } from "../contract.ts";
 
@@ -85,7 +85,7 @@ export const openAiLayer = Layer.effectDiscard(
       source: ModelSource.Catalog({ catalogId: "openai" }),
       checkLogin: Effect.asVoid(keyOf(store)),
       stream: (request) =>
-        replyOf("OpenAI", OpenAiData, languageModel(request, http, store), request).pipe(
+        replyOf("OpenAI", OpenAiPrompt, languageModel(request, http, store), request).pipe(
           Stream.provideService(FileSystem.FileSystem, fs),
         ),
       nativeToolChanges: false,

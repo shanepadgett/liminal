@@ -34,6 +34,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
 
       expect(active.toSorted()).toEqual([
         "agent-loop",
+        "cache-hints",
         "cancel",
         "chat",
         "command-runner",
@@ -41,6 +42,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "credential-store",
         "inbox",
         "logins",
+        "model-anthropic",
         "model-catalog",
         "model-codex",
         "model-openai",

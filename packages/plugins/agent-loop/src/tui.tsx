@@ -1,7 +1,7 @@
 /**
- * Agent-loop's TUI part: `/model` lists every active provider's models, then the picked model's
- * thinking options, and sets both as the default for new turns. A provider that lists none says
- * why; its sign-in row opens `/connect`.
+ * Agent-loop's TUI part: `/model` lists every signed-in provider's models, then the picked model's
+ * thinking options, and sets both as the default for new turns. A provider whose list failed shows
+ * the failure.
  */
 
 import { Effect, Predicate } from "effect";
@@ -13,7 +13,6 @@ import {
   makeBridge,
   SelectDialog,
   TuiCommands,
-  type TuiCommandsService,
   TuiDialogs,
   TuiHost,
 } from "@liminal/sdk/tui";
@@ -21,7 +20,6 @@ import {
 import { AgentLoopRpcs, DefaultsMissing, type DefaultsView } from "./contract.ts";
 import {
   currentThinking,
-  isSignIn,
   listAll,
   modelKey,
   modelOf,
@@ -39,20 +37,10 @@ const currentKey = (view: DefaultsView) =>
 const savedThinking = (view: DefaultsView) =>
   Predicate.isTagged(view, "DefaultsSet") ? view.settings.thinking : undefined;
 
-/** Picking a sign-in row opens /connect; picking a model runs `pickModel`. */
+/** Picking a model runs `pickModel`; picking a failure row does nothing. */
 const pickOf =
-  (
-    listed: ReadonlyArray<ProviderModels>,
-    commands: TuiCommandsService,
-    pickModel: (model: PickedModel) => void,
-  ) =>
+  (listed: ReadonlyArray<ProviderModels>, pickModel: (model: PickedModel) => void) =>
   (key: string) => {
-    if (isSignIn(listed, key)) {
-      commands.run("logins.connect", "");
-
-      return;
-    }
-
     const model = modelOf(listed, key);
     if (model !== undefined) pickModel(model);
   };
@@ -103,7 +91,7 @@ export default defineTui({
           options={modelOptions(listed)}
           current={currentKey(defaults())}
           close={props.close}
-          onSelect={pickOf(listed, commands, pickThinking)}
+          onSelect={pickOf(listed, pickThinking)}
         />
       ));
     };

@@ -24,10 +24,10 @@ export interface SelectOption<V> {
   /** The keys that run it, shown at the right. */
   readonly keys?: string;
   /**
-   * A row that says something instead of naming a choice: `notice` reads muted, accent when
-   * highlighted, such as a sign-in row; `warning` reads in the warning color, such as a failure.
+   * A row that says something instead of naming a choice, such as a failure: it reads in the
+   * warning color.
    */
-  readonly tone?: "notice" | "warning";
+  readonly tone?: "warning";
 }
 
 export interface SelectDialogProps<V> extends DialogProps {
@@ -85,7 +85,29 @@ const rowCount = <V,>(groups: ReadonlyArray<Group<V>>) =>
     0,
   );
 
-const rowId = (index: number) => `select-row-${index}`;
+/**
+ * The lines option `index` covers in the list, counted from its top. The first option of a section
+ * also covers the section title, so revealing it shows the title.
+ */
+const spanOf = <V,>(groups: ReadonlyArray<Group<V>>, index: number) => {
+  let line = 0;
+
+  for (const [position, group] of groups.entries()) {
+    if (position > 0) line += 1;
+    const title = group.category === "" ? 0 : 1;
+    const first = group.rows[0]?.index ?? 0;
+
+    if (index < first + group.rows.length) {
+      const row = line + title + index - first;
+
+      return { top: index === first ? line : row, bottom: row + 1 };
+    }
+
+    line += title + group.rows.length;
+  }
+
+  return { top: 0, bottom: 0 };
+};
 
 function OptionRow<V>(props: {
   readonly color: RoleColor;
@@ -94,7 +116,6 @@ function OptionRow<V>(props: {
 }) {
   const fg = () => {
     if (props.row.option.tone === "warning") return props.color("feedback.warning");
-    if (props.row.option.tone === "notice" && props.isSelected) return props.color("text.accent");
 
     return props.color(props.isSelected ? "text.base" : "text.muted");
   };
@@ -103,7 +124,6 @@ function OptionRow<V>(props: {
 
   return (
     <box
-      id={rowId(props.row.index)}
       flexDirection="row"
       height={1}
       marginX={-1}
@@ -185,11 +205,24 @@ function OptionList<V>(props: {
   const color = useColor();
   let list: ScrollBoxRenderable | undefined;
 
-  createEffect(() => list?.scrollChildIntoView(rowId(props.selected)));
+  const reveal = () => {
+    if (list === undefined) return;
+    const span = spanOf(props.groups, props.selected);
+    const height = list.viewport.height;
+
+    if (span.top < list.scrollTop) list.scrollTop = span.top;
+    else if (span.bottom > list.scrollTop + height) list.scrollTop = span.bottom - height;
+  };
+
+  createEffect(reveal);
 
   return (
     <scrollbox
-      ref={(made: ScrollBoxRenderable) => (list = made)}
+      ref={(made: ScrollBoxRenderable) => {
+        list = made;
+        // The list cannot scroll until its height is known, so the first reveal waits for it.
+        made.content.on("resize", reveal);
+      }}
       height={Math.min(rowCount(props.groups), MAX_LIST_ROWS)}
       flexShrink={1}
       minHeight={0}

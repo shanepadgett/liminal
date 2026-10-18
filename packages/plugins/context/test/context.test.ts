@@ -18,11 +18,13 @@ import { Tools } from "@liminal/tool-registry/contract";
 import context from "../plugin.ts";
 import {
   Context,
+  type ContextRequest,
   definePromptSection,
   PromptSections,
   type SectionRead,
   SystemData,
   SystemEntry,
+  RequestSteps,
   ViewSteps,
 } from "../src/contract.ts";
 
@@ -216,6 +218,36 @@ effectTest(
         expect(yield* EffectContext.get(services, SessionLog).read(s1, {})).toHaveLength(4);
       }),
     );
+  }),
+  testBaseServices,
+);
+
+/** Marks every message, as a cache step would. */
+const markAll = (_session: SessionId, request: ContextRequest) =>
+  Effect.succeed({
+    ...request,
+    messages: request.messages.map((message) => ({ ...message, cache: "breakpoint" as const })),
+  });
+
+effectTest(
+  "request steps rewrite build and preview alike; what they add is not saved",
+  Effect.gen(function* () {
+    const notes = yield* Ref.make<SectionRead<string>>({ type: "present", value: "a" });
+    const services = yield* start(notes);
+    const log = EffectContext.get(services, SessionLog);
+    const built = EffectContext.get(services, Context);
+    yield* log.create(s1);
+    yield* log.append(s1, [prompt("hello")]);
+    yield* EffectContext.get(services, RequestSteps).register(markAll, { order: 0 });
+
+    const preview = yield* built.preview(s1, model);
+    const request = yield* built.build(s1, model);
+
+    expect(request).toEqual(preview);
+    expect(request.messages.map((message) => message.cache)).toEqual(["breakpoint", "breakpoint"]);
+
+    const saved = (yield* log.read(s1, {})).flatMap((entry) => entry.model ?? []);
+    expect(saved.map((message) => message.cache)).toEqual([undefined, undefined]);
   }),
   testBaseServices,
 );

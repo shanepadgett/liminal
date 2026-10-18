@@ -7,7 +7,7 @@ import { Duration, Effect, Option, Redacted, Schema } from "effect";
 import { type HttpClient, HttpClientRequest, HttpClientResponse } from "effect/http";
 
 import type { OAuth } from "@liminal/credential-store/contract";
-import { LoginFailed, LoginFlow, LoginMethod } from "@liminal/logins/contract";
+import { LoginFailed, LoginFlow, LoginMethod, LoginReturn } from "@liminal/logins/contract";
 
 import { codexLogin } from "../contract.ts";
 import { accountId, clientId, requestTokens } from "./auth.ts";
@@ -70,7 +70,7 @@ const browserLogIn = (client: HttpClient.HttpClient) =>
         originator: "liminal",
       },
       // OpenAI accepts only this port for the Codex client.
-      callback: { host: "127.0.0.1", port: 1455, path: "/auth/callback" },
+      returnTo: LoginReturn.Callback({ host: "127.0.0.1", port: 1455, path: "/auth/callback" }),
     });
 
     return yield* exchange(client, authorized);

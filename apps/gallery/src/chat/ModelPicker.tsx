@@ -1,10 +1,9 @@
 /**
  * The model picker, opened by `/model`: a dialog titled Models with a filter line and each
  * provider's models in its own section, every model's name then its id. The current model is
- * highlighted when it opens. A provider that lists nothing shows why in one row: a sign-in row that
- * opens /connect, or the catalog's failure. Picking a model that offers thinking options opens a
- * second dialog, titled with the model's name, listing that model's own options with the saved one
- * highlighted.
+ * highlighted when it opens. Only signed-in providers are listed; one whose list failed shows the
+ * failure in one row. Picking a model that offers thinking options opens a second dialog, titled
+ * with the model's name, listing that model's own options with the saved one highlighted.
  */
 
 import { For, Show } from "solid-js";
@@ -17,11 +16,11 @@ import { Section } from "./Section.tsx";
 
 type Model = { readonly id: string; readonly name: string };
 
-/** A provider and its models, or why it lists none: it needs a sign-in, or its catalog failed. */
+/** A provider and its models, or the failure that kept it from listing any. */
 type Provider = {
   readonly name: string;
   readonly models: readonly Model[];
-  readonly notice?: { readonly id: string; readonly text: string; readonly isSignIn: boolean };
+  readonly failure?: { readonly id: string; readonly text: string };
 };
 
 const PROVIDERS: readonly Provider[] = [
@@ -42,40 +41,23 @@ const PROVIDERS: readonly Provider[] = [
   },
 ];
 
-/** Providers that list nothing, shown under the ones that list. */
-const UNLISTED: readonly Provider[] = [
-  {
-    name: "OpenAI",
-    models: [],
-    notice: { id: "sign-in:openai", text: "Sign in with /connect", isSignIn: true },
-  },
-  {
-    name: "OpenRouter",
-    models: [],
-    notice: {
-      id: "catalog:openrouter",
-      text: "models.dev is unreachable and no copy is saved",
-      isSignIn: false,
-    },
-  },
-];
+/** A signed-in provider whose list failed, shown under the ones that list. */
+const FAILED: Provider = {
+  name: "OpenRouter",
+  models: [],
+  failure: { id: "failure:openrouter", text: "models.dev is unreachable and no copy is saved" },
+};
 
-/** Why a provider lists nothing; a sign-in row can be picked to open /connect. */
-function NoticeRow(props: {
+/** Why a signed-in provider lists nothing, in the warning color. */
+function FailureRow(props: {
   readonly color: RoleColor;
-  readonly notice: NonNullable<Provider["notice"]>;
+  readonly failure: NonNullable<Provider["failure"]>;
   readonly isSelected: boolean;
 }) {
-  const fg = () => {
-    if (!props.notice.isSignIn) return props.color("feedback.warning");
-
-    return props.color(props.isSelected ? "text.accent" : "text.muted");
-  };
-
   return (
     <ListRow color={props.color} isSelected={props.isSelected}>
-      <text flexGrow={1} wrapMode="none" fg={fg()}>
-        {props.notice.text}
+      <text flexGrow={1} wrapMode="none" fg={props.color("feedback.warning")}>
+        {props.failure.text}
       </text>
     </ListRow>
   );
@@ -158,9 +140,9 @@ export function ThinkingPicker(props: { readonly color: RoleColor; readonly sele
 export function ModelPicker(props: {
   readonly color: RoleColor;
   readonly selected: string;
-  readonly hasUnlisted: boolean;
+  readonly hasFailure: boolean;
 }) {
-  const providers = () => (props.hasUnlisted ? [...PROVIDERS, ...UNLISTED] : PROVIDERS);
+  const providers = () => (props.hasFailure ? [...PROVIDERS, FAILED] : PROVIDERS);
 
   return (
     <Dialog color={props.color} title="Models" hints={HINTS}>
@@ -179,12 +161,12 @@ export function ModelPicker(props: {
                   />
                 )}
               </For>
-              <Show when={provider.notice}>
-                {(notice) => (
-                  <NoticeRow
+              <Show when={provider.failure}>
+                {(failure) => (
+                  <FailureRow
                     color={props.color}
-                    notice={notice()}
-                    isSelected={notice().id === props.selected}
+                    failure={failure()}
+                    isSelected={failure().id === props.selected}
                   />
                 )}
               </Show>

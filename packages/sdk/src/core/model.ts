@@ -55,9 +55,16 @@ export const ModelPart = Schema.Union([
 
 export type ModelPart = typeof ModelPart.Type;
 
+/** The cached prefix ends after the message that carries it; a provider without caching ignores it. */
+export const CacheMark = Schema.Literal("breakpoint");
+
+export type CacheMark = typeof CacheMark.Type;
+
 export const ModelContent = Schema.Struct({
   role: Schema.Literals(["system", "user", "assistant", "tool"]),
   parts: Schema.Array(ModelPart),
+  /** Set on the request only, by request steps; saved entries never carry it. */
+  cache: Schema.optionalKey(CacheMark),
 });
 
 export type ModelContent = typeof ModelContent.Type;

@@ -3,16 +3,18 @@
  * opened in the browser, and an address the user pastes when the browser is on another machine.
  */
 
-import { Crypto, Deferred, Effect, Exit, Option, Schema } from "effect";
+import { Crypto, type Data, Deferred, Effect, Exit, Option, Schema } from "effect";
 import { Base64Url } from "effect/encoding";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import {
   type Authorized,
   type BrowserAuthorization,
-  type LoginCallback,
   LoginFailed,
+  LoginReturn,
 } from "../contract.ts";
+
+type LoginCallback = Data.TaggedEnum.Value<LoginReturn, "Callback">;
 
 /** What the browser sent back: the code, or the error the provider gave. */
 interface Reply {
@@ -43,6 +45,13 @@ const replyOf = (params: URLSearchParams): Reply => ({
 
 const pastedReply = (address: string) =>
   replyOf(URL.parse(address.trim())?.searchParams ?? new URLSearchParams());
+
+/** A pasted `code#state`, as Claude's code page shows it. */
+const shownReply = (shown: string): Reply => {
+  const [code, state] = shown.trim().split("#");
+
+  return { code: code || undefined, state, error: undefined };
+};
 
 /** The verifier stays here; the challenge and state go to the authorize page. */
 const makePkce = Effect.gen(function* () {
@@ -142,31 +151,65 @@ const codeOf = (method: string, reply: Reply, state: string) => {
   return Effect.succeed(reply.code);
 };
 
-/** Runs one browser sign-in for `method`; the callback port closes when it ends. */
+/** Where the browser comes back to, and the reply once the user is done there. */
+interface Return {
+  readonly redirectUri: string;
+  readonly reply: Effect.Effect<Reply>;
+}
+
+/**
+ * The local server's reply, raced with a pasted address; only the pasted one when the port is
+ * taken.
+ */
+const callbackReturn = Effect.fn("Logins.callbackReturn")(function* (
+  steps: BrowserSteps,
+  callback: LoginCallback,
+) {
+  const server = yield* callbackReply(steps, callback);
+  const port = Option.match(server, { onNone: () => callback.port, onSome: (on) => on.port });
+
+  const pasted = steps
+    .ask("Or paste the address the browser ends on")
+    .pipe(Effect.map(pastedReply));
+
+  const reply = Option.match(server, {
+    onNone: () => pasted,
+    onSome: (on) => Effect.raceFirst(on.reply, pasted),
+  });
+
+  return { redirectUri: `http://${callback.host}:${port}${callback.path}`, reply } satisfies Return;
+});
+
+/** A page that shows `code#state` for the user to paste. */
+const pageReturn = (steps: BrowserSteps, page: Data.TaggedEnum.Value<LoginReturn, "Page">) =>
+  Effect.succeed<Return>({
+    redirectUri: page.redirectUri,
+    reply: steps.ask("Paste the code the page shows").pipe(Effect.map(shownReply)),
+  });
+
+/** Runs one browser sign-in for `method`; a callback port closes when it ends. */
 export const authorizeInBrowser = (steps: BrowserSteps, method: string) =>
   Effect.fn("Logins.authorizeInBrowser")(
     function* (authorization: BrowserAuthorization) {
-      const { callback } = authorization;
       const pkce = yield* makePkce;
-      const server = yield* callbackReply(steps, callback);
-      const port = Option.match(server, { onNone: () => callback.port, onSome: (on) => on.port });
-      const redirectUri = `http://${callback.host}:${port}${callback.path}`;
-      const url = authorizeAddress(authorization, pkce, redirectUri);
 
+      const returned = yield* LoginReturn.$match(authorization.returnTo, {
+        Callback: (callback) => callbackReturn(steps, callback),
+        Page: (page) => pageReturn(steps, page),
+      });
+
+      const url = authorizeAddress(authorization, pkce, returned.redirectUri);
       yield* steps.openUrl(url);
       yield* openBrowser(steps, url);
 
-      const pasted = steps
-        .ask("Or paste the address the browser ends on")
-        .pipe(Effect.map(pastedReply));
+      const code = yield* codeOf(method, yield* returned.reply, pkce.state);
 
-      const reply = Option.isSome(server)
-        ? yield* Effect.raceFirst(server.value.reply, pasted)
-        : yield* pasted;
-
-      const code = yield* codeOf(method, reply, pkce.state);
-
-      return { code, verifier: pkce.verifier, redirectUri } satisfies Authorized;
+      return {
+        code,
+        verifier: pkce.verifier,
+        redirectUri: returned.redirectUri,
+        state: pkce.state,
+      } satisfies Authorized;
     },
     Effect.catchTag("PlatformError", (error) =>
       Effect.fail(

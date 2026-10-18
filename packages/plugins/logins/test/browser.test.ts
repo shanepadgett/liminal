@@ -1,4 +1,7 @@
-/** Browser sign-in: the browser coming back, a pasted address, a stale reply and a taken port. */
+/**
+ * Browser sign-in: the browser coming back, a pasted address, a stale reply, a taken port and a
+ * page that shows the code.
+ */
 
 import { expect } from "bun:test";
 
@@ -8,7 +11,7 @@ import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 
-import type { BrowserAuthorization } from "../src/contract.ts";
+import { type BrowserAuthorization, LoginReturn } from "../src/contract.ts";
 import { authorizeInBrowser, type BrowserSteps } from "../src/server/browser.ts";
 
 /** Records each command it is asked to run, and fails it, as when no browser opens. */
@@ -22,7 +25,7 @@ const recordingSpawner = (ran: Ref.Ref<ReadonlyArray<string>>) =>
 const authorization = (port: number): BrowserAuthorization => ({
   authorizeUrl: "https://auth.example.com/oauth/authorize",
   params: { client_id: "client-1", scope: "openid" },
-  callback: { host: "127.0.0.1", port, path: "/auth/callback" },
+  returnTo: LoginReturn.Callback({ host: "127.0.0.1", port, path: "/auth/callback" }),
 });
 
 /** Steps that keep what was shown and answer the question with `answer(url)`. */
@@ -70,6 +73,7 @@ effectTest(
       const authorized = yield* Fiber.join(running);
 
       expect(authorized.code).toBe("c1");
+      expect(authorized.state).toBe(state ?? "");
       expect(authorized.redirectUri).toBe(redirect);
       expect(authorized.verifier.length).toBeGreaterThan(40);
       expect((yield* Ref.get(ran)).length).toBe(1);
@@ -152,6 +156,51 @@ effectTest(
       );
 
       expect(reached).toBe(false);
+    }),
+  ),
+  testBaseServices,
+);
+
+const codePage: BrowserAuthorization = {
+  authorizeUrl: "https://auth.example.com/oauth/authorize",
+  params: { client_id: "client-1" },
+  returnTo: LoginReturn.Page({ redirectUri: "https://auth.example.com/oauth/code/callback" }),
+};
+
+effectTest(
+  "a page that shows the code signs in with the pasted code#state and opens no port",
+  withSpawner(() =>
+    Effect.gen(function* () {
+      const { steps, opened } = yield* makeSteps((url) =>
+        Effect.succeed(` k1#${url.searchParams.get("state") ?? ""} `),
+      );
+
+      const authorized = yield* authorizeInBrowser(steps, "acme")(codePage);
+      const url = yield* Deferred.await(opened);
+
+      expect(url.searchParams.get("redirect_uri")).toBe(
+        "https://auth.example.com/oauth/code/callback",
+      );
+
+      expect(authorized).toEqual({
+        code: "k1",
+        verifier: authorized.verifier,
+        redirectUri: "https://auth.example.com/oauth/code/callback",
+        state: url.searchParams.get("state") ?? "",
+      });
+    }),
+  ),
+  testBaseServices,
+);
+
+effectTest(
+  "a pasted code with another login's state fails the sign-in",
+  withSpawner(() =>
+    Effect.gen(function* () {
+      const { steps } = yield* makeSteps(() => Effect.succeed("k1#other"));
+      const exit = yield* Effect.exit(authorizeInBrowser(steps, "acme")(codePage));
+
+      expect(Exit.isFailure(exit)).toBe(true);
     }),
   ),
   testBaseServices,

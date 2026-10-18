@@ -10,6 +10,7 @@ Status: built
 - `PromptSections` registry
 - `RpcGroup` with `preview`
 - View steps: an ordered chain that plugins add to; each rewrites the entries before they become messages
+- `RequestSteps`: an ordered chain that rewrites the finished request, for build and preview alike; what a step adds is never saved
 
 ## Requires
 

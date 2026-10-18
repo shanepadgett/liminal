@@ -40,7 +40,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | system-prompt | The base system prompt | to plan |
 | instructions | Loads instruction files into the prompt | to plan |
 | [compaction](compaction.md) | Keeps the context within the model's window | planned |
-| cache-hints | Marks prompt cache breakpoints | to plan |
+| [cache-hints](cache-hints.md) | Marks prompt cache breakpoints | built |
 
 ## Models
 
@@ -48,6 +48,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | --- | --- | --- |
 | [models](models.md) | The seam every provider plugs into | built |
 | [model-catalog](model-catalog.md) | Model details from the `models.dev` catalog, cached on disk | built |
+| [model-anthropic](model-anthropic.md) | Providers `anthropic` (Claude subscription) and `anthropic-api` (API key) | built |
 | [model-codex](model-codex.md) | Provider `codex`: OpenAI models on a ChatGPT plan login | built |
 | [model-openai](model-openai.md) | Provider `openai`: the OpenAI API with an API key | built |
 | one plugin per provider | Talks to one model provider | to plan |

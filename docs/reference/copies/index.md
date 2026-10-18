@@ -134,6 +134,13 @@ OpenAI provider for effect/ai: OpenAiClient (apiUrl, transformClient) and OpenAi
 - Docs: `docs/reference/copies/@effect/ai-openai/4.0.5/` (1 file: README.md)
 - API (source): `packages/plugins/model-codex/node_modules/@effect/ai-openai/src/`, modules: `docs/reference/copies/@effect/ai-openai/4.0.5/api-index/@effect-ai-openai-src.md`
 
+## @effect/ai-anthropic 4.0.5
+
+Anthropic provider for effect/ai: AnthropicClient (apiKey, apiUrl, transformClient) and AnthropicLanguageModel on the Messages API. The model-anthropic plugin uses it.
+
+- Docs: `docs/reference/copies/@effect/ai-anthropic/4.0.5/` (1 file: README.md)
+- API (source): `packages/plugins/model-anthropic/node_modules/@effect/ai-anthropic/src/`, modules: `docs/reference/copies/@effect/ai-anthropic/4.0.5/api-index/@effect-ai-anthropic-src.md`
+
 ## jsonc-parser 3.3.1
 
 Parses JSON with comments and edits it in place: parse, modify and applyEdits keep comments and formatting. The settings plugin uses it.

@@ -1,0 +1,24 @@
+{
+  "name": "@liminal/cache-hints",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./plugin.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "dependencies": {
+    "@liminal/context": "workspace:*"
+  },
+  "devDependencies": {
+    "@liminal/session-log": "workspace:*",
+    "@liminal/session-store": "workspace:*"
+  },
+  "peerDependencies": {
+    "@liminal/sdk": "workspace:*",
+    "effect": "4.0.5"
+  },
+  "liminal": [
+    "./plugin.ts"
+  ]
+}

@@ -1,10 +1,11 @@
 /** Liminal's model request as an `effect/ai` prompt and toolkit. */
 
-import { Effect, FileSystem, Predicate, type Schema } from "effect";
+import { Effect, FileSystem, Option, Predicate, type Schema } from "effect";
 import { type Prompt, Tool, Toolkit } from "effect/ai";
 
 import { ModelError, type ModelContent, type ModelPart, type ModelTool } from "../core/index.ts";
-import { keptData, type ProviderData } from "./data.ts";
+import { keptData } from "./data.ts";
+import type { MessageOptions, ProviderPrompt } from "./provider-prompt.ts";
 
 type Kept = ReturnType<typeof keptData>;
 
@@ -104,11 +105,27 @@ const message = Effect.fn("Ai.message")(function* (content: ModelContent, kept: 
   return { role, content: toolParts(parts) } satisfies Prompt.MessageEncoded;
 });
 
-/** The request's messages as prompt messages, reading images from disk; parts carry back `data`. */
-export const promptOf = (messages: ReadonlyArray<ModelContent>, data: ProviderData) => {
-  const kept = keptData(data);
+/** The message with the provider's cache options when its content carries a cache mark. */
+const marked = (
+  content: ModelContent,
+  encoded: Prompt.MessageEncoded,
+  cache: Option.Option<MessageOptions>,
+): Prompt.MessageEncoded => {
+  if (content.cache === undefined || Option.isNone(cache)) return encoded;
 
-  return Effect.forEach(messages, (content) => message(content, kept));
+  return { ...encoded, options: cache.value };
+};
+
+/**
+ * The request's messages as prompt messages, reading images from disk; parts carry back the
+ * provider's kept data and marked messages carry its cache options.
+ */
+export const promptOf = (messages: ReadonlyArray<ModelContent>, provider: ProviderPrompt) => {
+  const kept = keptData(provider.data);
+
+  return Effect.forEach(messages, (content) =>
+    Effect.map(message(content, kept), (encoded) => marked(content, encoded, provider.cache)),
+  );
 };
 
 const isSchemaObject = (value: Schema.Json): value is { readonly [key: string]: Schema.Json } =>

@@ -6,11 +6,22 @@ import { Effect, Exit, Fiber, Layer, Option, Predicate, Redacted, Ref } from "ef
 import { HttpClient, HttpClientResponse } from "effect/http";
 import { TestClock } from "effect/testing";
 
-import { type BrowserAuthorization, LoginFlow, LoginMethod } from "@liminal/logins/contract";
+import {
+  type BrowserAuthorization,
+  LoginFlow,
+  LoginMethod,
+  LoginReturn,
+} from "@liminal/logins/contract";
 import { effectTest } from "@liminal/sdk/testing";
 
 import { codexMethod } from "../src/server/login.ts";
 import { fakeAccessToken } from "./support.ts";
+
+/** The callback port, or none for a page that shows the code. */
+const callbackPort = LoginReturn.$match({
+  Callback: (callback) => callback.port,
+  Page: () => "none",
+});
 
 interface Endpoints {
   readonly usercodeStatus: number;
@@ -65,11 +76,14 @@ const fakeFlow = (shown: Ref.Ref<ReadonlyArray<string>>) => {
     waiting: show,
     tell: show,
     authorizeInBrowser: (authorization: BrowserAuthorization) =>
-      show(`${authorization.params["originator"] ?? ""} ${authorization.callback.port}`).pipe(
+      show(
+        `${authorization.params["originator"] ?? ""} ${callbackPort(authorization.returnTo)}`,
+      ).pipe(
         Effect.as({
           code: "bc",
           verifier: "bv",
           redirectUri: "http://127.0.0.1:1455/auth/callback",
+          state: "bs",
         }),
       ),
   });

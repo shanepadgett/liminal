@@ -36,7 +36,8 @@ Status: built
 
 ### Browser sign-in
 
-- `authorizeInBrowser` runs PKCE (S256) with a random state, opens the authorize page and returns the code, verifier and redirect address; the provider exchanges the code itself
+- `authorizeInBrowser` runs PKCE (S256) with a random state, opens the authorize page and returns the code, verifier, redirect address and state; the provider exchanges the code itself
+- The browser returns to a local callback (`LoginReturn.Callback`) or to a page that shows `code#state` to paste (`LoginReturn.Page`)
 - A local server on the callback host, port and path takes the browser's reply and closes when the sign-in ends
 - The browser opens with `open` on macOS and `xdg-open` elsewhere; the link is shown too
 - A pasted address the browser ends on completes the sign-in as well; a taken port leaves only the paste

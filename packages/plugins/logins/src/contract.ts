@@ -25,32 +25,32 @@ export class LoginFailed extends Schema.TaggedError<
   { readonly brand: unique symbol }
 >()("LoginFailed", { method: Schema.String, message: Schema.String }) {}
 
-/** Where the browser comes back to after sign-in; port 0 takes a free port. */
-export const LoginCallback = Schema.Struct({
-  host: Schema.String,
-  port: Schema.Int,
-  path: Schema.String,
-});
+/**
+ * Where the browser comes back to after sign-in. `Callback` is a local server, with a pasted
+ * address as fallback; port 0 takes a free port. `Page` is the provider's page that shows
+ * `code#state` to paste.
+ */
+export type LoginReturn = Data.TaggedEnum<{
+  Callback: { readonly host: string; readonly port: number; readonly path: string };
+  Page: { readonly redirectUri: string };
+}>;
 
-export type LoginCallback = typeof LoginCallback.Type;
+export const LoginReturn = Data.taggedEnum<LoginReturn>();
 
 /** A provider's authorize page; `params` holds its client id, scope and its own extras. */
-export const BrowserAuthorization = Schema.Struct({
-  authorizeUrl: Schema.String,
-  params: Schema.Record(Schema.String, Schema.String),
-  callback: LoginCallback,
-});
-
-export type BrowserAuthorization = typeof BrowserAuthorization.Type;
+export interface BrowserAuthorization {
+  readonly authorizeUrl: string;
+  readonly params: Readonly<Record<string, string>>;
+  readonly returnTo: LoginReturn;
+}
 
 /** The code the browser came back with, and what exchanging it for tokens needs. */
-export const Authorized = Schema.Struct({
-  code: Schema.String,
-  verifier: Schema.String,
-  redirectUri: Schema.String,
-});
-
-export type Authorized = typeof Authorized.Type;
+export interface Authorized {
+  readonly code: string;
+  readonly verifier: string;
+  readonly redirectUri: string;
+  readonly state: string;
+}
 
 /** What a login flow shows the user and asks of them while it runs. */
 export class LoginFlow extends Context.Service<

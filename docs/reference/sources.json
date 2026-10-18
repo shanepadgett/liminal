@@ -205,6 +205,13 @@
       "api": [{ "kind": "source", "path": "src" }]
     },
     {
+      "package": "@effect/ai-anthropic",
+      "versionSource": "lock",
+      "summary": "Anthropic provider for effect/ai: AnthropicClient (apiKey, apiUrl, transformClient) and AnthropicLanguageModel on the Messages API. The model-anthropic plugin uses it.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "source", "path": "src" }]
+    },
+    {
       "package": "jsonc-parser",
       "versionSource": "lock",
       "summary": "Parses JSON with comments and edits it in place: parse, modify and applyEdits keep comments and formatting. The settings plugin uses it.",

@@ -8,7 +8,7 @@ import { CredentialStore } from "@liminal/credential-store/contract";
 import { LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
 import type { ModelRequest } from "@liminal/sdk";
-import { effortOf, OpenAiData, replyOf } from "@liminal/sdk/ai";
+import { effortOf, OpenAiPrompt, replyOf } from "@liminal/sdk/ai";
 
 import { codexProvider } from "../contract.ts";
 import { checkLogin, makeSigner, type Signer } from "./auth.ts";
@@ -49,7 +49,7 @@ const languageModel = (request: ModelRequest, http: HttpClient.HttpClient, sign:
 const makeStream =
   (http: HttpClient.HttpClient, sign: Signer, fs: FileSystem.FileSystem) =>
   (request: ModelRequest) =>
-    replyOf("Codex", OpenAiData, languageModel(request, http, sign), request).pipe(
+    replyOf("Codex", OpenAiPrompt, languageModel(request, http, sign), request).pipe(
       Stream.provideService(FileSystem.FileSystem, fs),
     );
 

@@ -96,6 +96,21 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/cache-hints": {
+      "name": "@liminal/cache-hints",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/context": "workspace:*",
+      },
+      "devDependencies": {
+        "@liminal/session-log": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
     "packages/plugins/cancel": {
       "name": "@liminal/cancel",
       "version": "0.1.0",
@@ -209,6 +224,23 @@
         "@opentui/solid": "0.6.6",
         "effect": "4.0.5",
         "solid-js": "1.9.12",
+      },
+    },
+    "packages/plugins/model-anthropic": {
+      "name": "@liminal/model-anthropic",
+      "version": "0.1.0",
+      "dependencies": {
+        "@effect/ai-anthropic": "4.0.5",
+        "@liminal/credential-store": "workspace:*",
+        "@liminal/logins": "workspace:*",
+        "@liminal/models": "workspace:*",
+      },
+      "devDependencies": {
+        "@liminal/model-catalog": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
       },
     },
     "packages/plugins/model-catalog": {
@@ -473,6 +505,8 @@
 
     "@babel/types": ["@babel/types@7.29.8", "", { "dependencies": { "@babel/helper-string-parser": "^7.29.7", "@babel/helper-validator-identifier": "^7.29.7" } }, "sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg=="],
 
+    "@effect/ai-anthropic": ["@effect/ai-anthropic@4.0.5", "", { "peerDependencies": { "effect": "^4.0.5" } }, "sha512-Vb8pEJrwqeRd3UT0BtOM2IHlLgRp32XunUnWfEd/DpV0jyKgZHSKVVxsDs6AsMyZpRsD1klDtvfCndDiQV4TyQ=="],
+
     "@effect/ai-openai": ["@effect/ai-openai@4.0.5", "", { "peerDependencies": { "effect": "^4.0.5" } }, "sha512-xJGqOXR10BdLIk3X5rPA8/cXbk7hyvygPK2xjplkc1LxI2VT2wspTT7Nt+BlcN9+REzHM10ve0bbNbk5GIJKuw=="],
 
     "@effect/platform-bun": ["@effect/platform-bun@4.0.5", "", { "dependencies": { "@effect/platform-node-shared": "^4.0.5" }, "peerDependencies": { "effect": "^4.0.5" } }, "sha512-tB/GapZ/bVoCbwRgnojGP4TwopvkMoFoSCipXT1sf0guvG/2oRVhWzJW/1vkrYFEdLM7XyRnVVLrSJyqdok7DA=="],
@@ -525,6 +559,8 @@
 
     "@liminal/agent-loop": ["@liminal/agent-loop@workspace:packages/plugins/agent-loop"],
 
+    "@liminal/cache-hints": ["@liminal/cache-hints@workspace:packages/plugins/cache-hints"],
+
     "@liminal/cancel": ["@liminal/cancel@workspace:packages/plugins/cancel"],
 
     "@liminal/chat": ["@liminal/chat@workspace:packages/plugins/chat"],
@@ -546,6 +582,8 @@
     "@liminal/kernel": ["@liminal/kernel@workspace:packages/kernel"],
 
     "@liminal/logins": ["@liminal/logins@workspace:packages/plugins/logins"],
+
+    "@liminal/model-anthropic": ["@liminal/model-anthropic@workspace:packages/plugins/model-anthropic"],
 
     "@liminal/model-catalog": ["@liminal/model-catalog@workspace:packages/plugins/model-catalog"],
 

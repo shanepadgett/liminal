@@ -491,6 +491,8 @@ effectTest(
     setup.mockInput.pressEnter();
 
     expect(yield* frameWith(setup, "Connect a provider")).toContain("OpenAI");
+    // Anthropic is listed first.
+    setup.mockInput.pressArrow("down");
     setup.mockInput.pressEnter();
 
     yield* frameWith(setup, "ChatGPT plan (Codex)");

@@ -11,7 +11,7 @@ import {
   type ModelPart,
   type PartKind,
 } from "../core/index.ts";
-import { keptData, type ProviderData } from "./data.ts";
+import { keptData, mergeData, type ProviderData } from "./data.ts";
 
 type Kept = ReturnType<typeof keptData>;
 
@@ -60,6 +60,8 @@ type Part =
 interface OpenPart {
   readonly index: number;
   readonly text: string;
+  /** What the part's events so far keep; a provider may send it on any of them. */
+  readonly providerData: Readonly<Record<string, Schema.Json>>;
 }
 
 /** The parts streaming now, by response part id, and the next free index. */
@@ -72,49 +74,70 @@ const noProgress: Progress = { next: 0, open: new Map() };
 
 type Step = readonly [Progress, ReadonlyArray<ModelEvent>];
 
-const begin = (progress: Progress, id: string, part: PartKind): Step => {
+type Data = OpenPart["providerData"];
+
+const begin = (progress: Progress, id: string, part: PartKind, providerData: Data): Step => {
   const index = progress.next;
-  const open = new Map(progress.open).set(id, { index, text: "" });
+  const open = new Map(progress.open).set(id, { index, text: "", providerData });
 
   return [{ next: index + 1, open }, [{ type: "part-start", index, part }]];
 };
 
-const grow = (progress: Progress, id: string, text: string): Step => {
+const grow = (progress: Progress, id: string, text: string, providerData: Data): Step => {
   const part = progress.open.get(id);
   if (part === undefined) return [progress, []];
 
-  const open = new Map(progress.open).set(id, { ...part, text: part.text + text });
+  const open = new Map(progress.open).set(id, {
+    index: part.index,
+    text: part.text + text,
+    providerData: mergeData(part.providerData, providerData),
+  });
 
   return [{ ...progress, open }, [{ type: "delta", index: part.index, text }]];
 };
 
-/** Closes part `id` as the part `finished` builds from its streamed text. */
-const close = (progress: Progress, id: string, finished: (text: string) => ModelPart): Step => {
+/**
+ * Closes part `id` as the part `finished` builds from its streamed text and what its events keep,
+ * `providerData` last.
+ */
+const close = (
+  progress: Progress,
+  id: string,
+  providerData: Data,
+  finished: (text: string, providerData: Data) => ModelPart,
+): Step => {
   const part = progress.open.get(id);
   if (part === undefined) return [progress, []];
 
   const open = new Map(progress.open);
   open.delete(id);
+  const kept = mergeData(part.providerData, providerData);
 
   return [
     { ...progress, open },
-    [{ type: "part-end", index: part.index, part: finished(part.text) }],
+    [{ type: "part-end", index: part.index, part: finished(part.text, kept) }],
   ];
 };
 
 const textual = (progress: Progress, part: Part, kept: Kept): Step | undefined => {
-  if (part.type === "text-start") return begin(progress, part.id, { type: "text" });
-  if (part.type === "reasoning-start") return begin(progress, part.id, { type: "reasoning" });
+  if (part.type === "text-start" || part.type === "reasoning-start") {
+    const type = part.type === "text-start" ? "text" : "reasoning";
+
+    return begin(progress, part.id, { type }, kept(part.metadata));
+  }
 
   if (part.type === "text-delta" || part.type === "reasoning-delta") {
-    return grow(progress, part.id, part.delta);
+    return grow(progress, part.id, part.delta, kept(part.metadata));
   }
 
   if (part.type === "text-end" || part.type === "reasoning-end") {
     const type = part.type === "text-end" ? "text" : "reasoning";
-    const providerData = kept(part.metadata);
 
-    return close(progress, part.id, (text) => ({ type, text, providerData }));
+    return close(progress, part.id, kept(part.metadata), (text, providerData) => ({
+      type,
+      text,
+      providerData,
+    }));
   }
 
   return undefined;
@@ -122,20 +145,24 @@ const textual = (progress: Progress, part: Part, kept: Kept): Step | undefined =
 
 const toolCall = (progress: Progress, part: Part, kept: Kept): Step | undefined => {
   if (part.type === "tool-params-start") {
-    return begin(progress, part.id, { type: "tool-call", id: part.id, name: part.name });
+    const kind: PartKind = { type: "tool-call", id: part.id, name: part.name };
+
+    return begin(progress, part.id, kind, kept(part.metadata));
   }
 
-  if (part.type === "tool-params-delta") return grow(progress, part.id, part.delta);
+  if (part.type === "tool-params-delta") {
+    return grow(progress, part.id, part.delta, kept(part.metadata));
+  }
+
   if (part.type !== "tool-call") return undefined;
 
   const [started, starts] = progress.open.has(part.id)
     ? [progress, []]
-    : begin(progress, part.id, { type: "tool-call", id: part.id, name: part.name });
+    : begin(progress, part.id, { type: "tool-call", id: part.id, name: part.name }, {});
 
   const { id, name, params } = part;
-  const providerData = kept(part.metadata);
 
-  const [ended, ends] = close(started, id, () => ({
+  const [ended, ends] = close(started, id, kept(part.metadata), (_text, providerData) => ({
     type: "tool-call",
     id,
     name,

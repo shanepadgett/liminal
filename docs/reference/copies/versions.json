@@ -101,6 +101,11 @@
     "fingerprint": "082952a68150809f",
     "commits": []
   },
+  "@effect/ai-anthropic": {
+    "version": "4.0.5",
+    "fingerprint": "688c5703900b4212",
+    "commits": []
+  },
   "jsonc-parser": {
     "version": "3.3.1",
     "fingerprint": "c3479840b364fc98",

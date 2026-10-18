@@ -76,7 +76,7 @@ flowchart LR
 One commit each, with gallery updates.
 
 1. `model-catalog`: `models.dev` catalog, cache and background refresh; `/model` lists from it
-2. `@liminal/sdk/ai` with `model-codex` moved onto it, SDK prompt and confirm dialogs, `logins` plugin, `/connect`, `/model` sign-in rows, `model-openai` with its API key; one commit
+2. `@liminal/sdk/ai` with `model-codex` moved onto it, SDK prompt and confirm dialogs, `logins` plugin, `/connect`, `/model` listing only signed-in providers, `model-openai` with its API key; one commit
 3. Codex browser and device code login
 4. `model-anthropic`: Claude subscription and API key
 5. `model-chatgpt`: Sign in with ChatGPT
@@ -187,7 +187,7 @@ Models.listModels(provider)
 ### Step 1 decisions
 
 - No bundled snapshot: the first run fetches; offline with no cache, a catalog provider's listing fails with `CatalogUnavailable`.
-- `/model` rows for a provider that cannot list (`CatalogUnavailable` or no login) arrive in step 2 with the sign-in rows; until then such a provider is left out.
+- `/model` leaves out a provider that is not signed in; a signed-in provider whose list fails shows the failure in one row.
 - Plan lists are fetched each time `/model` opens, as Codex does today.
 - Models from settings arrive in step 6 with `model-local`.
 
@@ -224,7 +224,7 @@ Models.describe(ref): Effect<ModelInfo, ModelError | ProviderNotFound | CatalogU
 
 Status: built.
 
-Lets the user save an OpenAI API key from `/connect`, sign out again, and see OpenAI's models in `/model`; `/model` shows a sign-in row under a provider that cannot list.
+Lets the user save an OpenAI API key from `/connect`, sign out again, and see OpenAI's models in `/model`; `/model` lists only signed-in providers.
 
 ### Files
 
@@ -240,7 +240,7 @@ packages/sdk/src/ai/                     new SDK zone `@liminal/sdk/ai`, moved f
 packages/sdk/src/tui/
   PromptField.tsx                        one text or secret line, inside another dialog
   ConfirmDialog.tsx                      a question, enter confirms
-  SelectDialog.tsx                       option tone: notice or warning rows
+  SelectDialog.tsx                       option tone: warning rows
 packages/plugins/logins/                 new plugin
   plugin.ts                              provides LoginMethods; requires CredentialStore
   src/contract.ts                        LoginMethod, LoginMethods, LoginFlow, LoginStep, LoginsRpcs
@@ -258,8 +258,8 @@ packages/plugins/model-openai/           new plugin
   test/openai.test.ts                    a hand-written Responses stream at HttpClient
 packages/plugins/model-codex/src/server/ prompt.ts, events.ts, errors.ts moved to @liminal/sdk/ai
 packages/plugins/models/src/             ModelProvider.checkLogin, checked before listing
-packages/plugins/agent-loop/src/tui/     sign-in rows in /model
-apps/gallery/src/chat/                   PromptDialog, ConfirmDialog, Connect, Login states; /model sign-in row
+packages/plugins/agent-loop/src/tui/     /model lists signed-in providers, failure rows
+apps/gallery/src/chat/                   PromptDialog, ConfirmDialog, Connect, Login states; /model failure row
 .fallowrc.jsonc, tools/lint/plugin-rules.ts, docs/requirements/07-repository.md   zone `ai`
 docs/plugins/logins.md, docs/plugins/model-openai.md
 ```
@@ -320,8 +320,8 @@ logins/start (server)
 logins/logout: Flow logOut when given -> store.remove(id)
 state: store.get(id) Some -> Saved; ApiKey with env set (Config.option(Config.Redacted(env))) -> FromEnv; else SignedOut
 
-/model: a provider whose list fails with ModelError auth or CatalogUnavailable -> one row under it,
-  "Sign in with /connect" (auth) or the catalog message; picking the sign-in row runs /connect
+/model: a provider whose list fails with ModelError auth -> left out; any other failure -> one
+  warning row under it with the message; picking it does nothing
 
 model-openai stream
   key: store.secret("openai", { env: "OPENAI_API_KEY" }); none -> ModelError auth
@@ -341,12 +341,12 @@ model-openai stream
 
 - No `PromptDialog`: the login dialog holds a `PromptField`, and nothing else asks for one line yet.
 - `ModelProvider.checkLogin` is new: a catalog provider lists without its key, so `/model` would offer OpenAI models that fail at the first turn.
-- Codex shows a sign-in row in `/model` until step 3 registers its login method; `/connect` lists only OpenAI meanwhile.
+- Codex is left out of `/model` until step 3 registers its login method; `/connect` lists only OpenAI meanwhile.
 - The `model-openai` reply test uses a hand-written Responses stream; record a real one once a key is at hand.
 
 ### Step 2 build order
 
-- Gallery states first: prompt, confirm, `/connect`, login steps and the `/model` sign-in row; the user reviews them before the wiring. One commit for the whole step.
+- Gallery states first: prompt, confirm, `/connect`, login steps and the `/model` failure row; the user reviews them before the wiring. One commit for the whole step.
 
 ### Deletes
 
@@ -365,7 +365,7 @@ Lets the user sign in to Codex from `/connect`, in the browser or with a device 
 | --- | --- | --- |
 | Codex requests | `model-codex/src/server/auth.ts` | Signs with `CredentialStore.fresh("codex", refreshTokens)`; account id read from the access token |
 | Token refresh | same file | Built: `auth.openai.com/oauth/token`, client `app_EMoamEEZ73f0CkXaXp7hrann` |
-| Login method | none | `/model` shows a sign-in row; `/connect` has no Codex row |
+| Login method | none | `/model` leaves Codex out; `/connect` has no Codex row |
 | Live tests | `model-codex/test/record.test.ts` | Read Tau's `~/.tau/credentials.db` |
 | `LoginFlow` | `logins/src/contract.ts` | Steps only: `openUrl`, `showCode`, `ask`, `askSecret`, `waiting`, `tell` |
 
@@ -461,6 +461,172 @@ both: requestTokens(client, params) -> OAuth; accountId(access) must succeed -> 
 | Opening the browser | `ChildProcessSpawner` from the host | `ChildProcessSpawner.make` with a spawn that records the command |
 
 - `Crypto` joins the base services type in `packages/sdk/src/core/plugin.ts`; the host's `BunServices.layer` already provides it.
+
+## Step 4: model-anthropic
+
+Status: built; live sign-in and live requests are untested.
+
+### Step 4 decisions
+
+| Topic | Decision |
+| --- | --- |
+| Claude subscription | Built as Tau does: requests carry Claude Code's headers and identity; the account risk and breakage under Anthropic's third-party ban are accepted |
+| Claude Code version | Read from `registry.npmjs.org/@anthropic-ai/claude-code/latest`, as Tau does; `model-anthropic` keeps it in `<data>/claude-code.json` and refreshes it in the background once a day; with no copy, the first request fetches it first; no built-in version |
+| Request steps | The context plugin gains `RequestSteps`, an ordered chain that rewrites the finished `ContextRequest`; `cache-hints` registers one, so `context/preview` shows the marks |
+| Claude sign-in | Ways: Browser (callback `localhost:53692/callback`, paste the address as fallback) and Copy code (the page shows `code#state` to paste); one `authorizeInBrowser` takes where the browser returns to: a local callback or a page that shows the code; `Authorized` gains `state` for Claude's token request |
+| Prompt caching | Messages in `ModelRequest` carry an optional provider-neutral `cache` mark; the `cache-hints` plugin, built in this step, marks the first and last system messages and the last message; tools carry no mark, since the first system mark caches them (Anthropic caches tools, then system, then messages) and the package sends no `cache_control` on tools; `model-anthropic` sends each mark as `cache_control: ephemeral` on that block; OpenAI providers ignore marks; no top-level `cache_control` |
+| API package | `@effect/ai-anthropic` 4.0.5 |
+| Efforts | Every effort the model offers is sent, `xhigh` and `max` included, through a cast with a reason comment (the package types only `low`, `medium`, `high`) |
+
+### Step 4 files
+
+```text
+packages/sdk/src/core/model.ts           ModelContent gains `cache` (CacheMark)
+packages/sdk/src/ai/data.ts              + mergeData: a part keeps the metadata of its start, deltas and end
+packages/sdk/src/ai/events.ts            parts keep merged metadata (Anthropic sends the signature on a delta)
+packages/sdk/src/ai/provider-prompt.ts   ProviderPrompt, OpenAiPrompt
+packages/sdk/src/ai/prompt.ts            promptOf takes a ProviderPrompt; a marked message gets its cache options
+packages/sdk/src/ai/reply.ts             replyOf takes a ProviderPrompt instead of a ProviderData
+packages/plugins/model-openai/…/provider.ts, model-codex/…/provider.ts   pass OpenAiPrompt
+packages/plugins/context/
+  src/contract.ts                        + RequestStep, RequestSteps
+  src/server.ts                          run: fold, then each request step; layer adds Registry.layer(RequestSteps)
+  test/context.test.ts                   a request step runs for build and preview; nothing it adds is saved
+packages/plugins/cache-hints/            new plugin, server only
+  plugin.ts                              requires [RequestSteps]
+  src/contract.ts                        no services
+  src/server.ts                          registers the step
+  src/server/marks.ts                    marksOf(request): first system, last system, last message
+  test/cache-hints.test.ts
+packages/plugins/logins/
+  src/contract.ts                        BrowserAuthorization.returnTo (LoginReturn); Authorized + state
+  src/server/browser.ts                  Page return: no server, ask for the shown code
+  test/browser.test.ts                   + page return, `code#state` paste, wrong state
+packages/plugins/model-codex/src/server/login.ts   callback -> returnTo: Callback
+packages/plugins/model-anthropic/        new plugin
+  package.json                           + @effect/ai-anthropic, @liminal/{logins,models,credential-store}
+  plugin.ts                              requires [ModelProviders, CredentialStore, LoginMethods]
+  src/contract.ts                        ids: anthropic, anthropic-api; env ANTHROPIC_API_KEY
+  src/server.ts                          layer: version keeper, both providers, both logins
+  src/server/provider.ts                 providers `anthropic` and `anthropic-api`; AnthropicData, AnthropicPrompt
+  src/server/thinking.ts                 ThinkingValue -> thinking, output_config.effort, max_tokens
+  src/server/login.ts                    Flow method `anthropic`: ways browser and code; token exchange (JSON)
+  src/server/auth.ts                     requestTokens, refresh through CredentialStore.fresh, signer, identity
+  src/server/version.ts                  Claude Code version kept in <data>/claude-code.json
+  test/support.ts, test/anthropic.test.ts, test/login.test.ts, test/version.test.ts (hand-written streams)
+docs/reference/sources.json              + @effect/ai-anthropic (versionSource lock); `mise run docs`
+docs/plugins/{cache-hints,model-anthropic,context,logins}.md
+```
+
+No gallery change: the code way uses the existing `OpenUrl` and `Ask` steps.
+
+### Step 4 types
+
+```ts
+// sdk/core/model.ts
+/** The cached prefix ends after this message. Saved entries never carry it. */
+const CacheMark = Schema.Literal("breakpoint")
+ModelContent = { role, parts, cache?: CacheMark }            // Schema.optionalKey
+
+// model-anthropic/server/provider.ts; sdk/ai/provider-prompt.ts, prompt.ts, reply.ts
+const AnthropicData: ProviderData = Schema.Struct({ anthropic: Schema.Struct({
+  info: Schema.Union([{ type: "thinking", signature }, { type: "redacted_thinking", redactedData }]) }) })
+interface ProviderPrompt {
+  readonly data: ProviderData                                 // kept reply metadata, as today
+  readonly cache: Option<Prompt.ProviderOptions>              // options for a marked message; none ignores marks
+}
+const OpenAiPrompt: ProviderPrompt = { data: OpenAiData, cache: Option.none() }
+const AnthropicPrompt: ProviderPrompt = { data: AnthropicData,
+  cache: Option.some({ anthropic: { cacheControl: { type: "ephemeral" } } }) }
+promptOf(messages, prompt: ProviderPrompt): Effect<ReadonlyArray<Prompt.MessageEncoded>, ModelError, FileSystem>
+replyOf(name, prompt: ProviderPrompt, model, request): Stream<ModelEvent, ModelError, FileSystem>
+
+// context/contract.ts
+/** Rewrites the finished request, such as marking cache points; runs for build and preview. */
+type RequestStep = (sessionId: SessionId, request: ContextRequest) => Effect<ContextRequest>
+class RequestSteps extends Registry.Service<RequestSteps, RequestStep>()("liminal/context/RequestSteps") {}
+
+// logins/contract.ts
+const LoginReturn = Schema.Union([
+  Schema.TaggedStruct("Callback", { host, port, path }),     // local server, paste the address as fallback
+  Schema.TaggedStruct("Page", { redirectUri }),               // the page shows `code#state` to paste
+])
+BrowserAuthorization = { authorizeUrl, params, returnTo: LoginReturn }
+Authorized = { code, verifier, redirectUri, state }
+
+// model-anthropic/server/version.ts
+const KeptVersion = Schema.Struct({ version: Schema.String, checkedAt: Schema.Finite })   // epoch ms
+interface ClaudeCode { readonly version: Effect<string, ModelError> }   // kept copy, or waits for the first fetch
+
+// model-anthropic/server/thinking.ts
+thinkingOf(value: ThinkingValue, maxOutputTokens: Option<number>):
+  Effect<Pick<AnthropicLanguageModel.Config.Service, "thinking" | "output_config" | "max_tokens">, ModelError>
+```
+
+### Step 4 call path
+
+```text
+Context.run (context/server.ts)
+  request = fold(view, model)
+  for step of RequestSteps.list: request = step(sessionId, request)      // after the system entry is saved
+  -> ContextRequest; context/preview shows the marks
+
+cache-hints step (marksOf)
+  first system message, last system message, last message -> cache: "breakpoint" (at most 3, distinct)
+
+agent-loop -> ModelProviders.stream(request)
+
+provider `anthropic` (subscription)
+  token   = store.fresh("anthropic", refresh, skew)                      // refresh: JSON { refresh_token, client_id }
+  version = ClaudeCode.version
+  client  = AnthropicClient.make({ apiUrl: api.anthropic.com, transformClient: signer(token, version) })
+    signer: Authorization Bearer, no x-api-key; anthropic-beta = package betas + claude-code-20250219, oauth-2025-04-20;
+            user-agent claude-cli/<version>; x-app cli
+  messages = [identity system message, ...request.messages]            // "You are Claude Code, Anthropic's official CLI for Claude."
+provider `anthropic-api`
+  key    = store.secret("anthropic-api", { env: ANTHROPIC_API_KEY })
+  client = AnthropicClient.make({ apiKey })
+both
+  config = { ...providerOptions.anthropic, ...thinkingOf(thinking, maxOutputTokens), strictJsonSchema: false }
+    Off -> thinking disabled; On -> adaptive; Effort e -> adaptive + output_config.effort e (cast; reason comment)
+    Budget n -> enabled budget_tokens n, max_tokens = maxOutputTokens when set (else the package's model default)
+  replyOf("Anthropic", AnthropicPrompt, AnthropicLanguageModel.make({ model, config }), request)
+    promptOf: a marked message gets options.anthropic.cacheControl; the package puts it on the system block
+    or on the message's last part
+
+ClaudeCode version (version.ts), started by the layer
+  read <data>/claude-code.json; unreadable -> none, logged
+  forked daily: GET registry.npmjs.org/@anthropic-ai/claude-code/latest -> { version } -> write file
+    checks hourly, reads when the copy is a day old; failure logged, kept copy stays
+  version: kept -> it; none -> fetch once under a semaphore; failure -> ModelError("network", "Cannot read the Claude Code version")
+
+login `anthropic` (login.ts): Flow { vendor Anthropic, title "Claude subscription", ways browser, code }
+  params = { client_id 9d1c250a-e61b-44d9-88ed-5944d1962f5e, scope <Tau scopes>, code: "true" }
+  browser: authorizeInBrowser({ claude.ai/oauth/authorize, params, Callback(localhost, 53692, /callback) })
+  code:    authorizeInBrowser({ …, Page(https://platform.claude.com/oauth/code/callback) })
+  exchange: POST platform.claude.com/v1/oauth/token JSON
+    { grant_type authorization_code, code, state, client_id, redirect_uri, code_verifier } -> OAuth
+login `anthropic-api`: LoginMethod.ApiKey { env ANTHROPIC_API_KEY }
+
+authorizeInBrowser, Page return (logins/server/browser.ts)
+  pkce; url with redirect_uri = page; openUrl, open the browser
+  ask("Paste the code the page shows") -> split on "#" -> { code, state }; codeOf checks state
+  -> { code, verifier, redirectUri: page, state }
+```
+
+| Injection | Production | Tests |
+| --- | --- | --- |
+| `HttpClient` (model-anthropic) | `FetchHttpClient` | answers with hand-written streams; records the sent headers and body |
+| Credentials | `CredentialStore` (SQLite) | in-memory store with an API key or OAuth tokens |
+| Claude Code version | npm registry through `HttpClient`, file in `Directories.data` | fake registry reply; temp data folder; `TestClock` drives the daily refresh |
+| `LoginFlow` (model-anthropic tests) | logins over RPC | a fake answering `authorizeInBrowser` with a code and state |
+| Page return (logins tests) | browser and paste | `ask` answered with `code#state` |
+| `RequestSteps` (context tests) | `cache-hints` | a step that marks every message |
+
+### Step 4 deletes
+
+- `BrowserAuthorization.callback` becomes `returnTo`; the Codex browser way passes `Callback`.
+- `replyOf` and `promptOf` take a `ProviderPrompt` instead of a `ProviderData`.
 
 ## Deletes or replaces
 

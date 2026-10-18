@@ -42,10 +42,10 @@ test("each connect state draws its text", async () => {
   }
 });
 
-test("a provider that lists nothing shows a sign-in row or the catalog failure", async () => {
+test("a provider whose list failed shows the failure and no sign-in row", async () => {
   const color = resolveRoles(palette);
-  const frame = await frameOf(() => <ModelPicker color={color} selected="" hasUnlisted />);
+  const frame = await frameOf(() => <ModelPicker color={color} selected="" hasFailure />);
 
-  expect(frame).toContain("Sign in with /connect");
+  expect(frame).not.toContain("Sign in with /connect");
   expect(frame).toContain("models.dev is unreachable");
 });

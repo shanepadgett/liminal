@@ -15,9 +15,11 @@ import { Tools } from "@liminal/tool-registry/contract";
 
 import {
   Context,
+  type ContextRequest,
   ContextRpcs,
   MessageEntry,
   PromptSections,
+  RequestSteps,
   SystemEntry,
   ViewSteps,
 } from "./contract.ts";
@@ -31,24 +33,28 @@ import {
   systemText,
 } from "./server/system.ts";
 
-const make = Effect.gen(function* () {
-  const log = yield* SessionLog;
-  const entryKinds = yield* EntryKinds;
-  const sections = yield* PromptSections;
-  const viewSteps = yield* ViewSteps;
-  const tools = yield* Effect.serviceOption(Tools);
-
-  yield* entryKinds.register(SystemEntry);
-  yield* entryKinds.register(MessageEntry);
-
-  /** Every registered tool, declared as offered at the start or not. */
-  const currentTools = Option.match(tools, {
+/** Every registered tool, declared as offered at the start or not; none without a registry. */
+const toolsOf = (tools: Option.Option<Tools["Service"]>) =>
+  Option.match(tools, {
     onNone: () => Effect.succeed<ReadonlyArray<ModelTool>>([]),
     onSome: (registry) =>
       Effect.map(registry.list, (all) =>
         all.map((tool): ModelTool => ({ ...tool.spec, offered: tool.offeredAtStart })),
       ),
   });
+
+const make = Effect.gen(function* () {
+  const log = yield* SessionLog;
+  const entryKinds = yield* EntryKinds;
+  const sections = yield* PromptSections;
+  const viewSteps = yield* ViewSteps;
+  const requestSteps = yield* RequestSteps;
+  const tools = yield* Effect.serviceOption(Tools);
+
+  yield* entryKinds.register(SystemEntry);
+  yield* entryKinds.register(MessageEntry);
+
+  const currentTools = toolsOf(tools);
 
   const view = Effect.fn("Context.view")(function* (sessionId: SessionId) {
     let entries = yield* log.read(sessionId, {});
@@ -57,7 +63,19 @@ const make = Effect.gen(function* () {
     return entries;
   });
 
-  const run = Effect.fn("Context.run")(function* (
+  /** The request after every request step. */
+  const finish = Effect.fn("Context.finish")(function* (
+    sessionId: SessionId,
+    folded: ContextRequest,
+  ) {
+    let request = folded;
+    for (const step of yield* requestSteps.list) request = yield* step(sessionId, request);
+
+    return request;
+  });
+
+  /** The request from the view; a changed system prompt is saved first when `save` is set. */
+  const foldView = Effect.fn("Context.foldView")(function* (
     sessionId: SessionId,
     model: ModelRef,
     save: boolean,
@@ -86,6 +104,14 @@ const make = Effect.gen(function* () {
     return fold([...entries, saved], model);
   });
 
+  const run = Effect.fn("Context.run")(function* (
+    sessionId: SessionId,
+    model: ModelRef,
+    save: boolean,
+  ) {
+    return yield* finish(sessionId, yield* foldView(sessionId, model, save));
+  });
+
   return Context.of({
     build: (sessionId, model) => run(sessionId, model, true),
     preview: (sessionId, model) => run(sessionId, model, false),
@@ -106,4 +132,5 @@ export const layer = rpcs.pipe(
   Layer.provideMerge(Layer.effect(Context, make)),
   Layer.provideMerge(KeyedRegistry.layer(PromptSections, (section) => section.key)),
   Layer.provideMerge(Registry.layer(ViewSteps)),
+  Layer.provideMerge(Registry.layer(RequestSteps)),
 );

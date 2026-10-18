@@ -131,6 +131,20 @@ export class ViewSteps extends Registry.Service<ViewSteps, ViewStep>()(
   "liminal/context/ViewSteps",
 ) {}
 
+/**
+ * Rewrites the finished request, such as marking where the cached prefix ends. It runs for build
+ * and preview alike, after the system entry is saved, so nothing it adds is saved.
+ */
+export type RequestStep = (
+  sessionId: SessionId,
+  request: ContextRequest,
+) => Effect.Effect<ContextRequest>;
+
+/** The request steps, run in order. */
+export class RequestSteps extends Registry.Service<RequestSteps, RequestStep>()(
+  "liminal/context/RequestSteps",
+) {}
+
 const SectionValue = Schema.Struct({ key: Schema.String, value: Schema.Json, text: Schema.String });
 
 export const SectionChange = Schema.Union([
