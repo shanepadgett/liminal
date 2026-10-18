@@ -52,20 +52,39 @@ flowchart LR
 | SDK TUI | Adds prompt (text and secret) and confirm dialogs beside `SelectDialog` |
 | `models` / `/model` | Re-lists when a credential changes |
 
-## Round 1
+## Decisions
 
-1. **Who owns login flows.** Recommend one `logins` plugin with a `LoginMethods` registry (like `ModelProviders`, a `KeyedRegistry`); provider plugins register `{ id, vendor, title, ways, logIn, logOut }`. The shared OAuth pieces (PKCE, local callback server, paste a code, device code polling) live in `logins` and providers call them. Beats each provider owning its own flow and UI: one `/connect`, one copy of the OAuth code.
-2. **How the TUI drives a running login.** Recommend the flow runs on the server and emits a stream of steps over RPC: `OpenUrl`, `ShowCode`, `Ask`, `AskSecret`, `Waiting`, `Done`, `Failed`. The TUI answers `Ask` with an `answer` RPC and can `cancel`. The flow is a state machine on the server; the TUI only draws the current step. Beats running flows in the TUI: the server holds the callback port and the credential, and a future web frontend reuses it.
-3. **Provider plugins.** Recommend one plugin per provider row: `model-codex` (exists), `model-chatgpt`, `model-openai`, `model-anthropic` (subscription and API key as two methods of one plugin, or two plugins), `model-openrouter`, `model-opencode-go`, and `model-local` for user-added providers. New dependencies need approval: `@effect/ai-anthropic`, `@effect/ai-openrouter`, `@effect/ai-openai-compat` (Tau's `opencode-go` speaks OpenAI chat). The alternative is direct HTTP per provider, as `model-codex` partly does.
-4. **Model lists.** Recommend each provider lists its own models live, as `model-codex` does. Tau instead reads the `models.dev` catalog with a cache (`src/ai/Catalog.ts`); that adds a catalog plugin and network fetch at startup.
-5. **Local callback server.** Recommend `BunHttpServer.layer` from `@effect/platform-bun` (already a dependency) with `HttpServer.serve`, scoped to the login so the port closes when it ends. Opening the browser runs the platform `open` command through `ChildProcessSpawner`.
-6. **Sign-out.** Recommend `/connect` shows a confirm dialog for a saved method, removes the credential, and for `chatgpt` revokes the token first; a failed revoke still removes it and tells the user to disconnect the app by hand (Tau behavior).
-7. **Build order.** Recommend: (a) SDK prompt and confirm dialogs, `logins` plugin, `/connect`, API key methods for `openai`; (b) OAuth browser and device code for `codex`; (c) Claude subscription and Anthropic API key; (d) ChatGPT app; (e) OpenRouter, OpenCode Go, local providers. Each step is one commit with gallery updates.
+| Topic | Decision |
+| --- | --- |
+| Who owns login | A new `logins` plugin holds the `LoginMethods` registry (a `KeyedRegistry`, like `ModelProviders`), the shared OAuth pieces (PKCE, local callback server, paste a code, device code polling) and `/connect`. Provider plugins register `{ id, vendor, title, ways, logIn, logOut }` |
+| Running a login | The flow runs on the server as a state machine and streams steps over RPC: `OpenUrl`, `ShowCode`, `Ask`, `AskSecret`, `Waiting`, `Done`, `Failed`. The TUI draws the current step, answers by an `answer` RPC and stops it by `cancel` |
+| Provider plugins | One per provider: `model-codex` (exists), `model-chatgpt`, `model-openai`, `model-anthropic`, `model-openrouter`, `model-opencode-go`, `model-local` |
+| Anthropic | One `model-anthropic` plugin with two login methods: Claude subscription and API key |
+| API packages | `@effect/ai-openai`, `@effect/ai-anthropic`, `@effect/ai-openrouter`, `@effect/ai-openai-compat` (per `docs/plugins/models.md`). Native tool changes come from a provider layer that wraps the package client (`docs/plans/core-contracts.md`); OpenCode Go Messages replies get their missing `usage` fields filled before decoding |
+| Model lists | A `models.dev` catalog with a local cache, as Tau `src/ai/Catalog.ts` does |
+| Sign-out | Confirm dialog, then remove the credential. `chatgpt` revokes first; a failed revoke still removes it and tells the user to disconnect the app by hand |
+| Live test credentials | Live recording tests read Liminal's own credential store only |
+
+## Build order
+
+One commit each, with gallery updates.
+
+1. SDK prompt and confirm dialogs, `logins` plugin, `/connect`, `model-openai` with its API key
+2. Codex browser and device code login
+3. `model-anthropic`: Claude subscription and API key
+4. `model-chatgpt`: Sign in with ChatGPT
+5. `model-openrouter`, `model-opencode-go`, `model-local`
+
+## Round 2
+
+1. **Catalog home.** Which plugin owns the `models.dev` catalog and its cache (`models`, or a new `model-catalog`), when it refreshes, and how it joins providers that list models live (Codex plan lists).
+2. **Catalog place in the build order.** Before step 1, or inside it.
+3. **Local callback server.** Recommend `BunHttpServer.layer` from `@effect/platform-bun` (already a dependency) with `HttpServer.serve`, scoped to the login so the port closes when it ends; the browser opens through the platform `open` command.
 
 ## Deletes or replaces
 
-- Live Codex tests stop depending on Tau's `~/.tau/credentials.db` once Liminal can sign in itself; the recording test reads Liminal's own store instead (open: keep Tau's store as a read-only source for tests).
-- `/model` stops leaving failed providers out silently once sign-in state exists; it shows "sign in with /connect" under them.
+- Live Codex tests stop reading Tau's `~/.tau/credentials.db`; they read Liminal's store.
+- `/model` stops leaving failed providers out silently; it shows "sign in with /connect" under them.
 
 ## References
 
