@@ -113,10 +113,10 @@ export const ToolChoice = Schema.Union([
 
 export type ToolChoice = typeof ToolChoice.Type;
 
-/** A provider's cheap model and the thinking it runs with, for short side calls. */
-export const CheapModel = Schema.Struct({ model: ModelRef, thinking: ThinkingValue });
+/** A model and the thinking it runs with. */
+export const ModelPick = Schema.Struct({ model: ModelRef, thinking: ThinkingValue });
 
-export type CheapModel = typeof CheapModel.Type;
+export type ModelPick = typeof ModelPick.Type;
 
 export const ModelRequest = Schema.Struct({
   model: ModelRef,

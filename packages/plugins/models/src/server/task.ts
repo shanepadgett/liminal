@@ -3,10 +3,10 @@
 import { Effect, Schema, Stream } from "effect";
 
 import {
-  type CheapModel,
   jsonSchemaOf,
   type ModelContent,
   type ModelPart,
+  type ModelPick,
   type ModelTool,
   type SessionId,
   type Tool,
@@ -33,7 +33,7 @@ type Step<A> =
 
 /** A task with its submit tool's decoder and every tool the model sees. */
 interface Prepared<A> {
-  readonly model: CheapModel;
+  readonly model: ModelPick;
   readonly sessionId: SessionId;
   readonly tools: ReadonlyArray<Tool>;
   readonly submitName: string;

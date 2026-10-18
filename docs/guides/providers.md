@@ -63,7 +63,7 @@ yield* (yield* ModelProviders).register({
 | `checkLogin` | Optional; fails with an `auth` `ModelError` while there is no usable login. Listing models checks it first |
 | `stream` | One attempt for one request; interrupting the stream cancels the call |
 | `nativeToolChanges` | `true` when the provider turns `tool-change` parts into native items; `false` sends every declared tool on each request |
-| `cheap` | A small, fast model and its thinking value; other plugins read it through `Models.cheap` and use it for side calls such as reviews |
+| `cheap` | A small, fast model and its thinking value; other plugins read it through `Models.cheap` and use it as the default for side calls such as reviews; a `ModelTask` runs on any model |
 
 A provider built on `replyOf` sends `request.toolChoice` (`auto`, `required` or `{ tool }`) for free. A provider with its own stream must map it.
 

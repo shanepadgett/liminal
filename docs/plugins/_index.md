@@ -73,6 +73,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | --- | --- | --- |
 | [tools](tools.md) | The tools the model can call, how each call runs, and their guidance in the system prompt | built |
 | [files](files.md) | Reads and writes workspace files for the file tools | built |
+| [shell-safety](shell-safety.md) | Tells read-only shell commands apart from ones that can change things | built |
 | permissions | Rules for what tools may do | to plan |
 | approval | Asks the user before a tool runs | to plan |
 | tool-output-spill | Moves large tool output to a file | to plan |

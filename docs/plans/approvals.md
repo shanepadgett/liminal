@@ -6,9 +6,9 @@ Tool calls run without asking unless they change state outside what the user ask
 
 ```text
 agent-loop ─▶ tools: ToolPipeline.run(call)
-               ├─ ToolChecks (ordered)
-               │    ├─ shell-safety: shell command on the safe list → Allow, else Ask
-               │    └─ approval: write/edit outside the workspace → Ask
+               ├─ ToolChecks (registered by approval)
+               │    ├─ shell: askCommands → Ask; ShellSafety.isSafe(command, safeCommands) → Allow, else Ask
+               │    └─ files: write/edit outside the workspace → Ask
                └─ Ask ─▶ Approvals (approval plugin)
                          1. decisions: Jev (OpenRouter) → Luna Decisions → skip
                             approves or hands off (unsure, user should decide, runs unseen code)
@@ -23,8 +23,8 @@ agent-loop ─▶ tools: ToolPipeline.run(call)
 | `models` | changed | `ModelProvider.cheapModel`, `Models.cheap(provider)`; `toolChoice` on `ModelRequest` (`auto`, `required`, one tool); one-off call service in `models`: model, prompt, tools, result schema, bounded exchange ending in a submit tool, one retry with the decode failure |
 | provider plugins | changed | Cheap model: Anthropic `claude-haiku-5-5`; OpenAI providers Luna 6; OpenCode Go and OpenRouter DeepSeek 4.1 Flash latest; map `toolChoice` |
 | `decisions` | new | `Decisions.classify(questions, state)`; Jev via OpenRouter (`~typesafe/jev-latest`, System One at `/systemone`) first, else Luna Decisions (`POST /v1/decisions`, OpenAI API key only, or OpenRouter `openai/gpt-6-luna-decisions`); protocols in `@liminal/sdk/ai` |
-| `shell-safety` | new | Own plugin; `unbash` 4.0.11 parse (new dependency, needs a `docs/reference/sources.json` entry) and the safe list; `ShellSafety.isSafe(command)`; the check that allows safe commands |
-| `approval` | new | Provides `Approvals`; the three-step chain; context is the last two user prompts and final assistant messages; private record entry; TUI dialog; per-session mode |
+| `shell-safety` | new | Own plugin; `unbash` 6.0.0 parse and the safe list; `ShellSafety.isSafe(command, extra)` and `matchesAny(command, prefixes)`; reads no settings and registers no check |
+| `approval` | new | Provides `Approvals`; registers every `ToolChecks` entry and reads the `approval` settings; the three-step chain; context is the last two user prompts and final assistant messages; private record entry; TUI dialog; per-session mode |
 | `inbox` | changed | Composer shows the session's approval mode next to the model |
 | `tools`, `files` | unchanged | `ToolChecks`, `Ask`, `Approvals` exist; reviewer `read` uses `WorkspaceFiles` |
 
@@ -61,8 +61,8 @@ Section `approval` in `settings.json`:
 | --- | --- | --- |
 | 1 | `models`: cheap model per provider, `toolChoice`, `ModelTask` | built |
 | 2 | `decisions` | built |
-| 3 | `models`: one-off calls and structured output for any model (round below) | |
-| 4 | `shell-safety` | |
+| 3 | `models`: one-off calls and structured output for any model | built |
+| 4 | `shell-safety` | built |
 | 5 | `approval`: chain, dialog, session mode, composer label | |
 
 ## Step 2: decision models
@@ -139,12 +139,40 @@ Decisions.classify(state, questions, prefer)
 - Tests: the SDK wires over `packages/sdk/src/testing/http.ts`; `decisions` over fake registered models with `TestClock` for the timeout
 - Guide: `docs/guides/providers.md` adds registering a decision model
 
-## Step 3: one-off calls for any model (proposed)
+## Step 4: shell-safety
 
-- A one-off call works with any model, the way Pi and Tau allow; the cheap model is only each provider's preferred small model, found through `Models.cheap`
-- `CheapModel` becomes a general name for a model and its thinking value; `ModelTask` and the one-off calls take any model
-- Structured output for any call: native when the model supports it, else a forced tool call; one retry with the decode reason (Tau `src/ai/internal/protocols/structured-output.ts`, used by `src/core/internal/commit/commit-plan.ts` through `generateObject`)
-- Whether a model has native structured output comes from the catalog (`models.dev` `structured_output`), as in Tau `src/ai/ModelProfile.ts`
+A pure service: parse with `unbash`, walk every simple command, apply the safe list. The checks live in `approval`, because a check that returns Ask denies every unsafe shell call while no `Approvals` service exists (`packages/plugins/tools/src/server/pipeline.ts`).
+
+```text
+packages/plugins/shell-safety/
+  plugin.ts                  provides ShellSafety; requires nothing
+  src/contract.ts            ShellSafety { isSafe(command, extra): boolean; matchesAny(command, prefixes): boolean }
+  src/server.ts              parse → walk → every command allowed, and not cd with git
+  src/server/walk.ts         Found { commands, safe }; unbash forEachChild over every node, marks unsafe shapes
+  src/server/rules.ts        always-safe set; argument checks per command
+  src/server/git.ts          read verbs; branch and tag listing; remote show and get-url
+  src/server/flags.ts        short clusters, long options, positionals
+```
+
+- Unsafe shapes: parse errors, shebang, background jobs, assignments before a command, write redirects other than to `/dev/null`, `>&` and `<&` other than to `0`, `1`, `2`, `-`, process substitution, arithmetic, function and coproc definitions, `select`, arithmetic `for`
+- Command substitutions and heredoc bodies are walked; their commands must pass too
+- A command name must be a known word; commands with argument checks need every argument known, unquoted globs counting as unknown
+- `extra` and `prefixes` match word by word from the command name; blank prefixes are ignored
+- `matchesAny` sees commands inside unsafe shapes, so `askCommands` still match in a background job
+
+## Step 3: one-off calls for any model
+
+`ModelTask` already runs on any model and thinking value; only the type name says "cheap". Every provider streams through `replyOf`, which calls `effect/ai` `LanguageModel.streamText`; `streamText` always sends a text response format. Native structured output exists in `effect/ai` only through `generateObject`, which does not stream and sends no tools (`node_modules/effect/src/ai/LanguageModel.ts`). Tau's native path is the same `generateObject` and also refuses tools (`src/ai/internal/protocols/structured-output.ts`).
+
+```text
+packages/sdk/src/core/model.ts             CheapModel → ModelPick { model: ModelRef, thinking: ThinkingValue }
+packages/plugins/models/src/contract.ts    Models.cheap returns ModelPick; TaskRequest.model: ModelPick
+packages/plugins/models/src/server/task.ts type rename only
+docs/plugins/models.md, docs/guides/providers.md   ModelTask takes any model; Models.cheap is a lookup
+```
+
+- Structured output is the forced submit tool for every model, as `ModelTask` does now: one retry with the decode reason, the last step forces the submit tool
+- No catalog flag and no `generateObject` path
 
 ## Step 1: cheap models and model tasks
 

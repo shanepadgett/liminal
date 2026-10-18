@@ -21,6 +21,7 @@ Read an instruction file only when you are about to change something it covers. 
 ## Dependency docs
 
 - Before writing or planning code against a dependency, find its entry in `docs/reference/copies/index.md` and read its docs and API there. Never guess an API.
+- A new dependency starts at the latest stable release on the registry (`npm view <package> version`), never at a version copied from a reference repository.
 - A new dependency or tool needs a source in `docs/reference/sources.json`. After adding one or changing a version, run `mise run docs`.
 
 ## Reference repositories

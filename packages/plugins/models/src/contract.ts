@@ -5,12 +5,12 @@ import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
   CatalogUnavailable,
-  type CheapModel,
   KeyedRegistry,
   type ModelContent,
   ModelError,
   type ModelEvent,
   ModelInfo,
+  type ModelPick,
   type ModelRef,
   type PlanModel,
   type ModelRequest,
@@ -78,8 +78,8 @@ export class Models extends Context.Service<
     readonly describe: (
       model: ModelRef,
     ) => Effect.Effect<ModelInfo, ModelError | ProviderNotFound | CatalogUnavailable>;
-    /** The provider's cheap model. */
-    readonly cheap: (provider: string) => Effect.Effect<CheapModel, ProviderNotFound>;
+    /** The provider's preferred small model, a default for side calls. */
+    readonly cheap: (provider: string) => Effect.Effect<ModelPick, ProviderNotFound>;
   }
 >()("liminal/models/Models") {}
 
@@ -98,7 +98,8 @@ export interface TaskSubmit<S extends Schema.Top> {
 
 /** One bounded exchange that ends when the model submits a typed answer. */
 export interface TaskRequest<S extends Schema.Top> {
-  readonly model: CheapModel;
+  /** Any model; `Models.cheap` gives the provider's small one. */
+  readonly model: ModelPick;
   /** Passed to each tool run. */
   readonly sessionId: SessionId;
   readonly system: string;

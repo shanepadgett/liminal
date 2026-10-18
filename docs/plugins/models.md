@@ -7,7 +7,7 @@ Status: built
 ## Provides
 
 - `Models` service: `stream`, `listProviders`, `listModels`, `describe`, `cheap`
-- `ModelTask` service: one bounded exchange with a cheap model that ends in a typed answer
+- `ModelTask` service: one bounded exchange with any model that ends in a typed answer
 - `ModelProviders` registry that provider plugins add to
 - `RpcGroup` with `listProviders` and `listModels`
 
@@ -39,12 +39,13 @@ Status: built
 - Provider plugins build on `@effect/ai-anthropic`, `@effect/ai-openai`, `@effect/ai-openai-compat` and `@effect/ai-openrouter`, translating to and from `effect/ai` inside the plugin
 - Each provider maps the thinking value to its own request fields
 - A request can set a tool choice: `auto` (default), `required`, or one named tool
-- Each provider names a cheap model and its thinking value; `Models.cheap(provider)` returns it
+- Each provider names a preferred small model and its thinking value; `Models.cheap(provider)` returns it; it limits nothing
 
 ### Tasks
 
-- A task takes a cheap model, a system prompt, messages, tools, a submit tool with a Schema, and a step limit
+- A task takes any model and thinking value, a system prompt, messages, tools, a submit tool with a Schema, and a step limit
 - Each step requires a tool call; the last step forces the submit tool
+- Structured output is the submit tool for every model
 - The task runs the model's other tool calls and sends back their results; an unknown tool or a failed run is a failure result
 - A submitted answer the Schema rejects goes back once with the reason and the submit tool forced; a second rejection fails with `TaskFailed`
 - No answer within the step limit fails with `TaskFailed`
