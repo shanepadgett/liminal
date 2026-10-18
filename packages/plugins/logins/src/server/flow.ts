@@ -5,6 +5,8 @@
 
 import {
   type Cause,
+  type Context,
+  type Crypto,
   type Data,
   Deferred,
   Effect,
@@ -14,6 +16,7 @@ import {
   Ref,
   Stream,
 } from "effect";
+import type { ChildProcessSpawner } from "effect/process";
 
 import { ApiKey, type Credential, CredentialStore } from "@liminal/credential-store/contract";
 
@@ -30,6 +33,10 @@ import {
   Told,
   Waiting,
 } from "../contract.ts";
+import { authorizeInBrowser, type BrowserSteps } from "./browser.ts";
+
+/** The host services a browser login uses. */
+type Platform = Context.Context<Crypto.Crypto | ChildProcessSpawner.ChildProcessSpawner>;
 
 type Steps = Queue.Queue<LoginStep, LoginFailed | Cause.Done>;
 
@@ -57,17 +64,25 @@ const ask =
       );
     });
 
-const flowOf = (pending: Pending, steps: Steps, method: string) => {
+const flowOf = (pending: Pending, steps: Steps, method: string, platform: Platform) => {
   const question = ask(pending, steps, method);
   const send = (step: LoginStep) => Effect.asVoid(Queue.offer(steps, step));
 
-  return LoginFlow.of({
+  const browserSteps: BrowserSteps = {
     openUrl: (url) => send(OpenUrl.make({ url })),
-    showCode: (code, url) => send(ShowCode.make({ code, url })),
     ask: (text) => question(text, false),
+    tell: (text) => send(Told.make({ text })),
+  };
+
+  const browser = authorizeInBrowser(browserSteps, method);
+
+  return LoginFlow.of({
+    ...browserSteps,
+    showCode: (code, url) => send(ShowCode.make({ code, url })),
     askSecret: (text) => Effect.map(question(text, true), Redacted.make),
     waiting: (text) => send(Waiting.make({ text })),
-    tell: (text) => send(Told.make({ text })),
+    authorizeInBrowser: (authorization) =>
+      browser(authorization).pipe(Effect.provideContext(platform)),
   });
 };
 
@@ -103,6 +118,7 @@ const logIn = (
 export const makeRunner = Effect.gen(function* () {
   const methods = yield* LoginMethods;
   const store = yield* CredentialStore;
+  const platform = yield* Effect.context<Crypto.Crypto | ChildProcessSpawner.ChildProcessSpawner>();
 
   const pending: Pending = yield* Ref.make<ReadonlyMap<string, Deferred.Deferred<string>>>(
     new Map(),
@@ -125,7 +141,7 @@ export const makeRunner = Effect.gen(function* () {
     Stream.callback<LoginStep, LoginFailed>((steps) =>
       find(id).pipe(
         Effect.flatMap((method) => logIn(method, way)),
-        Effect.provideService(LoginFlow, flowOf(pending, steps, id)),
+        Effect.provideService(LoginFlow, flowOf(pending, steps, id, platform)),
         Effect.flatMap((credential) => save(id, credential)),
         Effect.andThen(Queue.offer(steps, Done.make({}))),
         Effect.andThen(Queue.end(steps)),

@@ -25,6 +25,33 @@ export class LoginFailed extends Schema.TaggedError<
   { readonly brand: unique symbol }
 >()("LoginFailed", { method: Schema.String, message: Schema.String }) {}
 
+/** Where the browser comes back to after sign-in; port 0 takes a free port. */
+export const LoginCallback = Schema.Struct({
+  host: Schema.String,
+  port: Schema.Int,
+  path: Schema.String,
+});
+
+export type LoginCallback = typeof LoginCallback.Type;
+
+/** A provider's authorize page; `params` holds its client id, scope and its own extras. */
+export const BrowserAuthorization = Schema.Struct({
+  authorizeUrl: Schema.String,
+  params: Schema.Record(Schema.String, Schema.String),
+  callback: LoginCallback,
+});
+
+export type BrowserAuthorization = typeof BrowserAuthorization.Type;
+
+/** The code the browser came back with, and what exchanging it for tokens needs. */
+export const Authorized = Schema.Struct({
+  code: Schema.String,
+  verifier: Schema.String,
+  redirectUri: Schema.String,
+});
+
+export type Authorized = typeof Authorized.Type;
+
 /** What a login flow shows the user and asks of them while it runs. */
 export class LoginFlow extends Context.Service<
   LoginFlow,
@@ -35,6 +62,13 @@ export class LoginFlow extends Context.Service<
     readonly askSecret: (question: string) => Effect.Effect<Redacted.Redacted>;
     readonly waiting: (text: string) => Effect.Effect<void>;
     readonly tell: (text: string) => Effect.Effect<void>;
+    /**
+     * Signs in in the browser with PKCE: opens the authorize page and waits for the browser to come
+     * back to `callback`, or for the user to paste the address it ended on.
+     */
+    readonly authorizeInBrowser: (
+      authorization: BrowserAuthorization,
+    ) => Effect.Effect<Authorized, LoginFailed>;
   }
 >()("liminal/logins/LoginFlow") {}
 

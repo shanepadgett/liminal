@@ -6,11 +6,12 @@
 
 import { Effect, Predicate, Stream } from "effect";
 import type { RpcClient, RpcClientError, RpcGroup } from "effect/rpc";
-import { type Accessor, createSignal } from "solid-js";
+import { type Accessor, createSignal, type Setter } from "solid-js";
 
 import {
   type Bridge,
   ConfirmDialog,
+  type DialogComponent,
   type DialogProps,
   type Hint,
   type TuiDialogsService,
@@ -81,6 +82,9 @@ interface Connect {
   readonly methods: Accessor<ReadonlyArray<MethodInfo>>;
   /** Lists the methods again, with their sign-in state. */
   readonly load: Effect.Effect<void, LoginFailed | RpcClientError.RpcClientError>;
+  /** The providers list's dialog, the bottom of what `/connect` opened. */
+  readonly root: Accessor<DialogComponent | undefined>;
+  readonly setRoot: Setter<DialogComponent | undefined>;
 }
 
 const start = (connect: Connect, method: MethodInfo, way: LoginWay | undefined) =>
@@ -91,8 +95,16 @@ const start = (connect: Connect, method: MethodInfo, way: LoginWay | undefined) 
     Stream.catch((error) => Stream.make(Failed.make({ message: error.message }))),
   );
 
-/** Opens the login; when it is saved, closes `depth` dialogs, the login's included. */
-const logIn = (connect: Connect, method: MethodInfo, way: LoginWay | undefined, depth: number) => {
+/** Closes every dialog `/connect` opened, down to and including its providers list. */
+const closeConnect = (connect: Connect) => {
+  const { dialogs, root } = connect;
+
+  while (dialogs.top() !== undefined && dialogs.top() !== root()) dialogs.close();
+  if (dialogs.top() === root()) dialogs.close();
+};
+
+/** Opens the login; when it is saved, closes `/connect`. */
+const logIn = (connect: Connect, method: MethodInfo, way: LoginWay | undefined) => {
   const { bridge, dialogs, client } = connect;
 
   dialogs.show((props: DialogProps) => (
@@ -105,7 +117,7 @@ const logIn = (connect: Connect, method: MethodInfo, way: LoginWay | undefined, 
       }}
       close={props.close}
       onDone={() => {
-        for (let closed = 0; closed < depth; closed++) dialogs.close();
+        closeConnect(connect);
         bridge.run(connect.load);
       }}
     />
@@ -115,7 +127,7 @@ const logIn = (connect: Connect, method: MethodInfo, way: LoginWay | undefined, 
 /** Asks how to finish the method when it has a choice, else opens its login. */
 const chooseWay = (connect: Connect, method: MethodInfo) => {
   if (method.ways.length < 2) {
-    logIn(connect, method, method.ways[0], 1);
+    logIn(connect, method, method.ways[0]);
 
     return;
   }
@@ -127,7 +139,7 @@ const chooseWay = (connect: Connect, method: MethodInfo) => {
       choices={method.ways.map((way) => ({ title: way.title, note: "" }))}
       close={props.close}
       onChoose={(index) => {
-        logIn(connect, method, method.ways[index], 2);
+        logIn(connect, method, method.ways[index]);
       }}
       onSignOut={() => {}}
     />
@@ -205,7 +217,7 @@ const signOutVendor = (connect: Connect, vendor: VendorMethods) => {
 const showProviders = (connect: Connect) => {
   const vendors = () => vendorsOf(connect.methods());
 
-  connect.dialogs.show((props: DialogProps) => (
+  const root = (props: DialogProps) => (
     <ChoiceDialog
       title="Connect a provider"
       hints={PROVIDERS}
@@ -221,19 +233,23 @@ const showProviders = (connect: Connect) => {
         signOutVendor(connect, vendor);
       })}
     />
-  ));
+  );
+
+  connect.setRoot(() => root);
+  connect.dialogs.show(root);
 };
 
 /** Opens `/connect` once the methods are listed; `client` reaches the logins server. */
 export const makeConnect = (bridge: Bridge, dialogs: TuiDialogsService, client: LoginsClient) => {
   const [methods, setMethods] = createSignal<ReadonlyArray<MethodInfo>>([]);
+  const [root, setRoot] = createSignal<DialogComponent | undefined>();
 
   const load = client["logins/list"]().pipe(
     Effect.flatMap((all) => Effect.sync(() => setMethods(all))),
     Effect.asVoid,
   );
 
-  const connect: Connect = { bridge, dialogs, client, methods, load };
+  const connect: Connect = { bridge, dialogs, client, methods, load, root, setRoot };
 
   return () => {
     bridge.run(

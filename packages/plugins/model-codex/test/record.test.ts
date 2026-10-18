@@ -1,7 +1,7 @@
 /**
  * Records the fixtures the replay tests use, against the live backend. Runs only with
- * `LIMINAL_LIVE=1` and a Codex login in Tau's credential store that stays valid for 10 minutes; it
- * never refreshes that login.
+ * `LIMINAL_LIVE=1` and a Codex login in Liminal's credential store (`/connect`) that stays valid
+ * for 10 minutes; it never refreshes that login.
  */
 
 import { Database } from "bun:sqlite";
@@ -17,7 +17,7 @@ import { Models } from "@liminal/models/contract";
 import { ThinkingEffort } from "@liminal/sdk";
 import { effectTest } from "@liminal/sdk/testing";
 
-import { codexProvider } from "../src/contract.ts";
+import { codexLogin, codexProvider } from "../src/contract.ts";
 import {
   codexStack,
   finishedParts,
@@ -30,21 +30,23 @@ import {
 const fixtures = join(import.meta.dir, "fixtures");
 const model = { provider: codexProvider, id: "gpt-5.6-luna" };
 
-/** The two fields of Tau's login record this test reads. */
-const TauLogin = Schema.fromJsonString(
+/** The two fields of Liminal's stored Codex login this test reads. */
+const StoredLogin = Schema.fromJsonString(
   Schema.Struct({ access: Schema.String, expiresAt: Schema.Finite }),
 );
 
-/** Tau's Codex login, if it stays valid long enough that nothing refreshes it. */
-const tauLogin = () => {
-  const db = new Database(join(homedir(), ".tau", "credentials.db"), { readonly: true });
+/** Liminal's Codex login, if it stays valid long enough that nothing refreshes it. */
+const storedLogin = () => {
+  const db = new Database(join(homedir(), ".liminal", "data", "credentials.db"), {
+    readonly: true,
+  });
 
   const row = db
-    .query<{ credential: string }, []>("select credential from credential where provider = 'codex'")
-    .get();
+    .query<{ credential: string }, [string]>("select credential from credentials where method = ?")
+    .get(codexLogin);
 
   db.close();
-  const login = row === null ? undefined : Schema.decodeSync(TauLogin)(row.credential);
+  const login = row === null ? undefined : Schema.decodeSync(StoredLogin)(row.credential);
 
   return login !== undefined && login.expiresAt > Date.now() + 10 * 60_000
     ? oauth(login.access, login.expiresAt)
@@ -95,10 +97,10 @@ const modelFields = (body: string) =>
 const anonymous = (body: string) =>
   body.replaceAll(/"safety_identifier":"[^"]*"/g, '"safety_identifier":"recorded"');
 
-const login = process.env.LIMINAL_LIVE === "1" ? tauLogin() : undefined;
+const login = process.env.LIMINAL_LIVE === "1" ? storedLogin() : undefined;
 
 if (login === undefined) {
-  test.skip("records the Codex fixtures (needs LIMINAL_LIVE=1 and a valid Tau login)", () => {});
+  test.skip("records the Codex fixtures (needs LIMINAL_LIVE=1 and a valid Codex login)", () => {});
 } else {
   const bodies = Ref.makeUnsafe<ReadonlyArray<readonly [string, string]>>([]);
 

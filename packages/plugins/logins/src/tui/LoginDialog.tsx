@@ -11,6 +11,7 @@ import {
   type Bridge,
   DialogFrame,
   type DialogProps,
+  enterKeys,
   type Hint,
   PromptField,
   useBindings,
@@ -97,7 +98,7 @@ function Attempt(props: LoginDialogProps & { readonly retry: () => void }) {
 
   useBindings(() => ({
     commands: [{ name: "login.retry", run: props.retry }],
-    bindings: hasFailed() ? [{ key: "return", cmd: "login.retry" }] : [],
+    bindings: hasFailed() ? enterKeys("login.retry") : [],
   }));
 
   return (

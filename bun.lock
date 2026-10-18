@@ -225,6 +225,7 @@
       "dependencies": {
         "@effect/ai-openai": "4.0.5",
         "@liminal/credential-store": "workspace:*",
+        "@liminal/logins": "workspace:*",
         "@liminal/models": "workspace:*",
       },
       "devDependencies": {

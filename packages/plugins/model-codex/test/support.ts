@@ -6,6 +6,7 @@ import type { HttpClient } from "effect/http";
 
 import credentialStore from "@liminal/credential-store";
 import { CredentialStore, OAuth } from "@liminal/credential-store/contract";
+import logins from "@liminal/logins";
 import { ModelCatalog } from "@liminal/model-catalog/contract";
 import models from "@liminal/models";
 import {
@@ -75,6 +76,7 @@ export const codexStack = (http: Layer.Layer<HttpClient.HttpClient>, credential:
     ),
     Layer.provideMerge(http),
     Layer.provideMerge(serverOf(models)),
+    Layer.provideMerge(serverOf(logins)),
     Layer.provideMerge(fakeCatalog),
     Layer.provideMerge(serverOf(credentialStore)),
     Layer.provideMerge(testBaseServices),

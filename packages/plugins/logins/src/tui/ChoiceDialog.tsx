@@ -5,7 +5,14 @@
 
 import { createSignal, For } from "solid-js";
 
-import { DialogFrame, type DialogProps, type Hint, useBindings, useColor } from "@liminal/sdk/tui";
+import {
+  DialogFrame,
+  type DialogProps,
+  enterKeys,
+  type Hint,
+  useBindings,
+  useColor,
+} from "@liminal/sdk/tui";
 
 export interface Choice {
   readonly title: string;
@@ -81,7 +88,7 @@ export function ChoiceDialog(props: ChoiceDialogProps) {
     bindings: [
       { key: "up", cmd: "choice.up" },
       { key: "down", cmd: "choice.down" },
-      { key: "return", cmd: "choice.pick" },
+      ...enterKeys("choice.pick"),
       { key: "ctrl+d", cmd: "choice.sign-out" },
     ],
   }));

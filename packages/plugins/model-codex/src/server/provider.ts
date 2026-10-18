@@ -5,12 +5,14 @@ import { Effect, FileSystem, Layer, Schema, Stream } from "effect";
 import { HttpClient } from "effect/http";
 
 import { CredentialStore } from "@liminal/credential-store/contract";
+import { LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
 import type { ModelRequest } from "@liminal/sdk";
 import { effortOf, OpenAiData, replyOf } from "@liminal/sdk/ai";
 
 import { codexProvider } from "../contract.ts";
-import { makeSigner, type Signer } from "./auth.ts";
+import { checkLogin, makeSigner, type Signer } from "./auth.ts";
+import { codexMethod } from "./login.ts";
 import { readPlan } from "./plan.ts";
 
 export const apiUrl = "https://chatgpt.com/backend-api/codex";
@@ -51,18 +53,25 @@ const makeStream =
       Stream.provideService(FileSystem.FileSystem, fs),
     );
 
-/** Registers provider `codex`; needs an `HttpClient`, which tests replace with recordings. */
+/**
+ * Registers provider `codex` and its login; needs an `HttpClient`, which tests replace with
+ * recordings.
+ */
 export const codexLayer = Layer.effectDiscard(
   Effect.gen(function* () {
     const providers = yield* ModelProviders;
     const http = yield* HttpClient.HttpClient;
     const fs = yield* FileSystem.FileSystem;
-    const sign = makeSigner(yield* CredentialStore, http);
+    const store = yield* CredentialStore;
+    const sign = makeSigner(store, http);
+
+    yield* (yield* LoginMethods).register(codexMethod(http));
 
     yield* providers.register({
       id: codexProvider,
       name: "Codex",
       source: ModelSource.PlanCatalog({ catalogId: "openai", plan: readPlan(apiUrl, http, sign) }),
+      checkLogin: checkLogin(store),
       stream: makeStream(http, sign, fs),
       nativeToolChanges: false,
     });

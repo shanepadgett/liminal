@@ -20,7 +20,7 @@ From Tau `src/ai/Providers.ts`, `src/ai/Connections.ts`, `src/ai/Login.ts`.
 
 | Vendor | Provider | Login method | Ways to finish | Credential |
 | --- | --- | --- | --- | --- |
-| OpenAI | `codex` | Codex login (OAuth, `auth.openai.com`) | Browser (callback `localhost:1455`), device code | `OAuth` |
+| OpenAI | `codex` | Codex login (OAuth, `auth.openai.com`) | Browser (callback `127.0.0.1:1455`), device code | `OAuth` |
 | OpenAI | `chatgpt` | Sign in with ChatGPT (per-user app registration, ID token checked) | Browser (callback `127.0.0.1:1455`) | `OAuth` with client id and ID token in `extra`; revoked on sign-out |
 | OpenAI | `openai` | API key, env `OPENAI_API_KEY` | Paste key | `ApiKey` |
 | Anthropic | `anthropic` | Claude subscription (OAuth, `claude.ai`) | Browser (callback `localhost:53692`), paste a code | `OAuth`; requests carry Claude Code headers |
@@ -57,7 +57,7 @@ flowchart LR
 
 | Topic | Decision |
 | --- | --- |
-| Who owns login | A new `logins` plugin holds the `LoginMethods` registry (a `KeyedRegistry`, like `ModelProviders`), the shared OAuth pieces (PKCE, local callback server, paste a code, device code polling) and `/connect`. Provider plugins register `{ id, vendor, title, ways, logIn, logOut }` |
+| Who owns login | A new `logins` plugin holds the `LoginMethods` registry (a `KeyedRegistry`, like `ModelProviders`), the shared OAuth pieces (PKCE, local callback server, paste the address) and `/connect`. Provider plugins register `{ id, vendor, title, ways, logIn, logOut }` |
 | Login methods | A tagged union. `ApiKey { env }` is a declaration that `logins` handles fully: ask, save, remove, saved or environment state. `Flow { ways, logIn, logOut? }` is for OAuth; `logIn` runs against a `LoginFlow` service from `logins` (`openUrl`, `showCode`, `ask`, `askSecret`, `waiting`) |
 | `effect/ai` translation | A new SDK zone `@liminal/sdk/ai` holds the translation every provider shares (`promptOf`, `toolkitOf`, `streamOf`, `toModelError`), moved out of `model-codex`; each provider supplies its own metadata Schema |
 | Running a login | The flow runs on the server and streams steps over RPC (see Step 2 Types). The TUI draws the current step, answers by an `answer` RPC and stops it by closing the stream; the RPC client's `Interrupt` stops the server flow, so there is no `cancel` RPC |
@@ -67,7 +67,7 @@ flowchart LR
 | Model lists | A new `model-catalog` plugin owns the `models.dev` catalog and its local cache; `models` depends on it; replaceable like `credential-store` |
 | Catalog refresh | Startup uses the cached copy; a background refresh runs when the cache is older than a set age |
 | Plan-limited logins | Codex and ChatGPT fetch their live plan list; `/model` shows only catalog models on that list (Tau `fetchPlanLists`) |
-| Callback server | `BunHttpServer.layer` (`@effect/platform-bun`) with `HttpServer.serve`, scoped to the login so the port closes when it ends; the browser opens through the platform `open` command |
+| Callback server | `Bun.serve` inside `Effect.acquireRelease`, scoped to the login so the port closes when it ends; a taken port is a typed failure (`BunHttpServer.make` turns it into a defect). The browser opens through `open` (macOS) or `xdg-open` |
 | Sign-out | Confirm dialog, then remove the credential. `chatgpt` revokes first; a failed revoke still removes it and tells the user to disconnect the app by hand |
 | Live test credentials | Live recording tests read Liminal's own credential store only |
 
@@ -352,6 +352,115 @@ model-openai stream
 
 - `model-codex` `prompt.ts`, `events.ts`, `errors.ts` translation code, moved to `@liminal/sdk/ai`.
 - `agent-loop` UI: leaving out a provider whose list fails.
+
+## Step 3: Codex login
+
+Status: built; a live sign-in confirmed `originator: liminal`.
+
+Lets the user sign in to Codex from `/connect`, in the browser or with a device code, and drops the live tests' read of Tau's `~/.tau/credentials.db`.
+
+### Today
+
+| Piece | Where | State |
+| --- | --- | --- |
+| Codex requests | `model-codex/src/server/auth.ts` | Signs with `CredentialStore.fresh("codex", refreshTokens)`; account id read from the access token |
+| Token refresh | same file | Built: `auth.openai.com/oauth/token`, client `app_EMoamEEZ73f0CkXaXp7hrann` |
+| Login method | none | `/model` shows a sign-in row; `/connect` has no Codex row |
+| Live tests | `model-codex/test/record.test.ts` | Read Tau's `~/.tau/credentials.db` |
+| `LoginFlow` | `logins/src/contract.ts` | Steps only: `openUrl`, `showCode`, `ask`, `askSecret`, `waiting`, `tell` |
+
+### Codex protocol (Codex CLI `codex-rs/login/src/{server,device_code_auth}.rs`, Tau `src/ai/Providers.ts`)
+
+| Way | Steps |
+| --- | --- |
+| Browser | PKCE and state; open `auth.openai.com/oauth/authorize` with `id_token_add_organizations`, `codex_cli_simplified_flow`, `originator`; the browser returns to `http://127.0.0.1:1455/auth/callback`; exchange the code at `/oauth/token` (form) |
+| Device code | POST `/api/accounts/deviceauth/usercode`; show the code and `auth.openai.com/codex/device`; poll `/api/accounts/deviceauth/token` at its interval; exchange the returned code and verifier at `/oauth/token` with redirect `auth.openai.com/deviceauth/callback` |
+
+### Step 3 decisions
+
+| Topic | Decision |
+| --- | --- |
+| Shared browser steps | `LoginFlow.authorizeInBrowser({ authorizeUrl, params, callback })` runs PKCE, the local callback server and the paste fallback, and returns the code, verifier and redirect address; each provider exchanges the code for tokens itself |
+| `originator` | `liminal`; a live sign-in works with it |
+| Device code | In `model-codex`: OpenAI's own endpoints and exchange; `logins` only shows the code through `showCode` |
+
+### Step 3 files
+
+```text
+packages/plugins/logins/
+  src/contract.ts                LoginFlow.authorizeInBrowser, BrowserAuthorization, Authorized
+  src/server/flow.ts             flowOf adds authorizeInBrowser for the running method
+  src/server/browser.ts          new: PKCE, callback server, open the browser, race with a pasted address
+  test/browser.test.ts           new: callback on port 0, pasted address, wrong state, port taken
+packages/plugins/model-codex/
+  package.json                   + @liminal/logins
+  plugin.ts                      requires + LoginMethods
+  src/server/provider.ts         registers the `codex` Flow method
+  src/server/auth.ts             requestTokens: token request -> OAuth, shared by exchange and refresh
+  src/server/login.ts            new: browser and device ways, code exchange
+  test/support.ts                stack adds logins
+  test/login.test.ts             new: fake LoginFlow, fake HttpClient
+  test/record.test.ts            reads Liminal's store, not ~/.tau/credentials.db
+docs/plugins/logins.md, docs/plugins/model-codex.md
+```
+
+The gallery needs no new state: the login dialog already draws `OpenUrl`, `ShowCode`, `Ask` and `Waiting` together.
+
+### Step 3 types
+
+```ts
+// logins/src/contract.ts
+/** Where the browser comes back to; port 0 takes a free port. */
+const LoginCallback = Schema.Struct({ host: Schema.String, port: Schema.Int, path: Schema.String })
+const BrowserAuthorization = Schema.Struct({
+  authorizeUrl: Schema.String,
+  params: Schema.Record(Schema.String, Schema.String),   // client_id, scope, provider extras
+  callback: LoginCallback,
+})
+const Authorized = Schema.Struct({ code: Schema.String, verifier: Schema.String, redirectUri: Schema.String })
+LoginFlow += authorizeInBrowser(authorization: BrowserAuthorization): Effect<Authorized, LoginFailed>
+
+// model-codex/src/server/login.ts
+codexMethod(client: HttpClient): LoginMethod   // Flow { id: "codex", vendor OpenAI, ways: browser, device }
+```
+
+### Step 3 call path
+
+```text
+authorizeInBrowser (logins/server/browser.ts), scoped to the call
+  verifier, state = base64url(Crypto.randomBytes(32)); challenge = base64url(sha256(verifier))
+  Bun.serve({ hostname: callback.host, port: callback.port }) in acquireRelease; release stops it
+    request on callback.path -> reply Deferred { code, state, error }; page "Liminal received the login. You can close this tab."
+    port taken -> tell "Port <port> is in use; paste the address the browser ends on"; no server
+  redirectUri = http://<host>:<bound port><path>
+  url = authorizeUrl + params + response_type=code, redirect_uri, code_challenge, S256, state
+  openUrl(url); spawn open (macOS) or xdg-open (Linux); a failed spawn tells the user to open the link
+  reply = first of: callback reply, ask("Or paste the address the browser ends on")
+  error -> LoginFailed(error); state differs -> LoginFailed("The reply belongs to another login")
+  -> { code, verifier, redirectUri }; the scope closes the port
+
+codex browser (model-codex/server/login.ts)
+  authorizeInBrowser({ auth.openai.com/oauth/authorize,
+    { client_id, scope "openid profile email offline_access", id_token_add_organizations, codex_cli_simplified_flow, originator "liminal" },
+    { 127.0.0.1, 1455, /auth/callback } })
+  exchange: POST /oauth/token form { authorization_code, code, redirect_uri, client_id, code_verifier }
+codex device
+  POST /api/accounts/deviceauth/usercode { client_id } -> { device_auth_id, user_code, interval }; 404 -> "device code login is off"
+  showCode(user_code, auth.openai.com/codex/device); waiting("Waiting for the code")
+  poll /api/accounts/deviceauth/token { device_auth_id, user_code } every interval; 403, 404 -> again; 15 minutes -> LoginFailed
+  200 { authorization_code, code_verifier } -> exchange with redirect https://auth.openai.com/deviceauth/callback
+both: requestTokens(client, params) -> OAuth; accountId(access) must succeed -> return it; logins saves it
+```
+
+| Injection | Production | Tests |
+| --- | --- | --- |
+| `HttpClient` (model-codex) | `FetchHttpClient` | fake token and device endpoints |
+| `LoginFlow` (model-codex tests) | logins over RPC | a fake answering `authorizeInBrowser` with a code |
+| Callback server (logins tests) | port 1455 | port 0, hit by a `FetchHttpClient` request |
+| `Crypto` | host base services (`BunServices.layer`) | same, from `testBaseServices` |
+| Opening the browser | `ChildProcessSpawner` from the host | `ChildProcessSpawner.make` with a spawn that records the command |
+
+- `Crypto` joins the base services type in `packages/sdk/src/core/plugin.ts`; the host's `BunServices.layer` already provides it.
 
 ## Deletes or replaces
 
