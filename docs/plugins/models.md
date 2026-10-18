@@ -15,7 +15,7 @@ Status: built
 ### Seam
 
 - Requests, events and errors are Liminal's own Schemas built on `ModelContent`, not `effect/ai` types
-- A request holds the model (provider and id), messages, tools (name, description, JSON Schema, offered at the start or not), a thinking level (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`), an optional output limit, an optional cache key and optional provider options keyed by provider
+- A request holds the model (provider and id), messages, tools (name, description, JSON Schema, offered at the start or not), a thinking value (off, an effort name, a token budget, or on), an optional output limit, an optional cache key and optional provider options keyed by provider
 - `stream` returns a stream of events and a typed error; interruption cancels the call
 - Events: start, part start (text, reasoning or tool call), delta, part end with the finished `ModelPart`, finish with reason and usage
 - Tool-call params stream as raw JSON text
@@ -28,10 +28,11 @@ Status: built
 
 - One plugin per provider adds one entry to `ModelProviders`
 - Several providers are active at once
-- Each provider owns its model list and metadata: context window, output limit, thinking levels, input types, prices
+- A provider's models come from a fixed list, the `models.dev` catalog, or the catalog filtered by its plan's list
+- Each model lists its own thinking options as the provider names them: effort names as given, labelled token budgets, or off and on; none when it cannot reason
 - `stream` accepts model ids a provider does not list
 - Provider plugins build on `@effect/ai-anthropic`, `@effect/ai-openai`, `@effect/ai-openai-compat` and `@effect/ai-openrouter`, translating to and from `effect/ai` inside the plugin
-- Each provider maps the thinking level to its own request fields
+- Each provider maps the thinking value to its own request fields
 
 ### Testing
 

@@ -186,9 +186,34 @@ Models.listModels(provider)
 - Plan lists are fetched each time `/model` opens, as Codex does today.
 - Models from settings arrive in step 6 with `model-local`.
 
-### Open
+### Thinking options
 
-- **Thinking levels.** Recommend Pi's shape (`packages/ai/src/models.ts` `clampThinkingLevel`): the user may pick any level from `off` to `xhigh`; `ModelInfo.thinking` lists the levels the model truly has; a shared `clampThinking(levels, wanted)` picks the nearest, trying higher first, then lower. Effort models list their mapped effort names. Budget models list `minimal` to `high` from a default token table (Pi: 1024, 2048, 8192, 16384), plus `xhigh` at the model's largest budget, plus `off` when it can turn off. Toggle models list `off` and `medium`. OpenCode instead builds per-model named variants (`packages/core/src/variant.ts`: budget gives `high` at half the output limit and `max`), which drops a shared level ladder.
+Each model offers its own options, named as the provider names them (OpenCode `packages/core/src/variant.ts`); no shared ladder.
+
+| models.dev `reasoning_options` | Options (id: label) |
+| --- | --- |
+| `effort` values | Each value as given, such as `none`, `low`, `high`, `xhigh`, `max` |
+| `budget_tokens` | `low`: min (1024 when none), `medium`: a quarter, `high`: half, `max`: the output limit less one; labels show tokens |
+| `toggle` | Adds `off`; alone it gives `off` and `on` |
+| `reasoning` false | None |
+
+```ts
+// sdk/src/core/model.ts
+type ThinkingValue = Data.TaggedEnum<{ Off: {}; On: {}; Effort: { effort: string }; Budget: { tokens: number } }>
+type ThinkingOption = { id: string; label: string; value: ThinkingValue }
+ModelInfo.thinking: ReadonlyArray<ThinkingOption>          // was ReadonlyArray<ThinkingLevel>
+ModelInfo.defaultThinking: Option<string>                  // medium when offered, else the middle option
+ModelRequest.thinking: ThinkingValue                       // was ThinkingLevel
+Models.describe(ref): Effect<ModelInfo, ModelError | ProviderNotFound | CatalogUnavailable>  // no plan fetch
+```
+
+| Path | Change |
+| --- | --- |
+| `agent-loop` settings `thinking` | An option id, optional; no `medium` default |
+| Turn start | `describe(model)`; the saved id when offered, else the model's default, else `Off` |
+| `/model` | Shows each model's options; the composer line shows the chosen option's label |
+| `model-codex` | `Effort` sends that effort; `Off` sends `none` |
+| `ThinkingLevel` | Deleted |
 
 ## Deletes or replaces
 
