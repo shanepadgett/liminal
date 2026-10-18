@@ -26,7 +26,7 @@ Reload at turn end is built ([plans/reload.md](plans/reload.md)): each plugin pa
 ## Next
 
 - Review reload at turn end ([plans/reload.md](plans/reload.md), its `Open` list).
-- Slash commands and dialogs: build [plans/commands.md](plans/commands.md), then plan connect and login as its own plan. Commands per [requirements/05-frontends.md](requirements/05-frontends.md).
+- Review slash commands and dialogs ([plans/commands.md](plans/commands.md), its `Open` list), then plan connect and login as its own plan. Commands per [requirements/05-frontends.md](requirements/05-frontends.md).
 - Connect and login's first build: Codex (browser and device code), OpenAI API key, Anthropic API key, Claude subscription, OpenRouter API key; each needs its provider plugin.
 - Review the transcript in a live terminal ([plans/transcript.md](plans/transcript.md)).
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
@@ -38,7 +38,7 @@ Reload at turn end is built ([plans/reload.md](plans/reload.md)): each plugin pa
 - Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`); [plans/reload.md](plans/reload.md) serves them into each build's `Bun.ModuleGraph`; rejecting a plugin's own copies stays open
 - ACP adapter as a server plugin
 - Collab-style session sharing through an encrypted relay
-- TUI: built per [plans/archive/tui-session.md](plans/archive/tui-session.md); its `Open` list holds the choices made while building (entry kinds drawn by `chat`, tokens moved into `@liminal/sdk/tui`). Model switching waits for the command palette.
+- TUI: built per [plans/archive/tui-session.md](plans/archive/tui-session.md); its `Open` list holds the choices made while building (entry kinds drawn by `chat`, tokens moved into `@liminal/sdk/tui`).
 - Gallery: its own isolated app, a minimal Storybook for the TUI; built before any TUI components or screens; every element, primitives through screens, is approved there first; houses its own components, duplication accepted; keep Tau's tier, state and width rules, redesign the shell
 
 ## Later

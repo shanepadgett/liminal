@@ -130,3 +130,9 @@ Steps 1 to 3 share one commit; steps 4 to 6 get one each.
 - One-shot `agent-loop/defaults`, replaced by the stream.
 - `chat`'s fixed session from `setup`.
 - The gallery's `match.ts`.
+
+## Open
+
+- `/model` leaves out a provider whose model list fails, such as Codex without a login, and logs why; the dialog could show the reason under the provider's section instead.
+- `/new` has no key; the gallery's palette shows `ctrl+n`.
+- The palette and `/model` list what is reachable when they open; a command registered while the dialog is open shows on the next open.
