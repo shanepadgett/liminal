@@ -120,5 +120,10 @@
     "version": "3.3.1",
     "fingerprint": "c3479840b364fc98",
     "commits": []
+  },
+  "diff": {
+    "version": "9.0.0",
+    "fingerprint": "0c0e563e0b7a512d",
+    "commits": []
   }
 }

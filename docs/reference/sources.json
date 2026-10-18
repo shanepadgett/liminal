@@ -231,6 +231,13 @@
       "summary": "Parses JSON with comments and edits it in place: parse, modify and applyEdits keep comments and formatting. The settings plugin uses it.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
       "api": [{ "kind": "types", "path": "lib/umd/main.d.ts" }]
+    },
+    {
+      "package": "diff",
+      "versionSource": "lock",
+      "summary": "jsdiff: line diffs and unified patches. structuredPatch and formatPatch with OMIT_HEADERS give hunks only; the SDK's unifiedDiff uses them.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "types", "path": "libesm/index.d.ts" }]
     }
   ]
 }

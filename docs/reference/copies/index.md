@@ -161,3 +161,10 @@ Parses JSON with comments and edits it in place: parse, modify and applyEdits ke
 
 - Docs: `docs/reference/copies/jsonc-parser/3.3.1/` (1 file: README.md)
 - API (types): `packages/plugins/settings/node_modules/jsonc-parser/lib/umd/main.d.ts`
+
+## diff 9.0.0
+
+jsdiff: line diffs and unified patches. structuredPatch and formatPatch with OMIT_HEADERS give hunks only; the SDK's unifiedDiff uses them.
+
+- Docs: `docs/reference/copies/diff/9.0.0/` (1 file: README.md)
+- API (types): `packages/sdk/node_modules/diff/libesm/index.d.ts`

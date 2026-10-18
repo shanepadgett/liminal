@@ -460,6 +460,9 @@
     "packages/sdk": {
       "name": "@liminal/sdk",
       "version": "0.1.0",
+      "dependencies": {
+        "diff": "9.0.0",
+      },
       "devDependencies": {
         "@effect/ai-anthropic": "4.0.5",
         "@effect/ai-openai": "4.0.5",

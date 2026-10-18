@@ -45,7 +45,7 @@ export const ModelPart = Schema.Union([
     path: Schema.String,
     mediaType: Schema.Literals(["image/png", "image/jpeg", "image/webp"]),
   }),
-  /** In system messages only: offers or withdraws a tool from this point on. */
+  /** In user messages only: offers or withdraws a tool from this point on. */
   Schema.Struct({
     type: Schema.Literal("tool-change"),
     change: Schema.Literals(["offer", "withdraw"]),

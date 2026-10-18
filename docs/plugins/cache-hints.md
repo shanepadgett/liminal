@@ -10,7 +10,7 @@ Status: built
 
 ## Requirements
 
-- Marks the first system message, the last system message and the last message, at most three distinct marks
+- Marks the first system message and the last message, at most two distinct marks
 - Tools get no mark; Anthropic caches tools before system, so the first system mark covers them
 - Marks are added per request and never saved
 - Providers that cache on their own ignore marks

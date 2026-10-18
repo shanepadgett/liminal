@@ -29,27 +29,23 @@ const requestOf = (messages: ReadonlyArray<ModelContent>): ContextRequest => ({
 const marked = (request: ContextRequest) =>
   request.messages.map((message) => message.cache === "breakpoint");
 
-test("marks the first and last system messages and the last message", () => {
+test("marks the first system message and the last message", () => {
   const request = requestOf([
     said("system", "base"),
     said("user", "one"),
     said("assistant", "two"),
-    said("system", "update"),
     said("user", "three"),
     said("assistant", "four"),
     said("tool", "five"),
   ]);
 
-  expect(marked(marksOf(request))).toEqual([true, false, false, true, false, false, true]);
+  expect(marked(marksOf(request))).toEqual([true, false, false, false, false, true]);
 });
 
-test("one system message and a last system message take one mark each", () => {
-  expect(marked(marksOf(requestOf([said("system", "base"), said("user", "hi")])))).toEqual([
-    true,
-    true,
-  ]);
+test("a lone system message takes one mark; no system message leaves only the last", () => {
+  expect(marked(marksOf(requestOf([said("system", "base")])))).toEqual([true]);
 
-  expect(marked(marksOf(requestOf([said("user", "hi"), said("system", "late")])))).toEqual([
+  expect(marked(marksOf(requestOf([said("user", "hi"), said("assistant", "hello")])))).toEqual([
     false,
     true,
   ]);

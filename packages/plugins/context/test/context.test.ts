@@ -3,7 +3,7 @@
  * restart.
  */
 
-import { expect } from "bun:test";
+import { expect, test } from "bun:test";
 
 import { Context as EffectContext, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";
 
@@ -20,6 +20,7 @@ import {
   Context,
   type ContextRequest,
   definePromptSection,
+  fileTextsRender,
   PromptSections,
   type SectionRead,
   SystemData,
@@ -144,8 +145,14 @@ effectTest(
     yield* log.append(s1, [prompt("next")]);
     const changed = yield* built.build(s1, model);
 
+    expect(changed.messages.map((message) => message.role)).toEqual(["system", "user", "user"]);
+
     expect(changed.messages.at(-1)?.parts).toEqual([
-      { type: "text", text: "Notes changed from a to b", providerData: {} },
+      {
+        type: "text",
+        text: '<reminder kind="instructions">\nNotes changed from a to b\n</reminder>',
+        providerData: {},
+      },
       { type: "tool-change", change: "offer", tool: tool("later").spec },
     ]);
 
@@ -251,3 +258,41 @@ effectTest(
   }),
   testBaseServices,
 );
+
+test("file sections send whole files, then diffs, added files and removed lines", () => {
+  const lines = Array.from({ length: 12 }, (_, index) => `line ${index + 1}`);
+  const a = { path: "a.md", text: lines.join("\n") };
+  const b = { path: "b.md", text: "bee" };
+
+  expect(fileTextsRender.initial([a, b])).toBe(
+    `<file path="a.md">\n${a.text}\n</file>\n\n<file path="b.md">\nbee\n</file>`,
+  );
+
+  const edited = { path: "a.md", text: lines.with(5, "line six").join("\n") };
+  const added = { path: "c.md", text: "sea" };
+
+  expect(fileTextsRender.changed([a, b], [edited, added])).toBe(
+    [
+      "`a.md` changed:",
+      "```diff",
+      "@@ -4,5 +4,5 @@",
+      " line 4",
+      " line 5",
+      "-line 6",
+      "+line six",
+      " line 7",
+      " line 8",
+      "```",
+      "",
+      '<file path="c.md">\nsea\n</file>',
+      "",
+      "`b.md` was removed; stop following it.",
+    ].join("\n"),
+  );
+
+  expect(fileTextsRender.changed([b], [{ path: "b.md", text: "bees" }])).toBe(
+    '<file path="b.md">\nbees\n</file>',
+  );
+
+  expect(fileTextsRender.removed?.([a])).toBe("`a.md` was removed; stop following it.");
+});

@@ -1,6 +1,6 @@
 # System prompt and instructions
 
-Status: rounds 1 and 2 agreed; step 1 code plan agreed.
+Status: rounds 1 and 2 agreed; step 1 built.
 
 Gives every session a base system prompt, the facts of its environment, and the user's and project's instruction files, kept current as files change without breaking the prompt cache.
 

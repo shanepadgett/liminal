@@ -3,7 +3,13 @@
 import { Effect, FileSystem, Option, Predicate, type Schema } from "effect";
 import { type Prompt, Tool, Toolkit } from "effect/ai";
 
-import { ModelError, type ModelContent, type ModelPart, type ModelTool } from "../core/index.ts";
+import {
+  ModelError,
+  type ModelContent,
+  type ModelPart,
+  type ModelTool,
+  reminder,
+} from "../core/index.ts";
 import { keptData } from "./data.ts";
 import type { MessageOptions, ProviderPrompt } from "./provider-prompt.ts";
 
@@ -18,20 +24,43 @@ const toolChangeText = ({ change, tool }: ToolChangePart) =>
     : `The tool \`${tool.name}\` is no longer available; do not call it.`;
 
 const systemText = (parts: ReadonlyArray<ModelPart>) =>
-  parts
-    .flatMap((part) => {
-      if (part.type === "text") return [part.text];
-      if (part.type === "tool-change") return [toolChangeText(part)];
+  parts.flatMap((part) => (part.type === "text" ? [part.text] : [])).join("\n\n");
 
-      return [];
-    })
-    .join("\n\n");
+/**
+ * The user parts with each run of `tool-change` parts as one tools reminder, for a provider that
+ * sends every tool from the start.
+ */
+const withToolReminders = (parts: ReadonlyArray<ModelPart>): ReadonlyArray<ModelPart> => {
+  const result: Array<ModelPart> = [];
+  let run: Array<string> = [];
+
+  const flush = () => {
+    if (run.length > 0) {
+      result.push({ type: "text", text: reminder("tools", run.join("\n")), providerData: {} });
+    }
+
+    run = [];
+  };
+
+  for (const part of parts) {
+    if (part.type === "tool-change") {
+      run.push(toolChangeText(part));
+    } else {
+      flush();
+      result.push(part);
+    }
+  }
+
+  flush();
+
+  return result;
+};
 
 const userParts = Effect.fn("Ai.userParts")(function* (parts: ReadonlyArray<ModelPart>) {
   const fs = yield* FileSystem.FileSystem;
   const content: Array<Prompt.UserMessagePartEncoded> = [];
 
-  for (const part of parts) {
+  for (const part of withToolReminders(parts)) {
     if (part.type === "text") content.push({ type: "text", text: part.text });
 
     if (part.type === "image") {
@@ -145,7 +174,7 @@ const dynamicTool = (tool: ModelTool) => {
       );
 };
 
-/** Every declared tool, offered or not; a later offer arrives as system text. */
+/** Every declared tool, offered or not; a later offer arrives as a tools reminder. */
 export const toolkitOf = Effect.fn("Ai.toolkitOf")(function* (tools: ReadonlyArray<ModelTool>) {
   return Toolkit.make(...(yield* Effect.forEach(tools, dynamicTool)));
 });

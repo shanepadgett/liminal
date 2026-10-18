@@ -21,6 +21,7 @@ import {
   SessionNotFound,
   StoreError,
   ToolSpec,
+  unifiedDiff,
   type UserVisibility,
 } from "@liminal/sdk";
 
@@ -40,7 +41,10 @@ export interface SectionInput {
 export interface PromptSectionDefinition<A> {
   /** Prefixed with the defining plugin's name, such as `instructions/agents`. */
   readonly key: string;
-  /** Sections sort by order, then key: base 0, environment 100, instructions 200, skills 300, others 900. */
+  /**
+   * Sections sort by order, then key: base 0, tool guidance 50, environment 100 to 110,
+   * instructions 200 to 220, skills 300, others 900.
+   */
   readonly order: number;
   /** Saves the value in the log, so a later read can be compared with it. */
   readonly codec: Schema.Codec<A, Schema.Json>;
@@ -113,6 +117,53 @@ export const definePromptSection = <A>(definition: PromptSectionDefinition<A>): 
       return Option.match(decode(before), { onNone: () => "", onSome: render });
     },
   };
+};
+
+/** One file a section holds. */
+export const FileText = Schema.Struct({ path: Schema.String, text: Schema.String });
+export type FileText = typeof FileText.Type;
+
+/** The files a section holds, most shared first. */
+export const FileTexts = Schema.Array(FileText);
+export type FileTexts = typeof FileTexts.Type;
+
+const fileTag = ({ path, text }: FileText) => `<file path="${path}">\n${text}\n</file>`;
+
+const removedLine = ({ path }: FileText) => `\`${path}\` was removed; stop following it.`;
+
+/** A changed file as a diff, or its whole new text when the diff is longer. */
+const changedFile = (before: FileText, after: FileText) => {
+  const patch = unifiedDiff(before.text, after.text);
+
+  return patch.length > after.text.length
+    ? fileTag(after)
+    : `\`${after.path}\` changed:\n\`\`\`diff\n${patch}\n\`\`\``;
+};
+
+/** One file's change from `before`, or none when its text is the same. */
+const fileChange = (before: ReadonlyMap<string, FileText>, after: FileText) => {
+  const saved = before.get(after.path);
+  if (saved === undefined) return [fileTag(after)];
+
+  return saved.text === after.text ? [] : [changedFile(saved, after)];
+};
+
+/**
+ * The render for a `FileTexts` section: whole files at first, then per path a diff, the whole text
+ * of an added file, or a line that a removed file no longer applies.
+ */
+export const fileTextsRender: PromptSectionDefinition<FileTexts>["render"] = {
+  initial: (files) => files.map(fileTag).join("\n\n"),
+  changed: (before, after) => {
+    const saved = new Map(before.map((file) => [file.path, file]));
+    const current = new Set(after.map((file) => file.path));
+
+    return [
+      ...after.flatMap((file) => fileChange(saved, file)),
+      ...before.flatMap((file) => (current.has(file.path) ? [] : [removedLine(file)])),
+    ].join("\n\n");
+  },
+  removed: (before) => before.map(removedLine).join("\n\n"),
 };
 
 /** The prompt sections by key, newest build first; a plugin registers its sections in its scope. */

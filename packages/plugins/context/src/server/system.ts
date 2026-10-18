@@ -5,7 +5,13 @@
 
 import { Equal, Option, Schema } from "effect";
 
-import type { Entry, ModelContent, ModelPart, ModelTool } from "@liminal/sdk";
+import {
+  type Entry,
+  type ModelContent,
+  type ModelPart,
+  type ModelTool,
+  reminder,
+} from "@liminal/sdk";
 
 import {
   type ContextRequest,
@@ -167,18 +173,25 @@ export const diff = (
 
 const textPart = (text: string): ModelPart => ({ type: "text", text, providerData: {} });
 
-/** The system message a system entry sends. */
+/**
+ * The message a system entry sends: a baseline is the system prompt; an update is a user message
+ * with one instructions reminder, then its tool changes.
+ */
 export const systemModel = (data: SystemData): ReadonlyArray<ModelContent> => {
-  const texts = data.sections.flatMap((section) =>
-    section.text === "" ? [] : [textPart(section.text)],
-  );
+  const texts = data.sections.flatMap((section) => (section.text === "" ? [] : [section.text]));
 
-  const changes: ReadonlyArray<ModelPart> =
-    data.type === "update"
-      ? data.tools.map(({ change, tool }) => ({ type: "tool-change", change, tool }))
-      : [];
+  if (data.type === "baseline") return [{ role: "system", parts: texts.map(textPart) }];
 
-  return [{ role: "system", parts: [...texts, ...changes] }];
+  const instructions =
+    texts.length === 0 ? [] : [textPart(reminder("instructions", texts.join("\n\n")))];
+
+  const changes = data.tools.map(({ change, tool }): ModelPart => ({
+    type: "tool-change",
+    change,
+    tool,
+  }));
+
+  return [{ role: "user", parts: [...instructions, ...changes] }];
 };
 
 /** The plain text a system entry shows. */

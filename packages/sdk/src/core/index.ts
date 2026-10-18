@@ -22,6 +22,7 @@ export * as Pipeline from "./pipeline.ts";
 export * from "./protocol.ts";
 export * from "./session.ts";
 export * from "./slot.ts";
+export * from "./text.ts";
 export * as Registry from "./registry.ts";
 export { whileLocked } from "./sqlite.ts";
 export * from "./tool.ts";
