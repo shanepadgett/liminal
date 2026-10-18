@@ -3,15 +3,19 @@
  * matches, and its key hints.
  */
 
-import { Effect, Predicate, Stream } from "effect";
+import { Effect, Predicate, Record, Schema, Stream } from "effect";
 import { createSignal } from "solid-js";
 
 import { AgentLoopRpcs, type DefaultsView } from "@liminal/agent-loop/contract";
 import { ChatSlots } from "@liminal/chat/contract";
+import { SessionId } from "@liminal/sdk";
 import { defineTui, makeBridge, TuiCommands, TuiDialogs, TuiHost } from "@liminal/sdk/tui";
 
 import { InboxRpcs, type Queued } from "./contract.ts";
 import { type ComposerDeps, makeComposer, makeHints, type ModelLine } from "./tui/Composer.tsx";
+
+/** Each session's draft, kept across restarts. */
+const Drafts = Schema.Record(SessionId, Schema.String);
 
 const noQueue: Queued = { steers: [], followUps: [] };
 const loading: ModelLine = { set: false, reason: "" };
@@ -27,7 +31,20 @@ export default defineTui({
     const bridge = yield* makeBridge;
     const inbox = yield* host.client(InboxRpcs);
     const loop = yield* host.client(AgentLoopRpcs);
-    const drafts = host.sessionState("draft", () => createSignal(""));
+    const kept = host.keep("drafts", Drafts, (): typeof Drafts.Type => ({}));
+
+    const drafts = host.sessionState("draft", (session) => {
+      const [draft, setDraft] = createSignal(kept.get()[session] ?? "");
+
+      const write = (text: string) => {
+        setDraft(text);
+        const others = Record.remove(kept.get(), session);
+        kept.set(text === "" ? others : { ...others, [session]: text });
+      };
+
+      return [draft, write] as const;
+    });
+
     const [problem, setProblem] = createSignal("");
     const commands = yield* TuiCommands;
     const dialogs = yield* TuiDialogs;

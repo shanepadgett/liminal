@@ -1,12 +1,14 @@
 /**
  * Where the user writes: a raised surface with the input and, under it, the model in the accent
  * color with its thinking option. Enter sends; while a turn runs it steers the turn and Tab queues
- * a follow-up instead. Queued input shows above the input until the turn takes it.
+ * a follow-up instead. Queued input shows above the input until the turn takes it. Ctrl+c clears
+ * the draft.
  */
 
 import type { TextareaRenderable } from "@opentui/core";
-import type { Accessor, Setter } from "solid-js";
-import { For, Show } from "solid-js";
+import { useTerminalDimensions } from "@opentui/solid";
+import type { Accessor } from "solid-js";
+import { For, onMount, Show, untrack } from "solid-js";
 
 import type { SessionId } from "@liminal/sdk";
 import { type Hint, Hints, type TuiCommandsService, useBindings, useColor } from "@liminal/sdk/tui";
@@ -15,7 +17,11 @@ import type { Queued, SendMode } from "../contract.ts";
 import { useSlash } from "./slash.ts";
 import { SlashMenu } from "./SlashMenu.tsx";
 
-const INPUT_ROWS = 2;
+/**
+ * The most rows the input grows to before it scrolls: a third of the terminal, at least six. A
+ * blank row always stays under it, above the model line.
+ */
+const maxInputRows = (terminalRows: number) => Math.max(6, Math.floor(terminalRows / 3));
 
 /**
  * The default model and its thinking option's label, empty when it has none, or why no model is
@@ -28,7 +34,7 @@ export type ModelLine =
 /** What the composer reads and does, made once by the part's setup. */
 export interface ComposerDeps {
   /** The session's draft, shared with its hints. */
-  readonly draft: (session: SessionId) => readonly [Accessor<string>, Setter<string>];
+  readonly draft: (session: SessionId) => readonly [Accessor<string>, (text: string) => void];
   readonly send: (session: SessionId, text: string, mode: SendMode) => void;
   readonly queue: (session: SessionId) => Accessor<Queued>;
   /** The model line, or why no turn can start. */
@@ -89,24 +95,40 @@ function QueuedLines(props: { readonly queued: Queued }) {
   );
 }
 
-/** The textarea: enter submits, shift+enter starts a new line. */
+/**
+ * The textarea: enter and the keypad's enter submit, shift+enter starts a new line; it grows with
+ * its text and starts with the kept draft.
+ */
 function Input(props: {
   readonly ref: (made: TextareaRenderable) => void;
+  readonly initial: string;
   readonly focused: boolean;
   readonly onSubmit: () => void;
   readonly onChange: () => void;
 }) {
   const color = useColor();
   const surface = () => color("surface.raised");
+  const terminal = useTerminalDimensions();
+  let made: TextareaRenderable | undefined;
+
+  // A kept draft goes on where it stopped.
+  onMount(() => made?.gotoBufferEnd());
 
   return (
     <textarea
-      ref={props.ref}
+      ref={(each) => {
+        made = each;
+        props.ref(each);
+      }}
       focused={props.focused}
-      height={INPUT_ROWS}
+      minHeight={1}
+      marginBottom={1}
+      maxHeight={maxInputRows(terminal().height)}
+      initialValue={props.initial}
       placeholder="Ask anything"
       keyBindings={[
         { name: "return", action: "submit" },
+        { name: "kpenter", action: "submit" },
         { name: "return", shift: true, action: "newline" },
       ]}
       onSubmit={props.onSubmit}
@@ -120,6 +142,20 @@ function Input(props: {
     />
   );
 }
+
+/**
+ * Clears the draft. With none, or under a dialog, it declines, so ctrl+c goes on to the next
+ * binding.
+ */
+const clearDraft = (input: TextareaRenderable | undefined, underDialog: boolean) => {
+  if (underDialog || input === undefined || input.plainText === "") return false;
+  input.clear();
+
+  return true;
+};
+
+/** While a turn runs, tab queues the draft as a follow-up. */
+const queueKeys = (running: boolean) => (running ? [{ key: "tab", cmd: "inbox.queue" }] : []);
 
 export const makeComposer = (deps: ComposerDeps) =>
   function Composer(props: TurnProps) {
@@ -137,8 +173,6 @@ export const makeComposer = (deps: ComposerDeps) =>
       if (!slash.submit(text)) deps.send(props.sessionId, text, mode);
     };
 
-    const queueKeys = () => (props.running ? [{ key: "tab", cmd: "inbox.queue" }] : []);
-
     useBindings(() => ({
       commands: [
         ...slash.commands,
@@ -148,8 +182,12 @@ export const makeComposer = (deps: ComposerDeps) =>
             send("follow-up");
           },
         },
+        { name: "inbox.clear", run: () => clearDraft(input, deps.dialogOpen()) },
       ],
-      bindings: slash.open() ? slash.bindings : queueKeys(),
+      bindings: [
+        { key: "ctrl+c", cmd: "inbox.clear" },
+        ...(slash.open() ? slash.bindings : queueKeys(props.running)),
+      ],
     }));
 
     return (
@@ -166,11 +204,14 @@ export const makeComposer = (deps: ComposerDeps) =>
         </Show>
         <Input
           ref={(made) => (input = made)}
+          initial={untrack(draft)}
           focused={!deps.dialogOpen()}
           onSubmit={() => {
             send("steer");
           }}
-          onChange={() => setDraft(input?.plainText ?? "")}
+          onChange={() => {
+            setDraft(input?.plainText ?? "");
+          }}
         />
         <ModelLine deps={deps} />
         <Show when={deps.problem() !== ""}>

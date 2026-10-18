@@ -5,6 +5,7 @@
 
 import { useBindings } from "@opentui/keymap/solid";
 
+import { enterKeys } from "./commands.ts";
 import { DialogFrame, type DialogProps } from "./dialogs.tsx";
 import type { Hint } from "./Hints.tsx";
 import { useColor } from "./theme.ts";
@@ -36,7 +37,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
         },
       },
     ],
-    bindings: [{ key: "return", cmd: "confirm.yes" }],
+    bindings: enterKeys("confirm.yes"),
   }));
 
   return (

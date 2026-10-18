@@ -1,9 +1,9 @@
 /**
  * What a frontend gives each plugin's UI part, independent of how the frontend renders: slot
- * registration, a kernel client, session following and per-session state.
+ * registration, a kernel client, session following, per-session state and kept values.
  */
 
-import type { Cause, Effect, Scope, Stream } from "effect";
+import type { Cause, Effect, Schema, Scope, Stream } from "effect";
 import type { Rpc, RpcClient, RpcClientError, RpcGroup } from "effect/rpc";
 
 import type { FeedMissing, FollowEvent } from "./protocol.ts";
@@ -34,6 +34,15 @@ export interface SessionState<A> {
   readonly of: (session: SessionId) => A;
 }
 
+/**
+ * A value the host keeps across the part's reloads, and hands to the next process when the app
+ * restarts.
+ */
+export interface Kept<A> {
+  readonly get: () => A;
+  readonly set: (value: A) => void;
+}
+
 export interface FrontendHost<K extends ComponentKind> {
   /**
    * Adds `component` to the slot, and declares the child slots it owns. Removed when the caller's
@@ -55,7 +64,16 @@ export interface FrontendHost<K extends ComponentKind> {
    * The state named `key` for each session, made by `initial` on first use; it survives the part
    * reloading.
    */
-  readonly sessionState: <A>(key: string, initial: () => A) => SessionState<A>;
+  readonly sessionState: <A>(key: string, initial: (session: SessionId) => A) => SessionState<A>;
+  /**
+   * The value named `key`: the one handed over by the process before a restart when `schema`
+   * decodes it, else made by `initial` on first use.
+   */
+  readonly keep: <A>(
+    key: string,
+    schema: Schema.Codec<A, Schema.Json>,
+    initial: () => A,
+  ) => Kept<A>;
 }
 
 /**

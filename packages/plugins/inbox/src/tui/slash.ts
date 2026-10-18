@@ -6,7 +6,7 @@
 import type { TextareaRenderable } from "@opentui/core";
 import { type Accessor, createEffect, createMemo, createSignal, on } from "solid-js";
 
-import { slashCommand, type TuiCommandsService } from "@liminal/sdk/tui";
+import { enterKeys, slashCommand, type TuiCommandsService } from "@liminal/sdk/tui";
 
 import { type SlashMatch, slashMatches, slashWord } from "./SlashMenu.tsx";
 
@@ -44,7 +44,7 @@ const slashKeys = (actions: {
   bindings: [
     { key: "up", cmd: "inbox.slash-up" },
     { key: "down", cmd: "inbox.slash-down" },
-    { key: "return", cmd: "inbox.slash-pick" },
+    ...enterKeys("inbox.slash-pick"),
     { key: "tab", cmd: "inbox.slash-complete" },
   ],
 });

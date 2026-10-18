@@ -65,7 +65,7 @@ const Z_INDEX = 10;
 
 /**
  * A panel centered over the whole window on the raised surface: the title in the accent, the rule,
- * then `esc`, which closes it; key hints sit at the bottom.
+ * then `esc`, which closes it, as ctrl+c does; key hints sit at the bottom.
  */
 export function DialogFrame(props: {
   readonly title: string;
@@ -84,7 +84,10 @@ export function DialogFrame(props: {
         },
       },
     ],
-    bindings: [{ key: "escape", cmd: "dialog.close" }],
+    bindings: [
+      { key: "escape", cmd: "dialog.close" },
+      { key: "ctrl+c", cmd: "dialog.close" },
+    ],
   }));
 
   return (

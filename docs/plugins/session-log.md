@@ -40,6 +40,7 @@ Status: built
 - Subscribers are told the newest sequence number and read new entries from the store
 - An entry is visible to subscribers only after it is saved
 - Subscribing replays the entries after a given sequence number, marks when it has caught up, then sends each entry as it is saved
+- Following a session not created yet reads as empty until its first entries are saved
 - A subscriber that falls behind reads the missed entries from the store; no entry is skipped
 - Live state is a separate feed that delivers only the newest value, and becomes an entry when saved
 

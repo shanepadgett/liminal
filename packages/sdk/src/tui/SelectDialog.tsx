@@ -8,6 +8,7 @@ import { type ScrollBoxRenderable, TextAttributes } from "@opentui/core";
 import { useBindings } from "@opentui/keymap/solid";
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 
+import { enterKeys } from "./commands.ts";
 import { DialogFrame, type DialogProps } from "./dialogs.tsx";
 import type { Hint } from "./Hints.tsx";
 import { matchIndices, matchRuns } from "./match.ts";
@@ -247,7 +248,7 @@ export function SelectDialog<V>(props: SelectDialogProps<V>) {
     bindings: [
       { key: "up", cmd: "select.up" },
       { key: "down", cmd: "select.down" },
-      { key: "return", cmd: "select.choose" },
+      ...enterKeys("select.choose"),
     ],
   }));
 

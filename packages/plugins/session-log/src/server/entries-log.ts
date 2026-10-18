@@ -23,11 +23,19 @@ type Reader<A> = (
   range: SeqRange,
 ) => Effect.Effect<ReadonlyArray<A>, SessionNotFound | StoreError>;
 
-/** The saved entries, Synced, then whatever each append signal reveals past the cursor. */
+/**
+ * The saved entries, Synced, then whatever each append signal reveals past the cursor. A session
+ * not created yet reads as empty, so it can be followed from before its first prompt.
+ */
 const followWith =
-  <A extends { readonly seq: Seq }>(deps: LogDeps, read: Reader<A>) =>
-  (session: SessionId, from: { readonly after?: Seq }) =>
-    Stream.unwrap(
+  <A extends { readonly seq: Seq }>(deps: LogDeps, readAny: Reader<A>) =>
+  (session: SessionId, from: { readonly after?: Seq }) => {
+    const read: Reader<A> = (each, range) =>
+      readAny(each, range).pipe(
+        Effect.catchTag("SessionNotFound", () => Effect.succeed<ReadonlyArray<A>>([])),
+      );
+
+    return Stream.unwrap(
       Effect.gen(function* () {
         const signals = yield* PubSub.subscribe(deps.appended);
         const saved = yield* read(session, from);
@@ -57,6 +65,7 @@ const followWith =
         );
       }),
     );
+  };
 
 export const makeEntries = (deps: LogDeps) => {
   const read = Effect.fn("SessionLog.read")(function* (session: SessionId, range: SeqRange) {

@@ -30,6 +30,7 @@ export { Tail } from "./Tail.tsx";
 export {
   type Command,
   type CommandKey,
+  enterKeys,
   type ListedCommand,
   makeTuiCommands,
   type Slash,

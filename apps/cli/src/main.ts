@@ -2,18 +2,20 @@
 /**
  * Liminal command-line entry point: starts the kernel over the built-in plugins, loads their TUI
  * parts and draws them in the terminal until the user quits. Exits with the restart code when
- * changed app code is ready, so the supervisor starts it again. With `--check`, only starts the
- * kernel and exits 0, which checks that changed code boots.
+ * changed app code is ready, so the supervisor starts it again; what the TUI's parts keep goes to
+ * the next process in the handoff file. With `--check`, only starts the kernel and exits 0, which
+ * checks that changed code boots.
  */
 
 import { BunRuntime, BunServices } from "@effect/platform-bun";
-import { Deferred, Effect, Layer, Path } from "effect";
+import { Deferred, Effect, Layer, Option, Path } from "effect";
 
 import { startFrontend } from "@liminal/frontend";
 import { start } from "@liminal/kernel";
 import { Directories } from "@liminal/sdk";
 
 import { pluginsFolder, sharedModules } from "./boot.ts";
+import { giveHandoff, handoffVariable, takeHandoff } from "./handoff.ts";
 import { reloadOptions } from "./reload.ts";
 import { exitWithCode, restartExitCode } from "./supervisor.ts";
 import { makeTerminal, mount, openRenderer, tuiServices } from "./tui/run.tsx";
@@ -52,17 +54,30 @@ const run = Effect.gen(function* () {
   });
 
   const terminal = yield* makeTerminal(yield* openRenderer);
+  const handoffFile = Option.fromNullishOr(process.env[handoffVariable]);
 
   const frontend = yield* startFrontend({
     graph: kernel.graph,
     connect: kernel.connect,
     services: tuiServices(terminal),
     part: (member) => member.parts.tui,
+    handoff: yield* Option.match(handoffFile, {
+      onNone: () => Effect.succeed({}),
+      onSome: takeHandoff,
+    }),
   });
+
+  const restart = Effect.andThen(
+    Option.match(handoffFile, {
+      onNone: () => Effect.void,
+      onSome: (file) => giveHandoff(file, frontend.handoff()),
+    }),
+    Effect.succeed(restartExitCode),
+  );
 
   return yield* Effect.raceFirst(
     mount(frontend, terminal).pipe(Effect.flatMap(Deferred.await), Effect.as(0)),
-    kernel.reloads.restartDue.pipe(Effect.as(restartExitCode)),
+    kernel.reloads.restartDue.pipe(Effect.andThen(restart)),
   );
 });
 

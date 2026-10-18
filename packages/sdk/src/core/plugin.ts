@@ -1,6 +1,6 @@
 /** `definePlugin` and the manifest types the host reads. */
 
-import type { Context, FileSystem, Layer, Path } from "effect";
+import type { Context, Crypto, FileSystem, Layer, Path } from "effect";
 import type { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
 import type { Rpc, RpcGroup } from "effect/rpc";
 
@@ -15,6 +15,7 @@ export type BaseServices =
   | FileSystem.FileSystem
   | Path.Path
   | ChildProcessSpawner
+  | Crypto.Crypto
   | Directories
   | EventBus
   | TurnGate

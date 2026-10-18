@@ -78,7 +78,10 @@ const awaitEnd = (state: State, session: SessionId, seen: Entry | undefined) =>
     .subscribe(session, seen === undefined ? {} : { after: seen.seq })
     .pipe(Stream.filter(isEnded), Stream.runHead);
 
-/** Saves the queued input, then `text`, as user messages, and starts a turn on them. */
+/**
+ * Saves the queued input, then `text`, as user messages, and starts a turn on them. The first
+ * prompt creates the session.
+ */
 const startTurn = Effect.fn("Inbox.startTurn")(function* (
   state: State,
   session: SessionId,
@@ -90,7 +93,12 @@ const startTurn = Effect.fn("Inbox.startTurn")(function* (
 
   const queued = yield* take(state.queues, session);
   const earlier = [...queued.steers, ...queued.followUps].map(userMessage);
-  yield* state.log.append(session, Arr.append(earlier, userMessage(text)));
+  const append = state.log.append(session, Arr.append(earlier, userMessage(text)));
+
+  yield* append.pipe(
+    Effect.catchTag("SessionNotFound", () => Effect.andThen(state.log.create(session), append)),
+  );
+
   yield* state.loop.start(session, settings);
 });
 

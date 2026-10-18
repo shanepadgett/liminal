@@ -35,6 +35,17 @@ How the TUI and the gallery look and move, and how the transcript shows a sessio
 - The gallery is the design source for the TUI
 - The gallery and the TUI keep separate components; every requested change updates both
 
+## Composer
+
+- The input grows with its text up to a third of the terminal, at least six rows, then scrolls
+- A blank row always stays between the input and the model line
+- The draft survives a reload of any plugin, cursor at its end
+
+## Keys
+
+- Enter and the keypad's enter act the same everywhere
+- Ctrl+c closes the top dialog; with none open it clears the draft; with an empty draft it quits
+
 ## Transcript
 
 Brightness follows importance, and what is newest is brightest.

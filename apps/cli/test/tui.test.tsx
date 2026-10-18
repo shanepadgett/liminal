@@ -6,11 +6,22 @@
 import { expect } from "bun:test";
 
 import { createTestRenderer, type TestRendererSetup } from "@opentui/core/testing";
-import { Context, Effect, Latch, Option, Path, Predicate, Queue, Schedule, Stream } from "effect";
+import {
+  Context,
+  Deferred,
+  Effect,
+  Latch,
+  Option,
+  Path,
+  Predicate,
+  Queue,
+  Schedule,
+  Stream,
+} from "effect";
 import { ChildProcess } from "effect/process";
 import { TestClock } from "effect/testing";
 
-import { startFrontend } from "@liminal/frontend";
+import { type Handoff, startFrontend } from "@liminal/frontend";
 import { type Kernel, type ReloadOptions, start } from "@liminal/kernel";
 import {
   reply,
@@ -48,6 +59,7 @@ const parts = [
 const boot = Effect.fn("boot")(function* <E>(
   before: (kernel: Kernel) => Effect.Effect<void, E>,
   reload?: ReloadOptions,
+  handoff: Handoff = {},
 ) {
   const path = yield* Path.Path;
 
@@ -61,7 +73,7 @@ const boot = Effect.fn("boot")(function* <E>(
   yield* before(kernel);
 
   const setup = yield* Effect.acquireRelease(
-    Effect.promise(() => createTestRenderer({ width: 80, height: 24 })),
+    Effect.promise(() => createTestRenderer({ width: 80, height: 24, kittyKeyboard: true })),
     ({ renderer }) =>
       Effect.sync(() => {
         renderer.destroy();
@@ -75,6 +87,7 @@ const boot = Effect.fn("boot")(function* <E>(
     connect: kernel.connect,
     services: tuiServices(terminal),
     part: (member) => member.parts.tui,
+    handoff,
   });
 
   // Parts that load before chat declares its slots wait, then run once it does.
@@ -83,9 +96,9 @@ const boot = Effect.fn("boot")(function* <E>(
     Stream.runHead,
   );
 
-  yield* mount(frontend, terminal);
+  const quit = yield* mount(frontend, terminal);
 
-  return { kernel, setup };
+  return { kernel, setup, quit, frontend };
 });
 
 /**
@@ -105,7 +118,7 @@ const frameWith = (setup: TestRendererSetup, text: string) =>
   frameWhere(setup, (frame) => frame.includes(text));
 
 effectTest(
-  "the chat screen loads every UI part and shows the most recent session",
+  "the chat screen loads every UI part and starts blank, not on the most recent session",
   Effect.gen(function* () {
     const { setup } = yield* boot((kernel) =>
       kernel.use((services) => {
@@ -115,7 +128,9 @@ effectTest(
       }),
     );
 
-    expect(yield* frameWith(setup, "hello there")).toContain("enter send");
+    const frame = yield* frameWith(setup, "enter send");
+    expect(frame).toContain("Ask anything");
+    expect(frame).not.toContain("hello there");
   }),
   testBaseServices,
 );
@@ -217,6 +232,26 @@ effectTest(
 );
 
 effectTest(
+  "the composer keeps its draft when its plugin reloads",
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const changes = yield* Queue.unbounded<ReadonlyArray<string>>();
+    const { kernel, setup } = yield* boot(() => Effect.void, testReload(changes));
+    const file = path.resolve(import.meta.dir, "../../../packages/plugins/inbox/src/tui.tsx");
+
+    yield* frameWith(setup, "Ask anything");
+    yield* Effect.promise(() => setup.mockInput.typeText("keep me"));
+    yield* frameWith(setup, "keep me");
+    yield* awaitRebuild(kernel.graph, "inbox", Queue.offer(changes, [file]));
+    yield* frameWith(setup, "keep me");
+    yield* Effect.promise(() => setup.mockInput.typeText(" too"));
+
+    expect(yield* frameWith(setup, "keep me too")).not.toContain("Ask anything");
+  }),
+  testBaseServices,
+);
+
+effectTest(
   "the header shows why a reload's check failed",
   Effect.gen(function* () {
     const path = yield* Path.Path;
@@ -283,6 +318,66 @@ effectTest(
 );
 
 effectTest(
+  "the composer grows with each new line of the draft",
+  Effect.gen(function* () {
+    const { setup } = yield* boot(() => Effect.void);
+
+    yield* frameWith(setup, "Ask anything");
+
+    yield* Effect.promise(() => setup.mockInput.typeText("one"));
+
+    for (const line of ["two", "three", "four"]) {
+      setup.mockInput.pressEnter({ shift: true });
+      yield* Effect.promise(() => setup.mockInput.typeText(line));
+    }
+
+    // Each line shows, and a blank row still sits between the last one and the model line.
+    const grown = /one *\n *two *\n *three *\n *four *\n *\n *No model is set/;
+    expect(yield* frameWhere(setup, (frame) => grown.test(frame))).toMatch(grown);
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "ctrl+c closes the open dialog, then clears the draft, then quits",
+  Effect.gen(function* () {
+    const { setup, quit } = yield* boot(() => Effect.void);
+
+    yield* frameWith(setup, "Ask anything");
+    yield* Effect.promise(() => setup.mockInput.typeText("draft words"));
+    setup.mockInput.pressKey("p", { ctrl: true });
+    yield* frameWith(setup, "Type to filter");
+
+    setup.mockInput.pressKey("c", { ctrl: true });
+    const closed = yield* frameWhere(setup, (frame) => !frame.includes("Type to filter"));
+    expect(closed).toContain("draft words");
+
+    setup.mockInput.pressKey("c", { ctrl: true });
+    yield* frameWith(setup, "Ask anything");
+    expect(yield* Deferred.isDone(quit)).toBe(false);
+
+    setup.mockInput.pressKey("c", { ctrl: true });
+    yield* Deferred.await(quit);
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "the keypad's enter sends the draft",
+  Effect.gen(function* () {
+    const { setup } = yield* bootScripted(replyText("got it"));
+
+    yield* frameWith(setup, "Ask anything");
+    yield* Effect.promise(() => setup.mockInput.typeText("hello"));
+    // The kitty keyboard protocol's keypad enter.
+    setup.mockInput.pressKey("\x1b[57414u");
+
+    expect(yield* frameWith(setup, "got it")).toContain("hello");
+  }),
+  testBaseServices,
+);
+
+effectTest(
   "ctrl+p lists the palette's commands with their keys, and enter runs one",
   Effect.gen(function* () {
     const { setup } = yield* boot(() => Effect.void);
@@ -307,17 +402,51 @@ effectTest(
 );
 
 effectTest(
-  "/new opens a fresh session with an empty transcript",
+  "the first prompt creates the session",
   Effect.gen(function* () {
-    const { setup } = yield* boot((kernel) =>
-      kernel.use((services) => {
-        const log = Context.getUnsafe(services, SessionLog);
+    const { kernel, setup } = yield* bootScripted(replyText("hi there"));
+    const sessions = kernel.use((services) => Context.getUnsafe(services, SessionLog).list);
 
-        return log.create(s1).pipe(Effect.andThen(log.append(s1, [userMessage("hello there")])));
+    yield* frameWith(setup, "Ask anything");
+    expect(yield* sessions).toHaveLength(0);
+
+    yield* send(setup, "hello");
+    yield* frameWith(setup, "hi there");
+    expect(yield* sessions).toHaveLength(1);
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "a restart reopens the session and its draft",
+  Effect.gen(function* () {
+    const handoff = yield* Effect.scoped(
+      Effect.gen(function* () {
+        const { setup, frontend } = yield* bootScripted(replyText("hi there"));
+
+        yield* send(setup, "hello");
+        yield* frameWith(setup, "hi there");
+        yield* Effect.promise(() => setup.mockInput.typeText("half written"));
+        yield* frameWith(setup, "half written");
+
+        return frontend.handoff();
       }),
     );
 
-    yield* frameWith(setup, "hello there");
+    const { setup } = yield* boot(() => Effect.void, undefined, handoff);
+
+    expect(yield* frameWith(setup, "hi there")).toContain("half written");
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "/new opens a fresh session with an empty transcript",
+  Effect.gen(function* () {
+    const { setup } = yield* bootScripted(replyText("hi there"));
+
+    yield* send(setup, "hello there");
+    yield* frameWith(setup, "hi there");
     yield* Effect.promise(() => setup.mockInput.typeText("/new"));
     yield* frameWith(setup, "Start a fresh session");
     setup.mockInput.pressEnter();
@@ -352,7 +481,7 @@ effectTest(
 );
 
 effectTest(
-  "/connect saves an OpenAI API key and lists OpenAI as signed in",
+  "/connect saves an OpenAI API key, closes, and then lists OpenAI as signed in",
   Effect.gen(function* () {
     const { setup } = yield* boot(() => Effect.void);
 
@@ -364,8 +493,17 @@ effectTest(
     expect(yield* frameWith(setup, "Connect a provider")).toContain("OpenAI");
     setup.mockInput.pressEnter();
 
+    yield* frameWith(setup, "ChatGPT plan (Codex)");
+    setup.mockInput.pressArrow("down");
+    setup.mockInput.pressEnter();
+
     yield* frameWith(setup, "API key");
     yield* Effect.promise(() => setup.mockInput.typeText("sk-test"));
+    setup.mockInput.pressEnter();
+
+    yield* frameWhere(setup, (frame) => !frame.includes("OpenAI"));
+    yield* Effect.promise(() => setup.mockInput.typeText("/connect"));
+    yield* frameWith(setup, "Sign in to a provider");
     setup.mockInput.pressEnter();
 
     expect(yield* frameWith(setup, "signed in")).toContain("OpenAI");

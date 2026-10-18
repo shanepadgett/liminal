@@ -6,6 +6,7 @@
  * its form takes the input's place until the answers are sent.
  */
 
+import { useTerminalDimensions } from "@opentui/solid";
 import { Match, Show, Switch } from "solid-js";
 
 import { type Hint, Hints, type RoleColor } from "@liminal/sdk/tui";
@@ -80,7 +81,11 @@ const hintsFor = (
       ];
 };
 
-const INPUT_ROWS = 2;
+/**
+ * The most rows the input grows to before it scrolls: a third of the terminal, at least six. A
+ * blank row always stays under it, above the model line.
+ */
+const maxInputRows = (terminalRows: number) => Math.max(6, Math.floor(terminalRows / 3));
 
 export function Composer(props: {
   readonly color: RoleColor;
@@ -138,9 +143,13 @@ function Input(props: {
   readonly draft: string;
   readonly surface: string;
 }) {
+  const terminal = useTerminalDimensions();
+
   return (
     <textarea
-      height={INPUT_ROWS}
+      minHeight={1}
+      marginBottom={1}
+      maxHeight={maxInputRows(terminal().height)}
       initialValue={props.draft}
       placeholder="Ask anything, or / for commands"
       backgroundColor={props.surface}

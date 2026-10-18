@@ -29,6 +29,15 @@ import { TRANSCRIPT_COMPONENTS, TRANSCRIPT_SCREENS } from "./transcript/galleryE
 /** A draft long enough to show how the composer holds real text. */
 const DRAFT = "fix the test so it checks they start concurrently";
 
+/** A draft long enough that the input grows past its two rows. */
+const LINES = [
+  "the reload check fails on a fresh clone:",
+  "",
+  "1. run mise run dev",
+  "2. edit a plugin's server file",
+  "3. the header says the check failed",
+].join("\n");
+
 const composerState = (name: string, isWorking: boolean, draft: string): EntryState => ({
   name,
   fill: "width",
@@ -175,6 +184,7 @@ export const GROUPS: Groups = [
             states: [
               composerState("Idle, empty", false, ""),
               composerState("Idle, with text", false, DRAFT),
+              composerState("Idle, several lines", false, LINES),
               composerState("Working", true, ""),
               composerState("Working, with text", true, DRAFT),
               composerState("Slash commands", false, "/"),

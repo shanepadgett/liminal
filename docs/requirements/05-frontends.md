@@ -8,6 +8,10 @@ How frontends host plugins and how plugins extend the UI.
 - Slot cardinality: single, list, keyed, chain
 - Slot scope: root or session
 - The host keeps one instance of session-scoped state per session id, surviving session and tab switches
+- Launch starts blank; it never resumes the previous session
+- A session is created when its first prompt is sent
+- A supervisor restart reopens the session and drafts it had; a quit and relaunch keeps neither
+- A part keeps a value with `keep` and a schema; it survives the part's reloads and goes to the next process in the supervisor's handoff file
 - Unmounting a slot owner removes its child slots and their contributions
 - A slot is a typed handle the owning plugin exports from its contract; registrants import it
 - A same-priority clash or a registration into an undeclared slot fails only the later plugin's UI part, with a typed error in its status

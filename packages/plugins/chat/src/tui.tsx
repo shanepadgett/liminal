@@ -1,22 +1,16 @@
 /**
- * Chat's TUI part: opens the most recent session, or a new one when there is none, follows it, and
- * draws the chat screen into the root slot, declaring the chat slots. `/new` switches to a new
- * session. It draws the entries and live states of the plugins it builds on; other plugins register
- * theirs.
+ * Chat's TUI part: starts on a new session, which the first prompt creates, follows it, and draws
+ * the chat screen into the root slot, declaring the chat slots. The session is kept across reloads
+ * and restarts. `/new` switches to a new session. It draws the entries and live states of the
+ * plugins it builds on; other plugins register theirs.
  */
 
 import { Effect, Stream, SubscriptionRef } from "effect";
-import type { RpcClient, RpcClientError, RpcGroup } from "effect/rpc";
 
 import { LiveReply, LiveRetry } from "@liminal/agent-loop/contract";
 import { RootSlot, SessionId } from "@liminal/sdk";
 import { defineTui, makeBridge, TuiCommands, TuiHost } from "@liminal/sdk/tui";
-import {
-  ReasoningEntry,
-  SessionLogRpcs,
-  TextEntry,
-  UserEntry,
-} from "@liminal/session-log/contract";
+import { ReasoningEntry, TextEntry, UserEntry } from "@liminal/session-log/contract";
 
 import { ChatSlots } from "./contract.ts";
 import { ChatScreen } from "./tui/ChatScreen.tsx";
@@ -24,32 +18,26 @@ import { Prompt, Said, Thought } from "./tui/entries.tsx";
 import { Reply, Retry } from "./tui/live.tsx";
 import { emptyTranscript, fold } from "./tui/transcript-state.ts";
 
-type Sessions = RpcClient.RpcClient<
-  RpcGroup.Rpcs<typeof SessionLogRpcs>,
-  RpcClientError.RpcClientError
->;
-
-const newSession = Effect.fn("newSession")(function* (sessions: Sessions) {
-  const session = SessionId.make(crypto.randomUUID());
-  yield* sessions["session-log/create"]({ session });
-
-  return session;
-});
-
-const openSession = Effect.fn("openSession")(function* (sessions: Sessions) {
-  const [recent] = yield* sessions["session-log/list"]();
-
-  return recent === undefined ? yield* newSession(sessions) : recent.id;
-});
+/** A session id no session has yet. */
+const newSession = () => SessionId.make(crypto.randomUUID());
 
 export default defineTui({
   setup: Effect.gen(function* () {
     const host = yield* TuiHost;
     const bridge = yield* makeBridge;
     const commands = yield* TuiCommands;
-    const sessions = yield* host.client(SessionLogRpcs);
-    const first = yield* openSession(sessions);
+    const kept = host.keep("session", SessionId, newSession);
+    const first = kept.get();
     const current = yield* SubscriptionRef.make(first);
+
+    yield* SubscriptionRef.changes(current).pipe(
+      Stream.runForEach((session) =>
+        Effect.sync(() => {
+          kept.set(session);
+        }),
+      ),
+      Effect.forkScoped,
+    );
 
     const view = bridge.watch(
       SubscriptionRef.changes(current).pipe(
@@ -71,11 +59,7 @@ export default defineTui({
         slash: { name: "new" },
         palette: true,
         run: () => {
-          bridge.run(
-            newSession(sessions).pipe(
-              Effect.flatMap((session) => SubscriptionRef.set(current, session)),
-            ),
-          );
+          bridge.run(SubscriptionRef.set(current, newSession()));
         },
       },
     ]);

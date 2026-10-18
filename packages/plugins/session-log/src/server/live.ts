@@ -1,6 +1,6 @@
 /** A session's live slot: saving it, reading it and following its changes. */
 
-import { Effect, PubSub, Schema, Stream } from "effect";
+import { Effect, Option, PubSub, Schema, Stream } from "effect";
 
 import { type LiveState, type SessionId, StoreError } from "@liminal/sdk";
 import type { StoredLive } from "@liminal/session-store/contract";
@@ -47,7 +47,13 @@ export const makeLive = (deps: LogDeps) => {
     Stream.unwrap(
       Effect.gen(function* () {
         const changes = yield* PubSub.subscribe(deps.liveChanges);
-        const current = yield* readLive(session);
+
+        // A session not created yet has no live state.
+        const current = yield* readLive(session).pipe(
+          Effect.map(Option.fromNullishOr),
+          Effect.catchTag("SessionNotFound", () => Effect.succeedNone),
+          Effect.map(Option.getOrUndefined),
+        );
 
         const followed = Stream.fromSubscription(changes).pipe(
           Stream.filter((changed) => changed === session),

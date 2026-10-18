@@ -13,6 +13,7 @@ import {
   type SessionState,
 } from "@liminal/sdk";
 
+import type { KeptStore } from "./kept.ts";
 import { type Entry, register, remove, type SlotTree } from "./tree.ts";
 
 /** A registration's options with every kind's fields optional, as the tree stores them. */
@@ -41,11 +42,12 @@ export interface TreeEvents {
   readonly dropped: (plugins: ReadonlyMap<string, ReadonlySet<string>>) => Effect.Effect<void>;
 }
 
-/** What every part's host shares: the tree, ids, per-session state and the kernel. */
+/** What every part's host shares: the tree, ids, per-session state, kept values and the kernel. */
 export interface HostShared<C> {
   readonly tree: SubscriptionRef.SubscriptionRef<SlotTree<C>>;
   readonly nextId: Effect.Effect<number>;
   readonly states: Map<string, Map<SessionId, unknown>>;
+  readonly kept: KeptStore;
   readonly connect: Effect.Effect<RpcClient.Protocol["Service"], never, Scope.Scope>;
   readonly events: TreeEvents;
 }
@@ -53,7 +55,7 @@ export interface HostShared<C> {
 const makeSessionState = <A>(
   states: Map<string, Map<SessionId, unknown>>,
   name: string,
-  initial: () => A,
+  initial: (session: SessionId) => A,
 ): SessionState<A> => {
   const sessions = states.get(name) ?? new Map<SessionId, unknown>();
   states.set(name, sessions);
@@ -63,7 +65,7 @@ const makeSessionState = <A>(
       // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the host stores only what `initial` made for this name.
       const held = sessions.get(session) as A | undefined;
       if (held !== undefined) return held;
-      const made = initial();
+      const made = initial(session);
       sessions.set(session, made);
 
       return made;
@@ -141,6 +143,7 @@ export const makeHost = Effect.fn("makeHost")(function* <K extends ComponentKind
     follow: (session) =>
       Stream.unwrap(Effect.map(kernel, (client) => client["kernel/follow"]({ session }))),
     sessionState: (key, initial) => makeSessionState(shared.states, `${plugin}/${key}`, initial),
+    keep: (key, schema, initial) => shared.kept.keep(`${plugin}/${key}`, schema, initial),
   };
 
   return host;

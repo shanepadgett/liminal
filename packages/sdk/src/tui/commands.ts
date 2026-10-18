@@ -42,6 +42,12 @@ export interface CommandKey {
   readonly cmd: string;
 }
 
+/** Enter and the keypad's enter, both running `cmd`. */
+export const enterKeys = (cmd: string): ReadonlyArray<CommandKey> => [
+  { key: "return", cmd },
+  { key: "kpenter", cmd },
+];
+
 /** A reachable command and the keys that run it, joined for display. */
 export interface ListedCommand {
   readonly command: Command;

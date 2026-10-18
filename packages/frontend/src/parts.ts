@@ -33,6 +33,7 @@ import {
 } from "@liminal/sdk";
 
 import { type HostShared, makeHost } from "./host.ts";
+import { type Handoff, makeKeptStore } from "./kept.ts";
 import { PartFailure, PartStatus } from "./status.ts";
 import { makeTree, type SlotTree } from "./tree.ts";
 
@@ -62,6 +63,8 @@ export interface FrontendOptions<K extends ComponentKind, H> {
   readonly services: (host: FrontendHost<K>) => Context.Context<H>;
   /** The member's module for this frontend's part, if it has one. */
   readonly part: (member: GraphMember) => PartModule | undefined;
+  /** The values the previous process kept, when this one is a restart. */
+  readonly handoff?: Handoff;
 }
 
 export interface Frontend<C> {
@@ -69,6 +72,8 @@ export interface Frontend<C> {
   readonly tree: Stream.Stream<SlotTree<C>>;
   /** Every loaded part's status, then each change. */
   readonly statuses: Stream.Stream<ReadonlyMap<string, PartStatus>>;
+  /** Every value parts keep, encoded, for the next process. */
+  readonly handoff: () => Handoff;
 }
 
 /** A loaded part: the build it came from and its setup. */
@@ -236,6 +241,7 @@ const sharedOf = <C>(
   tree: SubscriptionRef.SubscriptionRef<SlotTree<C>>,
   connect: FrontendOptions<ComponentKind, unknown>["connect"],
   changes: Queue.Queue<Change>,
+  handoff: Handoff,
 ): HostShared<C> => {
   let lastId = 0;
 
@@ -243,6 +249,7 @@ const sharedOf = <C>(
     tree,
     nextId: Effect.sync(() => ++lastId),
     states: new Map<string, Map<SessionId, unknown>>(),
+    kept: makeKeptStore(handoff),
     connect,
     events: {
       declared: (slots) => Queue.offer(changes, Change.Declared({ slots })).pipe(Effect.asVoid),
@@ -263,7 +270,7 @@ export const startFrontend = Effect.fn("startFrontend")(function* <K extends Com
     root: yield* Effect.scope,
     tree,
     statuses: yield* SubscriptionRef.make<ReadonlyMap<string, PartStatus>>(new Map()),
-    shared: sharedOf(tree, options.connect, changes),
+    shared: sharedOf(tree, options.connect, changes, options.handoff ?? {}),
     parts: new Map(),
     scopes: new Map(),
   };
@@ -284,6 +291,7 @@ export const startFrontend = Effect.fn("startFrontend")(function* <K extends Com
   const frontend: Frontend<K["component"]> = {
     tree: SubscriptionRef.changes(tree),
     statuses: SubscriptionRef.changes(loader.statuses),
+    handoff: loader.shared.kept.handoff,
   };
 
   return frontend;
