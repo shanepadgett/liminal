@@ -3,7 +3,7 @@
  * entries, tool rows, the live tip, the composer and the key hints.
  */
 
-import type { Schema } from "effect";
+import { Option, Schema } from "effect";
 
 import { type LiveState, type NoProps, type SavedEntry, Slot } from "@liminal/sdk";
 
@@ -40,6 +40,33 @@ export interface ToolRows {
   readonly fold: (call: ToolCall) => WorkRow;
 }
 
+/** What a tool's opened row gets: the call, and its result as text, empty when it is not text. */
+export interface ToolView {
+  readonly call: ToolCall;
+  readonly text: string;
+}
+
+const decodePath = Schema.decodeUnknownOption(Schema.Struct({ path: Schema.String }));
+
+/**
+ * Rows for a tool whose params name a `path`: `<running> <path>` while it runs, `<done> <path>`
+ * after, joined with neighbours by `joins`.
+ */
+export const pathRows = (words: {
+  readonly running: string;
+  readonly done: string;
+  readonly joins: NonNullable<WorkRow["joins"]>;
+}): ToolRows => ({
+  fold: (call) => ({
+    verb: call.outcome === undefined ? words.running : words.done,
+    subject: Option.match(decodePath(call.params), {
+      onNone: () => "",
+      onSome: ({ path }) => path,
+    }),
+    joins: words.joins,
+  }),
+});
+
 /** The props of the composer and the hints: whether a turn is running. */
 export interface TurnProps {
   readonly running: boolean;
@@ -54,9 +81,7 @@ export const ChatSlots = {
     scope: "session",
   }),
   /** A tool call's opened detail, keyed by tool name; its metadata words the call's row. */
-  tool: Slot.keyed<{ readonly call: ToolCall }, ToolRows, "session">("chat/tool", {
-    scope: "session",
-  }),
+  tool: Slot.keyed<ToolView, ToolRows, "session">("chat/tool", { scope: "session" }),
   /** The session's live state at the transcript's end, keyed by live kind. */
   live: Slot.keyed<{ readonly live: LiveState }, NoProps, "session">("chat/live", {
     scope: "session",

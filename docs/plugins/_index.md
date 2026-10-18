@@ -37,8 +37,9 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | Plugin | Does | Status |
 | --- | --- | --- |
 | [context](context.md) | Turns the log into model messages | built |
-| system-prompt | The built-in base system prompt | planned |
-| environment | Workspace, git, platform, shell, date and a two-level file listing | planned |
+| [system-prompt](system-prompt.md) | The built-in base system prompt | built |
+| [tool-guidance](tool-guidance.md) | The guidance lines of the registered tools, in the system prompt | built |
+| [environment](environment.md) | Workspace, git, platform, shell, date and a two-level file listing | built |
 | agents-files | `AGENTS.md` files from the repository root down to the workspace, on by default | planned |
 | [notices](notices.md) | Session notices only the user sees, in the transcript | built |
 | instruction-files | `.liminal/instructions/` files with `always` or `read-when` front matter | planned |
@@ -77,7 +78,9 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | tool-output-spill | Moves large tool output to a file | to plan |
 | checks | The checks tool, and runs the checks itself, with its own entry kind, when the model ends its turn without them | to plan |
 | command-runner | Runs one command to its end, with a timeout | built |
-| tools-file | `read`, `write` and `edit` in the workspace | built |
+| tools-read | `read`: a text file in windows of lines | built |
+| tools-write | `write`: a whole file, with its folders | built |
+| tools-edit | `edit`: replaces text that appears once in a file | built |
 | tools-shell | `shell` over the command runner | built |
 | one plugin per tool family | Web and other tools | to plan |
 | [processes](processes.md) | Commands that keep running across turns and restarts | planned |

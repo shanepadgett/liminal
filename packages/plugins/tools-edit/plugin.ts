@@ -1,10 +1,10 @@
-/** File tools: `read`, `write` and `edit` in the workspace. */
+/** Edit tool: `edit`: replaces text that appears once in a file, in the workspace. */
 
 import { definePlugin } from "@liminal/sdk";
 import { Tools } from "@liminal/tool-registry/contract";
 
 export default definePlugin({
-  name: "tools-file",
+  name: "tools-edit",
   provides: [],
   requires: [Tools],
   uses: [],

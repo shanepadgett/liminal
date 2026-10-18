@@ -44,6 +44,8 @@ export interface Tool {
   readonly spec: ToolSpec;
   /** Offered from the session's first request; otherwise declared and offered later. */
   readonly offeredAtStart: boolean;
+  /** Rule lines for the system prompt, such as when to prefer this tool over another. */
+  readonly guidance: ReadonlyArray<string>;
   readonly hints: ToolHints;
   /** Can run at the same time as other calls in one step. */
   readonly runAlongside: boolean;
@@ -62,6 +64,8 @@ export interface ToolDefinition<S extends Schema.Top> {
   /** Checks the params; its JSON Schema is what the model sees. */
   readonly parameters: S;
   readonly offeredAtStart?: boolean;
+  /** Missing guidance is none. */
+  readonly guidance?: ReadonlyArray<string>;
   /** Missing hints take the MCP defaults. */
   readonly hints?: Partial<ToolHints>;
   readonly runAlongside: boolean;
@@ -98,6 +102,7 @@ export const defineTool = <S extends Schema.Top & { readonly DecodingServices: n
       parameters: jsonSchemaOf(definition.parameters),
     },
     offeredAtStart: definition.offeredAtStart ?? true,
+    guidance: definition.guidance ?? [],
     hints: { ...defaultHints, ...definition.hints },
     runAlongside: definition.runAlongside,
     safeToRerun: definition.safeToRerun,

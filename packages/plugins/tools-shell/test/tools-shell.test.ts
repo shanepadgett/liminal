@@ -2,7 +2,7 @@
 
 import { expect } from "bun:test";
 
-import { Effect, FileSystem, Layer, Option, Path } from "effect";
+import { Effect, FileSystem, Layer, Option } from "effect";
 
 import commandRunner from "@liminal/command-runner";
 import { Directories, SessionId } from "@liminal/sdk";
@@ -30,8 +30,7 @@ effectTest(
   "a command runs in the workspace and the model sees its output and exit code",
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
-    const workspace = yield* fs.realPath(path.dirname((yield* Directories).project));
+    const workspace = yield* fs.realPath((yield* Directories).workspace);
 
     const output = yield* shell("pwd; echo oops >&2; exit 2");
 

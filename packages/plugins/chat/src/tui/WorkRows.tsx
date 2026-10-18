@@ -4,6 +4,7 @@
  * its calls, and a single call shows its tool's detail.
  */
 
+import { Option, Schema } from "effect";
 import { createSignal, For, Index, Show } from "solid-js";
 
 import type { SessionId } from "@liminal/sdk";
@@ -13,6 +14,8 @@ import { ChatSlots, type ToolCall } from "../contract.ts";
 import { groupsOf, type WorkGroup, type Worded } from "./work.ts";
 
 const OPENED_INDENT = 2;
+
+const decodeText = Schema.decodeUnknownOption(Schema.String);
 
 const after = (text: string) => (text === "" ? "" : ` ${text}`);
 
@@ -39,7 +42,11 @@ function Detail(props: { readonly sessionId: SessionId; readonly call: ToolCall 
     <SlotView
       of={ChatSlots.tool}
       cell={props.call.name}
-      props={{ sessionId: props.sessionId, call: props.call }}
+      props={{
+        sessionId: props.sessionId,
+        call: props.call,
+        text: Option.getOrElse(decodeText(props.call.outcome?.result), () => ""),
+      }}
     />
   );
 }

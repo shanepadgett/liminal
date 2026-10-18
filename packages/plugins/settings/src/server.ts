@@ -69,7 +69,7 @@ const settingsFiles = Effect.gen(function* () {
     );
   });
 
-  return { load, write, workspace: path.dirname(directories.project) };
+  return { load, write, workspace: directories.workspace };
 });
 
 const make = Effect.gen(function* () {

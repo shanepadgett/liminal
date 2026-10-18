@@ -6,9 +6,9 @@ Step 2 is built ([plans/archive/step-2.md](plans/archive/step-2.md)): `KeyedRegi
 
 Step 3 is built ([plans/archive/step-3.md](plans/archive/step-3.md)): the SDK `Pipeline`, `tool-pipeline` and `agent-loop`; turns with tool calls, steering, follow-ups, retry, cancel and resume run on the scripted provider.
 
-Step 4 is built ([plans/archive/step-4.md](plans/archive/step-4.md)): `settings`, `credential-store`, `command-runner`, `tools-file`, `tools-shell` and `model-codex`; a turn on the replayed Codex provider reads a workspace file and answers from it.
+Step 4 is built ([plans/archive/step-4.md](plans/archive/step-4.md)): `settings`, `credential-store`, `command-runner`, the file and shell tools and `model-codex`; a turn on the replayed Codex provider reads a workspace file and answers from it.
 
-Step 5 is built ([plans/archive/step-5.md](plans/archive/step-5.md), [plans/archive/tui-session.md](plans/archive/tui-session.md)): the kernel serves `KernelRpcs` and every active plugin's `RpcGroup` over an in-memory ndjson socket, with the `EventBus` and session following through `SessionFeed`; `session-store` keeps a session index; `apps/cli` runs the TUI: `packages/frontend` loads each plugin's UI part into the slot tree, and the `chat`, `inbox`, `cancel`, `tools-file` and `tools-shell` parts draw the chat screen on a live session.
+Step 5 is built ([plans/archive/step-5.md](plans/archive/step-5.md), [plans/archive/tui-session.md](plans/archive/tui-session.md)): the kernel serves `KernelRpcs` and every active plugin's `RpcGroup` over an in-memory ndjson socket, with the `EventBus` and session following through `SessionFeed`; `session-store` keeps a session index; `apps/cli` runs the TUI: `packages/frontend` loads each plugin's UI part into the slot tree, and the `chat`, `inbox`, `cancel` and tool parts draw the chat screen on a live session.
 
 Step 6 is built ([plans/archive/step-6.md](plans/archive/step-6.md)): the kernel holds plugin graphs by reference count and `Kernel.reload` rebuilds changed plugins and their dependents beside the running graph; requests, steps and `Work` tasks finish on the graph they hold; `agent-loop` turns run as kernel-held work and resume at boot; `apps/cli/src/supervisor.ts` restarts the app on exit code 75.
 
@@ -24,6 +24,10 @@ Connect and login step 3 is built ([plans/connect.md](plans/connect.md)): `Login
 
 Connect and login step 6 is built ([plans/connect.md](plans/connect.md)): `@liminal/sdk/ai/{messages,responses,chat}` hold the protocol streams; `model-openrouter` and `model-opencode-go` sign in with API keys; neither has had a live request yet.
 
+Instructions steps 1 to 5 are built ([plans/instructions.md](plans/instructions.md)): `context` sends section updates as a user-role instructions reminder; `notices`; `chat` draws only its own entries; `tool-guidance` puts each tool's `guidance` lines in the system prompt; `system-prompt` holds the base prompt; `environment` holds the workspace facts and file listing.
+
+Every tool is its own plugin package: `tools-read`, `tools-write`, `tools-edit` and `tools-shell`.
+
 Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model providers and testing, each matching the built code.
 
 ## Focus
@@ -38,7 +42,7 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 ## Next
 
 - Plan plugin toggles: user and project config enable, disable and replace plugins, so third parties can replace built-ins
-- Plan the code for system prompt and instructions ([plans/instructions.md](plans/instructions.md)), then folding; Liminal is not usable day to day without them.
+- Build instructions step 6 ([plans/instructions.md](plans/instructions.md)), then plan folding; Liminal is not usable day to day without them.
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
 
@@ -72,4 +76,4 @@ Pi session IDs and the topics each discussed.
 - 01a145a9-703a-7284-8f7a-054aea36ec2c: TUI design (transcript)
 - 01a14649-dee8-74a7-b272-e37fd82f47b6: Sessions, Plugin catalog, docs layout
 - 01a1473c-d9a2-74a7-b272-e383d7bf6e43: session-log contract, entry kinds and visibility, compaction memories, plugin foundation, build order, testing, step 1 build, repository layout
-- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end, slash commands and dialogs, connect and login, model catalog and thinking options, contracts importing contracts, TUI keys, blank launch and restart handoff, connect step 6 (SDK protocol subpaths, no local provider), instructions plan, notices
+- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end, slash commands and dialogs, connect and login, model catalog and thinking options, contracts importing contracts, TUI keys, blank launch and restart handoff, connect step 6 (SDK protocol subpaths, no local provider), instructions plan, notices, one package per tool

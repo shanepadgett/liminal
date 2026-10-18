@@ -4,10 +4,18 @@ import { For } from "solid-js";
 
 import { useColor } from "./theme.ts";
 
-/** Shows the last `lines` lines of `text`. */
-export function Tail(props: { readonly text: string; readonly lines: number }) {
+/** Lines a tail shows unless it says otherwise. */
+const defaultLines = 8;
+
+/** Shows the last `lines` lines of `text`, 8 unless given. */
+export function Tail(props: { readonly text: string; readonly lines?: number }) {
   const color = useColor();
-  const shown = () => props.text.trimEnd().split("\n").slice(-props.lines);
+
+  const shown = () =>
+    props.text
+      .trimEnd()
+      .split("\n")
+      .slice(-(props.lines ?? defaultLines));
 
   return (
     <box flexDirection="column">

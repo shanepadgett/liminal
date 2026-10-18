@@ -36,6 +36,7 @@ effectTest(
 
     expect(tool.hints).toEqual({ ...defaultHints, readOnlyHint: true });
     expect(tool.offeredAtStart).toBe(true);
+    expect(tool.guidance).toEqual([]);
 
     expect(yield* tool.run({ text: "hi" }, context)).toEqual({ result: "hi" });
     const failed = yield* Effect.flip(tool.run({ text: 3 }, context));

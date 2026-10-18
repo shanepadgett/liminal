@@ -18,7 +18,7 @@ import sessionStore from "@liminal/session-store";
 import settings from "@liminal/settings";
 import toolPipeline from "@liminal/tool-pipeline";
 import toolRegistry from "@liminal/tool-registry";
-import toolsFile from "@liminal/tools-file";
+import toolsRead from "@liminal/tools-read";
 
 import { codexProvider } from "../src/contract.ts";
 import { replay, type SentRequest, sentBody } from "./replay.ts";
@@ -29,7 +29,7 @@ const sent = Ref.makeUnsafe<ReadonlyArray<SentRequest>>([]);
 const http = replay({ responses: [{ fixture: "tool-call.sse" }, { fixture: "reply.sse" }] }, sent);
 
 const stack = serverOf(agentLoop).pipe(
-  Layer.provideMerge(serverOf(toolsFile)),
+  Layer.provideMerge(serverOf(toolsRead)),
   Layer.provideMerge(serverOf(context)),
   Layer.provideMerge(serverOf(toolPipeline)),
   Layer.provideMerge(serverOf(toolRegistry)),
@@ -47,7 +47,7 @@ const question = firstMessages[1]?.parts[0];
 const writeNotes = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const workspace = path.dirname((yield* Directories).project);
+  const workspace = (yield* Directories).workspace;
 
   yield* fs.writeFileString(path.join(workspace, "notes.txt"), noteText);
 });

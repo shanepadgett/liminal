@@ -49,8 +49,10 @@ const parts = [
   "logins",
   "palette",
   "reload",
-  "tools-file",
+  "tools-edit",
+  "tools-read",
   "tools-shell",
+  "tools-write",
 ];
 
 /**

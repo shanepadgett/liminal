@@ -18,7 +18,7 @@
     "@liminal/settings": "workspace:*",
     "@liminal/tool-pipeline": "workspace:*",
     "@liminal/tool-registry": "workspace:*",
-    "@liminal/tools-file": "workspace:*"
+    "@liminal/tools-read": "workspace:*"
   },
   "peerDependencies": {
     "@liminal/credential-store": "workspace:*",

@@ -1,6 +1,6 @@
 # System prompt and instructions
 
-Status: rounds 1 and 2 agreed; steps 1 to 3 built.
+Status: rounds 1 and 2 agreed; steps 1 to 5 built.
 
 Gives every session a base system prompt, the facts of its environment, and the user's and project's instruction files, kept current as files change without breaking the prompt cache.
 
@@ -11,7 +11,7 @@ Gives every session a base system prompt, the facts of its environment, and the 
 | Prompt sections | `context` `PromptSections` (`src/contract.ts`) | Keyed registry; each section has `order`, a codec, `read` and `render.{initial, changed, removed}`; none registered |
 | Sync entry | `context` `SystemEntry` (`src/server/system.ts`) | First request saves a baseline of every section's value and text; later requests append an update only for sections that changed; a failed read keeps the saved value |
 | Update placement | `systemModel` in `system.ts` | Sends an update as a `system` role message mid-conversation |
-| Workspace | `Directories.project` | `tools-file` and `tools-shell` work in its parent folder |
+| Workspace | `Directories.project` | the `tools-*` plugins work in its parent folder |
 | Section input | `SectionInput` | `sessionId`, `model` |
 
 `@effect/ai-anthropic` sends a later `system` message inline only for models with `supportsMidConversationSystemMessages`; for the rest it moves the text into the top system block (`AnthropicLanguageModel.ts` around line 1002), which changes the cached start of every later request.
@@ -24,7 +24,7 @@ flowchart LR
   env["environment"] --> ps
   ag["agents-files"] --> ps
   inf["instruction-files"] --> ps
-  tr["tool-registry: guidance"] --> ps
+  tg["tool-guidance"] --> ps
   ps --> sync["context: sync entry"]
   sync --> req["model request"]
 ```
@@ -35,7 +35,7 @@ flowchart LR
 | `system-prompt` | New: the built-in base prompt; users add through `AGENTS.md`; replacing it means replacing the plugin |
 | `environment` | New: workspace, git or not, platform, shell, date, and a two-level file listing capped at 200 lines, updated as files are added or removed |
 | `agents-files` | New, on by default: `AGENTS.md` only; the user's and those from the repository root down to the workspace; no subfolder files; off by removing the plugin or by a `settings.json` setting (global or per folder) |
-| `tool-registry` | Expands: a tool registers with optional `guidance` (rule lines); one section renders the guidance of the registered tools, removing duplicate lines |
+| `tool-guidance` | New: a tool's definition carries optional `guidance` (rule lines); one section renders the guidance of the registered tools, removing duplicate lines |
 | `notices` | New: a session-log entry kind any server plugin appends (kind, title, body); the context view skips it; its TUI part renders it in the transcript |
 | `instruction-files` | New: Markdown files in `~/.liminal/instructions/` and `<folder>/.liminal/instructions/` with front matter `always: true` or `read-when: <situation>`; works with `agents-files` turned off; folder-specific rules are `read-when` files naming the folder |
 | `skills` | Later, own plugin at order 300 |
@@ -52,7 +52,7 @@ Plugin instructions not tied to a tool are the plugin's own `PromptSections` ent
 | Key | Order | Value | Source |
 | --- | --- | --- | --- |
 | `system-prompt/base` | 0 | text | Built into the plugin, like Tau's `soul.ts` |
-| `tool-registry/guidance` | 50 | rule lines | `guidance` of registered tools |
+| `tool-guidance/rules` | 50 | rule lines | `guidance` of registered tools |
 | `environment/facts` | 100 | workspace, git or not, platform, shell, date | Read each call |
 | `environment/files` | 110 | two-level listing | Updates list only added and removed lines |
 | `agents-files/agents` | 200 | path to text, most shared first | `~/.agents/AGENTS.md`, `~/.liminal/AGENTS.md`, root down to workspace |
@@ -78,7 +78,7 @@ agent-loop -> context.build(session)
 1. `context`: user-role reminder, diffs for changed files, section order
 2. `notices`: its own step, before the instruction plugins; `notice()` in the contract is the whole writing surface
 3. Transcript ownership: `chat` stops depending on `agent-loop`; each plugin draws its own entries and live states
-4. `tool-registry` guidance
+4. `tool-guidance`
 5. `system-prompt` and `environment`; the base prompt is drafted from Tau's `soul.ts` for the user to edit
 6. `agents-files` and `instruction-files`
 
@@ -290,6 +290,119 @@ packages/plugins/chat/package.json             drops peers @liminal/agent-loop, 
 - `chat/src/tui/live.tsx` and `chat/src/tui/Notice.tsx` move out of `chat`
 - `docs/plugins/agent-loop.md`, `session-log.md`, `notices.md`: who owns and draws each kind
 - `session-store` migrations condense into one, `0001_create_tables`
+
+## Step 4: `tool-guidance`
+
+`context` already peers on `tool-registry` to read the declared tools, so `tool-registry` cannot register a prompt section without a package cycle. A new plugin, `tool-guidance`, reads `Tools` and registers the section.
+
+### Files
+
+```text
+packages/sdk/src/core/tool.ts                Tool gains guidance; ToolDefinition gains optional guidance
+packages/plugins/tool-guidance/plugin.ts     requires [Tools, PromptSections]; enabled by default
+packages/plugins/tool-guidance/src/contract.ts   the plugin's name only
+packages/plugins/tool-guidance/src/server.ts     registers the section
+packages/plugins/tools-read/src/server.ts    guidance for read
+packages/plugins/tools-write/src/server.ts   guidance for write
+packages/plugins/tools-edit/src/server.ts    guidance for edit
+packages/plugins/tools-shell/src/server.ts   guidance for shell
+```
+
+### Types
+
+```ts
+// sdk
+interface Tool { ...; readonly guidance: ReadonlyArray<string> }
+interface ToolDefinition<S> { ...; readonly guidance?: ReadonlyArray<string> }  // defaults to []
+
+// tool-guidance
+definePromptSection<Lines>({
+  key: "tool-guidance/rules",
+  order: 50,
+  codec: Lines,
+  read: () => tools.list -> present(lines in tool-name order, duplicates removed),
+  render: linesRender({ initial: "Using tools:", added: "New tool guidance:", removed: "No longer applies:" }),
+})
+```
+
+### Call path
+
+```text
+context.build -> PromptSections.list -> tool-guidance read -> Tools.list -> guidance lines
+  first build: bullets in the baseline system message
+  a tool added or removed later: its new or dropped lines in the instructions reminder
+```
+
+### Tests
+
+- `tool-guidance`: two tools sharing a line render it once, in tool-name order; a tool registered later adds its lines in an update; closing its scope lists its lines as no longer applying; no guidance renders nothing
+- `tool-registry`: `defineTool` defaults `guidance` to none
+
+### Deletes or replaces
+
+- `docs/guides/plugins.md`: "Register a tool" shows `guidance`
+- `apps/cli` restart test: the active plugin list gains `tool-guidance`
+
+## Step 5: `system-prompt` and `environment`
+
+Both plugins only register prompt sections. `context` gains `Lines` and `linesRender`, a shared value shape and renderer for sections of one line per item; `tool-guidance` and both `environment` sections use it.
+
+### Files
+
+```text
+packages/plugins/context/src/contract.ts                 Lines, LinesTitles, linesRender
+packages/plugins/tool-guidance/src/server.ts             renders through linesRender
+packages/plugins/system-prompt/src/server.ts             section system-prompt/base
+packages/plugins/system-prompt/src/server/base.ts        the base prompt, drafted from Tau's soul.ts without its tags and tool-use blocks
+packages/plugins/environment/src/server.ts               sections environment/facts and environment/files
+packages/plugins/environment/src/server/workspace.ts     Workspace (fs, path, runner, folder); isRepository
+packages/plugins/environment/src/server/facts.ts         factLines
+packages/plugins/environment/src/server/files.ts         fileLines, twoLevels
+```
+
+### Types
+
+```ts
+// context
+const Lines = Schema.Array(Schema.String)
+interface LinesTitles { initial: string; added: string; removed?: string }   // no removed: removed lines left out
+linesRender(titles): PromptSectionDefinition<Lines>["render"]
+  initial: title + each line as a "- " bullet, or "" for no lines
+  changed: added title + added bullets, then removed title + removed bullets
+
+// system-prompt: requires [PromptSections]
+definePromptSection<string>({ key: "system-prompt/base", order: 0, codec: Schema.String,
+  read: present(basePrompt), render: { initial: text, changed: "The base instructions changed..." + new text } })
+
+// environment: requires [PromptSections, CommandRunner]
+definePromptSection<Lines>({ key: "environment/facts", order: 100,
+  render: linesRender({ initial: "Environment:", added: "The environment changed:" }) })
+definePromptSection<Lines>({ key: "environment/files", order: 110,
+  render: linesRender({ initial: "The workspace, two levels deep:", added: "Files added:", removed: "Files removed:" }) })
+```
+
+### Call path
+
+```text
+context.build -> environment/facts read
+  git rev-parse --is-inside-work-tree (CommandRunner, workspace) -> yes | no
+  lines: Workspace, Git repository, Platform, Shell (from SHELL, left out when unset), Date (en-GB full, local)
+context.build -> environment/files read
+  repository: git ls-files -z --cached --others --exclude-standard -> twoLevels
+  otherwise:  names in the workspace and each of its folders, without names starting with a dot
+  capped at 200 lines, then "and N more"
+  git or the top folder failing -> unavailable (the saved value stays)
+```
+
+### Tests
+
+- `system-prompt`: the base prompt is the first system text
+- `environment`: facts and a dot-free listing outside git; a new file and a new day send only `Files added:` and the new `Date:` line; inside git, ignored files are left out; `twoLevels` cuts paths
+- `apps/cli` restart test: the active plugin list gains `environment` and `system-prompt`
+
+### Deletes or replaces
+
+- `tool-guidance` drops its own line renderer
 
 ## Open
 

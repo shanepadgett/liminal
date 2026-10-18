@@ -166,6 +166,42 @@ export const fileTextsRender: PromptSectionDefinition<FileTexts>["render"] = {
   removed: (before) => before.map(removedLine).join("\n\n"),
 };
 
+/** A section that holds one line per item, such as a rule or a path. */
+export const Lines = Schema.Array(Schema.String);
+export type Lines = typeof Lines.Type;
+
+/** Titles for a `Lines` section's texts; without `removed`, removed lines are left out. */
+export interface LinesTitles {
+  readonly initial: string;
+  readonly added: string;
+  readonly removed?: string;
+}
+
+/** The title, then each line as a `- ` bullet, or nothing when there are no lines. */
+const titled = (title: string, lines: Lines): ReadonlyArray<string> =>
+  lines.length === 0 ? [] : [[title, ...lines.map((line) => `- ${line}`)].join("\n")];
+
+/** The lines of `from` missing from `other`. */
+const missing = (from: Lines, other: Lines) => {
+  const kept = new Set(other);
+
+  return from.filter((line) => !kept.has(line));
+};
+
+/**
+ * The render for a `Lines` section: every line as a bullet at first, then only the lines added and
+ * removed.
+ */
+export const linesRender = (titles: LinesTitles): PromptSectionDefinition<Lines>["render"] => ({
+  initial: (lines) => titled(titles.initial, lines).join(""),
+  changed: (before, after) => {
+    const removed =
+      titles.removed === undefined ? [] : titled(titles.removed, missing(before, after));
+
+    return [...titled(titles.added, missing(after, before)), ...removed].join("\n\n");
+  },
+});
+
 /** The prompt sections by key, newest build first; a plugin registers its sections in its scope. */
 export class PromptSections extends KeyedRegistry.Service<PromptSections, PromptSection>()(
   "liminal/context/PromptSections",

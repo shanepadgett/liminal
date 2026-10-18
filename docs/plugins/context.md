@@ -35,6 +35,8 @@ Status: built
 - The context stays append-only between checkpoints
 - An instruction file such as `AGENTS.md` that changes before a checkpoint reaches the model as a diff against the text it saw
 - File sections share one value shape (`FileTexts`) and renderer: whole files at first; later a diff, or the whole new text when the diff is longer; a removed file gets a line telling the model to stop following it
+- Prompt text that lists instructions or items renders each as a `-` bullet
+- Line sections share one value shape (`Lines`) and renderer: every line as a bullet at first; later only the added and removed lines
 - Each tool is declared in the baseline as offered or not; offering and withdrawing a tool are entries at the point of change
 - A provider that cannot offer or withdraw a tool mid-conversation keeps every declared tool in the request, and a call to a tool not offered is refused
 - A tool that appears after the baseline is declared and offered by one entry at that point; providers that can define a tool mid-conversation do so there, and others add it to the tool list at once

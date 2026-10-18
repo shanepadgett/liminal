@@ -5,7 +5,7 @@
 
 import { Effect, Option, Schema } from "effect";
 
-import { ChatSlots, type ToolCall } from "@liminal/chat/contract";
+import { ChatSlots, type ToolCall, type ToolView } from "@liminal/chat/contract";
 import { defineTui, Tail, TuiHost } from "@liminal/sdk/tui";
 
 import { ShellParams } from "./contract.ts";
@@ -24,13 +24,8 @@ const fold = (call: ToolCall) => ({
   subject: commandOf(call),
 });
 
-/** A result that is not text, such as a failure's details, shows nothing. */
-const decodeText = Schema.decodeUnknownOption(Schema.String);
-
-function Output(props: { readonly call: ToolCall }) {
-  const output = () => Option.getOrElse(decodeText(props.call.outcome?.result), () => "");
-
-  return <Tail text={output()} lines={12} />;
+function Output(props: ToolView) {
+  return <Tail text={props.text} lines={12} />;
 }
 
 export default defineTui({

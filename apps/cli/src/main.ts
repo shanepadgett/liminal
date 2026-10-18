@@ -28,6 +28,7 @@ const directories = Layer.effect(
 
     return {
       global,
+      workspace: process.cwd(),
       project: path.join(process.cwd(), ".liminal"),
       data: path.join(global, "data"),
     };

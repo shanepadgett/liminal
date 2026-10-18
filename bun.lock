@@ -178,6 +178,20 @@
         "effect": "4.0.5",
       },
     },
+    "packages/plugins/environment": {
+      "name": "@liminal/environment",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/session-log": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/command-runner": "workspace:*",
+        "@liminal/context": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
     "packages/plugins/inbox": {
       "name": "@liminal/inbox",
       "version": "0.1.0",
@@ -252,7 +266,7 @@
         "@liminal/settings": "workspace:*",
         "@liminal/tool-pipeline": "workspace:*",
         "@liminal/tool-registry": "workspace:*",
-        "@liminal/tools-file": "workspace:*",
+        "@liminal/tools-read": "workspace:*",
       },
       "peerDependencies": {
         "@liminal/credential-store": "workspace:*",
@@ -402,6 +416,33 @@
         "effect": "4.0.5",
       },
     },
+    "packages/plugins/system-prompt": {
+      "name": "@liminal/system-prompt",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/session-log": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/context": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
+    "packages/plugins/tool-guidance": {
+      "name": "@liminal/tool-guidance",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/session-log": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/context": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/tool-registry": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
     "packages/plugins/tool-pipeline": {
       "name": "@liminal/tool-pipeline",
       "version": "0.1.0",
@@ -418,8 +459,21 @@
         "effect": "4.0.5",
       },
     },
-    "packages/plugins/tools-file": {
-      "name": "@liminal/tools-file",
+    "packages/plugins/tools-edit": {
+      "name": "@liminal/tools-edit",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@liminal/chat": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/tool-registry": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
+    "packages/plugins/tools-read": {
+      "name": "@liminal/tools-read",
       "version": "0.1.0",
       "peerDependencies": {
         "@liminal/chat": "workspace:*",
@@ -437,6 +491,19 @@
       "peerDependencies": {
         "@liminal/chat": "workspace:*",
         "@liminal/command-runner": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/tool-registry": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
+    "packages/plugins/tools-write": {
+      "name": "@liminal/tools-write",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@liminal/chat": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "@liminal/tool-registry": "workspace:*",
         "@opentui/core": "0.6.6",
@@ -611,6 +678,8 @@
 
     "@liminal/credential-store": ["@liminal/credential-store@workspace:packages/plugins/credential-store"],
 
+    "@liminal/environment": ["@liminal/environment@workspace:packages/plugins/environment"],
+
     "@liminal/frontend": ["@liminal/frontend@workspace:packages/frontend"],
 
     "@liminal/gallery": ["@liminal/gallery@workspace:apps/gallery"],
@@ -651,13 +720,21 @@
 
     "@liminal/settings": ["@liminal/settings@workspace:packages/plugins/settings"],
 
+    "@liminal/system-prompt": ["@liminal/system-prompt@workspace:packages/plugins/system-prompt"],
+
+    "@liminal/tool-guidance": ["@liminal/tool-guidance@workspace:packages/plugins/tool-guidance"],
+
     "@liminal/tool-pipeline": ["@liminal/tool-pipeline@workspace:packages/plugins/tool-pipeline"],
 
     "@liminal/tool-registry": ["@liminal/tool-registry@workspace:packages/plugins/tool-registry"],
 
-    "@liminal/tools-file": ["@liminal/tools-file@workspace:packages/plugins/tools-file"],
+    "@liminal/tools-edit": ["@liminal/tools-edit@workspace:packages/plugins/tools-edit"],
+
+    "@liminal/tools-read": ["@liminal/tools-read@workspace:packages/plugins/tools-read"],
 
     "@liminal/tools-shell": ["@liminal/tools-shell@workspace:packages/plugins/tools-shell"],
+
+    "@liminal/tools-write": ["@liminal/tools-write@workspace:packages/plugins/tools-write"],
 
     "@opentui/core": ["@opentui/core@0.6.6", "", { "dependencies": { "bun-ffi-structs": "0.3.1", "diff": "9.0.0", "marked": "17.0.1", "string-width": "7.2.0" }, "optionalDependencies": { "@opentui/core-darwin-arm64": "0.6.6", "@opentui/core-darwin-x64": "0.6.6", "@opentui/core-linux-arm64": "0.6.6", "@opentui/core-linux-arm64-musl": "0.6.6", "@opentui/core-linux-x64": "0.6.6", "@opentui/core-linux-x64-musl": "0.6.6", "@opentui/core-win32-arm64": "0.6.6", "@opentui/core-win32-x64": "0.6.6" }, "peerDependencies": { "web-tree-sitter": "0.25.10" } }, "sha512-GhlGB8iG4YDzL6hIaxAYUZpHXDy76sQKuI6mQiCFCKXjfv6xH53pEcPX5gn+qYYYPjfjSaUevAVZBaS5Srtl/g=="],
 

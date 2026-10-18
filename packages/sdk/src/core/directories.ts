@@ -7,7 +7,9 @@ export class Directories extends Context.Service<
   {
     /** User-wide settings and plugins, shared by every project. */
     readonly global: string;
-    /** Settings and plugins of the project Liminal runs in. */
+    /** The folder Liminal works in; relative paths from the model resolve against it. */
+    readonly workspace: string;
+    /** Settings and plugins of the project Liminal runs in: `<workspace>/.liminal`. */
     readonly project: string;
     /** Durable state such as the session database. */
     readonly data: string;

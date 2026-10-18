@@ -83,7 +83,7 @@ Every plugin gets these base services without listing them:
 | `FileSystem`, `Path` | `effect` | Files and paths |
 | `ChildProcessSpawner` | `effect/process` | Child processes |
 | `Crypto` | `effect` | Random bytes and hashes |
-| `Directories` | `@liminal/sdk` | `global` (`~/.liminal`), `project` (`<cwd>/.liminal`), `data` (`~/.liminal/data`) |
+| `Directories` | `@liminal/sdk` | `global` (`~/.liminal`), `workspace` (`<cwd>`), `project` (`<cwd>/.liminal`), `data` (`~/.liminal/data`) |
 | `EventBus`, `TurnGate`, `Work` | `@liminal/sdk` | Kernel events, the turn gate, and background work |
 
 Examples: `packages/plugins/context/plugin.ts` (`uses: [Tools]`), `packages/plugins/tool-pipeline/src/server.ts` (`Effect.serviceOption(Approvals)`).
@@ -237,6 +237,7 @@ Example: `packages/plugins/inbox/src/server.ts`.
      name: "read",
      description: "Reads a text file. Long files come back in windows of lines.",
      parameters: ReadParams,
+     guidance: ["Use `read` to look at a file, not `cat`, `head` or `tail` through a shell."],
      hints: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
      runAlongside: true,
      safeToRerun: true,
@@ -254,6 +255,7 @@ Example: `packages/plugins/inbox/src/server.ts`.
 | --- | --- |
 | `hints` | MCP tool hints; permission checks read them. Unset hints take MCP defaults: not read-only, may be destructive, open world |
 | `offeredAtStart` | Optional; whether the model sees the tool from the first request |
+| `guidance` | Optional rule lines for the system prompt, such as when to prefer this tool; `tool-guidance` lists each line once across all tools |
 | `runAlongside` | Can run at the same time as other calls in the same step |
 | `safeToRerun` | Can run again after a crash without harm |
 | `run` | Gets the decoded params and `{ sessionId, callId }`; returns `{ result, details? }` or fails with `ToolFailed` |
@@ -264,7 +266,7 @@ Rules:
 - Fail with `ToolFailed({ message })` for anything the model should see and react to. Never let a tool die.
 - To word the call in the transcript, register a tool row in the TUI part; see [tui.md](tui.md#show-a-tool-call).
 
-Example: `packages/plugins/tools-file/`.
+Example: `packages/plugins/tools-read/`.
 
 ## Add a prompt section
 
@@ -285,6 +287,7 @@ A prompt section is one part of the system prompt, such as tool guidance or proj
 2. Register it in your layer with `(yield* PromptSections).register(section)`.
 
 - For sections made of files, use `FileTexts` as the codec and `fileTextsRender` as `render`.
+- For sections of one line per item, such as rules or paths, use `Lines` as the codec and `linesRender({ initial, added, removed? })` as `render`; each line renders as a `-` bullet and updates send only added and removed lines.
 
 Example: the section tests in `packages/plugins/context/test/context.test.ts`.
 
