@@ -52,7 +52,7 @@ Type definitions for Bun's APIs. The declarations are the API reference.
 Linter: configuration, rules and their options, and the JS plugin guide. The website pages are unversioned.
 
 - Docs: `docs/reference/copies/oxlint/1.88.0/` (896 files: README.md, src/)
-- From: https://github.com/oxc-project/website.git, branch main, commit 0e9669631853 (not pinned to the installed version)
+- From: https://github.com/oxc-project/website.git, branch main, commit ac03bf93227a (not pinned to the installed version)
 - API (schema): `node_modules/oxlint/configuration_schema.json`
 
 ## @oxlint/plugins 1.88.0
@@ -73,7 +73,7 @@ Type-aware lint rules for Oxlint.
 Formatter: options, ignore files and supported languages. The website pages are unversioned.
 
 - Docs: `docs/reference/copies/oxfmt/0.73.0/` (17 files: README.md, src/)
-- From: https://github.com/oxc-project/website.git, branch main, commit 0e9669631853 (not pinned to the installed version)
+- From: https://github.com/oxc-project/website.git, branch main, commit ac03bf93227a (not pinned to the installed version)
 - API (schema): `node_modules/oxfmt/configuration_schema.json`
 
 ## fallow 3.33.1
@@ -161,6 +161,13 @@ Parses JSON with comments and edits it in place: parse, modify and applyEdits ke
 
 - Docs: `docs/reference/copies/jsonc-parser/3.3.1/` (1 file: README.md)
 - API (types): `packages/plugins/settings/node_modules/jsonc-parser/lib/umd/main.d.ts`
+
+## unbash 6.0.0
+
+Bash parser with no dependencies: parse gives a ParsedScript of statements, pipelines, and/or lists, commands, words with typed parts, and redirects; forEachChild visits a node's direct children. shell-safety walks it.
+
+- Docs: `docs/reference/copies/unbash/6.0.0/` (1 file: README.md)
+- API (types): `packages/plugins/shell-safety/node_modules/unbash/dist/types.d.ts`
 
 ## diff 9.0.0
 

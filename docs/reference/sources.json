@@ -233,6 +233,13 @@
       "api": [{ "kind": "types", "path": "lib/umd/main.d.ts" }]
     },
     {
+      "package": "unbash",
+      "versionSource": "lock",
+      "summary": "Bash parser with no dependencies: parse gives a ParsedScript of statements, pipelines, and/or lists, commands, words with typed parts, and redirects; forEachChild visits a node's direct children. shell-safety walks it.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "types", "path": "dist/types.d.ts" }]
+    },
+    {
       "package": "diff",
       "versionSource": "lock",
       "summary": "jsdiff: line diffs and unified patches. structuredPatch and formatPatch with OMIT_HEADERS give hunks only; the SDK's unifiedDiff uses them.",
