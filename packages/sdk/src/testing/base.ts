@@ -25,6 +25,7 @@ const temporaryDirectories = Layer.effect(
     const root = yield* fs.makeTempDirectoryScoped({ prefix: "liminal-test-" });
 
     const directories = {
+      home: path.join(root, "home"),
       global: path.join(root, "global"),
       workspace: root,
       project: path.join(root, "project"),

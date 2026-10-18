@@ -58,6 +58,7 @@ What a plugin is, where plugins load from, and how the host wires them together.
 - The project `plugins.json` overrides the global one key by key; a missing key keeps the manifest default
 - `trustedFolders` is read only from the global `plugins.json`
 - An untrusted project's `plugins/` and `plugins.json` are ignored
+- An untrusted workspace's `.liminal/instructions/` files are ignored; `AGENTS.md` files load either way
 - A trusted folder trusts its subfolders
 - Every untrusted workspace, with or without `.liminal/`, opens with a trust prompt in place of the composer
 - Denying trust keeps the run untrusted and brings the composer back; nothing is saved, so the next launch asks again

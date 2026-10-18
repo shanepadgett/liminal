@@ -39,9 +39,9 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | [context](context.md) | Turns the log into model messages | built |
 | [system-prompt](system-prompt.md) | The built-in base system prompt | built |
 | [environment](environment.md) | Workspace, git, platform, shell, date and a two-level file listing | built |
-| agents-files | `AGENTS.md` files from the repository root down to the workspace, on by default | planned |
+| agents-files | `AGENTS.md` files from `~/.agents`, `~/.liminal` and the repository root down to the workspace, on by default | built |
 | [notices](notices.md) | Session notices only the user sees, in the transcript | built |
-| instruction-files | `.liminal/instructions/` files with `always` or `read-when` front matter | planned |
+| instruction-files | `~/.liminal/instructions/` and, in a trusted workspace, `.liminal/instructions/` files with `always` or `read-when` front matter | built |
 | [compaction](compaction.md) | Keeps the context within the model's window | planned |
 | [cache-hints](cache-hints.md) | Marks prompt cache breakpoints | built |
 

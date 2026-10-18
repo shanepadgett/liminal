@@ -3,7 +3,16 @@
  * service.
  */
 
-import { Context as EffectContext, Effect, Equal, Option, Schema } from "effect";
+import {
+  Context as EffectContext,
+  Effect,
+  Equal,
+  type FileSystem,
+  Option,
+  type Path,
+  Result,
+  Schema,
+} from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
@@ -201,6 +210,84 @@ export const linesRender = (titles: LinesTitles): PromptSectionDefinition<Lines>
     return [...titled(titles.added, missing(after, before)), ...removed].join("\n\n");
   },
 });
+
+/** `folder` and each folder above it, nearest first. */
+const foldersUp = (path: Path.Path, folder: string): ReadonlyArray<string> => {
+  const folders = [folder];
+  let current = folder;
+
+  while (path.dirname(current) !== current) {
+    current = path.dirname(current);
+    folders.push(current);
+  }
+
+  return folders;
+};
+
+/**
+ * The folders whose instruction files apply to `workspace`: the repository root (the nearest folder
+ * up holding `.git`) down to the workspace, or the workspace alone outside a repository.
+ */
+export const foldersDown = Effect.fn("foldersDown")(function* (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  workspace: string,
+) {
+  const up = foldersUp(path, path.resolve(workspace));
+
+  const root = yield* Effect.findFirst(up, (folder) =>
+    fs.exists(path.join(folder, ".git")).pipe(Effect.orElseSucceed(() => false)),
+  );
+
+  return Option.match(root, {
+    onNone: (): ReadonlyArray<string> => [path.resolve(workspace)],
+    onSome: (found) => up.slice(0, up.indexOf(found) + 1).toReversed(),
+  });
+});
+
+/** What reading a list of instruction files found: their texts, and the files that failed. */
+export interface ReadFiles {
+  readonly files: FileTexts;
+  readonly failed: ReadonlyArray<{ readonly path: string; readonly message: string }>;
+}
+
+/** Reads each of `paths` in order; a missing file is left out. */
+export const readFileTexts = Effect.fn("readFileTexts")(function* (
+  fs: FileSystem.FileSystem,
+  paths: ReadonlyArray<string>,
+) {
+  const reads = yield* Effect.forEach(paths, (path) =>
+    fs.exists(path).pipe(
+      Effect.flatMap((exists) =>
+        exists
+          ? Effect.map(fs.readFileString(path), (text) => [{ path, text }])
+          : Effect.succeed([]),
+      ),
+      Effect.result,
+      Effect.map((result) => ({ path, result })),
+    ),
+  );
+
+  const found: ReadFiles = {
+    files: reads.flatMap(({ result }) => (Result.isSuccess(result) ? result.success : [])),
+    failed: reads.flatMap(({ path, result }) =>
+      Result.isFailure(result) ? [{ path, message: result.failure.message }] : [],
+    ),
+  };
+
+  return found;
+});
+
+/** A files section's read: unavailable while a file fails, removed with no files. */
+export const filesRead = <A>(
+  files: ReadonlyArray<A>,
+  failed: boolean,
+): SectionRead<ReadonlyArray<A>> => {
+  if (failed) return { type: "unavailable" };
+  if (files.length === 0) return { type: "removed" };
+
+  return { type: "present", value: files };
+};
 
 /** The prompt sections by key, newest build first; a plugin registers its sections in its scope. */
 export class PromptSections extends KeyedRegistry.Service<PromptSections, PromptSection>()(

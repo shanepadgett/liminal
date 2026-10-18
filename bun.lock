@@ -97,6 +97,20 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/agents-files": {
+      "name": "@liminal/agents-files",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/context": "workspace:*",
+        "@liminal/notices": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
     "packages/plugins/approval": {
       "name": "@liminal/approval",
       "version": "0.1.0",
@@ -257,6 +271,20 @@
         "@opentui/solid": "0.6.6",
         "effect": "4.0.5",
         "solid-js": "1.9.12",
+      },
+    },
+    "packages/plugins/instruction-files": {
+      "name": "@liminal/instruction-files",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/context": "workspace:*",
+        "@liminal/notices": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "effect": "4.0.5",
       },
     },
     "packages/plugins/logins": {
@@ -701,6 +729,8 @@
 
     "@liminal/agent-loop": ["@liminal/agent-loop@workspace:packages/plugins/agent-loop"],
 
+    "@liminal/agents-files": ["@liminal/agents-files@workspace:packages/plugins/agents-files"],
+
     "@liminal/approval": ["@liminal/approval@workspace:packages/plugins/approval"],
 
     "@liminal/cache-hints": ["@liminal/cache-hints@workspace:packages/plugins/cache-hints"],
@@ -728,6 +758,8 @@
     "@liminal/gallery": ["@liminal/gallery@workspace:apps/gallery"],
 
     "@liminal/inbox": ["@liminal/inbox@workspace:packages/plugins/inbox"],
+
+    "@liminal/instruction-files": ["@liminal/instruction-files@workspace:packages/plugins/instruction-files"],
 
     "@liminal/kernel": ["@liminal/kernel@workspace:packages/kernel"],
 

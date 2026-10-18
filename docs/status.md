@@ -24,7 +24,7 @@ Connect and login step 3 is built ([plans/connect.md](plans/connect.md)): `Login
 
 Connect and login step 6 is built ([plans/connect.md](plans/connect.md)): `@liminal/sdk/ai/{messages,responses,chat}` hold the protocol streams; `model-openrouter` and `model-opencode-go` sign in with API keys; neither has had a live request yet.
 
-Instructions steps 1 to 5 are built ([plans/instructions.md](plans/instructions.md)): `context` sends section updates as a user-role instructions reminder; `notices`; `chat` draws only its own entries; `tools` puts each tool's `guidance` lines in the system prompt; `system-prompt` holds the base prompt; `environment` holds the workspace facts and file listing.
+Instructions steps 1 to 6 are built ([plans/instructions.md](plans/instructions.md)): `context` sends section updates as a user-role instructions reminder; `notices`; `chat` draws only its own entries; `tools` puts each tool's `guidance` lines in the system prompt; `system-prompt` holds the base prompt; `environment` holds the workspace facts and file listing; `agents-files` and `instruction-files` hold the instruction files, each problem told to a session once.
 
 Tool packages are built ([plans/tools.md](plans/tools.md)): `tools` holds the registry, pipeline and guidance; `context` takes tool lists through `ToolSources`; `files` gives `WorkspaceFiles`; `tools-read`, `tools-edit` (`edit` and `write`) and `tools-shell`.
 
@@ -45,8 +45,7 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 
 ## Next
 
-- Review the debug view ([plans/debug-view.md](plans/debug-view.md)): `/debug`, the `chat.debug` setting, approval answers as its first entries
-- Build instructions step 6 ([plans/instructions.md](plans/instructions.md)), then plan folding; Liminal is not usable day to day without them.
+- Plan folding ([plugins/compaction.md](plugins/compaction.md)); Liminal is not usable day to day without it.
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
 

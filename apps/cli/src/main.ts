@@ -25,9 +25,11 @@ const directories = Layer.effect(
   Directories,
   Effect.gen(function* () {
     const path = yield* Path.Path;
-    const global = path.join(process.env["HOME"] ?? ".", ".liminal");
+    const home = process.env["HOME"] ?? ".";
+    const global = path.join(home, ".liminal");
 
     return {
+      home,
       global,
       workspace: process.cwd(),
       project: path.join(process.cwd(), ".liminal"),

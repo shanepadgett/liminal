@@ -1,6 +1,6 @@
 # System prompt and instructions
 
-Status: rounds 1 and 2 agreed; steps 1 to 5 built.
+Status: rounds 1 and 2 agreed; steps 1 to 6 built.
 
 Gives every session a base system prompt, the facts of its environment, and the user's and project's instruction files, kept current as files change without breaking the prompt cache.
 
@@ -403,6 +403,54 @@ context.build -> environment/files read
 ### Deletes or replaces
 
 - `tool-guidance` drops its own line renderer
+
+## Step 6: `agents-files` and `instruction-files`
+
+Two independent plugins that only register prompt sections. The folder walk and the once-per-problem notices are shared through contracts, so neither plugin depends on the other.
+
+### Files
+
+```text
+packages/sdk/src/core/directories.ts                      Directories.home (the user's home folder)
+apps/cli/src/main.ts, packages/sdk/src/testing/base.ts    supply home
+packages/plugins/context/src/contract.ts                  foldersDown(fs, path, workspace)
+packages/plugins/notices/src/contract.ts                  makeProblemNotices(log)
+packages/plugins/agents-files/{plugin.ts,package.json,src/server.ts,test/agents-files.test.ts}
+packages/plugins/instruction-files/{plugin.ts,package.json,src/server.ts,src/server/front-matter.ts,src/server/files.ts,test/instruction-files.test.ts}
+```
+
+### Types
+
+```ts
+// context: the repository root (nearest folder up holding .git) down to the workspace;
+// the workspace alone outside a repository
+foldersDown(fs, path, workspace): Effect<ReadonlyArray<string>>
+
+// notices: appends each problem the session has not been told about since it last changed;
+// a problem that goes away and comes back is told again
+makeProblemNotices(log): Effect<(session: SessionId, problems: ReadonlyArray<Notice>) => Effect<void>>
+
+// agents-files: requires [PromptSections, SessionLog]
+definePromptSection<FileTexts>({ key: "agents-files/agents", order: 200, render: fileTextsRender })
+  files: <home>/.agents/AGENTS.md, <global>/AGENTS.md, then <folder>/AGENTS.md per foldersDown
+  missing -> left out; unreadable -> unavailable + warning notice; none -> removed
+
+// instruction-files: requires [PromptSections, SessionLog]
+type Instruction = { name, path, text } & ({ always: true } | { readWhen: string })
+  front matter between --- lines: always: true | read-when: <situation>; anything else -> skipped + warning notice
+  folders: <global>/instructions, then when ProjectTrust.trusted: <folder>/.liminal/instructions per foldersDown
+    (the workspace's is Directories.project); a nearer folder's file replaces a farther one of the same name
+definePromptSection<FileTexts>({ key: "instruction-files/always", order: 210, render: fileTextsRender })
+definePromptSection<Lines>({ key: "instruction-files/read-when", order: 220,
+  render: linesRender({ initial: <read-when guidance>, added: "More instruction files:", removed: "Instruction files gone:" }) })
+  line: `<path>`: <situation>; none -> removed
+```
+
+### Tests
+
+- `agents-files`: user and folder files in order, most shared first; an edit sends a diff; a removed file is announced; no files sends no section
+- `instruction-files`: `always` text and `read-when` lines; bad front matter skipped with one notice, not repeated; a nearer file wins by name; project files ignored until trusted
+- `apps/cli` restart test: the active plugin list gains `agents-files` and `instruction-files`
 
 ## Open
 

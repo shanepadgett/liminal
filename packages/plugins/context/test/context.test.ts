@@ -27,6 +27,7 @@ import {
   ToolSources,
   ViewSteps,
 } from "../src/contract.ts";
+import { systemText } from "../src/server/system.ts";
 
 /** One run of the plugins over the test's data folder. */
 const stack = serverOf(context).pipe(
@@ -301,4 +302,24 @@ test("file sections send whole files, then diffs, added files and removed lines"
   );
 
   expect(fileTextsRender.removed?.([a])).toBe("`a.md` was removed; stop following it.");
+});
+
+test("a system entry shows the full prompt text and each tool's description", () => {
+  const read = { name: "read", description: "Reads a file.", parameters: {} };
+
+  expect(
+    systemText({
+      type: "baseline",
+      sections: [
+        { key: "a", value: "Be brief.", text: "Be brief." },
+        { key: "b", value: null, text: "" },
+      ],
+      tools: [
+        { ...read, offered: true },
+        { ...read, name: "shell", offered: false },
+      ],
+    }),
+  ).toBe(
+    "System prompt\n\nBe brief.\n\nTools:\n- read: Reads a file.\n- shell (not offered): Reads a file.",
+  );
 });

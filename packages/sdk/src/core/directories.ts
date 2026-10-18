@@ -5,6 +5,8 @@ import { Context } from "effect";
 export class Directories extends Context.Service<
   Directories,
   {
+    /** The user's home folder, such as the parent of `~/.agents`. */
+    readonly home: string;
     /** User-wide settings and plugins, shared by every project. */
     readonly global: string;
     /** The folder Liminal works in; relative paths from the model resolve against it. */

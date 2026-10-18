@@ -194,18 +194,28 @@ export const systemModel = (data: SystemData): ReadonlyArray<ModelContent> => {
   return [{ role: "user", parts: [...instructions, ...changes] }];
 };
 
-/** The plain text a system entry shows. */
+/** A tool as the model reads it: its name, then its description. */
+const toolLine = (label: string, tool: { readonly description: string }) =>
+  `- ${label}: ${tool.description}`;
+
+/**
+ * The plain text a system entry shows in the debug view: every section's full text as the model
+ * reads it, then each tool with its description.
+ */
 export const systemText = (data: SystemData): string => {
-  const sections = data.sections.map((section) => section.key).join(", ");
+  const title = data.type === "baseline" ? "System prompt" : "System prompt update";
+  const texts = data.sections.flatMap((section) => (section.text === "" ? [] : [section.text]));
 
   const tools =
     data.type === "baseline"
-      ? data.tools.map((tool) => (tool.offered ? tool.name : `${tool.name} (not offered)`))
-      : data.tools.map(({ change, tool }) => `${change} ${tool.name}`);
+      ? data.tools.map((tool) =>
+          toolLine(tool.offered ? tool.name : `${tool.name} (not offered)`, tool),
+        )
+      : data.tools.map(({ change, tool }) => toolLine(`${change} ${tool.name}`, tool));
 
-  const title = data.type === "baseline" ? "System prompt" : "System prompt update";
-
-  return `${title}: sections ${sections || "none"}; tools ${tools.join(", ") || "none"}`;
+  return [title, ...texts, ...(tools.length === 0 ? [] : [`Tools:\n${tools.join("\n")}`])].join(
+    "\n\n",
+  );
 };
 
 /**

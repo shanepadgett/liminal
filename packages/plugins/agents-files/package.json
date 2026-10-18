@@ -1,0 +1,22 @@
+{
+  "name": "@liminal/agents-files",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./plugin.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "devDependencies": {
+    "@liminal/session-store": "workspace:*"
+  },
+  "peerDependencies": {
+    "@liminal/context": "workspace:*",
+    "@liminal/notices": "workspace:*",
+    "@liminal/sdk": "workspace:*",
+    "@liminal/session-log": "workspace:*",
+    "effect": "4.0.5"
+  },
+  "liminal": [
+    "./plugin.ts"
+  ]
+}

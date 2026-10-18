@@ -34,6 +34,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
 
       expect(active.toSorted()).toEqual([
         "agent-loop",
+        "agents-files",
         "approval",
         "cache-hints",
         "cancel",
@@ -45,6 +46,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "environment",
         "files",
         "inbox",
+        "instruction-files",
         "logins",
         "model-anthropic",
         "model-catalog",

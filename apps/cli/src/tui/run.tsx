@@ -4,7 +4,7 @@
  * starts, so every part's setup registers into them.
  */
 
-import { type CliRenderer, createCliRenderer } from "@opentui/core";
+import { type CliRenderer, createCliRenderer, type Selection } from "@opentui/core";
 import { createDefaultOpenTuiKeymap } from "@opentui/keymap/opentui";
 import { KeymapProvider } from "@opentui/keymap/solid";
 import { render } from "@opentui/solid";
@@ -48,11 +48,40 @@ export const openRenderer = Effect.acquireRelease(
     }),
 );
 
-/** The keymap, its commands, an empty dialog stack and no toast over `renderer`. */
+/**
+ * Copies each finished text selection to the terminal's clipboard through OSC 52, since the app
+ * holds the mouse and the terminal's own selection cannot reach the text.
+ */
+const copySelections = (renderer: CliRenderer, toasts: TuiToastsService) =>
+  Effect.acquireRelease(
+    Effect.sync(() => {
+      const copy = (selection: Selection) => {
+        const text = selection.getSelectedText();
+        if (text === "") return;
+
+        renderer.copyToClipboardOSC52(text);
+        toasts.show({ kind: "info", title: "Copied" });
+      };
+
+      renderer.on("selection", copy);
+
+      return copy;
+    }),
+    (copy) =>
+      Effect.sync(() => {
+        renderer.off("selection", copy);
+      }),
+  );
+
+/**
+ * The keymap, its commands, an empty dialog stack and no toast over `renderer`; a finished text
+ * selection is copied.
+ */
 export const makeTerminal = Effect.fn("makeTerminal")(function* (renderer: CliRenderer) {
   const keymap = createDefaultOpenTuiKeymap(renderer);
   const commands = yield* makeTuiCommands(keymap);
   const toasts = yield* makeTuiToasts;
+  yield* copySelections(renderer, toasts);
   const terminal: Terminal = { renderer, keymap, commands, dialogs: makeTuiDialogs(), toasts };
 
   return terminal;

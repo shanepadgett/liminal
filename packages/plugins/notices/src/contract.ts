@@ -4,9 +4,10 @@
  * off.
  */
 
-import { Schema } from "effect";
+import { Array as Arr, Effect, Ref, Schema } from "effect";
 
-import { defineEntry, draft, type EntryDraft } from "@liminal/sdk";
+import { defineEntry, draft, type EntryDraft, type SessionId } from "@liminal/sdk";
+import type { SessionLog } from "@liminal/session-log/contract";
 
 export const NoticeKind = Schema.Literals(["info", "success", "warning", "error"]);
 export type NoticeKind = typeof NoticeKind.Type;
@@ -34,3 +35,43 @@ export const noticeText = (value: Notice): string =>
 /** The draft a server plugin appends; its text is the notice as plain text. */
 export const notice = (value: Notice): EntryDraft<Notice> =>
   draft(NoticeEntry, { data: value, text: noticeText(value) });
+
+/** Notices a session is told about each problem once; see `makeProblemNotices`. */
+export type ProblemNotices = (
+  session: SessionId,
+  problems: ReadonlyArray<Notice>,
+) => Effect.Effect<void>;
+
+/**
+ * Tells a session about each of the current `problems` it was not told about at the last call, so a
+ * lasting problem shows once and one that goes away and comes back shows again. A failed append is
+ * logged.
+ */
+export const makeProblemNotices = Effect.fn("makeProblemNotices")(function* (
+  log: SessionLog["Service"],
+) {
+  const told = yield* Ref.make<ReadonlyMap<SessionId, ReadonlySet<string>>>(new Map());
+
+  const tell: ProblemNotices = (session, problems) =>
+    Ref.modify(
+      told,
+      (map): readonly [ReadonlyArray<Notice>, ReadonlyMap<SessionId, ReadonlySet<string>>] => {
+        const before = map.get(session) ?? new Set<string>();
+        const fresh = problems.filter((problem) => !before.has(noticeText(problem)));
+        const now = new Set(problems.map(noticeText));
+
+        return [fresh, new Map(map).set(session, now)];
+      },
+    ).pipe(
+      Effect.flatMap((fresh) => {
+        const drafts = fresh.map(notice);
+
+        return Arr.isArrayNonEmpty(drafts)
+          ? Effect.asVoid(log.append(session, drafts))
+          : Effect.void;
+      }),
+      Effect.catch((error) => Effect.logWarning(`notice not saved: ${error.message}`)),
+    );
+
+  return tell;
+});
