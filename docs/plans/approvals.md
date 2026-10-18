@@ -22,7 +22,7 @@ agent-loop ─▶ tools: ToolPipeline.run(call)
 | --- | --- | --- |
 | `models` | changed | `ModelProvider.cheapModel`, `Models.cheap(provider)`; `toolChoice` on `ModelRequest` (`auto`, `required`, one tool); one-off call service in `models`: model, prompt, tools, result schema, bounded exchange ending in a submit tool, one retry with the decode failure |
 | provider plugins | changed | Cheap model: Anthropic `claude-haiku-5-5`; OpenAI providers Luna 6; OpenCode Go and OpenRouter DeepSeek 4.1 Flash latest; map `toolChoice` |
-| `decisions` | new | `Decisions.classify(questions, state)`; Jev via OpenRouter (`~typesafe/jev-latest`, System One at `/systemone`) first, else Luna Decisions (`POST /v1/decisions`, OpenAI API key only, or OpenRouter `openai/gpt-6-luna-decisions`); protocols in `@liminal/sdk/ai` |
+| `decisions` | new | `Decisions.classify(questions, state)`; Jev via OpenRouter (`~typesafe/jev-latest`, System One at `/systemone`) first, else Luna Decisions (`POST /v1/decisions`, OpenAI API key only); protocols in `@liminal/sdk/ai` |
 | `shell-safety` | new | Own plugin; `unbash` 6.0.0 parse and the safe list; `ShellSafety.isSafe(command, extra)` and `matchesAny(command, prefixes)`; reads no settings and registers no check |
 | `approval` | new | Provides `Approval`; registers an `Approvers` entry and every `ToolChecks` entry and reads the `approval` settings; the three-step chain; context is the last two user prompts and final assistant messages; private record entry; TUI dialog; per-session mode |
 | `inbox` | changed | Composer shows the session's approval mode next to the model |
@@ -79,7 +79,7 @@ packages/plugins/decisions/               new plugin: DecisionModels registry, D
   src/contract.ts                          DecisionModel, DecisionModels, Decisions, Decided
   src/server.ts                            pick, timeout, size cap, answer checks
   test/decisions.test.ts                   order, preference, timeout, bad answers
-packages/plugins/model-openrouter/        registers Jev and Luna Decisions (uses DecisionModels)
+packages/plugins/model-openrouter/        registers Jev (uses DecisionModels)
 packages/plugins/model-openai/            registers Luna Decisions on the API key (uses DecisionModels)
 docs/plugins/decisions.md                 requirements
 ```
@@ -118,7 +118,6 @@ class Decisions extends Context.Service<Decisions, {
 | --- | --- | --- | --- | --- |
 | `model-openrouter` | `openrouter/jev` | jev | System One, `https://openrouter.ai/api/v1/systemone` | `~typesafe/jev-latest` |
 | `model-openai` | `openai/luna` | luna | Decisions, `https://api.openai.com/v1/decisions` | `gpt-6-luna` |
-| `model-openrouter` | `openrouter/luna` | luna | Decisions, `https://openrouter.ai/api/v1/decisions` | `openai/gpt-6-luna-decisions` |
 
 ```text
 Decisions.classify(state, questions, prefer)

@@ -104,4 +104,21 @@ describe("transcript", () => {
     if (work?.kind !== "work") throw new Error("expected work");
     expect(groupsOf(work.calls, () => {})[0]?.words.verb).toBe("shell");
   });
+
+  test("keeps debug entries, drops hidden ones, and joins calls past debug entries", () => {
+    const transcript = folded([
+      call("c1", "shell", "x"),
+      saved("approval/answer", { approved: true }, "debug"),
+      saved("other/hidden", {}, "hidden"),
+      call("c2", "shell", "y"),
+      result("c2", "shell", "done"),
+    ]);
+
+    expect(transcript.items.map((item) => item.kind)).toEqual(["work", "entry"]);
+    const [work, answer] = transcript.items;
+    if (work?.kind !== "work") throw new Error("expected work");
+    expect(work.calls.map((each) => each.id)).toEqual(["c1", "c2"]);
+    expect(work.calls[1]?.outcome?.status).toBe("done");
+    expect(answer?.kind === "entry" ? answer.entry.user : undefined).toBe("debug");
+  });
 });

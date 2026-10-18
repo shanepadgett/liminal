@@ -182,7 +182,7 @@ A session is an append-only log of entries. Each entry has a kind your plugin de
 | Field | Values |
 | --- | --- |
 | `model` | `true` when entries carry `ModelContent` the model sees |
-| `user` | `"shown"`, `"hidden"`, `"debug"`, or `"per-entry"` when each draft sets `user` |
+| `user` | `"shown"`, `"hidden"`, `"debug"` (drawn only while `/debug` is on), or `"per-entry"` when each draft sets `user` |
 
 Rules:
 

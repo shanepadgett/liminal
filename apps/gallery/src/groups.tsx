@@ -127,7 +127,7 @@ const TOASTS: Readonly<Record<NoticeKind, ToastMessage>> = {
     message: "The last turn made no file changes.",
   },
   success: { kind: "success", title: "Session exported", message: "docs/sessions/plugin-host.md" },
-  info: { kind: "info", title: "Theme changed to Afterhours" },
+  info: { kind: "info", title: "Debug view on", message: "Debug entries show in the transcript." },
 };
 
 const toastState = (kind: NoticeKind): EntryState => ({

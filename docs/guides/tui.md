@@ -23,13 +23,14 @@ Rules:
 - Components are Solid components rendered by OpenTUI (`<box>`, `<text>`, `<markdown>`).
 - Never import your server files. Share types and schemas through `src/contract.ts`.
 
-`setup` can read three services:
+`setup` can read four services:
 
 | Service | Gives |
 | --- | --- |
 | `TuiHost` | `register` into slots, `client` for RPCs, `follow` a session, `sessionState`, `keep` |
 | `TuiCommands` | `register` commands and keys, `run`, `listed` |
 | `TuiDialogs` | `show` and `close` a dialog |
+| `TuiToasts` | `show` a toast |
 
 Example: `packages/plugins/notices/src/tui.tsx`.
 
@@ -71,6 +72,8 @@ The transcript draws each saved entry with the component registered under its ki
 3. Register it: `host.register(ChatSlots.entry, { key: YourEntry.kind, meta: {} }, View)`.
 
 Example: `packages/plugins/notices/src/tui/Notice.tsx`.
+
+Entries of a kind defined with `user: "debug"` draw only while the debug view is on: `/debug` flips it for the run, and `{ "chat": { "debug": true } }` in `settings.json` starts it on. Draw them as one `text.faint` line. Example: `packages/plugins/approval/src/tui/AnswerRow.tsx`.
 
 ## Draw live state
 
@@ -183,6 +186,17 @@ dialogs.show((props: DialogProps) => (
 | `DialogFrame` | Your own dialog body with the standard title, hints and close |
 
 Examples: `packages/plugins/agent-loop/src/tui.tsx`, `packages/plugins/logins/src/tui/`.
+
+## Show a toast
+
+A toast is short feedback on something the user just did in the TUI. Something that happened in a session is a transcript notice instead.
+
+1. Get `TuiToasts` in `setup`.
+2. Call `toasts.show({ kind, title, message? })`; `kind` is `info`, `success`, `warning` or `error`.
+
+One toast shows at a time, top right of the chat column, and a new one replaces it. It disappears after 4 seconds, or later while the mouse is over it.
+
+Example: `/debug` in `packages/plugins/chat/src/tui.tsx`.
 
 ## Use theme colors
 

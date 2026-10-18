@@ -1,6 +1,7 @@
 /**
  * The session's transcript, scrolled to its end: each shown entry drawn by its kind's registration
- * (its plain text when none draws it), runs of tool calls as work rows, then the live state.
+ * (its plain text when none draws it), runs of tool calls as work rows, then the live state. Debug
+ * entries draw only while the debug view is on, their plain text faint.
  */
 
 import { type Accessor, Index, Match, Show, Switch } from "solid-js";
@@ -22,13 +23,25 @@ function EntryRow(props: { readonly sessionId: SessionId; readonly entry: SavedE
       of={ChatSlots.entry}
       cell={props.entry.kind}
       props={{ sessionId: props.sessionId, entry: props.entry }}
-      fallback={<text fg={color("text.base")}>{props.entry.text}</text>}
+      fallback={
+        <text fg={color(props.entry.user === "debug" ? "text.faint" : "text.base")}>
+          {props.entry.text}
+        </text>
+      }
     />
   );
 }
 
-function ItemRow(props: { readonly sessionId: SessionId; readonly item: Item }) {
-  const entry = () => (props.item.kind === "entry" ? props.item.entry : undefined);
+function ItemRow(props: {
+  readonly sessionId: SessionId;
+  readonly item: Item;
+  readonly debug: boolean;
+}) {
+  const entry = () =>
+    props.item.kind === "entry" && (props.debug || props.item.entry.user !== "debug")
+      ? props.item.entry
+      : undefined;
+
   const calls = () => (props.item.kind === "work" ? props.item.calls : undefined);
 
   return (
@@ -46,12 +59,13 @@ function ItemRow(props: { readonly sessionId: SessionId; readonly item: Item }) 
 export function Transcript(props: {
   readonly sessionId: SessionId;
   readonly transcript: Accessor<TranscriptState>;
+  readonly debug: Accessor<boolean>;
 }) {
   return (
     <scrollbox flexGrow={1} stickyScroll stickyStart="bottom" scrollbarOptions={{ visible: false }}>
       <box flexDirection="column" gap={1} paddingX={PADDING_X} paddingY={1}>
         <Index each={props.transcript().items}>
-          {(item) => <ItemRow sessionId={props.sessionId} item={item()} />}
+          {(item) => <ItemRow sessionId={props.sessionId} item={item()} debug={props.debug()} />}
         </Index>
         <Show when={props.transcript().live}>
           {(live) => (

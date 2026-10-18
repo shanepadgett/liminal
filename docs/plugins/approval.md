@@ -41,7 +41,8 @@ Status: built
 - The reviewer may read files and run safe-list shell commands; other commands are refused
 - The reviewer approves or writes a summary and reason for the user
 - A failed review goes to the user without a summary
-- Each answer is saved as a hidden `approval/answer` entry the model never sees
+- Each answer is saved as a debug `approval/answer` entry the model never sees
+- The transcript draws an `approval/answer` entry only in the debug view: tool, approved or rejected, who answered, the reason
 - A rejection's note goes to the model as the denial reason
 - An interrupted call withdraws its ask
 

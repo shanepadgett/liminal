@@ -5,6 +5,7 @@
 
 import { withRoles } from "../entryViews.ts";
 import type { EntryState, Section } from "../shell/entries.ts";
+import { ApprovalAnswer, type ApprovalAnswerMessage } from "./ApprovalAnswer.tsx";
 import { Conversation } from "./Conversation.tsx";
 import { LiveNotice, Notice, type NoticeMessage } from "./Notice.tsx";
 import { closeMomentOf, durationOf, frameAt, momentOf, sessionDurationOf } from "./play.ts";
@@ -80,6 +81,49 @@ const copiedNoticeState: EntryState = {
   )),
 };
 
+type AnswerSample = { readonly name: string; readonly answer: ApprovalAnswerMessage };
+
+const ANSWERS: readonly [AnswerSample, ...AnswerSample[]] = [
+  {
+    name: "Decision model",
+    answer: {
+      tool: "shell",
+      approved: true,
+      by: "decision model",
+      model: "jev",
+      reason: "runs the project's tests",
+    },
+  },
+  {
+    name: "Reviewer",
+    answer: {
+      tool: "edit",
+      approved: true,
+      by: "reviewer",
+      model: "gpt-5-mini",
+      reason: "edits a file inside the workspace the user asked to change",
+    },
+  },
+  {
+    name: "Full mode",
+    answer: { tool: "shell", approved: true, by: "mode", reason: "the session is in full mode" },
+  },
+  {
+    name: "Rejected",
+    answer: { tool: "shell", approved: false, by: "you", reason: "don't push yet" },
+  },
+];
+
+const answerState = (entry: AnswerSample): EntryState => ({
+  name: entry.name,
+  fill: "width",
+  view: withRoles((color) => (
+    <box paddingX={2}>
+      <ApprovalAnswer color={color} answer={entry.answer} />
+    </box>
+  )),
+});
+
 export const TRANSCRIPT_COMPONENTS: Section = {
   title: "Transcript",
   entries: [
@@ -110,6 +154,11 @@ export const TRANSCRIPT_COMPONENTS: Section = {
       id: "transcript-notice",
       title: "Notice",
       states: [noticeState(MODEL_ERROR), ...NOTICES.map(noticeState), copiedNoticeState],
+    },
+    {
+      id: "transcript-approval-answer",
+      title: "Approval answer (debug)",
+      states: [answerState(ANSWERS[0]), ...ANSWERS.slice(1).map(answerState)],
     },
   ],
 };

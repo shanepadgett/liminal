@@ -45,6 +45,7 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 
 ## Next
 
+- Review the debug view ([plans/debug-view.md](plans/debug-view.md)): `/debug`, the `chat.debug` setting, approval answers as its first entries
 - Build instructions step 6 ([plans/instructions.md](plans/instructions.md)), then plan folding; Liminal is not usable day to day without them.
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
@@ -79,4 +80,4 @@ Pi session IDs and the topics each discussed.
 - 01a145a9-703a-7284-8f7a-054aea36ec2c: TUI design (transcript)
 - 01a14649-dee8-74a7-b272-e37fd82f47b6: Sessions, Plugin catalog, docs layout
 - 01a1473c-d9a2-74a7-b272-e383d7bf6e43: session-log contract, entry kinds and visibility, compaction memories, plugin foundation, build order, testing, step 1 build, repository layout
-- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end, slash commands and dialogs, connect and login, model catalog and thinking options, contracts importing contracts, TUI keys, blank launch and restart handoff, connect step 6 (SDK protocol subpaths, no local provider), instructions plan, notices, one package per tool, approvals, plugin toggles, trust prompt
+- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end, slash commands and dialogs, connect and login, model catalog and thinking options, contracts importing contracts, TUI keys, blank launch and restart handoff, connect step 6 (SDK protocol subpaths, no local provider), instructions plan, notices, one package per tool, approvals, plugin toggles, trust prompt, decision model providers, debug view

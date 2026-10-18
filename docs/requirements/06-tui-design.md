@@ -73,3 +73,5 @@ Brightness follows importance, and what is newest is brightest.
 - A written-answer tab and the optional context tab have a `›` field; the suggested answer and its reason close a question's tab
 - Sending with a question open sends it as skipped, with no warning
 - The answers are the next prompt, in the raised band: each question muted, `→ answer`, `as suggested` or `own answer` beside it, `suggested <answer>` under it when the user chose another, option notes as `└ note on <option>`, skipped as faint `→ skipped`, Additional context last
+- Debug view: `debug` entries show in the transcript only while it is on, in a quieter style
+- A setting sets the debug view's default; a command flips it for the run

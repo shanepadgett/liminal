@@ -14,3 +14,4 @@ One file per piece of work being planned or built. A plan moves to `archive/` on
 | [toggles.md](toggles.md) | Built |
 | [trust.md](trust.md) | Built; awaiting review |
 | [tools.md](tools.md) | Built; awaiting review |
+| [debug-view.md](debug-view.md) | Built; awaiting review |

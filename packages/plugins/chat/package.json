@@ -9,6 +9,7 @@
   "peerDependencies": {
     "@liminal/sdk": "workspace:*",
     "@liminal/session-log": "workspace:*",
+    "@liminal/settings": "workspace:*",
     "@opentui/core": "0.6.6",
     "@opentui/solid": "0.6.6",
     "effect": "4.0.5",

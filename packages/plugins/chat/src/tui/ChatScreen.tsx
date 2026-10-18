@@ -1,15 +1,16 @@
 /**
  * The chat screen: the header (wordmark, hairlines that glide while a turn runs, then the header
- * items), the transcript, the composer and the key hints, in a column filling the terminal.
- * Switching sessions draws the session's parts afresh.
+ * items), the transcript, the composer and the key hints, in a column filling the terminal, with
+ * the current toast in its top right. Switching sessions draws the session's parts afresh.
  */
 
 import { type Accessor, Show } from "solid-js";
 
 import type { SessionId } from "@liminal/sdk";
-import { HeaderRule, SlotView, useColor } from "@liminal/sdk/tui";
+import { HeaderRule, SlotView, type TuiToastsService, useColor } from "@liminal/sdk/tui";
 
 import { ChatSlots } from "../contract.ts";
+import { ToastCorner } from "./Toast.tsx";
 import type { Transcript as TranscriptState } from "./transcript-state.ts";
 import { Transcript } from "./Transcript.tsx";
 
@@ -34,6 +35,8 @@ function Header(props: { readonly running: boolean }) {
 interface ScreenProps {
   readonly sessionId: SessionId;
   readonly transcript: Accessor<TranscriptState>;
+  /** Whether debug entries draw. */
+  readonly debug: Accessor<boolean>;
 }
 
 /** The transcript, composer and hints of one session. */
@@ -43,7 +46,7 @@ function SessionView(props: ScreenProps & { readonly running: boolean }) {
   return (
     <>
       <box flexGrow={1} minHeight={0}>
-        <Transcript sessionId={props.sessionId} transcript={props.transcript} />
+        <Transcript sessionId={props.sessionId} transcript={props.transcript} debug={props.debug} />
       </box>
       <SlotView of={ChatSlots.composer} props={turn()} />
       <box flexDirection="row" flexShrink={0} paddingX={PADDING_X} gap={3}>
@@ -54,7 +57,7 @@ function SessionView(props: ScreenProps & { readonly running: boolean }) {
   );
 }
 
-export function ChatScreen(props: ScreenProps) {
+export function ChatScreen(props: ScreenProps & { readonly toasts: TuiToastsService }) {
   const color = useColor();
   const running = () => props.transcript().running;
 
@@ -63,9 +66,15 @@ export function ChatScreen(props: ScreenProps) {
       <Header running={running()} />
       <Show when={props.sessionId} keyed>
         {(sessionId) => (
-          <SessionView sessionId={sessionId} transcript={props.transcript} running={running()} />
+          <SessionView
+            sessionId={sessionId}
+            transcript={props.transcript}
+            debug={props.debug}
+            running={running()}
+          />
         )}
       </Show>
+      <ToastCorner toasts={props.toasts} />
     </box>
   );
 }

@@ -1,7 +1,7 @@
 /**
- * A followed session as the chat screen draws it: shown entries in order, runs of tool calls
- * gathered into work items, the live state, and whether a turn runs. Each event makes a new value;
- * items it does not touch keep their identity, so their rows stay mounted.
+ * A followed session as the chat screen draws it: shown and debug entries in order, runs of tool
+ * calls gathered into work items, the live state, and whether a turn runs. Each event makes a new
+ * value; items it does not touch keep their identity, so their rows stay mounted.
  */
 
 import { Option, Predicate, Schema } from "effect";
@@ -39,13 +39,17 @@ export const emptyTranscript: Transcript = {
 const decodeCall = Schema.decodeUnknownOption(ToolCallEntry.data);
 const decodeResult = Schema.decodeUnknownOption(ToolResultEntry.data);
 
+const isDebug = (item: Item) => item.kind === "entry" && item.entry.user === "debug";
+
+/** A call joins the last run even past debug items, so a debug entry never splits a run. */
 const withCall = (transcript: Transcript, entry: SavedEntry, call: ToolCall): Transcript => {
-  const last = transcript.items.at(-1);
+  const index = transcript.items.findLastIndex((item) => !isDebug(item));
+  const last = transcript.items[index];
 
   if (last?.kind === "work") {
     const joined: Item = { ...last, calls: [...last.calls, call] };
 
-    return { ...transcript, items: [...transcript.items.slice(0, -1), joined] };
+    return { ...transcript, items: transcript.items.with(index, joined) };
   }
 
   const started: Item = { kind: "work", seq: entry.seq, calls: [call] };
@@ -101,7 +105,7 @@ const withEntry = (transcript: Transcript, entry: SavedEntry): Transcript => {
 
   const tool = withTool(transcript, entry);
   if (tool !== undefined) return tool;
-  if (entry.user !== "shown") return transcript;
+  if (entry.user === "hidden") return transcript;
 
   return { ...transcript, items: [...transcript.items, { kind: "entry", entry }] };
 };

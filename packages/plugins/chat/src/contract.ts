@@ -1,9 +1,11 @@
 /**
  * Chat: the TUI's chat screen and the slots other plugins draw into: header items, transcript
- * entries, tool rows, the live tip, the composer and the key hints.
+ * entries, tool rows, the live tip, the composer and the key hints. Entries marked `debug` show
+ * only while the debug view is on.
  */
 
-import { Option, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
+import { Rpc, RpcGroup } from "effect/rpc";
 
 import { type LiveState, type NoProps, type SavedEntry, Slot } from "@liminal/sdk";
 
@@ -100,3 +102,16 @@ export const ChatSlots = {
   /** Further key hints after the composer's, one group per registration. */
   hints: Slot.list<TurnProps, "session">("chat/hints", { scope: "session" }),
 };
+
+/** The `chat` section of `settings.json`. */
+export const ChatSettings = Schema.Struct({
+  /** Whether the debug view starts on; `/debug` flips it for the run. */
+  debug: Schema.Boolean.pipe(Schema.withDecodingDefaultKey(Effect.succeed(false))),
+});
+
+export type ChatSettings = typeof ChatSettings.Type;
+
+export class ChatRpcs extends RpcGroup.make(
+  /** The `debug` setting: whether the debug view starts on. */
+  Rpc.make("chat/debug", { success: Schema.Boolean }),
+) {}

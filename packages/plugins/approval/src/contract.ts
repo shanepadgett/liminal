@@ -70,12 +70,12 @@ export const ApprovalRecord = Schema.Struct({
 
 export type ApprovalRecord = typeof ApprovalRecord.Type;
 
-/** Saved for every answered ask; the model never sees it and the transcript hides it. */
+/** Saved for every answered ask; the model never sees it and only the debug view shows it. */
 export const ApprovalEntry = defineEntry({
   kind: "approval/answer",
   data: ApprovalRecord,
   model: false,
-  user: "hidden",
+  user: "debug",
 });
 
 export class Approval extends Context.Service<

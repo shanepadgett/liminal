@@ -22,6 +22,7 @@ import {
 import { ChildProcess } from "effect/process";
 import { TestClock } from "effect/testing";
 
+import { ApprovalEntry } from "@liminal/approval/contract";
 import { type Handoff, startFrontend } from "@liminal/frontend";
 import { type Kernel, type ReloadOptions, start } from "@liminal/kernel";
 import {
@@ -31,7 +32,7 @@ import {
   ScriptedModel,
   scriptedProvider,
 } from "@liminal/model-scripted/contract";
-import { ModelError, type ModelPart, ProjectTrust, SessionId } from "@liminal/sdk";
+import { draft, ModelError, type ModelPart, ProjectTrust, SessionId } from "@liminal/sdk";
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 import { SessionLog, userMessage } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
@@ -491,6 +492,51 @@ effectTest(
 
     expect(title).toContain("copy");
     expect(frame).toContain("token expired");
+  }),
+  trustedServices,
+);
+
+/** Runs `command` from the composer's slash menu once its description shows. */
+const slash = (setup: TestRendererSetup, command: string, desc: string) =>
+  Effect.gen(function* () {
+    yield* Effect.promise(() => setup.mockInput.typeText(command));
+    yield* frameWith(setup, desc);
+    setup.mockInput.pressEnter();
+  });
+
+effectTest(
+  "approval answers show only while /debug turns the debug view on, with a toast saying which",
+  Effect.gen(function* () {
+    const { setup, kernel } = yield* bootScripted(replyText("hi there"));
+
+    yield* send(setup, "hello there");
+    yield* frameWith(setup, "hi there");
+
+    yield* kernel.use((services) =>
+      Effect.gen(function* () {
+        const log = Context.getUnsafe(services, SessionLog);
+        const [session] = yield* log.list;
+        if (session === undefined) return yield* Effect.die("no session");
+
+        const data = {
+          callId: "c1",
+          tool: "shell",
+          by: "user",
+          approved: false,
+          reason: "not yet",
+        };
+
+        return yield* log.append(session.id, [draft(ApprovalEntry, { data, text: "rejected" })]);
+      }),
+    );
+
+    yield* slash(setup, "/debug", "Show or hide debug entries");
+    const shown = yield* frameWith(setup, "✕ shell rejected by you: not yet");
+    expect(shown).toContain("Debug view on");
+
+    yield* slash(setup, "/debug", "Show or hide debug entries");
+    const hidden = yield* frameWhere(setup, (frame) => !frame.includes("shell rejected"));
+    expect(hidden).toContain("Debug view off");
   }),
   trustedServices,
 );

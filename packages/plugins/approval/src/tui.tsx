@@ -1,6 +1,7 @@
 /**
  * Approval's TUI part: the mode label after the composer's model line, shift+tab and `/approvals`
- * to change the session's mode, and the dialog for each waiting ask.
+ * to change the session's mode, the dialog for each waiting ask, and each saved answer in the debug
+ * view.
  */
 
 import { Effect, Option, Stream } from "effect";
@@ -18,7 +19,8 @@ import {
   TuiHost,
 } from "@liminal/sdk/tui";
 
-import { type ApprovalMode, ApprovalRpcs } from "./contract.ts";
+import { type ApprovalMode, ApprovalEntry, ApprovalRpcs } from "./contract.ts";
+import { AnswerRow } from "./tui/AnswerRow.tsx";
 import { type LabelDeps, makeModeLabel } from "./tui/ModeLabel.tsx";
 
 const modeOptions: ReadonlyArray<SelectOption<ApprovalMode>> = [
@@ -84,6 +86,8 @@ export default defineTui({
         run: chooseMode,
       },
     ]);
+
+    yield* host.register(ChatSlots.entry, { key: ApprovalEntry.kind, meta: {} }, AnswerRow);
 
     yield* host.register(
       ChatSlots.composerLine,

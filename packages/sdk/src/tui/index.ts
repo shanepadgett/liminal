@@ -51,6 +51,14 @@ export {
   type TuiDialogsService,
 } from "./dialogs.tsx";
 
+export {
+  makeTuiToasts,
+  type ToastKind,
+  type ToastMessage,
+  TuiToasts,
+  type TuiToastsService,
+} from "./toasts.ts";
+
 export { SelectDialog, type SelectDialogProps, type SelectOption } from "./SelectDialog.tsx";
 export { ConfirmDialog, type ConfirmDialogProps } from "./ConfirmDialog.tsx";
 export { PromptField, type PromptFieldProps } from "./PromptField.tsx";
