@@ -9,6 +9,7 @@ import { HttpClient } from "effect/http";
 import { apiKeyOf, CredentialStore } from "@liminal/credential-store/contract";
 import { LoginMethod, LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
+import { ThinkingOff } from "@liminal/sdk";
 import { type MessagesSigning, messagesStream } from "@liminal/sdk/ai/messages";
 
 import { anthropicApiProvider, anthropicKeyVariable, claudeProvider } from "../contract.ts";
@@ -75,6 +76,7 @@ export const anthropicLayer = Layer.effectDiscard(
       checkLogin: checkClaudeLogin(store),
       stream: messagesStream(http, fs, claudeSigning(store, http, claudeCode)),
       nativeToolChanges: false,
+      cheap: { id: "claude-haiku-5-5", thinking: ThinkingOff.make({}) },
     });
 
     yield* providers.register({
@@ -84,6 +86,7 @@ export const anthropicLayer = Layer.effectDiscard(
       checkLogin: Effect.asVoid(keyOf(store)),
       stream: messagesStream(http, fs, keySigning(store)),
       nativeToolChanges: false,
+      cheap: { id: "claude-haiku-5-5", thinking: ThinkingOff.make({}) },
     });
   }),
 );

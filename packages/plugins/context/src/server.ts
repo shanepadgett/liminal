@@ -1,17 +1,9 @@
 /** Context's server: builds each request from the session's entries and saves system changes. */
 
-import { Effect, Layer, Option } from "effect";
+import { Effect, Layer } from "effect";
 
-import {
-  draft,
-  KeyedRegistry,
-  type ModelRef,
-  type ModelTool,
-  Registry,
-  type SessionId,
-} from "@liminal/sdk";
+import { draft, KeyedRegistry, type ModelRef, Registry, type SessionId } from "@liminal/sdk";
 import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
-import { Tools } from "@liminal/tool-registry/contract";
 
 import {
   Context,
@@ -21,6 +13,7 @@ import {
   PromptSections,
   RequestSteps,
   SystemEntry,
+  ToolSources,
   ViewSteps,
 } from "./contract.ts";
 import {
@@ -33,28 +26,21 @@ import {
   systemText,
 } from "./server/system.ts";
 
-/** Every registered tool, declared as offered at the start or not; none without a registry. */
-const toolsOf = (tools: Option.Option<Tools["Service"]>) =>
-  Option.match(tools, {
-    onNone: () => Effect.succeed<ReadonlyArray<ModelTool>>([]),
-    onSome: (registry) =>
-      Effect.map(registry.list, (all) =>
-        all.map((tool): ModelTool => ({ ...tool.spec, offered: tool.offeredAtStart })),
-      ),
-  });
-
 const make = Effect.gen(function* () {
   const log = yield* SessionLog;
   const entryKinds = yield* EntryKinds;
   const sections = yield* PromptSections;
   const viewSteps = yield* ViewSteps;
   const requestSteps = yield* RequestSteps;
-  const tools = yield* Effect.serviceOption(Tools);
+  const toolSources = yield* ToolSources;
 
   yield* entryKinds.register(SystemEntry);
   yield* entryKinds.register(MessageEntry);
 
-  const currentTools = toolsOf(tools);
+  /** Every source's tools, in source order. */
+  const currentTools = Effect.flatMap(toolSources.list, (sources) =>
+    Effect.map(Effect.all(sources), (lists) => lists.flat()),
+  );
 
   const view = Effect.fn("Context.view")(function* (sessionId: SessionId) {
     let entries = yield* log.read(sessionId, {});
@@ -131,6 +117,7 @@ const rpcs = ContextRpcs.toLayer(
 export const layer = rpcs.pipe(
   Layer.provideMerge(Layer.effect(Context, make)),
   Layer.provideMerge(KeyedRegistry.layer(PromptSections, (section) => section.key)),
+  Layer.provideMerge(Registry.layer(ToolSources)),
   Layer.provideMerge(Registry.layer(ViewSteps)),
   Layer.provideMerge(Registry.layer(RequestSteps)),
 );

@@ -24,9 +24,9 @@ Connect and login step 3 is built ([plans/connect.md](plans/connect.md)): `Login
 
 Connect and login step 6 is built ([plans/connect.md](plans/connect.md)): `@liminal/sdk/ai/{messages,responses,chat}` hold the protocol streams; `model-openrouter` and `model-opencode-go` sign in with API keys; neither has had a live request yet.
 
-Instructions steps 1 to 5 are built ([plans/instructions.md](plans/instructions.md)): `context` sends section updates as a user-role instructions reminder; `notices`; `chat` draws only its own entries; `tool-guidance` puts each tool's `guidance` lines in the system prompt; `system-prompt` holds the base prompt; `environment` holds the workspace facts and file listing.
+Instructions steps 1 to 5 are built ([plans/instructions.md](plans/instructions.md)): `context` sends section updates as a user-role instructions reminder; `notices`; `chat` draws only its own entries; `tools` puts each tool's `guidance` lines in the system prompt; `system-prompt` holds the base prompt; `environment` holds the workspace facts and file listing.
 
-Every tool is its own plugin package: `tools-read`, `tools-write`, `tools-edit` and `tools-shell`.
+Tool packages are built ([plans/tools.md](plans/tools.md)): `tools` holds the registry, pipeline and guidance; `context` takes tool lists through `ToolSources`; `files` gives `WorkspaceFiles`; `tools-read`, `tools-edit` (`edit` and `write`) and `tools-shell`.
 
 Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model providers and testing, each matching the built code.
 
@@ -51,6 +51,13 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 - Code conventions: port Tau's standards and custom lint rules, reviewed per rule
 - Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`); [plans/reload.md](plans/reload.md) serves them into each build's `Bun.ModuleGraph`, and plugin packages' exports come from the folder the host loaded them from; an import of a package no plugin folder holds still resolves the plugin's own copy
 - ACP adapter as a server plugin
+- Approvals: safe shell commands (split with `unbash`, an extensive default safe list including pipes) run without review; others go to a decision model (Jev or Luna) when one is available, which approves or hands off when unsure, when the user should decide, or when the call runs code it cannot see; the hand-off goes to the provider's cheap model, which approves or writes a plain-language description for the user; reviewers approve anything on task that is not destructive and irreversible, and ask only for state changes outside what the user asked for; context is the last two user prompts and the final assistant messages; cheap models: Anthropic `claude-haiku-5-5`, OpenAI providers Luna 6, OpenCode Go and OpenRouter DeepSeek 4.1 Flash latest
+  - Reviewed: `shell` always; `write` and `edit` only for paths outside the workspace
+  - Decision model: Jev through OpenRouter when signed in, else Luna Decisions when it is the only one available
+  - Reviewer: always the session provider's cheap model
+  - Every provider names a cheap model that any plugin can use
+  - The review is one model call with structured output and only `read` and safe-list shell; any other shell command is blocked for the reviewer, and its guidance says so
+  - Per-session mode through an `/approval-mode` dialog and `shift+tab`; the composer shows the mode next to the model
 - Collab-style session sharing through an encrypted relay
 - TUI: built per [plans/archive/tui-session.md](plans/archive/tui-session.md); its `Open` list holds the choices made while building (entry kinds drawn by `chat`, tokens moved into `@liminal/sdk/tui`).
 - Gallery: its own isolated app, a minimal Storybook for the TUI; built before any TUI components or screens; every element, primitives through screens, is approved there first; houses its own components, duplication accepted; keep Tau's tier, state and width rules, redesign the shell

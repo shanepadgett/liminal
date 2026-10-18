@@ -32,6 +32,7 @@ export const replyOf = (
           .streamText({
             prompt,
             toolkit,
+            toolChoice: request.toolChoice ?? "auto",
             disableToolCallResolution: true,
             toolCallValidation: "deferred",
           })

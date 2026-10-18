@@ -207,6 +207,12 @@ export class PromptSections extends KeyedRegistry.Service<PromptSections, Prompt
   "liminal/context/PromptSections",
 ) {}
 
+/** Lists of tools the model can call; each request declares every list's tools, in order. */
+export class ToolSources extends Registry.Service<
+  ToolSources,
+  Effect.Effect<ReadonlyArray<ModelTool>>
+>()("liminal/context/ToolSources") {}
+
 /** Rewrites a session's entries before they become messages, such as cutting at a checkpoint. */
 export type ViewStep = (
   sessionId: SessionId,

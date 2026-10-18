@@ -12,12 +12,12 @@
   "devDependencies": {
     "@liminal/agent-loop": "workspace:*",
     "@liminal/context": "workspace:*",
+    "@liminal/files": "workspace:*",
     "@liminal/model-catalog": "workspace:*",
     "@liminal/session-log": "workspace:*",
     "@liminal/session-store": "workspace:*",
     "@liminal/settings": "workspace:*",
-    "@liminal/tool-pipeline": "workspace:*",
-    "@liminal/tool-registry": "workspace:*",
+    "@liminal/tools": "workspace:*",
     "@liminal/tools-read": "workspace:*"
   },
   "peerDependencies": {

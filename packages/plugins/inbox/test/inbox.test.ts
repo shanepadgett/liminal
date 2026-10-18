@@ -18,17 +18,15 @@ import { SessionLog, TurnEndedEntry, UserEntry } from "@liminal/session-log/cont
 import sessionStore from "@liminal/session-store";
 import settingsPlugin from "@liminal/settings";
 import { Settings } from "@liminal/settings/contract";
-import toolPipeline from "@liminal/tool-pipeline";
-import toolRegistry from "@liminal/tool-registry";
+import tools from "@liminal/tools";
 
 import inbox from "../plugin.ts";
 import { Inbox, NoTurnSettings } from "../src/contract.ts";
 
 const stack = serverOf(inbox).pipe(
   Layer.provideMerge(serverOf(agentLoop)),
+  Layer.provideMerge(serverOf(tools)),
   Layer.provideMerge(serverOf(context)),
-  Layer.provideMerge(serverOf(toolPipeline)),
-  Layer.provideMerge(serverOf(toolRegistry)),
   Layer.provideMerge(serverOf(modelScripted)),
   Layer.provideMerge(serverOf(models)),
   Layer.provideMerge(serverOf(modelCatalog)),

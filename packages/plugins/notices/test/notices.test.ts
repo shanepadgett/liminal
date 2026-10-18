@@ -11,14 +11,12 @@ import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
 import sessionLog from "@liminal/session-log";
 import { SessionLog, userMessage } from "@liminal/session-log/contract";
 import sessionStore from "@liminal/session-store";
-import toolRegistry from "@liminal/tool-registry";
 
 import notices from "../plugin.ts";
 import { notice, NoticeEntry } from "../src/contract.ts";
 
 const stack = serverOf(notices).pipe(
   Layer.provideMerge(serverOf(context)),
-  Layer.provideMerge(serverOf(toolRegistry)),
   Layer.provideMerge(serverOf(sessionLog)),
   Layer.provideMerge(serverOf(sessionStore)),
   Layer.provideMerge(testBaseServices),

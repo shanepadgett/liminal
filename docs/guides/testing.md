@@ -59,13 +59,13 @@ const fakeCatalog = Layer.succeed(
 );
 ```
 
-Examples: `packages/plugins/models/test/models.test.ts`, `packages/plugins/tool-registry/test/tool-registry.test.ts`.
+Examples: `packages/plugins/models/test/models.test.ts`, `packages/plugins/tools/test/registry.test.ts`.
 
 ## Run a turn on the scripted model
 
 `@liminal/model-scripted` registers provider `scripted`, which answers each model call with the next script you give it.
 
-1. Add `serverOf(modelScripted)`, `models`, `model-catalog`, `agent-loop`, `context`, `tool-registry`, `tool-pipeline`, `session-log`, `session-store` and `settings` to the stack.
+1. Add `serverOf(modelScripted)`, `models`, `model-catalog`, `agent-loop`, `tools`, `context`, `session-log`, `session-store` and `settings` to the stack.
 2. Queue the replies with `(yield* ScriptedModel).enqueue(...scripts)`; `repeat(script)` answers every call after the queue runs out.
 3. Run the turn with `AgentLoop.run(session, { model: { provider: scriptedProvider, id: "scripted" } })`.
 4. Check the saved entries with `SessionLog.read`, and the requests the model got with `ScriptedModel.requests`.

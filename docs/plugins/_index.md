@@ -2,7 +2,7 @@
 
 Every planned plugin, grouped by area. A plugin gets its own file once it has requirements of its own; the rest are one line here. Plugin rules are in [requirements/03-plugin-model.md](../requirements/03-plugin-model.md).
 
-A plain chat runs on `session-log`, `session-store`, `agent-loop`, `context`, `models`, `credential-store`, `tool-registry`, `tool-pipeline`, `settings` and one provider plugin. Every other plugin can be switched off on its own.
+A plain chat runs on `session-log`, `session-store`, `agent-loop`, `context`, `models`, `credential-store`, `tools`, `settings` and one provider plugin. Every other plugin can be switched off on its own.
 
 Status: **to plan** (listed only), **planned** (has requirements), **built**.
 
@@ -38,7 +38,6 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | --- | --- | --- |
 | [context](context.md) | Turns the log into model messages | built |
 | [system-prompt](system-prompt.md) | The built-in base system prompt | built |
-| [tool-guidance](tool-guidance.md) | The guidance lines of the registered tools, in the system prompt | built |
 | [environment](environment.md) | Workspace, git, platform, shell, date and a two-level file listing | built |
 | agents-files | `AGENTS.md` files from the repository root down to the workspace, on by default | planned |
 | [notices](notices.md) | Session notices only the user sees, in the transcript | built |
@@ -57,6 +56,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | [model-openai](model-openai.md) | Providers `openai` (API key) and `chatgpt` (Sign in with ChatGPT) | built |
 | [model-openrouter](model-openrouter.md) | Provider `openrouter`: OpenRouter's models with an API key | built |
 | [model-opencode-go](model-opencode-go.md) | Provider `opencode-go`: the OpenCode Go subscription with an API key | built |
+| [decisions](decisions.md) | Decision models (Jev, Luna Decisions) answer questions with probabilities | built |
 | one plugin per provider | Talks to one model provider | to plan |
 | model-select | Chooses the model for a session | to plan |
 
@@ -71,16 +71,15 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 
 | Plugin | Does | Status |
 | --- | --- | --- |
-| tool-registry | Tools the model can call | built |
-| tool-pipeline | Runs a tool call through its steps | built |
+| [tools](tools.md) | The tools the model can call, how each call runs, and their guidance in the system prompt | built |
+| [files](files.md) | Reads and writes workspace files for the file tools | built |
 | permissions | Rules for what tools may do | to plan |
 | approval | Asks the user before a tool runs | to plan |
 | tool-output-spill | Moves large tool output to a file | to plan |
 | checks | The checks tool, and runs the checks itself, with its own entry kind, when the model ends its turn without them | to plan |
 | command-runner | Runs one command to its end, with a timeout | built |
 | tools-read | `read`: a text file in windows of lines | built |
-| tools-write | `write`: a whole file, with its folders | built |
-| tools-edit | `edit`: replaces text that appears once in a file | built |
+| tools-edit | `edit` replaces text that appears once in a file; `write` writes a whole file, with its folders | built |
 | tools-shell | `shell` over the command runner | built |
 | one plugin per tool family | Web and other tools | to plan |
 | [processes](processes.md) | Commands that keep running across turns and restarts | planned |

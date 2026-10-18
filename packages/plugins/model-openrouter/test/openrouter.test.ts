@@ -10,12 +10,15 @@ import { ConfigProvider, Effect, Exit, Layer, Option, Ref, Schema, Stream } from
 import { HttpClient } from "effect/http";
 
 import credentialStore from "@liminal/credential-store";
+import decisions from "@liminal/decisions";
+import { Decided, DecisionModels, Decisions } from "@liminal/decisions/contract";
 import logins from "@liminal/logins";
 import { LoginMethod, LoginMethods } from "@liminal/logins/contract";
 import { ModelCatalog } from "@liminal/model-catalog/contract";
 import models from "@liminal/models";
 import { Models } from "@liminal/models/contract";
 import {
+  BoolQuestion,
   type ModelContent,
   type ModelRequest,
   ThinkingBudget,
@@ -63,9 +66,17 @@ const replyEvents = [
 
 const sent = Ref.makeUnsafe<ReadonlyArray<Sent>>([]);
 
+/** Jev's System One answer to the one yes or no question the decision test asks. */
+const jevAnswer = () =>
+  new Response(JSON.stringify({ answers: { network: { type: "noul", noul: 0.25 } } }), {
+    headers: { "content-type": "application/json" },
+  });
+
 const stub = Layer.succeed(
   HttpClient.HttpClient,
-  stubHttp(sent, () => eventStream(replyEvents)),
+  stubHttp(sent, (url) =>
+    url.pathname.endsWith("/systemone") ? jevAnswer() : eventStream(replyEvents),
+  ),
 );
 
 const fakeCatalog = Layer.succeed(
@@ -95,12 +106,20 @@ const stack = Layer.unwrap(
       Layer.provideMerge(stub),
       Layer.provideMerge(serverOf(logins)),
       Layer.provideMerge(serverOf(models)),
+      Layer.provideMerge(serverOf(decisions)),
       Layer.provideMerge(fakeCatalog),
       Layer.provideMerge(serverOf(credentialStore)),
       Layer.provideMerge(testBaseServices),
     ),
   ),
 );
+
+/** The answering model's id, or the skip reason and message. */
+const outcome = (decided: Decided) =>
+  Decided.$match(decided, {
+    Answered: ({ model }) => model,
+    Skipped: ({ reason, message }) => `${reason}: ${message}`,
+  });
 
 const withKey = ConfigProvider.fromEnv({ env: { OPENROUTER_API_KEY: "sk-or-env" } });
 const noKey = ConfigProvider.fromEnv({ env: {} });
@@ -179,6 +198,39 @@ effectTest(
 );
 
 effectTest(
+  "sends a forced tool choice and names the cheap model",
+  Effect.gen(function* () {
+    const service = yield* Models;
+
+    const tool = {
+      name: "submit",
+      description: "Gives the answer.",
+      parameters: { type: "object", properties: {} },
+      offered: true,
+    };
+
+    yield* Stream.runDrain(
+      service.stream({
+        ...requestWith([{ role: "user", parts: [text("Hello")] }]),
+        tools: [tool],
+        toolChoice: { tool: "submit" },
+      }),
+    );
+
+    const [first] = (yield* Ref.get(sent)).map((each) => each.body);
+
+    expect(first).toMatchObject({
+      tool_choice: { type: "function", function: { name: "submit" } },
+    });
+
+    expect((yield* service.cheap(openRouterProvider)).model.id).toBe(
+      "~deepseek/deepseek-flash-latest",
+    );
+  }).pipe(Effect.provideService(ConfigProvider.ConfigProvider, withKey)),
+  stack,
+);
+
+effectTest(
   "sends the reasoning details back on the next turn",
   Effect.gen(function* () {
     const reply = yield* Stream.runCollect(
@@ -212,6 +264,42 @@ effectTest(
 
     expect(Exit.isFailure(exit) && JSON.stringify(exit.cause)).toContain("auth");
     expect(yield* Ref.get(sent)).toEqual([]);
+  }).pipe(Effect.provideService(ConfigProvider.ConfigProvider, noKey)),
+  stack,
+);
+
+effectTest(
+  "registers Jev and Luna Decisions on the key, and asks Jev first through System One",
+  Effect.gen(function* () {
+    const registered = yield* (yield* DecisionModels).list;
+    expect(registered.map((model) => model.id)).toEqual(["openrouter/jev", "openrouter/luna"]);
+
+    const question = BoolQuestion.make({
+      instructions: "Does it reach the network?",
+      criteria: { true: "It connects out", false: "It stays local" },
+    });
+
+    const decided = yield* (yield* Decisions).classify(
+      { command: "ls" },
+      { network: question },
+      "auto",
+    );
+
+    expect(outcome(decided)).toBe("openrouter/jev");
+
+    const [request] = yield* Ref.get(sent);
+    expect(request?.url.toString()).toBe("https://openrouter.ai/api/v1/systemone");
+    expect(request?.headers["authorization"]).toBe("Bearer sk-or-env");
+  }).pipe(Effect.provideService(ConfigProvider.ConfigProvider, withKey)),
+  stack,
+);
+
+effectTest(
+  "without a key the decision models are unavailable",
+  Effect.gen(function* () {
+    const decided = yield* (yield* Decisions).classify({}, {}, "auto");
+
+    expect(outcome(decided)).toStartWith("unavailable:");
   }).pipe(Effect.provideService(ConfigProvider.ConfigProvider, noKey)),
   stack,
 );

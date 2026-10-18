@@ -4,7 +4,7 @@ import { Duration, Effect, Layer } from "effect";
 
 import { type CommandResult, CommandRunner } from "@liminal/command-runner/contract";
 import { defineTool, Directories, ToolFailed } from "@liminal/sdk";
-import { Tools } from "@liminal/tool-registry/contract";
+import { Tools } from "@liminal/tools/contract";
 
 import { ShellParams } from "./contract.ts";
 

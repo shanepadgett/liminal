@@ -12,6 +12,7 @@
   "peerDependencies": {
     "@effect/ai-openai": "4.0.5",
     "@liminal/credential-store": "workspace:*",
+    "@liminal/decisions": "workspace:*",
     "@liminal/logins": "workspace:*",
     "@liminal/models": "workspace:*",
     "@liminal/sdk": "workspace:*",

@@ -72,6 +72,7 @@ const make = Effect.gen(function* () {
     source: ModelSource.Listed({ models: Effect.succeed([model]) }),
     stream,
     nativeToolChanges: true,
+    cheap: { id: "scripted", thinking: ThinkingOff.make({}) },
   });
 
   return ScriptedModel.of({

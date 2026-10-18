@@ -14,8 +14,8 @@ import {
 } from "@liminal/sdk";
 import { SessionLog, type TurnSettings } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
-import { ToolPipeline } from "@liminal/tool-pipeline/contract";
-import { Tools } from "@liminal/tool-registry/contract";
+import { ToolPipeline } from "@liminal/tools/contract";
+import { Tools } from "@liminal/tools/contract";
 
 import {
   AfterFailureHooks,

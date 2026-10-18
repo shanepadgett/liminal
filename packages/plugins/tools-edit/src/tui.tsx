@@ -1,6 +1,6 @@
 /**
- * The `edit` tool's TUI part: a call reads as `Edited <path>`. Edits and writes join into `Edited N
- * files`; an opened row shows the end of the result.
+ * The file-changing tools' TUI part: calls read as `Edited <path>` and `Wrote <path>`, and join
+ * into `Edited N files`; an opened row shows the end of the result.
  */
 
 import { Effect } from "effect";
@@ -8,14 +8,14 @@ import { Effect } from "effect";
 import { ChatSlots, pathRows } from "@liminal/chat/contract";
 import { defineTui, Tail, TuiHost } from "@liminal/sdk/tui";
 
-const rows = pathRows({
-  running: "Editing",
-  done: "Edited",
-  joins: { verb: "Edited", noun: "files" },
-});
+const joins = { verb: "Edited", noun: "files" };
+const editRows = pathRows({ running: "Editing", done: "Edited", joins });
+const writeRows = pathRows({ running: "Writing", done: "Wrote", joins });
 
 export default defineTui({
-  setup: Effect.flatMap(TuiHost, (host) =>
-    host.register(ChatSlots.tool, { key: "edit", meta: rows }, Tail),
-  ),
+  setup: Effect.gen(function* () {
+    const host = yield* TuiHost;
+    yield* host.register(ChatSlots.tool, { key: "edit", meta: editRows }, Tail);
+    yield* host.register(ChatSlots.tool, { key: "write", meta: writeRows }, Tail);
+  }),
 });

@@ -8,8 +8,7 @@
   },
   "devDependencies": {
     "@liminal/context": "workspace:*",
-    "@liminal/session-store": "workspace:*",
-    "@liminal/tool-registry": "workspace:*"
+    "@liminal/session-store": "workspace:*"
   },
   "peerDependencies": {
     "@liminal/chat": "workspace:*",

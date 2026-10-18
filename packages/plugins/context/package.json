@@ -12,7 +12,6 @@
   "peerDependencies": {
     "@liminal/sdk": "workspace:*",
     "@liminal/session-log": "workspace:*",
-    "@liminal/tool-registry": "workspace:*",
     "effect": "4.0.5"
   },
   "liminal": [

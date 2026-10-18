@@ -4,7 +4,7 @@ import { Effect, Option, Ref } from "effect";
 
 import type { EntryDraft, SessionId, Tool } from "@liminal/sdk";
 import type { SessionLog } from "@liminal/session-log/contract";
-import type { ToolOutcome, ToolPipeline } from "@liminal/tool-pipeline/contract";
+import type { ToolOutcome, ToolPipeline } from "@liminal/tools/contract";
 
 import { type CallPart, resultDraft, type ToolResult, unanswered } from "./reply.ts";
 

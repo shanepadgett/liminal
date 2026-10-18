@@ -2,51 +2,13 @@
 
 import { expect } from "bun:test";
 
-import { Effect, Layer, Option, Predicate, Queue, Stream } from "effect";
+import { Effect, Option, Predicate, Queue } from "effect";
 
-import { ModelCatalog } from "@liminal/model-catalog/contract";
-import { CatalogUnavailable, ModelError, type ModelInfo, type PlanModel } from "@liminal/sdk";
-import { effectTest, testPlugin } from "@liminal/sdk/testing";
+import { ModelError, type ModelInfo, type PlanModel } from "@liminal/sdk";
+import { effectTest } from "@liminal/sdk/testing";
 
-import models from "../plugin.ts";
-import { type ModelProvider, ModelProviders, Models, ModelSource } from "../src/contract.ts";
-
-const info = (id: string, contextWindow = 400_000): ModelInfo => ({
-  id,
-  name: id.toUpperCase(),
-  contextWindow,
-  maxOutput: 128_000,
-  thinking: [],
-  input: ["text"],
-});
-
-/** Catalog id `openai` lists three models; any other id is unavailable. */
-const fakeCatalog = Layer.succeed(
-  ModelCatalog,
-  ModelCatalog.of({
-    models: (catalogId) =>
-      catalogId === "openai"
-        ? Effect.succeed(
-            ["gpt-a", "gpt-b", "gpt-c"].map((id) => ({ info: info(id), package: Option.none() })),
-          )
-        : Effect.fail(new CatalogUnavailable({ catalogId, message: "offline" })),
-  }),
-);
-
-const testLayer = testPlugin(models, fakeCatalog);
-
-const provider = (id: string, source: ModelSource): ModelProvider => ({
-  id,
-  name: id,
-  source,
-  stream: () => Stream.empty,
-  nativeToolChanges: false,
-});
-
-const register = Effect.fn("register")(function* (...added: ReadonlyArray<ModelProvider>) {
-  const providers = yield* ModelProviders;
-  for (const one of added) yield* providers.register(one);
-});
+import { Models, ModelSource } from "../src/contract.ts";
+import { info, provider, register, testLayer } from "./support.ts";
 
 const ids = (listed: ReadonlyArray<ModelInfo>) => listed.map((model) => model.id);
 

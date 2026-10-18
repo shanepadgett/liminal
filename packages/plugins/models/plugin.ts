@@ -3,11 +3,11 @@
 import { ModelCatalog } from "@liminal/model-catalog/contract";
 import { definePlugin } from "@liminal/sdk";
 
-import { ModelProviders, Models, ModelsRpcs } from "./src/contract.ts";
+import { ModelProviders, Models, ModelsRpcs, ModelTask } from "./src/contract.ts";
 
 export default definePlugin({
   name: "models",
-  provides: [Models, ModelProviders],
+  provides: [Models, ModelProviders, ModelTask],
   requires: [ModelCatalog],
   uses: [],
   enabledByDefault: true,

@@ -6,6 +6,7 @@
     ".": "./src/core/index.ts",
     "./ai": "./src/ai/index.ts",
     "./ai/chat": "./src/ai/chat.ts",
+    "./ai/decisions": "./src/ai/decisions.ts",
     "./ai/messages": "./src/ai/messages.ts",
     "./ai/responses": "./src/ai/responses.ts",
     "./testing": "./src/testing/index.ts",

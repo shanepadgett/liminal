@@ -1,9 +1,10 @@
 /** Read tool's server: registers `read`, which reads files in the workspace. */
 
-import { Effect, FileSystem, Layer, Path } from "effect";
+import { Effect, Layer } from "effect";
 
-import { defineTool, Directories, ToolFailed } from "@liminal/sdk";
-import { Tools } from "@liminal/tool-registry/contract";
+import { WorkspaceFiles } from "@liminal/files/contract";
+import { defineTool, ToolFailed } from "@liminal/sdk";
+import { Tools } from "@liminal/tools/contract";
 
 import { ReadParams } from "./contract.ts";
 
@@ -21,9 +22,7 @@ const window = (content: string, offset: number, limit: number) => {
 };
 
 const readTool = Effect.gen(function* () {
-  const fs = yield* FileSystem.FileSystem;
-  const path = yield* Path.Path;
-  const { workspace } = yield* Directories;
+  const files = yield* WorkspaceFiles;
 
   return defineTool({
     name: "read",
@@ -42,7 +41,7 @@ const readTool = Effect.gen(function* () {
     runAlongside: true,
     safeToRerun: true,
     run: ({ path: file, offset = 1, limit = defaultLimit }) =>
-      fs.readFileString(path.resolve(workspace, file)).pipe(
+      files.read(file).pipe(
         Effect.mapError((error) => new ToolFailed({ message: error.message })),
         Effect.map((content) => ({ result: window(content, offset, limit) })),
       ),

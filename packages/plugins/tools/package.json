@@ -1,0 +1,21 @@
+{
+  "name": "@liminal/tools",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./plugin.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "devDependencies": {
+    "@liminal/session-log": "workspace:*",
+    "@liminal/session-store": "workspace:*"
+  },
+  "peerDependencies": {
+    "@liminal/context": "workspace:*",
+    "@liminal/sdk": "workspace:*",
+    "effect": "4.0.5"
+  },
+  "liminal": [
+    "./plugin.ts"
+  ]
+}

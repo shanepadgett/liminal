@@ -7,13 +7,11 @@ import { expect, test } from "bun:test";
 
 import { Context as EffectContext, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";
 
-import { defineEntry, defineTool, draft, type Entry, SessionId } from "@liminal/sdk";
+import { defineEntry, defineTool, draft, type Entry, SessionId, type Tool } from "@liminal/sdk";
 import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
 import sessionLog from "@liminal/session-log";
 import { SessionLog } from "@liminal/session-log/contract";
 import sessionStore from "@liminal/session-store";
-import toolRegistry from "@liminal/tool-registry";
-import { Tools } from "@liminal/tool-registry/contract";
 
 import context from "../plugin.ts";
 import {
@@ -26,12 +24,12 @@ import {
   SystemData,
   SystemEntry,
   RequestSteps,
+  ToolSources,
   ViewSteps,
 } from "../src/contract.ts";
 
 /** One run of the plugins over the test's data folder. */
 const stack = serverOf(context).pipe(
-  Layer.provideMerge(serverOf(toolRegistry)),
   Layer.provideMerge(serverOf(sessionLog)),
   Layer.provideMerge(serverOf(sessionStore)),
 );
@@ -63,6 +61,9 @@ const tool = (name: string) =>
     run: () => Effect.succeed({ result: name }),
   });
 
+/** A tool source with one tool, offered as the tool declares. */
+const offer = (one: Tool) => Effect.succeed([{ ...one.spec, offered: one.offeredAtStart }]);
+
 /** Builds the stack in the current scope and registers a notes section read from `notes`. */
 const start = Effect.fn("start")(function* (notes: Ref.Ref<SectionRead<string>>) {
   const services = yield* Layer.build(stack);
@@ -82,7 +83,7 @@ const start = Effect.fn("start")(function* (notes: Ref.Ref<SectionRead<string>>)
     }),
   );
 
-  yield* EffectContext.get(services, Tools).register(tool("echo"));
+  yield* EffectContext.get(services, ToolSources).register(offer(tool("echo")), { order: 0 });
 
   return services;
 });
@@ -141,7 +142,12 @@ effectTest(
 
     yield* Ref.set(notes, { type: "present", value: "b" });
     const later = yield* Scope.make();
-    yield* Scope.provide(EffectContext.get(services, Tools).register(tool("later")), later);
+
+    yield* Scope.provide(
+      EffectContext.get(services, ToolSources).register(offer(tool("later")), { order: 1 }),
+      later,
+    );
+
     yield* log.append(s1, [prompt("next")]);
     const changed = yield* built.build(s1, model);
 

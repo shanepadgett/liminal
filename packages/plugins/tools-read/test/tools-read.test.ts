@@ -4,15 +4,16 @@ import { expect } from "bun:test";
 
 import { Effect, FileSystem, Layer, Option, Path, Schema } from "effect";
 
-import { Directories, SessionId } from "@liminal/sdk";
+import files from "@liminal/files";
+import { Directories, KeyedRegistry, SessionId } from "@liminal/sdk";
 import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
-import toolRegistry from "@liminal/tool-registry";
-import { Tools } from "@liminal/tool-registry/contract";
+import { Tools } from "@liminal/tools/contract";
 
 import toolsRead from "../plugin.ts";
 
 const stack = serverOf(toolsRead).pipe(
-  Layer.provideMerge(serverOf(toolRegistry)),
+  Layer.provideMerge(serverOf(files)),
+  Layer.provideMerge(KeyedRegistry.layer(Tools, (tool) => tool.spec.name)),
   Layer.provideMerge(testBaseServices),
 );
 

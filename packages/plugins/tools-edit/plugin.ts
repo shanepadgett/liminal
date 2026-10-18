@@ -1,12 +1,16 @@
-/** Edit tool: `edit`: replaces text that appears once in a file, in the workspace. */
+/**
+ * File-changing tools: `edit` replaces text that appears once in a file; `write` writes a whole
+ * file.
+ */
 
+import { WorkspaceFiles } from "@liminal/files/contract";
 import { definePlugin } from "@liminal/sdk";
-import { Tools } from "@liminal/tool-registry/contract";
+import { Tools } from "@liminal/tools/contract";
 
 export default definePlugin({
   name: "tools-edit",
   provides: [],
-  requires: [Tools],
+  requires: [Tools, WorkspaceFiles],
   uses: [],
   enabledByDefault: true,
   server: () => import("./src/server.ts"),

@@ -77,7 +77,7 @@ export interface ToolDefinition<S extends Schema.Top> {
 }
 
 /** The JSON Schema of `schema`, with its definitions inline under `$defs`. */
-const jsonSchemaOf = (schema: Schema.Top): Schema.Json => {
+export const jsonSchemaOf = (schema: Schema.Top): Schema.Json => {
   const document = Schema.toJsonSchemaDocument(schema);
   const definitions = document.definitions;
 

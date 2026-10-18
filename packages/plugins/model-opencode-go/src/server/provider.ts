@@ -11,7 +11,7 @@ import { apiKeyOf, CredentialStore } from "@liminal/credential-store/contract";
 import { LoginMethod, LoginMethods } from "@liminal/logins/contract";
 import { type CatalogModel, ModelCatalog } from "@liminal/model-catalog/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
-import { type CatalogUnavailable, ModelError, type ModelRequest } from "@liminal/sdk";
+import { type CatalogUnavailable, ModelError, type ModelRequest, ThinkingOff } from "@liminal/sdk";
 import { chatStream } from "@liminal/sdk/ai/chat";
 import { messagesStream } from "@liminal/sdk/ai/messages";
 import { responsesStream } from "@liminal/sdk/ai/responses";
@@ -159,6 +159,7 @@ export const openCodeGoLayer = Layer.effectDiscard(
           ),
         ),
       nativeToolChanges: false,
+      cheap: { id: "deepseek-v4.1-flash", thinking: ThinkingOff.make({}) },
     });
   }),
 );

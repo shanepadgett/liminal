@@ -43,9 +43,8 @@ import {
 import sessionStore from "@liminal/session-store";
 import settingsPlugin from "@liminal/settings";
 import { Settings } from "@liminal/settings/contract";
-import toolPipeline from "@liminal/tool-pipeline";
-import toolRegistry from "@liminal/tool-registry";
-import { Tools } from "@liminal/tool-registry/contract";
+import tools from "@liminal/tools";
+import { Tools } from "@liminal/tools/contract";
 
 import agentLoop from "../plugin.ts";
 import {
@@ -62,9 +61,8 @@ import {
 } from "../src/contract.ts";
 
 const stack = serverOf(agentLoop).pipe(
+  Layer.provideMerge(serverOf(tools)),
   Layer.provideMerge(serverOf(context)),
-  Layer.provideMerge(serverOf(toolPipeline)),
-  Layer.provideMerge(serverOf(toolRegistry)),
   Layer.provideMerge(serverOf(modelScripted)),
   Layer.provideMerge(serverOf(models)),
   Layer.provideMerge(serverOf(modelCatalog)),

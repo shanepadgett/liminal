@@ -51,6 +51,7 @@ yield* (yield* ModelProviders).register({
       Stream.provideService(FileSystem.FileSystem, fs),
     ),
   nativeToolChanges: false,
+  cheap: { id: "~deepseek/deepseek-flash-latest", thinking: ThinkingOff.make({}) },
 });
 ```
 
@@ -62,6 +63,9 @@ yield* (yield* ModelProviders).register({
 | `checkLogin` | Optional; fails with an `auth` `ModelError` while there is no usable login. Listing models checks it first |
 | `stream` | One attempt for one request; interrupting the stream cancels the call |
 | `nativeToolChanges` | `true` when the provider turns `tool-change` parts into native items; `false` sends every declared tool on each request |
+| `cheap` | A small, fast model and its thinking value; other plugins read it through `Models.cheap` and use it for side calls such as reviews |
+
+A provider built on `replyOf` sends `request.toolChoice` (`auto`, `required` or `{ tool }`) for free. A provider with its own stream must map it.
 
 ## Choose where models come from
 
@@ -163,6 +167,31 @@ Use `LoginMethod.Flow` for OAuth and device-code sign-in.
 - Read an OAuth credential with `CredentialStore.fresh(method, refresh, skew)`. It refreshes the token when it expires within `skew` and holds the store's lock, so only one process refreshes.
 
 Examples: `packages/plugins/model-anthropic/src/server/login.ts` and `auth.ts`, `packages/plugins/model-openai/src/server/chatgpt/`.
+
+## Register a decision model
+
+A decision model answers choice, score and yes or no questions about a JSON state with probabilities. Add `DecisionModels` to the manifest's `uses`, and register only when it is present:
+
+```ts
+const decisionModels = yield* Effect.serviceOption(DecisionModels);
+
+if (Option.isSome(decisionModels))
+  yield* decisionModels.value.register({
+    id: "openai/luna",
+    family: "luna",
+    available: Effect.isSuccess(key),
+    classify: openAiDecisions(http, { url: "https://api.openai.com/v1/decisions", key, model: "gpt-6-luna" }),
+  });
+```
+
+| Field | Meaning |
+| --- | --- |
+| `id` | Provider and family, such as `openrouter/jev` |
+| `family` | `jev` or `luna`; `decisions` tries Jev first |
+| `available` | Whether the login has a usable key |
+| `classify` | One call; `systemOne` and `openAiDecisions` from `@liminal/sdk/ai/decisions` build it from a URL, the key and a model id |
+
+Examples: `packages/plugins/model-openrouter/src/server/provider.ts`, `packages/plugins/model-openai/src/server/provider.ts`.
 
 ## See also
 

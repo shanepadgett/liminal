@@ -40,7 +40,9 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "command-runner",
         "context",
         "credential-store",
+        "decisions",
         "environment",
+        "files",
         "inbox",
         "logins",
         "model-anthropic",
@@ -57,13 +59,10 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "session-store",
         "settings",
         "system-prompt",
-        "tool-guidance",
-        "tool-pipeline",
-        "tool-registry",
+        "tools",
         "tools-edit",
         "tools-read",
         "tools-shell",
-        "tools-write",
       ]);
 
       return yield* kernel.use(use);

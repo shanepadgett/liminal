@@ -105,10 +105,25 @@ export type ThinkingOption = typeof ThinkingOption.Type;
 export const ModelTool = Schema.Struct({ ...ToolSpec.fields, offered: Schema.Boolean });
 export type ModelTool = typeof ModelTool.Type;
 
+/** Which tools the model may call: any or none, at least one, or the named one. */
+export const ToolChoice = Schema.Union([
+  Schema.Literals(["auto", "required"]),
+  Schema.Struct({ tool: Schema.String }),
+]);
+
+export type ToolChoice = typeof ToolChoice.Type;
+
+/** A provider's cheap model and the thinking it runs with, for short side calls. */
+export const CheapModel = Schema.Struct({ model: ModelRef, thinking: ThinkingValue });
+
+export type CheapModel = typeof CheapModel.Type;
+
 export const ModelRequest = Schema.Struct({
   model: ModelRef,
   messages: Schema.Array(ModelContent),
   tools: Schema.Array(ModelTool),
+  /** Missing is `auto`. */
+  toolChoice: Schema.optionalKey(ToolChoice),
   thinking: ThinkingValue,
   maxOutputTokens: Schema.optional(Schema.Int),
   /** Groups requests that share a prefix, such as one session's. */

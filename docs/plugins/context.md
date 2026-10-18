@@ -8,6 +8,7 @@ Status: built
 
 - `Context` service: `build` writes the sync entry and returns the next model request; `preview` returns it without writing
 - `PromptSections` registry
+- `ToolSources`: an ordered registry of tool lists; each request declares every list's tools
 - `RpcGroup` with `preview`
 - View steps: an ordered chain that plugins add to; each rewrites the entries before they become messages
 - `RequestSteps`: an ordered chain that rewrites the finished request, for build and preview alike; what a step adds is never saved

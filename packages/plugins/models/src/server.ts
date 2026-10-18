@@ -15,8 +15,9 @@ import {
   ProviderNotFound,
 } from "@liminal/sdk";
 
-import { ModelSource, ModelProviders, Models, ModelsRpcs } from "./contract.ts";
+import { ModelSource, ModelProviders, Models, ModelsRpcs, ModelTask } from "./contract.ts";
 import { makePlans } from "./server/plans.ts";
+import { make as makeTask } from "./server/task.ts";
 
 /** The catalog's models the plan offers, in the plan's order, each with the plan's context window. */
 const onPlan = (catalog: ReadonlyArray<ModelInfo>, plan: ReadonlyArray<PlanModel>) =>
@@ -79,6 +80,11 @@ const make = Effect.gen(function* () {
     listProviders: Effect.map(providers.list, (all) => all.map(({ id, name }) => ({ id, name }))),
     listModels,
     describe,
+    cheap: (id) =>
+      Effect.map(provider(id), ({ cheap }) => ({
+        model: { provider: id, id: cheap.id },
+        thinking: cheap.thinking,
+      })),
   });
 });
 
@@ -93,7 +99,10 @@ const rpcs = ModelsRpcs.toLayer(
   }),
 );
 
-export const layer = rpcs.pipe(
+export const layer = Layer.mergeAll(
+  rpcs,
+  Layer.effect(ModelTask, Effect.map(Models, makeTask)),
+).pipe(
   Layer.provideMerge(Layer.effect(Models, make)),
   Layer.provideMerge(KeyedRegistry.layer(ModelProviders, (provider) => provider.id)),
 );

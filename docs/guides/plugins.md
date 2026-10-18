@@ -86,7 +86,7 @@ Every plugin gets these base services without listing them:
 | `Directories` | `@liminal/sdk` | `global` (`~/.liminal`), `workspace` (`<cwd>`), `project` (`<cwd>/.liminal`), `data` (`~/.liminal/data`) |
 | `EventBus`, `TurnGate`, `Work` | `@liminal/sdk` | Kernel events, the turn gate, and background work |
 
-Examples: `packages/plugins/context/plugin.ts` (`uses: [Tools]`), `packages/plugins/tool-pipeline/src/server.ts` (`Effect.serviceOption(Approvals)`).
+Examples: `packages/plugins/tools/plugin.ts` (`uses: [Approvals]`), `packages/plugins/tools/src/server/pipeline.ts` (`Effect.serviceOption(Approvals)`).
 
 ## Write the contract
 
@@ -95,7 +95,7 @@ Examples: `packages/plugins/context/plugin.ts` (`uses: [Tools]`), `packages/plug
 Rules:
 
 - Import only `effect`, `@liminal/sdk`, and other plugins' contracts. Never import `@liminal/sdk/tui` or `@opentui/*` here or in `plugin.ts`.
-- Prefix every string id with the plugin name: entry kinds `notices/notice`, service keys `liminal/tool-registry/Tools`, RPC names `cancel/turn`.
+- Prefix every string id with the plugin name: entry kinds `notices/notice`, service keys `liminal/tools/Tools`, RPC names `cancel/turn`.
 - Expected failures are `Schema.TaggedError` classes, exported so callers can match them.
 - A helper another plugin calls to write your entries, such as `notice()`, works with your plugin off, because it only builds a draft.
 
@@ -107,9 +107,9 @@ Plugins extend each other through registries and services that the owning plugin
 
 | Extension point | Owner | Kind | Register |
 | --- | --- | --- | --- |
-| `Tools` | `tool-registry` | keyed by tool name | A tool the model can call |
-| `ToolChecks` | `tool-pipeline` | ordered | Allow, deny or ask before a call |
-| `ToolWrappers` | `tool-pipeline` | ordered middleware | Code around an allowed call's run |
+| `Tools` | `tools` | keyed by tool name | A tool the model can call |
+| `ToolChecks` | `tools` | ordered | Allow, deny or ask before a call |
+| `ToolWrappers` | `tools` | ordered middleware | Code around an allowed call's run |
 | `EntryKinds` | `session-log` | keyed by kind | Your entry kinds |
 | `PromptSections` | `context` | keyed by key | A part of the system prompt |
 | `ViewSteps` | `context` | ordered | Rewrite entries before they become messages |
@@ -141,7 +141,7 @@ Declare one when other plugins should add to your feature.
 2. Declare the tag in your contract.
 
    ```ts
-   export class Tools extends KeyedRegistry.Service<Tools, Tool>()("liminal/tool-registry/Tools") {}
+   export class Tools extends KeyedRegistry.Service<Tools, Tool>()("liminal/tools/Tools") {}
    export class ViewSteps extends Registry.Service<ViewSteps, ViewStep>()("liminal/context/ViewSteps") {}
    ```
 
@@ -158,7 +158,7 @@ Rules:
 - For middleware, type items as `Pipeline.Middleware<In, Out, E>` from `@liminal/sdk`; each one wraps the rest of the chain.
 - Hooks return a tagged enum answer, such as `BeforeCall.Proceed` or `BeforeCall.EndTurn`, never a boolean.
 
-Examples: `packages/plugins/tool-registry/src/server.ts`, `packages/plugins/context/src/server.ts` (several registries merged with `Layer.provideMerge`), `packages/plugins/tool-pipeline/src/contract.ts`.
+Examples: `packages/plugins/tools/src/server.ts`, `packages/plugins/context/src/server.ts` (several registries merged with `Layer.provideMerge`), `packages/plugins/tools/src/contract.ts`.
 
 ## Save entries in a session
 
@@ -255,7 +255,7 @@ Example: `packages/plugins/inbox/src/server.ts`.
 | --- | --- |
 | `hints` | MCP tool hints; permission checks read them. Unset hints take MCP defaults: not read-only, may be destructive, open world |
 | `offeredAtStart` | Optional; whether the model sees the tool from the first request |
-| `guidance` | Optional rule lines for the system prompt, such as when to prefer this tool; `tool-guidance` lists each line once across all tools |
+| `guidance` | Optional rule lines for the system prompt, such as when to prefer this tool; `tools` lists each line once across all tools |
 | `runAlongside` | Can run at the same time as other calls in the same step |
 | `safeToRerun` | Can run again after a crash without harm |
 | `run` | Gets the decoded params and `{ sessionId, callId }`; returns `{ result, details? }` or fails with `ToolFailed` |

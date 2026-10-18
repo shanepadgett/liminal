@@ -6,6 +6,7 @@ import { HttpClient, HttpClientRequest } from "effect/http";
 import { CredentialStore } from "@liminal/credential-store/contract";
 import { LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
+import { ThinkingOff } from "@liminal/sdk";
 import { planModels } from "@liminal/sdk/ai";
 import { responsesStream } from "@liminal/sdk/ai/responses";
 
@@ -42,6 +43,7 @@ export const chatgptLayer = Layer.effectDiscard(
         options: Effect.map(token, (apiKey) => ({ apiKey })),
       }),
       nativeToolChanges: false,
+      cheap: { id: "gpt-6-luna", thinking: ThinkingOff.make({}) },
     });
   }),
 );

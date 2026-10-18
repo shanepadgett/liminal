@@ -16,7 +16,11 @@ What a plugin is, where plugins load from, and how the host wires them together.
 - Adding to another plugin's registry requires that plugin in `requires`
 - Core domains use the same extension mechanism as any plugin
 - A behavior the agent can work without is its own plugin
-- Every tool is its own plugin package, named `tools-<tool>`
+- Tool plumbing is one plugin, `tools`: the registry, the call pipeline and the guidance section
+- `read` is its own plugin package, `tools-read`
+- Tools that change files share one plugin package, `tools-edit`
+- Every other tool is its own plugin package, named `tools-<tool>`
+- File tools read and write through the `files` plugin
 - All plugins share one shape, one host, and one replacement mechanism
 - Plugins that others build on hold only the minimum mechanism
 - A replacement must provide the same service contract, or its dependents are replaced with it

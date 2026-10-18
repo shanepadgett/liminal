@@ -52,7 +52,6 @@ const parts = [
   "tools-edit",
   "tools-read",
   "tools-shell",
-  "tools-write",
 ];
 
 /**

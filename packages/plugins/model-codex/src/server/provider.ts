@@ -7,7 +7,7 @@ import { HttpClient, HttpClientRequest } from "effect/http";
 import { CredentialStore } from "@liminal/credential-store/contract";
 import { LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
-import type { ModelRequest } from "@liminal/sdk";
+import { type ModelRequest, ThinkingOff } from "@liminal/sdk";
 import { effortOf, OpenAiPrompt, planModels, replyOf } from "@liminal/sdk/ai";
 
 import { codexProvider } from "../contract.ts";
@@ -85,6 +85,7 @@ export const codexLayer = Layer.effectDiscard(
       checkLogin: checkLogin(store),
       stream: makeStream(http, sign, fs),
       nativeToolChanges: false,
+      cheap: { id: "gpt-6-luna", thinking: ThinkingOff.make({}) },
     });
   }),
 );

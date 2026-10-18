@@ -1,4 +1,5 @@
 /** The root `@liminal/sdk` surface: what manifests, contracts and servers import. */
+export * from "./decision.ts";
 export { Directories } from "./directories.ts";
 
 export {

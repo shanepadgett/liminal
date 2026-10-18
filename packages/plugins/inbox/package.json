@@ -13,8 +13,7 @@
     "@liminal/models": "workspace:*",
     "@liminal/session-store": "workspace:*",
     "@liminal/settings": "workspace:*",
-    "@liminal/tool-pipeline": "workspace:*",
-    "@liminal/tool-registry": "workspace:*"
+    "@liminal/tools": "workspace:*"
   },
   "peerDependencies": {
     "@liminal/agent-loop": "workspace:*",

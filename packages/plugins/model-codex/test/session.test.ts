@@ -10,14 +10,14 @@ import { Effect, FileSystem, Layer, Path, Ref } from "effect";
 import agentLoop from "@liminal/agent-loop";
 import { AgentLoop, StepOutcome } from "@liminal/agent-loop/contract";
 import context from "@liminal/context";
+import files from "@liminal/files";
 import { Directories, type Entry, SessionId } from "@liminal/sdk";
 import { effectTest, serverOf } from "@liminal/sdk/testing";
 import sessionLog from "@liminal/session-log";
 import { SessionLog, TextEntry, ToolResultEntry, userMessage } from "@liminal/session-log/contract";
 import sessionStore from "@liminal/session-store";
 import settings from "@liminal/settings";
-import toolPipeline from "@liminal/tool-pipeline";
-import toolRegistry from "@liminal/tool-registry";
+import tools from "@liminal/tools";
 import toolsRead from "@liminal/tools-read";
 
 import { codexProvider } from "../src/contract.ts";
@@ -30,9 +30,9 @@ const http = replay({ responses: [{ fixture: "tool-call.sse" }, { fixture: "repl
 
 const stack = serverOf(agentLoop).pipe(
   Layer.provideMerge(serverOf(toolsRead)),
+  Layer.provideMerge(serverOf(files)),
+  Layer.provideMerge(serverOf(tools)),
   Layer.provideMerge(serverOf(context)),
-  Layer.provideMerge(serverOf(toolPipeline)),
-  Layer.provideMerge(serverOf(toolRegistry)),
   Layer.provideMerge(serverOf(sessionLog)),
   Layer.provideMerge(serverOf(sessionStore)),
   Layer.provideMerge(serverOf(settings)),

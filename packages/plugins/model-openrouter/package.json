@@ -14,6 +14,7 @@
   },
   "peerDependencies": {
     "@liminal/credential-store": "workspace:*",
+    "@liminal/decisions": "workspace:*",
     "@liminal/logins": "workspace:*",
     "@liminal/models": "workspace:*",
     "@liminal/sdk": "workspace:*",

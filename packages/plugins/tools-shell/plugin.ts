@@ -2,7 +2,7 @@
 
 import { CommandRunner } from "@liminal/command-runner/contract";
 import { definePlugin } from "@liminal/sdk";
-import { Tools } from "@liminal/tool-registry/contract";
+import { Tools } from "@liminal/tools/contract";
 
 export default definePlugin({
   name: "tools-shell",
