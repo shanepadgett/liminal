@@ -23,7 +23,7 @@ Step 6 is built ([plans/archive/step-6.md](plans/archive/step-6.md)): the kernel
 
 ## Next
 
-- Reload at turn end: [plans/reload.md](plans/reload.md), code-level plan next.
+- Reload at turn end: [plans/reload.md](plans/reload.md), code-level plan agreed; build next.
 - Review the transcript in a live terminal ([plans/transcript.md](plans/transcript.md)).
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).

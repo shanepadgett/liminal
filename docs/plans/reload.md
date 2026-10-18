@@ -8,8 +8,8 @@ Lets Liminal pick up its own code changes, plugins in process and kernel code by
 | --- | --- | --- | --- |
 | Graph swap | `packages/kernel/src/graph/graphs.ts` `reload(names)` | Rebuilds named plugins and dependents aside, swaps at once; `ChangeFailed` keeps the old graph | Swaps whenever called, even mid-turn; reuses cached modules, so edited plugin files never load |
 | Turns | `agent-loop/src/server/turns.ts` | One `Work` task per session (`agent-loop/turn/<id>`); each step reads the current graph | A mid-turn swap reaches the turn's next step |
-| Supervisor | `apps/cli/src/supervisor.ts` | Restarts the app on exit 75; races a `nextChange` effect | Nothing writes 75; `nextChange` lets a watcher kill the app mid-turn |
-| Dev mode | `apps/cli/src/dev.ts`, `mise run dev` | Kills and restarts the whole process on every save | Breaks all three reload rules |
+| Supervisor | `apps/cli/src/supervisor.ts` | Restarts the app on exit 75 | Nothing writes 75 |
+| Frontend parts | `packages/frontend/src/parts.ts` | Calls `member.plugin.tui()` after a graph change | Imports TUI code that was never checked |
 | Plugin imports | `host/discover.ts`, `host/build.ts` | `import(path)` once per path; Bun caches it for the process | No fresh code without a new process |
 
 ## Shape
@@ -30,7 +30,7 @@ flowchart LR
 | Kernel | Expands | Owns the watcher, the reload machine and the check; `Kernel.reload` goes through the machine |
 | SDK core | Expands | New base service: the turn gate |
 | agent-loop | Changes | Holds the gate for each turn |
-| Supervisor | Shrinks | Back to restart on exit 75, nothing else |
+| Supervisor | Unchanged | Restarts on exit 75 |
 | `apps/cli` | Changes | Passes dev restart roots and mode; exits 75 when the kernel asks |
 | Frontend / TUI | Expands | Shows "new code ready" and binds the reload command |
 
@@ -89,16 +89,151 @@ What this sets:
 - The check imports each plugin's manifest, server and TUI part into the build's graph, so a swap and the frontend's reload use only checked code. Builds happen only at the turn-end swap, so no half-edited file loads during a turn.
 - The plugin authoring docs say: load your own files at build time, never with `import()` later. No lint rule; a late `import()` of a plugin's own edited file only risks that plugin.
 
+## Code
+
+```text
+packages/sdk/src/core/
+  turn-gate.ts          new: TurnGate service; makeTurnGate (hold, close, idle)
+  plugin.ts             BaseServices gains TurnGate; GraphMember.plugin.tui resolves the preloaded module
+  protocol.ts           ReloadState schema; KernelRpcs gains kernel/reload, kernel/reload-now
+packages/sdk/src/testing/base.ts   provides a real TurnGate
+packages/kernel/src/
+  host/modules.ts       new: one Bun.plugin serving shared modules into every graph
+  host/packages.ts      new: PackageLoad, one Bun.ModuleGraph per plugin package; disposed at 0 users
+  host/discover.ts      imports manifests into the package's graph; reuses unchanged packages
+  host/build.ts         imports server and the preloaded parts in the build's graph
+  graph/graphs.ts       reload(names) → prepare(packages) → Candidate, commit(candidate), discard
+  reload/machine.ts     new: pure transition(state, event) → [state, commands]
+  reload/run.ts         new: runs the machine: watcher, checks, gate, commit or restart
+  reload/changes.ts     new: watched paths → plugin packages | restart
+  kernel.ts             Kernel.reload replaced by Kernel.reloads
+  server/serve.ts       handles kernel/reload, kernel/reload-now
+packages/plugins/agent-loop/src/server/turns.ts   each turn task runs in gate.hold
+packages/plugins/reload/          new UI-only plugin: `chat/header` item (root scope) and `ctrl+r`; a slash command once slash commands exist
+apps/cli/src/main.ts    passes ReloadOptions and shared modules; --check; exits 75 on restart
+mise.toml               [tasks.dev] runs bun apps/cli/src/supervisor.ts
+```
+
+### Boundaries
+
+```ts
+class TurnGate extends Context.Service<TurnGate, {
+  /** Runs `turn`; a reload waits until it ends. Waits while a reload applies. */
+  readonly hold: <A, E, R>(turn: Effect<A, E, R>) => Effect<A, E, R>
+}>()("liminal/TurnGate") {}
+
+/** Kernel side: close waits for zero holders, blocks new holds, runs apply, opens. */
+makeTurnGate: Effect<{ gate: TurnGate["Service"]; close: <A, E>(apply: Effect<A, E>) => Effect<A, E>; idle: Stream<boolean> }>
+
+interface BootOptions {
+  readonly folders: ReadonlyArray<string>
+  /** Imported by the host and served to every graph: effect, @liminal/sdk, and the frontend's own. */
+  readonly shared: Readonly<Record<string, object>>
+  /** Manifest parts imported at build, such as ["tui"]. */
+  readonly parts: ReadonlyArray<"tui">
+  /** Absent: a locked plugin set, no reload (tests, web). */
+  readonly reload?: ReloadOptions
+}
+
+interface ReloadOptions {
+  readonly changes: Stream<ReadonlyArray<string>>      // prod: FileSystem.watch, debounced; tests: a Queue
+  readonly restartRoots: ReadonlyArray<string>         // dev: apps/cli, packages/{kernel,sdk,frontend}
+  readonly typecheck: Option<ChildProcess.Command>     // dev: tsc --noEmit at the repo root
+  readonly startCheck: ChildProcess.Command            // the app with --check
+  readonly mode: (use: HoldGraph) => Effect<ReloadMode> // apps/cli reads the settings "reload" section
+}
+
+type ReloadMode = "automatic" | "confirmed"
+
+ReloadState = TaggedUnion {
+  Current · Checking · Ready { restart: boolean } · Failed { reason: string } · Applying
+}
+
+interface Kernel {
+  status; use; graph; connect               // unchanged
+  readonly reloads: {
+    readonly state: Stream<ReloadState>
+    readonly request: Effect<void>          // the reload command
+    readonly restartDue: Effect<void>       // completes when a restart applies
+  }
+}
+
+Candidate = { graph: Graph; packages: ReadonlySet<string> }
+Change = Plugins { packages } | Restart
+```
+
+### Call path
+
+```mermaid
+sequenceDiagram
+  participant W as changes
+  participant M as reload machine
+  participant C as checks
+  participant G as graphs
+  participant T as turn gate
+  participant A as apps/cli
+  W->>M: Changed(paths)
+  M->>C: typecheck, then start check or prepare(packages)
+  C-->>M: Checked(candidate | failure)
+  M->>M: Ready; wait for mode or request
+  M->>T: close(apply)
+  T-->>M: no turn runs
+  alt plugins
+    M->>G: commit(candidate)
+  else restart
+    M->>A: restartDue
+    A->>A: exit 75
+  end
+```
+
+### Logic
+
+```text
+on Changed(paths):
+  discard current candidate
+  change = classify(paths)           // under restartRoots → Restart, else owning plugin packages
+  merge with pending change          // Restart wins
+  start check
+check:
+  typecheck if configured; fail → Failed(output tail)
+  Restart → start check command exits 0
+  Plugins → graphs.prepare(packages): new graphs, manifests, servers, parts, built aside
+  → Checked
+on Checked(ok): Ready; apply if mode is automatic
+on ReloadRequested: apply if Ready
+apply: gate.close(Plugins → graphs.commit · Restart → restartDue, never opens)
+```
+
+### Injection
+
+| Service | Production (`apps/cli`) | Tests |
+| --- | --- | --- |
+| `changes` | `FileSystem.watch` on folders and restart roots, 100 ms debounce, `node_modules` ignored | `Queue` offered by the test |
+| `typecheck` | `tsc --noEmit` | `Option.none()` |
+| `startCheck` | `bun main.ts --check` | `/bin/sh -c "exit 0"` or `"exit 1"` |
+| `mode` | settings `reload.mode`, default automatic | constant |
+| `TurnGate` | kernel's | kernel's; SDK testing base provides its own |
+
+### Tests
+
+- Machine: transition table, as Tau's `restart-machine.test.ts`
+- A change during a turn swaps only after the turn ends; the turn's steps all run on the old graph
+- A failed check keeps the old graph and reports `Failed`; the next change clears it
+- Confirmed mode waits for `request`
+- A restart root change completes `restartDue` only when idle
+- An edited plugin file runs fresh after the swap; the old build keeps its code (the spike as tests)
+- `reload` plugin: header item shows `Ready` or the check failure; `ctrl+r` sends `kernel/reload-now`
+
 ## Deletes
 
-- `apps/cli/src/dev.ts`, its `.fallowrc.jsonc` entry, and the change test in `apps/cli/test/supervisor.test.ts`
-- `supervise`'s `nextChange`, `RunEnd`, `appCommand` and `runSupervisor` exports in `apps/cli/src/supervisor.ts`
-- `mise run dev` runs `bun apps/cli/src/supervisor.ts`
-- Immediate `Kernel.reload`; tests that swap call the machine, which applies at once when idle
-- The `Open` lines in [archive/step-6.md](archive/step-6.md) on fresh code and the dev watcher, and the `mise run dev` line in [archive/tui-session.md](archive/tui-session.md)
+- `Kernel.reload(names)`; tests that swap offer a change to `ReloadOptions.changes`, or call `graphs` directly in kernel tests
+- `load(folders)`'s re-import of every manifest on each change
+- The frontend's import of TUI parts after a swap
+- The `Open` lines in [archive/step-6.md](archive/step-6.md) on fresh code and the dev watcher
 
 ## Open
 
+- The `reload` slash command waits for slash commands
 - `Bun.ModuleGraph` is experimental; a Bun upgrade reruns the spike questions as tests
 - Typechecking production plugin folders, which ship with no compiler
 - Unsent composer text across a kernel restart (Tau hands the draft to the new process)
