@@ -35,5 +35,9 @@ The kernel, the protocol between server and frontends, and how code reloads.
 - Reload is automatic in dev and production builds
 - Plugins, including built-ins in dev, hot swap in process
 - Kernel changes restart the process under a supervisor, resuming the session
+- Reloads, in process or by restart, apply only when a turn ends, never during a turn
+- A reload applies only when no session has a turn running; a reload command applies it on request
+- A setting chooses automatic or confirmed reload; dev defaults to automatic
+- User-made plugin changes, such as enabling or disabling a plugin, wait for the same turn end
 - Changes are typechecked, loaded, and set up before applying; failures keep the old version running
 - Web deployment runs a locked plugin set with no plugin loading or reload

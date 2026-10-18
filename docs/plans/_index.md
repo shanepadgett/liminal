@@ -4,7 +4,7 @@ One file per piece of work being planned or built. A plan moves to `archive/` on
 
 | Plan | State |
 | --- | --- |
-| [milestones.md](milestones.md) | Build order; steps 1 to 6 built except the step 5 TUI session |
+| [milestones.md](milestones.md) | Build order; steps 1 to 6 built |
 | [core-contracts.md](core-contracts.md) | All eight rounds agreed |
 | [transcript.md](transcript.md) | Built in the gallery, awaiting review |
-| [tui-session.md](tui-session.md) Round 1 agreed |
+| [reload.md](reload.md) | Architecture agreed, spike done; code-level plan next |

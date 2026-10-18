@@ -8,13 +8,13 @@ Step 3 is built ([plans/archive/step-3.md](plans/archive/step-3.md)): the SDK `P
 
 Step 4 is built ([plans/archive/step-4.md](plans/archive/step-4.md)): `settings`, `credential-store`, `command-runner`, `tools-file`, `tools-shell` and `model-codex`; a turn on the replayed Codex provider reads a workspace file and answers from it.
 
-Step 5 is built except the TUI session ([plans/archive/step-5.md](plans/archive/step-5.md)): the kernel serves `KernelRpcs` and every active plugin's `RpcGroup` over an in-memory ndjson socket, with the `EventBus` and session following through `SessionFeed`; `session-store` keeps a session index; `apps/cli` prints plugin states through the protocol.
+Step 5 is built ([plans/archive/step-5.md](plans/archive/step-5.md), [plans/archive/tui-session.md](plans/archive/tui-session.md)): the kernel serves `KernelRpcs` and every active plugin's `RpcGroup` over an in-memory ndjson socket, with the `EventBus` and session following through `SessionFeed`; `session-store` keeps a session index; `apps/cli` runs the TUI: `packages/frontend` loads each plugin's UI part into the slot tree, and the `chat`, `inbox`, `cancel`, `tools-file` and `tools-shell` parts draw the chat screen on a live session.
 
 Step 6 is built ([plans/archive/step-6.md](plans/archive/step-6.md)): the kernel holds plugin graphs by reference count and `Kernel.reload` rebuilds changed plugins and their dependents beside the running graph; requests, steps and `Work` tasks finish on the graph they hold; `agent-loop` turns run as kernel-held work and resume at boot; `apps/cli/src/supervisor.ts` restarts the app on exit code 75.
 
 ## Focus
 
-- Unattended build of [plans/milestones.md](plans/milestones.md) steps 2, 3, 4 and 6, and step 5's protocol server, event bus and session following; the TUI on a live session waits for the user.
+- Review of the built steps 2 to 6 and the TUI session ([plans/archive/tui-session.md](plans/archive/tui-session.md), its `Open` list).
 - Each step's code plan goes in `docs/plans/` and is built right away; the user reviews plan and code afterwards.
 - Questions the contracts leave open: pick what fits the contracts and prior art, build it, list it under `Open` in that step's plan; stop if it would change an agreed requirement or contract.
 - Live model tests use Tau's `codex`/`chatgpt` tokens read only while valid; never refresh them; pause live recording when they expire.
@@ -23,6 +23,7 @@ Step 6 is built ([plans/archive/step-6.md](plans/archive/step-6.md)): the kernel
 
 ## Next
 
+- Reload at turn end: [plans/reload.md](plans/reload.md), code-level plan next.
 - Review the transcript in a live terminal ([plans/transcript.md](plans/transcript.md)).
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
@@ -30,10 +31,10 @@ Step 6 is built ([plans/archive/step-6.md](plans/archive/step-6.md)): the kernel
 ## Open topics
 
 - Code conventions: port Tau's standards and custom lint rules, reviewed per rule
-- Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`)
+- Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`); [plans/reload.md](plans/reload.md) serves them into each build's `Bun.ModuleGraph`; rejecting a plugin's own copies stays open
 - ACP adapter as a server plugin
 - Collab-style session sharing through an encrypted relay
-- TUI: the first TUI step builds the frontend plugin host and slot tree, with the chat screen made of built-in UI plugins (DeepSeek's `ui-slots` model on OpenTUI and Solid; OpenCode's pure slot resolver `packages/tui/src/plugin/structure.ts` as prior art). The first session includes an inbox plugin for steering and follow-ups. The SDK `tui` subpath holds tokens, primitives and the ornament; a built-in `chat` plugin owns the frame and its slots; each plugin draws its own entry kinds. A turn's model and thinking level come from `settings` defaults, shown in the composer's model line; switching waits for the command palette. `Slot` lives in the SDK root; `defineTui` and `TuiHost` in `@liminal/sdk/tui`. Plan: [plans/tui-session.md](plans/tui-session.md)
+- TUI: built per [plans/archive/tui-session.md](plans/archive/tui-session.md); its `Open` list holds the choices made while building (entry kinds drawn by `chat`, tokens moved into `@liminal/sdk/tui`). Model switching waits for the command palette.
 - Gallery: its own isolated app, a minimal Storybook for the TUI; built before any TUI components or screens; every element, primitives through screens, is approved there first; houses its own components, duplication accepted; keep Tau's tier, state and width rules, redesign the shell
 
 ## Later
@@ -57,4 +58,4 @@ Pi session IDs and the topics each discussed.
 - 01a145a9-703a-7284-8f7a-054aea36ec2c: TUI design (transcript)
 - 01a14649-dee8-74a7-b272-e37fd82f47b6: Sessions, Plugin catalog, docs layout
 - 01a1473c-d9a2-74a7-b272-e383d7bf6e43: session-log contract, entry kinds and visibility, compaction memories, plugin foundation, build order, testing, step 1 build, repository layout
-- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract
+- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end
