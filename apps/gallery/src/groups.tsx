@@ -18,13 +18,14 @@ import type { FormState } from "./chat/formState.ts";
 import { ModelPicker, ThinkingPicker } from "./chat/ModelPicker.tsx";
 import type { ReloadShown } from "./chat/ReloadStatus.tsx";
 import { Sidebar } from "./chat/Sidebar.tsx";
-import { Toast, type ToastKind, type ToastMessage } from "./chat/Toast.tsx";
+import { Toast, type ToastMessage } from "./chat/Toast.tsx";
 import { only, withRoles } from "./entryViews.ts";
 import { PRIMITIVES } from "./primitives.tsx";
 import type { EntryState, Groups } from "./shell/entries.ts";
 import { PaletteView } from "./tokens/PaletteView.tsx";
 import { TerminalView } from "./tokens/TerminalView.tsx";
 import { TRANSCRIPT_COMPONENTS, TRANSCRIPT_SCREENS } from "./transcript/galleryEntries.tsx";
+import type { NoticeKind } from "./transcript/Notice.tsx";
 
 /** A draft long enough to show how the composer holds real text. */
 const DRAFT = "fix the test so it checks they start concurrently";
@@ -96,22 +97,22 @@ type ChatOptions = {
   readonly toast?: ToastMessage;
 };
 
-const TOASTS: Readonly<Record<ToastKind, ToastMessage>> = {
+const TOASTS: Readonly<Record<NoticeKind, ToastMessage>> = {
   error: {
     kind: "error",
-    title: "Couldn't reach the model",
-    message: "The provider returned 529 (overloaded). Retrying in 8s.",
+    title: "Couldn't export the session",
+    message: "docs/sessions is read-only.",
   },
   warning: {
     kind: "warning",
-    title: "Context is 90% full",
-    message: "Compact soon to keep the whole conversation.",
+    title: "Nothing to undo",
+    message: "The last turn made no file changes.",
   },
   success: { kind: "success", title: "Session exported", message: "docs/sessions/plugin-host.md" },
   info: { kind: "info", title: "Theme changed to Afterhours" },
 };
 
-const toastState = (kind: ToastKind): EntryState => ({
+const toastState = (kind: NoticeKind): EntryState => ({
   name: kind.charAt(0).toUpperCase() + kind.slice(1),
   fill: "content",
   view: withRoles((color) => <Toast color={color} toast={TOASTS[kind]} />),

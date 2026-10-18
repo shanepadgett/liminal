@@ -33,7 +33,7 @@ Connect and login step 6 is built ([plans/connect.md](plans/connect.md)): `@limi
 
 ## Next
 
-- Plan system prompt, instructions (`AGENTS.md` files) and folding, like Tau or a new design; Liminal is not usable day to day without them.
+- Plan the code for system prompt and instructions ([plans/instructions.md](plans/instructions.md)), then folding; Liminal is not usable day to day without them.
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
 

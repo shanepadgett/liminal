@@ -6,6 +6,7 @@
 import { withRoles } from "../entryViews.ts";
 import type { EntryState, Section } from "../shell/entries.ts";
 import { Conversation } from "./Conversation.tsx";
+import { LiveNotice, Notice, type NoticeMessage } from "./Notice.tsx";
 import { closeMomentOf, durationOf, frameAt, momentOf, sessionDurationOf } from "./play.ts";
 import { Playback } from "./Playback.tsx";
 import { ASK, BOOT, FIX } from "./sample.ts";
@@ -39,6 +40,46 @@ const workState = (name: string, dim: number): EntryState => ({
   )),
 });
 
+const MODEL_ERROR: NoticeMessage = {
+  kind: "error",
+  title: "Couldn't reach the model",
+  body: "Anthropic returned 529 (overloaded) for claude-sonnet-5. Retrying in 8s, attempt 2 of 5.",
+};
+
+const NOTICES: readonly NoticeMessage[] = [
+  {
+    kind: "warning",
+    title: "Skipped an instruction file",
+    body: ".liminal/instructions/testing.md, line 2: front matter needs `always: true` or `read-when: <situation>`.",
+  },
+  {
+    kind: "warning",
+    title: "Context is 90% full",
+    body: "181,000 of 200,000 tokens. The oldest turns fold soon.",
+  },
+  { kind: "info", title: "Model changed to GPT-5.5" },
+];
+
+const noticeState = (notice: NoticeMessage): EntryState => ({
+  name: notice.title,
+  fill: "width",
+  view: withRoles((color) => (
+    <box paddingX={2}>
+      <LiveNotice color={color} notice={notice} />
+    </box>
+  )),
+});
+
+const copiedNoticeState: EntryState = {
+  name: "Copied",
+  fill: "width",
+  view: withRoles((color) => (
+    <box paddingX={2}>
+      <Notice color={color} notice={MODEL_ERROR} isCopied={true} onCopy={() => {}} />
+    </box>
+  )),
+};
+
 export const TRANSCRIPT_COMPONENTS: Section = {
   title: "Transcript",
   entries: [
@@ -64,6 +105,11 @@ export const TRANSCRIPT_COMPONENTS: Section = {
       id: "transcript-work",
       title: "Work rows",
       states: [workState("Current", 0), workState("Left behind", 1)],
+    },
+    {
+      id: "transcript-notice",
+      title: "Notice",
+      states: [noticeState(MODEL_ERROR), ...NOTICES.map(noticeState), copiedNoticeState],
     },
   ],
 };

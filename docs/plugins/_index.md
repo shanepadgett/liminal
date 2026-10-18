@@ -37,8 +37,11 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | Plugin | Does | Status |
 | --- | --- | --- |
 | [context](context.md) | Turns the log into model messages | built |
-| system-prompt | The base system prompt | to plan |
-| instructions | Loads instruction files into the prompt | to plan |
+| system-prompt | The built-in base system prompt | planned |
+| environment | Workspace, git, platform, shell, date and a two-level file listing | planned |
+| agents-files | `AGENTS.md` files from the repository root down to the workspace, on by default | planned |
+| notices | Session notices only the user sees, in the transcript | planned |
+| instruction-files | `.liminal/instructions/` files with `always` or `read-when` front matter | planned |
 | [compaction](compaction.md) | Keeps the context within the model's window | planned |
 | [cache-hints](cache-hints.md) | Marks prompt cache breakpoints | built |
 

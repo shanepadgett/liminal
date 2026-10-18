@@ -1,33 +1,28 @@
 /**
- * A short notice in the top right of the chat column, under the header. A thin bar on its left edge
- * carries the kind's color; the title is bold in that color, the message muted beneath it. Every
- * kind times out, errors included.
+ * A short notice about something just done in the TUI, in the top right of the chat column, under
+ * the header. A thin bar on its left edge carries the kind's color; the title is bold in that
+ * color, the message muted beneath it. Every kind times out, errors included; the timer pauses
+ * while the mouse is over it, and its text is selectable to copy. What happens in a session is a
+ * transcript notice, not a toast.
  */
 
 import { TextAttributes } from "@opentui/core";
 import { Show } from "solid-js";
 
-import { EDGE_BAR, type RoleColor, type RoleName } from "@liminal/sdk/tui";
+import { EDGE_BAR, type RoleColor } from "@liminal/sdk/tui";
 
-export type ToastKind = "info" | "success" | "warning" | "error";
+import { NOTICE_ROLES, type NoticeKind } from "../transcript/Notice.tsx";
 
 export type ToastMessage = {
-  readonly kind: ToastKind;
+  readonly kind: NoticeKind;
   readonly title: string;
   readonly message?: string;
-};
-
-const KIND_ROLES: Readonly<Record<ToastKind, RoleName>> = {
-  info: "feedback.info",
-  success: "feedback.success",
-  warning: "feedback.warning",
-  error: "feedback.danger",
 };
 
 const TOAST_COLUMNS = 48;
 
 export function Toast(props: { readonly color: RoleColor; readonly toast: ToastMessage }) {
-  const accent = () => props.color(KIND_ROLES[props.toast.kind]);
+  const accent = () => props.color(NOTICE_ROLES[props.toast.kind]);
 
   return (
     <box

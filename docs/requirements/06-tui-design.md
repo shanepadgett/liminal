@@ -25,7 +25,8 @@ How the TUI and the gallery look and move, and how the transcript shows a sessio
 - Motion has character and stays cheap
 - Working motion is the glide; no sweep
 - Only one place glides while working: the header or the composer's top edge
-- Toasts show in the chat column's top right, under the header; every kind times out, errors included
+- Toasts are short feedback on something just done in the TUI, raised only by the TUI; what happens in a session is a transcript notice
+- Toasts show in the chat column's top right, under the header; every kind times out, errors included; the timer pauses while the mouse is over a toast; its text is selectable to copy
 
 ## Gallery
 
@@ -64,6 +65,8 @@ Brightness follows importance, and what is newest is brightest.
 - Only failures have color: `(failed)` or `(lint failed)` in the danger color; no green counts or check marks
 - Thinking streams in with its newest characters warming up from the background; the rest of the word is laid out unseen, so words never jump lines
 - The turn ends in one dim row, `◇ Worked for 34s`, then the answer with code in the accent
+- Notices are what happens in a session that only the user sees: model errors and retries, skipped instruction files, a nearly full context; saved in the session, never sent to the model
+- A notice sits where it happened: a mark in its kind's color (`●` info, `✓` success, `▲` warning, `✕` error) then a bold title in that color, no bar or fill, a muted body under the title's words, and a `copy` button that copies the title and body and reads `copied` for a moment
 - A run that asks questions ends by drafting a form, shown only as the live line `Drafting questions`, then settles into `? <title>  4 questions for you`
 - The form takes over the composer, keeping the model line and key hints: title, tabs (`1 ✓  2  3  4  context`), then the tab in view
 - A select or yes/no tab lists options with `○`/`●` marks and aligned descriptions; a select ends in an `Other…` row that becomes a field; notes hang under options as `└ note`
