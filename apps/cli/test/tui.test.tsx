@@ -283,6 +283,7 @@ effectTest(
     const palette = yield* frameWith(setup, "Type to filter");
     expect(palette).toMatch(/Reload\s+ctrl\+r/);
     expect(palette).toMatch(/Quit\s+ctrl\+c/);
+    expect(palette).toContain("New session");
 
     yield* Effect.promise(() => setup.mockInput.typeText("relo"));
     yield* frameWhere(setup, (frame) => !frame.includes("Quit"));
@@ -291,6 +292,29 @@ effectTest(
     expect(yield* frameWhere(setup, (frame) => !frame.includes("Type to filter"))).toContain(
       "Ask anything",
     );
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "/new opens a fresh session with an empty transcript",
+  Effect.gen(function* () {
+    const { setup } = yield* boot((kernel) =>
+      kernel.use((services) => {
+        const log = Context.getUnsafe(services, SessionLog);
+
+        return log.create(s1).pipe(Effect.andThen(log.append(s1, [userMessage("hello there")])));
+      }),
+    );
+
+    yield* frameWith(setup, "hello there");
+    yield* Effect.promise(() => setup.mockInput.typeText("/new"));
+    yield* frameWith(setup, "Start a fresh session");
+    setup.mockInput.pressEnter();
+
+    const fresh = yield* frameWhere(setup, (frame) => !frame.includes("hello there"));
+    expect(fresh).toContain("Ask anything");
+    expect(fresh).not.toContain("/new");
   }),
   testBaseServices,
 );
