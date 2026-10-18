@@ -1,6 +1,6 @@
 # System prompt and instructions
 
-Status: rounds 1 and 2 agreed; step 1 built.
+Status: rounds 1 and 2 agreed; step 1 built; step 2 code plan proposed.
 
 Gives every session a base system prompt, the facts of its environment, and the user's and project's instruction files, kept current as files change without breaking the prompt cache.
 
@@ -144,9 +144,94 @@ The `ModelPart` doc for `tool-change` changes from "in system messages only" to 
 - `docs/plugins/context.md`: updates are user-role reminders; file sections share `FileTexts`
 - `docs/reference/sources.json` gains `diff` 9.0.0, the version `@opentui/core` 0.6.6 already installs
 
+## Step 2: `notices`
+
+A new `notices` plugin gives server plugins one way to tell the user what happened in a session: a saved transcript entry the model never sees. Its first writer is `agent-loop`: a turn that stops on an error leaves an error notice, where today the failure only reaches the log file.
+
+### Today
+
+| Piece | Where | What it does now |
+| --- | --- | --- |
+| Entry kinds | `defineEntry` in `@liminal/sdk` `core/session.ts` | `model: false` entries carry no model content, so the context never sends them |
+| Transcript | `chat` `Transcript.tsx`, `transcript-state.ts` | Draws each `user: "shown"` entry through `ChatSlots.entry` keyed by kind; plain text when nothing is registered |
+| Stopped turn | `agent-loop` `server/turns.ts` `drive` | Logs the error, saves `turn-ended` with `stopped`; the user sees the turn end with no reason |
+| Notice design | gallery `transcript/Notice.tsx` | `Notice`, `LiveNotice`, `noticeText`, marks and kind colors |
+
+`agent-loop` writes notices only for turns stopped by errors; a plugin that ends a turn writes its own notice when the user should know.
+
+Prior art: Tau keeps notices in TUI state only (`tui/internal/chat-state.ts`), so they vanish on reload; Pi's `custom_message` with `display: true` is saved and shown but also sent to the model.
+
+### Files
+
+```text
+packages/plugins/notices/
+  plugin.ts            requires SessionLog; server and tui parts
+  package.json         exports . and ./contract
+  src/contract.ts      NoticeEntry, NoticeKind, Notice, notice()
+  src/server.ts        registers NoticeEntry with EntryKinds
+  src/tui.tsx          registers NoticeView in ChatSlots.entry under NoticeEntry.kind
+  src/tui/Notice.tsx   the gallery's Notice and LiveNotice, as the TUI component
+  test/notices.test.ts
+packages/plugins/agent-loop/src/server/turns.ts   a stopped turn appends stoppedNotice(error) before turn-ended
+packages/plugins/agent-loop/src/server/stopped.ts new: stoppedNotice(error: TurnError): EntryDraft
+```
+
+### Types
+
+```ts
+// notices contract
+export const NoticeKind = Schema.Literals(["info", "success", "warning", "error"]);
+export const Notice = Schema.Struct({
+  kind: NoticeKind,
+  title: Schema.String,
+  body: Schema.optionalKey(Schema.String),
+});
+/** Saved and shown in the transcript; never sent to the model. */
+export const NoticeEntry = defineEntry({ kind: "notices/notice", data: Notice, model: false, user: "shown" });
+/** The draft a server plugin appends; its text is the title, a blank line, the body. */
+export const notice: (value: Notice) => EntryDraft<Notice>;
+```
+
+### Call path
+
+```text
+agent-loop drive (turns.ts)
+  step fails with error
+    log.append(session, [stoppedNotice(error), ended("stopped")])
+stoppedNotice(error)
+  ModelError -> title by reason, body = message, then "status N, request R" when known
+  other      -> title "Turn stopped", body = message
+chat Transcript -> ChatSlots.entry["notices/notice"] -> NoticeView
+  decode data as Notice; none -> plain text
+  LiveNotice: mark and bold title in the kind's color, muted body indented 2, copy button
+```
+
+| `ModelError` reason | Title |
+| --- | --- |
+| `rate-limit` | Rate limited |
+| `quota` | Out of quota |
+| `auth` | Sign-in rejected |
+| `context-overflow` | Context is full |
+| `invalid-request` | Request rejected |
+| `provider` | Provider error |
+| `network` | Network error |
+| `empty-response` | Empty response |
+
+### Tests
+
+- `notices.test.ts`: a notice draft saves with `user: "shown"`, no model content, and the context's preview leaves it out
+- `agent-loop.test.ts`: a scripted model error stops the turn with one error notice before `turn-ended`, titled by reason, body with the message
+- `chat` or `notices` TUI test: a saved notice draws its mark, title and body; clicking `copy` reads `copied`
+
+### Deletes or replaces
+
+- `docs/plugins/context.md`: the shared context message line drops "notices" (those are model-facing nudges)
+- New `docs/plugins/notices.md`; `_index.md` links it
+
 ## Open
 
 - The `settings.json` key that turns off `agents-files`
+- Step 2: whether `notice()` in the contract is the whole writing surface, or a `Notices` service wraps the append
 
 ## Deletes or replaces
 

@@ -17,7 +17,7 @@ Status: built
 - Unfinished output is saved about every 100 ms while it streams
 - A running turn resumes after a restart
 - Tools declare whether they are safe to rerun; an unsafe one reports as interrupted on resume
-- A turn that stops on an error saves nothing about the failure; the next message continues from the log
+- A turn that stops on an error saves an error notice; the model never sees it; the next message continues from the log
 - A running step finishes on the graph it started on; the turn continues on the new graph from the session log
 - Inbox, retry, cancel and usage are separate plugins
 - Its settings section holds the default `model` and `thinking` for new turns; `thinking` is one of the model's option ids
