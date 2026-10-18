@@ -98,12 +98,22 @@
   },
   "@effect/ai-openai": {
     "version": "4.0.5",
-    "fingerprint": "082952a68150809f",
+    "fingerprint": "bf5e57aa803192ea",
     "commits": []
   },
   "@effect/ai-anthropic": {
     "version": "4.0.5",
-    "fingerprint": "688c5703900b4212",
+    "fingerprint": "8ed77df8a3ee4cd4",
+    "commits": []
+  },
+  "@effect/ai-openai-compat": {
+    "version": "4.0.5",
+    "fingerprint": "94a1ac2e1dc82e08",
+    "commits": []
+  },
+  "@effect/ai-openrouter": {
+    "version": "4.0.5",
+    "fingerprint": "66943b00dff82b78",
     "commits": []
   },
   "jsonc-parser": {

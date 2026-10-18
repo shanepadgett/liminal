@@ -1,6 +1,6 @@
 /** The codex provider over a given HTTP client, with the stores and registries it needs. */
 
-import { Effect, Layer, Redacted } from "effect";
+import { Effect, Layer, Option, Redacted } from "effect";
 import { Base64Url } from "effect/encoding";
 import type { HttpClient } from "effect/http";
 
@@ -59,7 +59,12 @@ const fakeCatalog = Layer.succeed(
   ModelCatalog,
   ModelCatalog.of({
     models: () =>
-      Effect.succeed(["gpt-4o", "gpt-5.6-luna", "gpt-reserve", "gpt-6-sol"].map(catalogModel)),
+      Effect.succeed(
+        ["gpt-4o", "gpt-5.6-luna", "gpt-reserve", "gpt-6-sol"].map((id) => ({
+          info: catalogModel(id),
+          package: Option.none(),
+        })),
+      ),
   }),
 );
 

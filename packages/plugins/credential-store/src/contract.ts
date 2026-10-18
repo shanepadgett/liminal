@@ -1,7 +1,9 @@
 /** Credential-store: one credential per login method, and OAuth refresh under a lock. */
 
-import { Clock, Context, type Duration, Effect, type Option, Redacted, Schema } from "effect";
+import { Clock, Context, type Duration, Effect, Option, Redacted, Schema } from "effect";
 import { type HttpClient, type HttpClientRequest, HttpClientResponse } from "effect/http";
+
+import { ModelError } from "@liminal/sdk";
 
 export const ApiKey = Schema.TaggedStruct("ApiKey", { key: Schema.Redacted(Schema.String) });
 
@@ -99,3 +101,25 @@ export class CredentialStore extends Context.Service<
     ) => Effect.Effect<OAuth, CredentialError | E>;
   }
 >()("liminal/credential-store/CredentialStore") {}
+
+/** Where one API key login keeps its key, and the vendor name its errors use. */
+export interface ApiKeyLogin {
+  readonly login: string;
+  readonly env: string;
+  readonly name: string;
+}
+
+const authError = (message: string) => new ModelError({ reason: "auth", message });
+
+/** The login's saved key, else the one in its environment variable; none is an `auth` failure. */
+export const apiKeyOf = (store: CredentialStore["Service"], key: ApiKeyLogin) =>
+  store.secret(key.login, { env: key.env }).pipe(
+    Effect.mapError((error) => authError(`${key.name} key could not be read: ${error.message}`)),
+    Effect.flatMap(
+      Option.match({
+        onNone: () =>
+          Effect.fail(authError(`No ${key.name} API key: sign in with /connect or set ${key.env}`)),
+        onSome: Effect.succeed,
+      }),
+    ),
+  );

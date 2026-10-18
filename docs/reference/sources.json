@@ -200,14 +200,28 @@
     {
       "package": "@effect/ai-openai",
       "versionSource": "lock",
-      "summary": "OpenAI provider for effect/ai: OpenAiClient (apiUrl, transformClient) and OpenAiLanguageModel on the Responses API. The model-codex plugin uses it against the Codex backend.",
+      "summary": "OpenAI provider for effect/ai: OpenAiClient (apiUrl, transformClient) and OpenAiLanguageModel on the Responses API. The SDK's ai/responses stream uses it for model-openai, model-codex and model-opencode-go.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
       "api": [{ "kind": "source", "path": "src" }]
     },
     {
       "package": "@effect/ai-anthropic",
       "versionSource": "lock",
-      "summary": "Anthropic provider for effect/ai: AnthropicClient (apiKey, apiUrl, transformClient) and AnthropicLanguageModel on the Messages API. The model-anthropic plugin uses it.",
+      "summary": "Anthropic provider for effect/ai: AnthropicClient (apiKey, apiUrl, transformClient) and AnthropicLanguageModel on the Messages API. The SDK's ai/messages stream uses it for model-anthropic and model-opencode-go.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "source", "path": "src" }]
+    },
+    {
+      "package": "@effect/ai-openai-compat",
+      "versionSource": "lock",
+      "summary": "Chat Completions provider for effect/ai: OpenAiClient (apiKey, apiUrl, transformClient) posting /chat/completions and OpenAiLanguageModel with a Responses-shaped config. The SDK's ai/chat stream uses it for model-opencode-go.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "source", "path": "src" }]
+    },
+    {
+      "package": "@effect/ai-openrouter",
+      "versionSource": "lock",
+      "summary": "OpenRouter provider for effect/ai: OpenRouterClient (apiKey, apiUrl, transformClient) and OpenRouterLanguageModel on Chat Completions, with reasoning config and reasoning_details round trips. The model-openrouter plugin uses it.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
       "api": [{ "kind": "source", "path": "src" }]
     },

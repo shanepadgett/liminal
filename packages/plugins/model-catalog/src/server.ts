@@ -22,7 +22,7 @@ import { CatalogUnavailable, Directories } from "@liminal/sdk";
 
 import { ModelCatalog } from "./contract.ts";
 import { type CatalogCache, readCache, writeCache } from "./server/cache.ts";
-import { modelInfos, ModelsDevProviders } from "./server/models-dev.ts";
+import { catalogModels, ModelsDevProviders } from "./server/models-dev.ts";
 
 export const apiUrl = "https://models.dev/api.json";
 
@@ -91,7 +91,7 @@ const make = Effect.gen(function* () {
     );
   }
 
-  return ModelCatalog.of({ models: (catalogId) => Effect.map(entries(catalogId), modelInfos) });
+  return ModelCatalog.of({ models: (catalogId) => Effect.map(entries(catalogId), catalogModels) });
 });
 
 /** The catalog over a given HTTP client, which tests replace. */

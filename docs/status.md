@@ -20,6 +20,8 @@ Connect and login step 2 is built ([plans/connect.md](plans/connect.md)): `@limi
 
 Connect and login step 3 is built ([plans/connect.md](plans/connect.md)): `LoginFlow.authorizeInBrowser` runs PKCE, a local callback server and the paste fallback; `model-codex` signs in in the browser or with a device code; live Codex tests read Liminal's credential store. A live sign-in works with `originator: liminal`. Plan lists come from a kept copy and are read again behind it.
 
+Connect and login step 6 is built ([plans/connect.md](plans/connect.md)): `@liminal/sdk/ai/{messages,responses,chat}` hold the protocol streams; `model-openrouter` and `model-opencode-go` sign in with API keys; neither has had a live request yet.
+
 ## Focus
 
 - Each step's code plan goes in `docs/plans/` and is built right away; the user reviews plan and code afterwards.
@@ -27,10 +29,11 @@ Connect and login step 3 is built ([plans/connect.md](plans/connect.md)): `Login
 - Live model tests use the `codex` login in Liminal's credential store, read only while valid; never refresh it; pause live recording when it expires. Tau's tokens are never refreshed.
 - Approved dependencies: `@effect/ai-openai` (or a direct HTTP provider if it cannot reach `chatgpt.com/backend-api/codex`), `@effect/ai-anthropic`, `jsonc-parser`.
 - One local commit per finished step, only when checks pass; no pushes.
+- "What's next" means live checks of built work are done; answer with the next build or planning step.
 
 ## Next
 
-- Live check of connect step 5, Sign in with ChatGPT ([plans/connect.md](plans/connect.md)): built; the user signs in once to verify the plan list and requests. Later connect steps cover every other Tau provider and login method.
+- Plan system prompt, instructions (`AGENTS.md` files) and folding, like Tau or a new design; Liminal is not usable day to day without them.
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
 
@@ -64,4 +67,4 @@ Pi session IDs and the topics each discussed.
 - 01a145a9-703a-7284-8f7a-054aea36ec2c: TUI design (transcript)
 - 01a14649-dee8-74a7-b272-e37fd82f47b6: Sessions, Plugin catalog, docs layout
 - 01a1473c-d9a2-74a7-b272-e383d7bf6e43: session-log contract, entry kinds and visibility, compaction memories, plugin foundation, build order, testing, step 1 build, repository layout
-- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end, slash commands and dialogs, connect and login, model catalog and thinking options, contracts importing contracts, TUI keys, blank launch and restart handoff
+- 01a14808-d956-74a7-b272-e38f743d4301: Planning approach, core contracts, graph changes, protocol, models, context, agent-loop, tools, settings, credentials, step 1 re-check, steps 2 to 6 build, gallery and TUI sync, TUI slot contract, reload at turn end, slash commands and dialogs, connect and login, model catalog and thinking options, contracts importing contracts, TUI keys, blank launch and restart handoff, connect step 6 (SDK protocol subpaths, no local provider)

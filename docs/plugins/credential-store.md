@@ -15,6 +15,7 @@ Status: built
 ### Sources
 
 - A credential comes from the store, then an environment variable
+- `apiKeyOf` reads an API key that way and fails with an `auth` error naming `/connect` and the variable
 - A command credential runs a command to fetch the secret
 
 ### Refresh

@@ -46,6 +46,8 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "model-catalog",
         "model-codex",
         "model-openai",
+        "model-opencode-go",
+        "model-openrouter",
         "models",
         "palette",
         "reload",

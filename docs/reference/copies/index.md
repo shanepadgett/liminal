@@ -129,17 +129,31 @@ Fine-grained reactivity behind the OpenTUI Solid renderer: signals, memos, effec
 
 ## @effect/ai-openai 4.0.5
 
-OpenAI provider for effect/ai: OpenAiClient (apiUrl, transformClient) and OpenAiLanguageModel on the Responses API. The model-codex plugin uses it against the Codex backend.
+OpenAI provider for effect/ai: OpenAiClient (apiUrl, transformClient) and OpenAiLanguageModel on the Responses API. The SDK's ai/responses stream uses it for model-openai, model-codex and model-opencode-go.
 
 - Docs: `docs/reference/copies/@effect/ai-openai/4.0.5/` (1 file: README.md)
 - API (source): `packages/plugins/model-codex/node_modules/@effect/ai-openai/src/`, modules: `docs/reference/copies/@effect/ai-openai/4.0.5/api-index/@effect-ai-openai-src.md`
 
 ## @effect/ai-anthropic 4.0.5
 
-Anthropic provider for effect/ai: AnthropicClient (apiKey, apiUrl, transformClient) and AnthropicLanguageModel on the Messages API. The model-anthropic plugin uses it.
+Anthropic provider for effect/ai: AnthropicClient (apiKey, apiUrl, transformClient) and AnthropicLanguageModel on the Messages API. The SDK's ai/messages stream uses it for model-anthropic and model-opencode-go.
 
 - Docs: `docs/reference/copies/@effect/ai-anthropic/4.0.5/` (1 file: README.md)
 - API (source): `packages/plugins/model-anthropic/node_modules/@effect/ai-anthropic/src/`, modules: `docs/reference/copies/@effect/ai-anthropic/4.0.5/api-index/@effect-ai-anthropic-src.md`
+
+## @effect/ai-openai-compat 4.0.5
+
+Chat Completions provider for effect/ai: OpenAiClient (apiKey, apiUrl, transformClient) posting /chat/completions and OpenAiLanguageModel with a Responses-shaped config. The SDK's ai/chat stream uses it for model-opencode-go.
+
+- Docs: `docs/reference/copies/@effect/ai-openai-compat/4.0.5/` (1 file: README.md)
+- API (source): `packages/plugins/model-opencode-go/node_modules/@effect/ai-openai-compat/src/`, modules: `docs/reference/copies/@effect/ai-openai-compat/4.0.5/api-index/@effect-ai-openai-compat-src.md`
+
+## @effect/ai-openrouter 4.0.5
+
+OpenRouter provider for effect/ai: OpenRouterClient (apiKey, apiUrl, transformClient) and OpenRouterLanguageModel on Chat Completions, with reasoning config and reasoning_details round trips. The model-openrouter plugin uses it.
+
+- Docs: `docs/reference/copies/@effect/ai-openrouter/4.0.5/` (1 file: README.md)
+- API (source): `packages/plugins/model-openrouter/node_modules/@effect/ai-openrouter/src/`, modules: `docs/reference/copies/@effect/ai-openrouter/4.0.5/api-index/@effect-ai-openrouter-src.md`
 
 ## jsonc-parser 3.3.1
 

@@ -26,7 +26,9 @@ const fakeCatalog = Layer.succeed(
   ModelCatalog.of({
     models: (catalogId) =>
       catalogId === "openai"
-        ? Effect.succeed([info("gpt-a"), info("gpt-b"), info("gpt-c")])
+        ? Effect.succeed(
+            ["gpt-a", "gpt-b", "gpt-c"].map((id) => ({ info: info(id), package: Option.none() })),
+          )
         : Effect.fail(new CatalogUnavailable({ catalogId, message: "offline" })),
   }),
 );

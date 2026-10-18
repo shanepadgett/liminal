@@ -7,9 +7,9 @@ import { CredentialStore } from "@liminal/credential-store/contract";
 import { LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
 import { planModels } from "@liminal/sdk/ai";
+import { responsesStream } from "@liminal/sdk/ai/responses";
 
 import { chatgptProvider } from "../../contract.ts";
-import { responsesStream } from "../provider.ts";
 import { accessOf, checkLogin, resource } from "./auth.ts";
 import { makeChatgptMethod } from "./login.ts";
 
@@ -36,7 +36,11 @@ export const chatgptLayer = Layer.effectDiscard(
       name: "ChatGPT",
       source: ModelSource.PlanCatalog({ catalogId: "openai", plan }),
       checkLogin: checkLogin(store),
-      stream: responsesStream(http, fs, { provider: chatgptProvider, name: "ChatGPT", token }),
+      stream: responsesStream(http, fs, {
+        provider: chatgptProvider,
+        name: "ChatGPT",
+        options: Effect.map(token, (apiKey) => ({ apiKey })),
+      }),
       nativeToolChanges: false,
     });
   }),

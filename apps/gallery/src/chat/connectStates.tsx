@@ -40,7 +40,7 @@ const VENDORS: readonly Vendor[] = [
     ],
   },
   OPENAI,
-  { name: "OpenCode", ways: [{ title: "OpenCode Go", state: "out" }] },
+  { name: "OpenCode Go", ways: [{ title: "API key", state: "out" }] },
   { name: "OpenRouter", ways: [{ title: "API key", state: "saved" }] },
 ];
 

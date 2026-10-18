@@ -8,7 +8,6 @@
     "./contract": "./src/contract.ts"
   },
   "dependencies": {
-    "@effect/ai-anthropic": "4.0.5",
     "@liminal/credential-store": "workspace:*",
     "@liminal/logins": "workspace:*",
     "@liminal/models": "workspace:*"
@@ -17,6 +16,7 @@
     "@liminal/model-catalog": "workspace:*"
   },
   "peerDependencies": {
+    "@effect/ai-anthropic": "4.0.5",
     "@liminal/sdk": "workspace:*",
     "effect": "4.0.5"
   },

@@ -27,7 +27,6 @@ From Tau `src/ai/Providers.ts`, `src/ai/Connections.ts`, `src/ai/Login.ts`.
 | Anthropic | `anthropic-api` | API key, env `ANTHROPIC_API_KEY` (not in Tau; on the agreed list) | Paste key | `ApiKey` |
 | OpenRouter | `openrouter` | API key, env `OPENROUTER_API_KEY` | Paste key | `ApiKey` |
 | OpenCode | `opencode-go` | API key, env `OPENCODE_API_KEY` | Paste key | `ApiKey` |
-| Local | user-added in settings | None | Nothing to sign in | None |
 
 Each row shows one of three sign-in states in `/connect`: signed out, saved, or found in an environment variable (Tau `SignInState`).
 
@@ -61,7 +60,7 @@ flowchart LR
 | Login methods | A tagged union. `ApiKey { env }` is a declaration that `logins` handles fully: ask, save, remove, saved or environment state. `Flow { ways, logIn, logOut? }` is for OAuth; `logIn` runs against a `LoginFlow` service from `logins` (`openUrl`, `showCode`, `ask`, `askSecret`, `waiting`) |
 | `effect/ai` translation | A new SDK zone `@liminal/sdk/ai` holds the translation every provider shares (`promptOf`, `toolkitOf`, `streamOf`, `toModelError`), moved out of `model-codex`; each provider supplies its own metadata Schema |
 | Running a login | The flow runs on the server and streams steps over RPC (see Step 2 Types). The TUI draws the current step, answers by an `answer` RPC and stops it by closing the stream; the RPC client's `Interrupt` stops the server flow, so there is no `cancel` RPC |
-| Provider plugins | One per provider: `model-codex` (exists), `model-chatgpt`, `model-openai`, `model-anthropic`, `model-openrouter`, `model-opencode-go`, `model-local` |
+| Provider plugins | One per provider: `model-codex` (exists), `model-chatgpt`, `model-openai`, `model-anthropic`, `model-openrouter`, `model-opencode-go` |
 | Anthropic | One `model-anthropic` plugin with two login methods: Claude subscription and API key |
 | API packages | `@effect/ai-openai`, `@effect/ai-anthropic`, `@effect/ai-openrouter`, `@effect/ai-openai-compat` (per `docs/plugins/models.md`). Native tool changes come from a provider layer that wraps the package client (`docs/plans/core-contracts.md`); OpenCode Go Messages replies get their missing `usage` fields filled before decoding |
 | Model lists | A new `model-catalog` plugin owns the `models.dev` catalog and its local cache; `models` depends on it; replaceable like `credential-store` |
@@ -80,7 +79,7 @@ One commit each, with gallery updates.
 3. Codex browser and device code login
 4. `model-anthropic`: Claude subscription and API key
 5. Sign in with ChatGPT: provider `chatgpt` in `model-openai`
-6. `model-openrouter`, `model-opencode-go`, `model-local`
+6. `model-openrouter`, `model-opencode-go` (Step 6 below)
 
 ## Step 1: model-catalog
 
@@ -128,7 +127,7 @@ class ModelCatalog extends Context.Service<ModelCatalog, {
 type PlanModel = { readonly id: string; readonly contextWindow: Option<number> }
 
 type ModelSource = Data.TaggedEnum<{
-  Listed: { models: Effect<ReadonlyArray<ModelInfo>, ModelError> }            // scripted, local
+  Listed: { models: Effect<ReadonlyArray<ModelInfo>, ModelError> }            // scripted
   Catalog: { catalogId: string }                                             // openai, anthropic, openrouter
   PlanCatalog: { catalogId: string; plan: Effect<ReadonlyArray<PlanModel>, ModelError> }  // codex, chatgpt
 }>
@@ -189,7 +188,6 @@ Models.listModels(provider)
 - No bundled snapshot: the first run fetches; offline with no cache, a catalog provider's listing fails with `CatalogUnavailable`.
 - `/model` leaves out a provider that is not signed in; a signed-in provider whose list fails shows the failure in one row.
 - Plan lists are fetched each time `/model` opens, as Codex does today.
-- Models from settings arrive in step 6 with `model-local`.
 
 ### Thinking options
 
@@ -630,7 +628,7 @@ authorizeInBrowser, Page return (logins/server/browser.ts)
 
 ## Step 5: Sign in with ChatGPT
 
-Status: built; a live sign-in is not yet checked.
+Status: built; a live sign-in and requests work.
 
 Lets the user sign in with a ChatGPT account and spend the plan on the public OpenAI API (`api.openai.com/v1`), with Liminal registered as its own app on the account. It is a second OpenAI provider beside `codex`, which spends the plan on the Codex backend through the Codex CLI's app.
 
@@ -748,9 +746,140 @@ request (provider chatgpt)
 | Host id | `<data>/host-id`, a `urn:uuid` made on first use, owned by `model-openai`, apart from the credentials |
 | Sign-out | `logins` removes the credential even when `logOut` fails, then reports the failure; the ChatGPT failure says to disconnect Liminal in ChatGPT settings |
 
-### Step 5 open
+## Step 6: OpenRouter, OpenCode Go
 
-- Live check: the user signs in once; the plan list format and the request path are unverified before that.
+Status: built; no live request yet.
+
+Adds two providers, `openrouter` and `opencode-go`, each signed in with an API key.
+
+### Step 6 today
+
+| Piece | Where | What it does now |
+| --- | --- | --- |
+| Messages calls | `model-anthropic/src/server/provider.ts` | `AnthropicPrompt`, thinking, signing; used only by `anthropic` and `anthropic-api` |
+| Responses calls | `model-openai/src/server/provider.ts` | `responsesStream(http, fs, Signing)`; used by `openai` and `chatgpt` |
+| API key lookup | `keyOf` in `model-openai` and `model-anthropic` | `store.secret(login, { env })`, then an `auth` `ModelError` naming `/connect` and the variable |
+| Catalog | `model-catalog` `ModelCatalog.models(catalogId)` | Gives `ModelInfo`; drops the `provider.npm` that models.dev sets on models using another protocol |
+| Gallery | `apps/gallery/src/chat/connectStates.tsx` | Static rows for OpenRouter and OpenCode Go |
+
+### Step 6 protocol (Tau `src/ai/{Providers,Models}.ts`, `src/ai/internal/catalog/models-dev.ts`, `src/ai/internal/protocols/{thinking,messages-defaults}.ts`, `src/ai/internal/signing/provider-auth.ts`; models.dev `api.json`)
+
+| Provider | Value |
+| --- | --- |
+| OpenRouter | `https://openrouter.ai/api/v1`, Bearer key, `@effect/ai-openrouter` (`strictJsonSchema` left unset: it only shapes `response_format`); thinking `reasoning: { effort | enabled | max_tokens }`, set on the request body because the package types`reasoning` with `effort` alone; catalog `openrouter` (390 models, 319 call tools); `cacheControl` marks like Anthropic; `reasoning_details` sent back on later turns |
+| OpenCode Go | `https://opencode.ai/inference/go/v1`, Bearer key; catalog `opencode-go` (32 models); default protocol Chat Completions; models.dev `provider.npm` per model picks another: `@ai-sdk/anthropic` (Messages at the address without `/v1`), `@ai-sdk/openai` (Responses); `@ai-sdk/google` models are left out; headers `x-opencode-session: <cache key>`, `x-opencode-client`; Messages replies lack `usage` fields Effect requires, filled before decoding |
+
+### Step 6 shape
+
+```mermaid
+flowchart LR
+  or["model-openrouter"] --> ork["@effect/ai-openrouter"]
+  og["model-opencode-go"] --> msg["sdk/ai/messages"]
+  og --> resp["sdk/ai/responses"]
+  og --> chat["sdk/ai/chat"]
+  og --> cat["model-catalog: package per model"]
+  anth["model-anthropic"] --> msg
+  oai["model-openai"] --> resp
+```
+
+| System | Change |
+| --- | --- |
+| `@liminal/sdk/ai` | Gains three protocol modules: `messages` (moved from `model-anthropic`), `responses` (moved from `model-openai`), `chat` (new, `@effect/ai-openai-compat`) |
+| `credential-store` contract | Gains `apiKeyOf`, the shared key lookup |
+| `model-catalog` | `models` gives each model's models.dev package beside its `ModelInfo` |
+| `model-openrouter`, `model-opencode-go` | New plugins, on by default |
+
+### Step 6 files
+
+```text
+packages/sdk/package.json                      exports ./ai/messages, ./ai/responses, ./ai/chat; @effect/ai-* as optional peers
+packages/sdk/src/ai/messages.ts                messagesStream, AnthropicPrompt, thinking; moved from model-anthropic
+packages/sdk/src/ai/responses.ts               responsesStream, Signing; moved from model-openai
+packages/sdk/src/ai/chat.ts                    chatStream: Chat Completions through @effect/ai-openai-compat
+packages/plugins/credential-store/src/contract.ts   apiKeyOf(store, { login, env, name })
+packages/plugins/model-catalog/src/contract.ts      CatalogModel { info, package }
+packages/plugins/model-catalog/src/server/models-dev.ts   decodes provider.npm
+packages/plugins/models/src/server.ts          maps CatalogModel to info
+packages/plugins/model-anthropic/src/server/provider.ts   uses sdk/ai/messages; thinking.ts deleted
+packages/plugins/model-openai/src/server/provider.ts      uses sdk/ai/responses
+packages/plugins/model-openrouter/
+  plugin.ts, package.json, src/contract.ts     provider and login openrouter, env OPENROUTER_API_KEY
+  src/server.ts                                Catalog openrouter; OpenRouterPrompt (cacheControl, reasoning_details); reasoning effort
+  test/openrouter.test.ts                      signed request, reasoning sent back, cache marks, errors
+packages/plugins/model-opencode-go/
+  plugin.ts, package.json, src/contract.ts     provider and login opencode-go, env OPENCODE_API_KEY
+  src/server.ts                                Listed from the catalog, kept to known packages; stream picks the protocol per model
+  src/server/usage.ts                          fills missing Messages fields
+packages/sdk/src/testing/http.ts               stubHttp, Sent, event, dataEvent, eventStream; moved from model-anthropic/test/support.ts
+  test/opencode-go.test.ts                     each protocol's address, headers, usage fill, Google models left out
+apps/gallery/src/chat/connectStates.tsx        OpenRouter and OpenCode Go rows match the registered titles
+apps/cli/test/tui.test.tsx                     /connect lists the two new vendors
+docs/plugins/model-openrouter.md, model-opencode-go.md
+docs/requirements/07-repository.md          SDK subpaths and optional peers
+```
+
+### Step 6 types
+
+```ts
+// model-catalog contract
+export interface CatalogModel {
+  readonly info: ModelInfo;
+  /** models.dev `provider.npm`: set when the model uses another protocol than its provider's. */
+  readonly package: Option.Option<string>;
+}
+models: (catalogId: string) => Effect<ReadonlyArray<CatalogModel>, CatalogUnavailable>
+
+// credential-store contract
+export const apiKeyOf: (store, key: { login: string; env: string; name: string }) => Effect<Redacted, ModelError>
+
+// sdk/ai/chat
+// sdk/ai/{chat,responses,messages}: each takes its client's options, built per call
+export interface ChatSigning { readonly provider: string; readonly name: string; readonly options: Effect<OpenAiClient.Options, ModelError> }
+export const chatStream: (http, fs, signing: ChatSigning) => (request: ModelRequest) => Stream<ModelEvent, ModelError>
+
+```
+
+### Step 6 call path
+
+```text
+/model -> models.listModels(opencode-go)
+  checkLogin: apiKeyOf(opencode-go, OPENCODE_API_KEY)
+  Listed: catalog.models("opencode-go") -> keep package none | @ai-sdk/anthropic | @ai-sdk/openai -> info
+
+stream(opencode-go, request)
+  key <- apiKeyOf; model <- catalog.models("opencode-go") find id (none -> Chat Completions)
+  package @ai-sdk/anthropic -> messagesStream(apiUrl without /v1, key, headers, usage fill)
+  package @ai-sdk/openai    -> responsesStream(apiUrl, key, headers)
+  none                      -> chatStream(apiUrl, key, headers)
+
+stream(openrouter, request)
+  key <- apiKeyOf(openrouter, OPENROUTER_API_KEY)
+  OpenRouterLanguageModel { reasoning } -> replyOf(OpenRouterPrompt)
+```
+
+| Injection | Production | Tests |
+| --- | --- | --- |
+| `HttpClient` | `FetchHttpClient` | hand-written streams per protocol; records address, headers and body |
+| Credentials | `CredentialStore` (SQLite) | in-memory store with an API key |
+| Catalog | `model-catalog` | fixed `CatalogModel` lists, with and without packages |
+
+### Step 6 decisions
+
+| Topic | Decision |
+| --- | --- |
+| New dependencies | `@effect/ai-openrouter` 4.0.5 (`model-openrouter`) and `@effect/ai-openai-compat` 4.0.5 (`sdk/ai/chat`) |
+| Shared protocol code | `@liminal/sdk/ai/{messages,responses,chat}` subpaths, each importing one `@effect/ai-*` package the SDK takes as an optional peer, like OpenTUI for `/tui`; `model-anthropic`, `model-openai` and `model-opencode-go` build on them |
+| Package per model | `ModelCatalog.models` gives `CatalogModel { info, package }`; OpenCode Go lists only models whose package it can call |
+| Local servers | No local provider |
+| OpenRouter decision models | Left out; Liminal has no decision-model seam |
+
+### Step 6 deletes
+
+- `model-anthropic` `src/server/thinking.ts` and the Messages wiring in `src/server/provider.ts` move to `sdk/ai/messages`.
+- `responsesStream` and `Signing` leave `model-openai/src/server/provider.ts` for `sdk/ai/responses`.
+- `keyOf` in `model-openai` and `model-anthropic` gives way to `apiKeyOf`.
+- `modelInfos` in `model-catalog` gives way to a list of `CatalogModel`.
+- `model-anthropic/test/support.ts` moves to `@liminal/sdk/testing`.
 
 ## Deletes or replaces
 

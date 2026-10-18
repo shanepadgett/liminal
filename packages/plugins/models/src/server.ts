@@ -41,8 +41,12 @@ const make = Effect.gen(function* () {
     return found.value;
   });
 
+  /** The catalog's models under `catalogId`, without their packages. */
+  const catalogInfos = (catalogId: string) =>
+    Effect.map(catalog.models(catalogId), (models) => models.map((model) => model.info));
+
   const listed = (source: ModelSource) =>
-    ModelSource.$is("Listed")(source) ? source.models : catalog.models(source.catalogId);
+    ModelSource.$is("Listed")(source) ? source.models : catalogInfos(source.catalogId);
 
   const listModels = Effect.fn("Models.listModels")(function* (id: string) {
     const { source, checkLogin } = yield* provider(id);
@@ -50,7 +54,7 @@ const make = Effect.gen(function* () {
     if (!ModelSource.$is("PlanCatalog")(source)) return yield* listed(source);
 
     const [models, plan] = yield* Effect.all(
-      [catalog.models(source.catalogId), plans.planOf(id, source.plan)],
+      [catalogInfos(source.catalogId), plans.planOf(id, source.plan)],
       { concurrency: 2 },
     );
 

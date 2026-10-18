@@ -490,7 +490,10 @@ effectTest(
     yield* frameWith(setup, "Sign in to a provider");
     setup.mockInput.pressEnter();
 
-    expect(yield* frameWith(setup, "Connect a provider")).toContain("OpenAI");
+    const vendors = yield* frameWith(setup, "Connect a provider");
+
+    for (const vendor of ["OpenAI", "OpenCode Go", "OpenRouter"]) expect(vendors).toContain(vendor);
+
     // Anthropic is listed first.
     setup.mockInput.pressArrow("down");
     setup.mockInput.pressEnter();

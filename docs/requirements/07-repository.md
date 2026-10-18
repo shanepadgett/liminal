@@ -17,8 +17,9 @@ Workspace layout, the checks that guard it, and how code is tested.
 - `@liminal/sdk` is published for plugin authors
 - Every workspace package shares the root package's version; versions change only at a release
 - The first release is 0.1.0
-- `@liminal/sdk` is one package with subpath exports: `.` (core), `/testing`, `/tui`, `/desktop`
+- `@liminal/sdk` is one package with subpath exports: `.` (core), `/ai`, `/ai/messages`, `/ai/responses`, `/ai/chat`, `/testing`, `/tui`, `/desktop`
 - OpenTUI is an optional peer dependency of the SDK, needed only by `/tui`
+- `@effect/ai-anthropic`, `@effect/ai-openai` and `@effect/ai-openai-compat` are optional peer dependencies of the SDK, each needed only by its `/ai` protocol subpath
 - `@liminal/sdk`, `effect`, and OpenTUI are peer dependencies supplied by the host
 - Plugin contracts are published; plugins import other plugins' contracts and get the host's copy at runtime
 - Built-in plugins depend only on the SDK and other plugins' contracts, never on `kernel/`

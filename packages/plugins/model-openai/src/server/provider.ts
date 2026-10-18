@@ -1,77 +1,14 @@
 /** Provider `openai`: one streamed Responses call per request, signed with the API key. */
 
-import { Generated, OpenAiClient, OpenAiLanguageModel } from "@effect/ai-openai";
-import { Effect, FileSystem, Layer, Option, type Redacted, Schema, Stream } from "effect";
+import { Effect, FileSystem, Layer } from "effect";
 import { HttpClient } from "effect/http";
 
-import { CredentialStore } from "@liminal/credential-store/contract";
+import { apiKeyOf, CredentialStore } from "@liminal/credential-store/contract";
 import { LoginMethod, LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
-import { ModelError, type ModelRequest } from "@liminal/sdk";
-import { effortOf, OpenAiPrompt, replyOf } from "@liminal/sdk/ai";
+import { responsesStream } from "@liminal/sdk/ai/responses";
 
 import { openAiKeyVariable, openAiLogin, openAiProvider } from "../contract.ts";
-
-/** The API takes only efforts. */
-const openAiEffort = effortOf("OpenAI", Schema.is(Generated.ReasoningEffort), "none");
-
-const authError = (message: string) => new ModelError({ reason: "auth", message });
-
-/** The saved key, else the one in `OPENAI_API_KEY`. */
-const keyOf = (store: CredentialStore["Service"]) =>
-  store.secret(openAiLogin, { env: openAiKeyVariable }).pipe(
-    Effect.mapError((error) => authError(`OpenAI key could not be read: ${error.message}`)),
-    Effect.flatMap(
-      Option.match({
-        onNone: () =>
-          Effect.fail(
-            authError(`No OpenAI API key: sign in with /connect or set ${openAiKeyVariable}`),
-          ),
-        onSome: Effect.succeed,
-      }),
-    ),
-  );
-
-/** How one provider on the API signs its calls. */
-export interface Signing {
-  readonly provider: string;
-  readonly name: string;
-  /** The bearer token for one call. */
-  readonly token: Effect.Effect<Redacted.Redacted, ModelError>;
-}
-
-/** The `effect/ai` language model for `request`. */
-const languageModel = (request: ModelRequest, http: HttpClient.HttpClient, signing: Signing) =>
-  Effect.gen(function* () {
-    const apiKey = yield* signing.token;
-    const effort = yield* openAiEffort(request.thinking);
-
-    const client = yield* OpenAiClient.make({ apiKey }).pipe(
-      Effect.provideService(HttpClient.HttpClient, http),
-    );
-
-    // Liminal sends the whole conversation each time, so the API keeps nothing and the encrypted
-    // reasoning comes back to be sent again; the cache key routes a conversation to its cache.
-    return yield* OpenAiLanguageModel.make({
-      model: request.model.id,
-      config: {
-        ...request.providerOptions?.[signing.provider],
-        store: false,
-        include: ["reasoning.encrypted_content"],
-        prompt_cache_key: request.cacheKey,
-        reasoning: { effort, summary: "auto" },
-        strictJsonSchema: false,
-      },
-    }).pipe(Effect.provideService(OpenAiClient.OpenAiClient, client));
-  });
-
-/** Streams one Responses call per request, signed by `signing`. */
-export const responsesStream =
-  (http: HttpClient.HttpClient, fs: FileSystem.FileSystem, signing: Signing) =>
-  (request: ModelRequest) =>
-    replyOf(signing.name, OpenAiPrompt, languageModel(request, http, signing), request).pipe(
-      Stream.provideService(FileSystem.FileSystem, fs),
-    );
 
 /** Registers provider `openai` and its API key login; needs an `HttpClient`, which tests replace. */
 export const openAiLayer = Layer.effectDiscard(
@@ -81,6 +18,7 @@ export const openAiLayer = Layer.effectDiscard(
     const store = yield* CredentialStore;
     const http = yield* HttpClient.HttpClient;
     const fs = yield* FileSystem.FileSystem;
+    const key = apiKeyOf(store, { login: openAiLogin, env: openAiKeyVariable, name: "OpenAI" });
 
     yield* logins.register(
       LoginMethod.ApiKey({
@@ -95,11 +33,11 @@ export const openAiLayer = Layer.effectDiscard(
       id: openAiProvider,
       name: "OpenAI",
       source: ModelSource.Catalog({ catalogId: "openai" }),
-      checkLogin: Effect.asVoid(keyOf(store)),
+      checkLogin: Effect.asVoid(key),
       stream: responsesStream(http, fs, {
         provider: openAiProvider,
         name: "OpenAI",
-        token: keyOf(store),
+        options: Effect.map(key, (apiKey) => ({ apiKey })),
       }),
       nativeToolChanges: false,
     });

@@ -50,7 +50,9 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | [model-catalog](model-catalog.md) | Model details from the `models.dev` catalog, cached on disk | built |
 | [model-anthropic](model-anthropic.md) | Providers `anthropic` (Claude subscription) and `anthropic-api` (API key) | built |
 | [model-codex](model-codex.md) | Provider `codex`: OpenAI models on a ChatGPT plan login | built |
-| [model-openai](model-openai.md) | Provider `openai`: the OpenAI API with an API key | built |
+| [model-openai](model-openai.md) | Providers `openai` (API key) and `chatgpt` (Sign in with ChatGPT) | built |
+| [model-openrouter](model-openrouter.md) | Provider `openrouter`: OpenRouter's models with an API key | built |
+| [model-opencode-go](model-opencode-go.md) | Provider `opencode-go`: the OpenCode Go subscription with an API key | built |
 | one plugin per provider | Talks to one model provider | to plan |
 | model-select | Chooses the model for a session | to plan |
 

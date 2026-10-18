@@ -1,11 +1,9 @@
 /** A hand-written Responses stream and a one-model catalog, shared by the provider tests. */
 
-import { Effect, Layer, type Schema } from "effect";
+import { Effect, Layer, Option, type Schema } from "effect";
 
 import { ModelCatalog } from "@liminal/model-catalog/contract";
-
-const event = (type: string, fields: Readonly<Record<string, Schema.Json>>) =>
-  `event: ${type}\ndata: ${JSON.stringify({ type, ...fields })}\n\n`;
+import { event } from "@liminal/sdk/testing";
 
 const response = (status: string, output: ReadonlyArray<Schema.Json>) => ({
   id: "resp_1",
@@ -67,12 +65,15 @@ export const fakeCatalog = Layer.succeed(
     models: () =>
       Effect.succeed([
         {
-          id: "gpt-test",
-          name: "GPT Test",
-          contextWindow: 400_000,
-          maxOutput: 128_000,
-          thinking: [],
-          input: ["text"],
+          info: {
+            id: "gpt-test",
+            name: "GPT Test",
+            contextWindow: 400_000,
+            maxOutput: 128_000,
+            thinking: [],
+            input: ["text"],
+          },
+          package: Option.none(),
         },
       ]),
   }),

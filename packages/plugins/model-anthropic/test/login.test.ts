@@ -11,10 +11,9 @@ import {
   LoginMethod,
   LoginReturn,
 } from "@liminal/logins/contract";
-import { effectTest } from "@liminal/sdk/testing";
+import { effectTest, type Sent, stubHttp } from "@liminal/sdk/testing";
 
 import { claudeMethod } from "../src/server/login.ts";
-import { type Sent, stubHttp } from "./support.ts";
 
 /** Where the sign-in returns to, as the fake flow sends it back. */
 const redirectOf = LoginReturn.$match({

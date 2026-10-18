@@ -1,0 +1,26 @@
+{
+  "name": "@liminal/model-opencode-go",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./plugin.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "dependencies": {
+    "@liminal/credential-store": "workspace:*",
+    "@liminal/logins": "workspace:*",
+    "@liminal/model-catalog": "workspace:*",
+    "@liminal/models": "workspace:*"
+  },
+  "peerDependencies": {
+    "@effect/ai-anthropic": "4.0.5",
+    "@effect/ai-openai": "4.0.5",
+    "@effect/ai-openai-compat": "4.0.5",
+    "@liminal/sdk": "workspace:*",
+    "effect": "4.0.5"
+  },
+  "liminal": [
+    "./plugin.ts"
+  ]
+}

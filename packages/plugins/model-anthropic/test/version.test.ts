@@ -6,10 +6,9 @@ import { Effect, Exit, FileSystem, Path, Ref } from "effect";
 import { TestClock } from "effect/testing";
 
 import { Directories } from "@liminal/sdk";
-import { effectTest, testBaseServices } from "@liminal/sdk/testing";
+import { effectTest, type Sent, stubHttp, testBaseServices } from "@liminal/sdk/testing";
 
 import { makeClaudeCode } from "../src/server/version.ts";
-import { type Sent, stubHttp } from "./support.ts";
 
 /** A registry listing each version in `versions` in turn, then the last again. */
 const registry = (sent: Ref.Ref<ReadonlyArray<Sent>>, versions: ReadonlyArray<string>) => {

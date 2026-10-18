@@ -230,7 +230,6 @@
       "name": "@liminal/model-anthropic",
       "version": "0.1.0",
       "dependencies": {
-        "@effect/ai-anthropic": "4.0.5",
         "@liminal/credential-store": "workspace:*",
         "@liminal/logins": "workspace:*",
         "@liminal/models": "workspace:*",
@@ -239,6 +238,7 @@
         "@liminal/model-catalog": "workspace:*",
       },
       "peerDependencies": {
+        "@effect/ai-anthropic": "4.0.5",
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
       },
@@ -280,7 +280,41 @@
       "name": "@liminal/model-openai",
       "version": "0.1.0",
       "dependencies": {
+        "@liminal/credential-store": "workspace:*",
+        "@liminal/logins": "workspace:*",
+        "@liminal/models": "workspace:*",
+      },
+      "devDependencies": {
+        "@liminal/model-catalog": "workspace:*",
+      },
+      "peerDependencies": {
         "@effect/ai-openai": "4.0.5",
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
+    "packages/plugins/model-opencode-go": {
+      "name": "@liminal/model-opencode-go",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/credential-store": "workspace:*",
+        "@liminal/logins": "workspace:*",
+        "@liminal/model-catalog": "workspace:*",
+        "@liminal/models": "workspace:*",
+      },
+      "peerDependencies": {
+        "@effect/ai-anthropic": "4.0.5",
+        "@effect/ai-openai": "4.0.5",
+        "@effect/ai-openai-compat": "4.0.5",
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
+    "packages/plugins/model-openrouter": {
+      "name": "@liminal/model-openrouter",
+      "version": "0.1.0",
+      "dependencies": {
+        "@effect/ai-openrouter": "4.0.5",
         "@liminal/credential-store": "workspace:*",
         "@liminal/logins": "workspace:*",
         "@liminal/models": "workspace:*",
@@ -427,12 +461,18 @@
       "name": "@liminal/sdk",
       "version": "0.1.0",
       "devDependencies": {
+        "@effect/ai-anthropic": "4.0.5",
+        "@effect/ai-openai": "4.0.5",
+        "@effect/ai-openai-compat": "4.0.5",
         "@opentui/core": "0.6.6",
         "@opentui/keymap": "0.6.6",
         "@opentui/solid": "0.6.6",
         "solid-js": "1.9.12",
       },
       "peerDependencies": {
+        "@effect/ai-anthropic": "4.0.5",
+        "@effect/ai-openai": "4.0.5",
+        "@effect/ai-openai-compat": "4.0.5",
         "@effect/platform-bun": "4.0.5",
         "@opentui/core": "0.6.6",
         "@opentui/keymap": "0.6.6",
@@ -441,6 +481,9 @@
         "solid-js": "1.9.12",
       },
       "optionalPeers": [
+        "@effect/ai-anthropic",
+        "@effect/ai-openai",
+        "@effect/ai-openai-compat",
         "@opentui/core",
         "@opentui/keymap",
         "@opentui/solid",
@@ -508,6 +551,10 @@
     "@effect/ai-anthropic": ["@effect/ai-anthropic@4.0.5", "", { "peerDependencies": { "effect": "^4.0.5" } }, "sha512-Vb8pEJrwqeRd3UT0BtOM2IHlLgRp32XunUnWfEd/DpV0jyKgZHSKVVxsDs6AsMyZpRsD1klDtvfCndDiQV4TyQ=="],
 
     "@effect/ai-openai": ["@effect/ai-openai@4.0.5", "", { "peerDependencies": { "effect": "^4.0.5" } }, "sha512-xJGqOXR10BdLIk3X5rPA8/cXbk7hyvygPK2xjplkc1LxI2VT2wspTT7Nt+BlcN9+REzHM10ve0bbNbk5GIJKuw=="],
+
+    "@effect/ai-openai-compat": ["@effect/ai-openai-compat@4.0.5", "", { "peerDependencies": { "effect": "^4.0.5" } }, "sha512-UuIXsrmMafHw9VSgER+Fql3GbUxpoiQ5tjsZmcRd+2DyjH/RXRYtamWwkXJquPwo7M7imXlq0hYbDjBwoAx2Aw=="],
+
+    "@effect/ai-openrouter": ["@effect/ai-openrouter@4.0.5", "", { "peerDependencies": { "effect": "^4.0.5" } }, "sha512-kyOL7mFFuYWiU4igg2eA8ySQ5wS9wxvEYHna9UpjNKZSPCCn8RgkGuFpRQzAHpqbV8C2p2Lrh/aJOu7eskU64Q=="],
 
     "@effect/platform-bun": ["@effect/platform-bun@4.0.5", "", { "dependencies": { "@effect/platform-node-shared": "^4.0.5" }, "peerDependencies": { "effect": "^4.0.5" } }, "sha512-tB/GapZ/bVoCbwRgnojGP4TwopvkMoFoSCipXT1sf0guvG/2oRVhWzJW/1vkrYFEdLM7XyRnVVLrSJyqdok7DA=="],
 
@@ -590,6 +637,10 @@
     "@liminal/model-codex": ["@liminal/model-codex@workspace:packages/plugins/model-codex"],
 
     "@liminal/model-openai": ["@liminal/model-openai@workspace:packages/plugins/model-openai"],
+
+    "@liminal/model-opencode-go": ["@liminal/model-opencode-go@workspace:packages/plugins/model-opencode-go"],
+
+    "@liminal/model-openrouter": ["@liminal/model-openrouter@workspace:packages/plugins/model-openrouter"],
 
     "@liminal/model-scripted": ["@liminal/model-scripted@workspace:packages/plugins/model-scripted"],
 

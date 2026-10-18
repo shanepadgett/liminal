@@ -13,6 +13,7 @@ Status: built
 ### Catalog
 
 - Lists the tool-calling models `models.dev` has under a catalog id, with name, limits, input kinds, prices and thinking options
+- Each model carries its models.dev package when it uses another protocol than its provider's
 - Each catalog entry decodes on its own; a bad entry is skipped
 - An unknown catalog id or an unreachable `models.dev` with no cached copy fails with `CatalogUnavailable`
 - No bundled snapshot

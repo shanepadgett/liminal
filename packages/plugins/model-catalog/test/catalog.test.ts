@@ -6,6 +6,7 @@ import { join } from "node:path";
 import {
   Context,
   Duration,
+  Option,
   Effect,
   FileSystem,
   Layer,
@@ -60,11 +61,15 @@ const startCatalog = (status = 200) =>
     return { catalog: Context.get(built, ModelCatalog), requests };
   });
 
+/** The catalog's models under `catalogId`, without their packages. */
+const infosOf = (catalog: ModelCatalog["Service"], catalogId: string) =>
+  Effect.map(catalog.models(catalogId), (models) => models.map((model) => model.info));
+
 effectTest(
   "a catalog id is fetched once, mapped, and saved alone",
   Effect.gen(function* () {
     const { catalog, requests } = yield* startCatalog();
-    const models = yield* catalog.models("openai");
+    const models = yield* infosOf(catalog, "openai");
     yield* catalog.models("openai");
 
     expect(yield* Queue.size(requests)).toBe(1);
@@ -96,7 +101,7 @@ effectTest(
   "budgets become low, medium, high and max; effort wins over a budget; a toggle gives off and on",
   Effect.gen(function* () {
     const { catalog } = yield* startCatalog();
-    const [sonnet, opus] = yield* catalog.models("anthropic");
+    const [sonnet, opus] = yield* infosOf(catalog, "anthropic");
 
     expect(sonnet?.thinking.map((option) => [option.id, option.value])).toEqual([
       ["low", ThinkingBudget.make({ tokens: 1024 })],
@@ -109,11 +114,25 @@ effectTest(
     expect(opus?.thinking.map((option) => option.id)).toEqual(["low", "medium", "high", "max"]);
     expect(opus?.thinking[0]?.value).toEqual(ThinkingEffort.make({ effort: "low" }));
 
-    const [toggled] = yield* catalog.models("deepinfra");
+    const [toggled] = yield* infosOf(catalog, "deepinfra");
 
     expect(toggled?.thinking.map((option) => option.value)).toEqual([
       ThinkingOff.make({}),
       ThinkingOn.make({}),
+    ]);
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "a model on another protocol than its provider's names that protocol's package",
+  Effect.gen(function* () {
+    const { catalog } = yield* startCatalog();
+    const models = yield* catalog.models("opencode-go");
+
+    expect(models.map((model) => [model.info.id, model.package])).toEqual([
+      ["glm-5.3", Option.none()],
+      ["minimax-m3", Option.some("@ai-sdk/anthropic")],
     ]);
   }),
   testBaseServices,

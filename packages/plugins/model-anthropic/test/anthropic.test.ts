@@ -17,11 +17,18 @@ import { ModelCatalog } from "@liminal/model-catalog/contract";
 import models from "@liminal/models";
 import { Models } from "@liminal/models/contract";
 import { type ModelContent, type ModelRequest, ThinkingBudget, ThinkingEffort } from "@liminal/sdk";
-import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
+import {
+  effectTest,
+  event,
+  eventStream,
+  type Sent,
+  serverOf,
+  stubHttp,
+  testBaseServices,
+} from "@liminal/sdk/testing";
 
 import { anthropicApiProvider, claudeProvider } from "../src/contract.ts";
 import { anthropicLayer } from "../src/server/provider.ts";
-import { event, eventStream, type Sent, stubHttp } from "./support.ts";
 
 const usage = {
   input_tokens: 10,
@@ -75,12 +82,15 @@ const fakeCatalog = Layer.succeed(
     models: () =>
       Effect.succeed([
         {
-          id: "claude-test",
-          name: "Claude Test",
-          contextWindow: 200_000,
-          maxOutput: 64_000,
-          thinking: [],
-          input: ["text"],
+          info: {
+            id: "claude-test",
+            name: "Claude Test",
+            contextWindow: 200_000,
+            maxOutput: 64_000,
+            thinking: [],
+            input: ["text"],
+          },
+          package: Option.none(),
         },
       ]),
   }),

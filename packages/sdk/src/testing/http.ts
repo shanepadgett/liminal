@@ -1,4 +1,4 @@
-/** A stub HTTP client answering by host and path, keeping each request it was sent. */
+/** A stub HTTP client that keeps each request it was sent, and server-sent event replies. */
 
 import { Effect, Predicate, Ref, Schema } from "effect";
 import { type HttpBody, HttpClient, HttpClientResponse } from "effect/http";
@@ -29,9 +29,12 @@ export const stubHttp = (sent: Ref.Ref<ReadonlyArray<Sent>>, reply: (url: URL) =
     );
   });
 
-/** A server-sent event as Anthropic streams it. */
+/** A named server-sent event whose data is `type` and `fields`, as Anthropic and OpenAI send. */
 export const event = (type: string, fields: Readonly<Record<string, Schema.Json>>) =>
   `event: ${type}\ndata: ${JSON.stringify({ type, ...fields })}\n\n`;
+
+/** An unnamed server-sent event, as Chat Completions sends. */
+export const dataEvent = (data: Schema.Json) => `data: ${JSON.stringify(data)}\n\n`;
 
 /** An event stream response. */
 export const eventStream = (events: ReadonlyArray<string>) =>

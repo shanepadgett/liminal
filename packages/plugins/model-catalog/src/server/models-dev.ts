@@ -15,6 +15,8 @@ import {
   ThinkingOn,
 } from "@liminal/sdk";
 
+import type { CatalogModel } from "../contract.ts";
+
 /** Models.dev entries by catalog id, then by model id, each still undecoded. */
 export const ModelsDevProviders = Schema.Record(
   Schema.String,
@@ -47,6 +49,8 @@ const Entry = Schema.Struct({
     }),
   ),
   reasoning_options: Schema.optionalKey(Schema.NullOr(Schema.Array(ReasoningOption))),
+  /** Set when the model uses another protocol than its provider's, named by its AI SDK package. */
+  provider: Schema.optionalKey(Schema.Struct({ npm: Schema.optionalKey(Schema.String) })),
 });
 
 type Entry = typeof Entry.Type;
@@ -132,10 +136,15 @@ const infoOf = (id: string, entry: Entry): ModelInfo => {
   };
 };
 
+const catalogModelOf = (id: string, entry: Entry): CatalogModel => ({
+  info: infoOf(id, entry),
+  package: Option.fromUndefinedOr(entry.provider?.npm),
+});
+
 /** The tool-calling models among `entries`; entries that do not decode are skipped. */
-export const modelInfos = (entries: Readonly<Record<string, Schema.Json>>) =>
+export const catalogModels = (entries: Readonly<Record<string, Schema.Json>>) =>
   Object.entries(entries).flatMap(([id, json]) => {
     const entry = decodeEntry(json);
 
-    return Option.isSome(entry) && entry.value.tool_call ? [infoOf(id, entry.value)] : [];
+    return Option.isSome(entry) && entry.value.tool_call ? [catalogModelOf(id, entry.value)] : [];
   });
