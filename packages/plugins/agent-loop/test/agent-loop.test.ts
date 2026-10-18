@@ -29,6 +29,8 @@ import {
   userMessage,
 } from "@liminal/session-log/contract";
 import sessionStore from "@liminal/session-store";
+import settingsPlugin from "@liminal/settings";
+import { Settings } from "@liminal/settings/contract";
 import toolPipeline from "@liminal/tool-pipeline";
 import toolRegistry from "@liminal/tool-registry";
 import { Tools } from "@liminal/tool-registry/contract";
@@ -40,6 +42,7 @@ import {
   AgentLoop,
   BeforeCall,
   BeforeCallHooks,
+  NoDefaultModel,
   StepOutcome,
   TurnEndedEntry,
   TurnEndingHooks,
@@ -54,6 +57,7 @@ const stack = serverOf(agentLoop).pipe(
   Layer.provideMerge(serverOf(models)),
   Layer.provideMerge(serverOf(sessionLog)),
   Layer.provideMerge(serverOf(sessionStore)),
+  Layer.provideMerge(serverOf(settingsPlugin)),
   Layer.provideMerge(testBaseServices),
 );
 
@@ -416,6 +420,19 @@ effectTest(
     yield* loop.cancel(s1);
 
     expect(markersOf(yield* log.read(s1, {}))).toEqual(["started", "cancelled"]);
+  }),
+  stack,
+);
+
+effectTest(
+  "defaults reads the agent-loop section, failing until a model is set",
+  Effect.gen(function* () {
+    const loop = yield* AgentLoop;
+    const missing = yield* Effect.flip(loop.defaults);
+    expect(missing).toBeInstanceOf(NoDefaultModel);
+
+    yield* (yield* Settings).write("global", ["agent-loop", "model"], settings.model);
+    expect(yield* loop.defaults).toEqual({ model: settings.model, thinking: "medium" });
   }),
   stack,
 );

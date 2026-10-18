@@ -3,7 +3,8 @@
  * plugins join it.
  */
 
-import { Context, Data, type Duration, type Effect, Schema } from "effect";
+import { Context, Data, type Duration, Effect, Schema } from "effect";
+import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
   defineEntry,
@@ -27,6 +28,35 @@ export const TurnSettings = Schema.Struct({
 });
 
 export type TurnSettings = typeof TurnSettings.Type;
+
+/** The `agent-loop` settings section: what a new turn uses unless its caller chooses. */
+export const AgentLoopSection = Schema.Struct({
+  model: Schema.optionalKey(ModelRef),
+  thinking: ThinkingLevel.pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed<ThinkingLevel>("medium")),
+  ),
+});
+
+/** No `agent-loop.model` is set in any settings file. */
+export class NoDefaultModel extends Schema.TaggedError<
+  NoDefaultModel,
+  { readonly brand: unique symbol }
+>()("NoDefaultModel", {}) {
+  override get message() {
+    return "No model is set; set agent-loop.model in a settings file.";
+  }
+}
+
+/** The `agent-loop` settings section does not decode. */
+export class DefaultsInvalid extends Schema.TaggedError<
+  DefaultsInvalid,
+  { readonly brand: unique symbol }
+>()("DefaultsInvalid", { message: Schema.String }) {}
+
+/** Why a new turn's settings cannot be read. */
+export const DefaultsError = Schema.Union([NoDefaultModel, DefaultsInvalid]);
+
+export type DefaultsError = typeof DefaultsError.Type;
 
 /** A turn began with these settings; without a later TurnEndedEntry it resumes at boot. */
 export const TurnStartedEntry = defineEntry({
@@ -145,9 +175,38 @@ export class AgentLoop extends Context.Service<
       sessionId: SessionId,
       settings: TurnSettings,
     ) => Effect.Effect<void, SessionNotFound | InvalidEntry | StoreError>;
+    /** A new turn's settings, from the `agent-loop` settings section; read on each call. */
+    readonly defaults: Effect.Effect<TurnSettings, DefaultsError>;
     /** Interrupts the session's running turn and saves it as cancelled; no turn running is a no-op. */
     readonly cancel: (
       sessionId: SessionId,
     ) => Effect.Effect<void, SessionNotFound | InvalidEntry | StoreError>;
   }
 >()("liminal/agent-loop/AgentLoop") {}
+
+/** One part of a streaming reply: its text so far, or `done` once it is saved. */
+export const LivePart = Schema.Struct({
+  type: Schema.Literals(["text", "reasoning", "tool-call"]),
+  text: Schema.optionalKey(Schema.String),
+  name: Schema.optionalKey(Schema.String),
+  done: Schema.optionalKey(Schema.Boolean),
+});
+
+export type LivePart = typeof LivePart.Type;
+
+/** The live state of a streaming reply, kind `agent-loop/reply`. */
+export const LiveReply = {
+  kind: "agent-loop/reply",
+  data: Schema.Struct({ parts: Schema.Array(LivePart) }),
+};
+
+/** The live state while a failed model call waits to retry, kind `agent-loop/retry`. */
+export const LiveRetry = {
+  kind: "agent-loop/retry",
+  data: Schema.Struct({ attempt: Schema.Int, message: Schema.String }),
+};
+
+/** Agent-loop's commands for frontends. */
+export class AgentLoopRpcs extends RpcGroup.make(
+  Rpc.make("agent-loop/defaults", { success: TurnSettings, error: DefaultsError }),
+) {}

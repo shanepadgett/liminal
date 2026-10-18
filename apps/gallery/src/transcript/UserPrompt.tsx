@@ -6,8 +6,8 @@
 import type { BoxRenderable } from "@opentui/core";
 import { createSignal, For } from "solid-js";
 
-import { EDGE_BAR } from "../ornament/edgeBar.ts";
-import type { RoleColor } from "../tokens/roles.ts";
+import { EDGE_BAR, type RoleColor } from "@liminal/sdk/tui";
+
 import { clampLines, wrapWords } from "./wrapWords.ts";
 
 const COLLAPSED_LINES = 2;

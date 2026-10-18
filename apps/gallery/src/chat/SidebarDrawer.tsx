@@ -3,7 +3,8 @@
  * the chat on the base surface, and the chat under it is dimmed.
  */
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "@liminal/sdk/tui";
+
 import { SCRIM } from "./scrim.ts";
 import { Sidebar } from "./Sidebar.tsx";
 

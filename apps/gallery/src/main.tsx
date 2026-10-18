@@ -9,10 +9,11 @@ import { createDefaultOpenTuiKeymap } from "@opentui/keymap/opentui";
 import { KeymapProvider } from "@opentui/keymap/solid";
 import { render } from "@opentui/solid";
 
+import { PALETTES } from "@liminal/sdk/tui";
+
 import { GROUPS } from "./groups.tsx";
 import { readBookmark, writeBookmark } from "./shell/bookmark.ts";
 import { Shell } from "./shell/Shell.tsx";
-import { PALETTES } from "./tokens/palettes.ts";
 
 const renderer = await createCliRenderer({ exitOnCtrlC: false });
 const keymap = createDefaultOpenTuiKeymap(renderer);

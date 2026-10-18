@@ -34,9 +34,12 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
 
       expect(active.toSorted()).toEqual([
         "agent-loop",
+        "cancel",
+        "chat",
         "command-runner",
         "context",
         "credential-store",
+        "inbox",
         "model-codex",
         "models",
         "session-log",

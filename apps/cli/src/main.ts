@@ -1,15 +1,18 @@
 #!/usr/bin/env bun
 /**
- * Liminal command-line entry point: starts the kernel over the built-in plugins and prints each
- * one's state, read through the protocol.
+ * Liminal command-line entry point: starts the kernel over the built-in plugins, loads their TUI
+ * parts and draws them in the terminal until the user quits.
  */
 
 import { BunRuntime, BunServices } from "@effect/platform-bun";
-import { Console, Effect, Layer, Path, Predicate } from "effect";
-import { RpcClient } from "effect/rpc";
+import { Effect, Layer, Path } from "effect";
 
+import { startFrontend } from "@liminal/frontend";
 import { start } from "@liminal/kernel";
-import { Directories, KernelRpcs } from "@liminal/sdk";
+import { Directories } from "@liminal/sdk";
+import { TuiHost } from "@liminal/sdk/tui";
+
+import { runTui } from "./tui/run.tsx";
 
 const directories = Layer.effect(
   Directories,
@@ -32,17 +35,14 @@ const main = Effect.gen(function* () {
     folders: [path.resolve(import.meta.dir, "../../../packages/plugins")],
   });
 
-  const client = yield* RpcClient.make(KernelRpcs).pipe(
-    Effect.provideService(RpcClient.Protocol, yield* kernel.connect),
-  );
+  const frontend = yield* startFrontend({
+    graph: kernel.graph,
+    connect: kernel.connect,
+    host: TuiHost,
+    part: (member) => member.plugin.tui,
+  });
 
-  for (const plugin of yield* client["kernel/plugins"]()) {
-    yield* Console.log(
-      Predicate.isTagged(plugin, "Active")
-        ? `${plugin.name}: active`
-        : `${plugin.name}: ${plugin.reason}`,
-    );
-  }
+  yield* runTui(frontend);
 });
 
 BunRuntime.runMain(

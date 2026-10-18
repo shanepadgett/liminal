@@ -6,7 +6,13 @@ import type { Models } from "@liminal/models/contract";
 import type { ModelError, ModelRequest, ProviderNotFound, SessionId } from "@liminal/sdk";
 import type { SessionLog } from "@liminal/session-log/contract";
 
-import { AfterFailure, type AfterFailureHooks, type Turn } from "../contract.ts";
+import {
+  AfterFailure,
+  type AfterFailureHooks,
+  LiveReply,
+  LiveRetry,
+  type Turn,
+} from "../contract.ts";
 import { cancelledDrafts, saveDrafts } from "./calls.ts";
 import {
   applyEvent,
@@ -39,7 +45,7 @@ const makeAttempt = ({ log, models }: ModelCallDeps) =>
       if (!(yield* Ref.getAndSet(dirty, false))) return;
 
       yield* log.setLive(sessionId, {
-        kind: "agent-loop/reply",
+        kind: LiveReply.kind,
         data: liveData(yield* Ref.get(reply)),
       });
     }).pipe(Effect.orDie);
@@ -103,7 +109,7 @@ export const makeCallModel = (deps: ModelCallDeps) => {
       }
 
       yield* log.setLive(turn.sessionId, {
-        kind: "agent-loop/retry",
+        kind: LiveRetry.kind,
         data: { attempt: attempts, message: result.failure.message },
       });
 

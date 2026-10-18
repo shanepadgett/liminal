@@ -6,7 +6,7 @@
 
 import type { JSX } from "@opentui/solid";
 
-import type { Palette } from "../tokens/palettes.ts";
+import type { Palette } from "@liminal/sdk/tui";
 
 /**
  * How a state sits in the preview frame. `page` is a document read from the top and scrolled;

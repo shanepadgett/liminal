@@ -2,8 +2,9 @@
 
 import type { JSX } from "@opentui/solid";
 
+import { resolveRoles, type RoleColor } from "@liminal/sdk/tui";
+
 import type { EntryState, Fill } from "./shell/entries.ts";
-import { type RoleColor, resolveRoles } from "./tokens/roles.ts";
 
 /** The one state of an entry that has no others. */
 export const only = (fill: Fill, view: EntryState["view"]): readonly [EntryState] => [

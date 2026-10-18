@@ -2,13 +2,21 @@
 
 import { For, Show } from "solid-js";
 
+import {
+  buildRamp,
+  FINE_STEPS,
+  hexToOklch,
+  type Palette,
+  RAMP_NAMES,
+  resolveRoles,
+  type RoleColor,
+  ROLES,
+  type Swatch,
+} from "@liminal/sdk/tui";
+
 import { CHROME } from "../shell/chrome.ts";
 import { buildAnsi } from "./ansi.ts";
 import { AnsiHeader, AnsiRow } from "./AnsiSwatches.tsx";
-import { hexToOklch } from "./oklch.ts";
-import { type Palette, RAMP_NAMES } from "./palettes.ts";
-import { buildRamp, FINE_STEPS, type Swatch } from "./ramp.ts";
-import { type RoleColor, ROLES, resolveRoles } from "./roles.ts";
 import { Sample } from "./Sample.tsx";
 
 const STEP_COLUMNS = 6;

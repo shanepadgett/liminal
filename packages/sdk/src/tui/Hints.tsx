@@ -2,9 +2,9 @@
 
 import { For } from "solid-js";
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "./tokens/roles.ts";
 
-export const SEPARATOR = " • ";
+const SEPARATOR = " • ";
 
 export type Hint = readonly [key: string, action: string];
 

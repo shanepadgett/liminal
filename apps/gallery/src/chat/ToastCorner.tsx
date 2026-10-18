@@ -2,7 +2,8 @@
 
 import { Show } from "solid-js";
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "@liminal/sdk/tui";
+
 import { HEADER_ROWS } from "./ChatHeader.tsx";
 import { Toast, type ToastMessage } from "./Toast.tsx";
 

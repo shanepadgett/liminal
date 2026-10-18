@@ -9,7 +9,8 @@
 import type { BoxRenderable } from "@opentui/core";
 import { createSignal, Index, onCleanup, Show } from "solid-js";
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "@liminal/sdk/tui";
+
 import { createPin } from "./pin.ts";
 import { durationOf, frameAt, turnsAt } from "./play.ts";
 import { Reply } from "./Reply.tsx";

@@ -6,7 +6,8 @@
  * backticks dropped.
  */
 
-import { mixHex } from "../tokens/oklch.ts";
+import { mixHex } from "@liminal/sdk/tui";
+
 import type { Streaming } from "./frame.ts";
 
 /** Characters this close behind the newest one are still warming up. */

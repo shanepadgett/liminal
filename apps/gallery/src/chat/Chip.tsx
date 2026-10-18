@@ -1,6 +1,5 @@
+import type { RoleColor, RoleName } from "@liminal/sdk/tui";
 /** A status or mode label on a solid fill, one cell of padding each side. */
-
-import type { RoleColor, RoleName } from "../tokens/roles.ts";
 
 export function Chip(props: {
   readonly color: RoleColor;

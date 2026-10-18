@@ -6,9 +6,9 @@
 
 import { For, Show } from "solid-js";
 
-import type { RoleColor } from "../tokens/roles.ts";
+import { type Hint, type RoleColor } from "@liminal/sdk/tui";
+
 import { Dialog } from "./Dialog.tsx";
-import type { Hint } from "./Hints.tsx";
 import { ListRow } from "./ListRow.tsx";
 import { Section } from "./Section.tsx";
 

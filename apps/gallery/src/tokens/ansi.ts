@@ -1,11 +1,9 @@
+import { buildRamp, type Palette, type RampSpec, type Step } from "@liminal/sdk/tui";
 /**
  * The 16 ANSI colors a palette draws terminal output with. Shell output names colors by ANSI slot
  * and leaves the shade to the terminal, which can be unreadable on Liminal's surfaces; remapping
  * the slots keeps that output legible and in the palette's voice.
  */
-
-import type { Palette } from "./palettes.ts";
-import { buildRamp, type RampSpec, type Step } from "./ramp.ts";
 
 /** Hues for the slots no palette ramp covers. Red, green and yellow borrow the feedback hues. */
 const BLUE_HUE = 255;

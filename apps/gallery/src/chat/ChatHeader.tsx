@@ -8,9 +8,7 @@
 import type { BoxRenderable } from "@opentui/core";
 import { createSignal, Show } from "solid-js";
 
-import { FADE } from "../ornament/fade.ts";
-import { HeaderRule } from "../ornament/HeaderRule.tsx";
-import type { RoleColor } from "../tokens/roles.ts";
+import { FADE, HeaderRule, type RoleColor } from "@liminal/sdk/tui";
 
 const WORDMARK = "liminal ";
 

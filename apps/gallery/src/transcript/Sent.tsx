@@ -7,7 +7,8 @@
 
 import { Show } from "solid-js";
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "@liminal/sdk/tui";
+
 import { Answers } from "./Answers.tsx";
 import type { Prompt } from "./script.ts";
 import { UserPrompt } from "./UserPrompt.tsx";

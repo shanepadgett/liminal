@@ -8,12 +8,19 @@
   "type": "module",
   "dependencies": {
     "@effect/platform-bun": "4.0.5",
+    "@liminal/frontend": "workspace:*",
     "@liminal/kernel": "workspace:*",
     "@liminal/sdk": "workspace:*",
-    "effect": "4.0.5"
+    "@opentui/core": "0.6.6",
+    "@opentui/keymap": "0.6.6",
+    "@opentui/solid": "0.6.6",
+    "effect": "4.0.5",
+    "solid-js": "1.9.12"
   },
   "devDependencies": {
     "@liminal/context": "workspace:*",
-    "@liminal/session-log": "workspace:*"
+    "@liminal/model-scripted": "workspace:*",
+    "@liminal/session-log": "workspace:*",
+    "@liminal/settings": "workspace:*"
   }
 }

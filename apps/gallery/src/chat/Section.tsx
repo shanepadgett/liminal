@@ -2,7 +2,7 @@
 
 import { TextAttributes } from "@opentui/core";
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "@liminal/sdk/tui";
 
 export function Section(props: { readonly color: RoleColor; readonly title: string }) {
   return (

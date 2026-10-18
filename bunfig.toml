@@ -1,2 +1,8 @@
+# Solid's JSX transform for the TUI's .tsx files, in tests and when run from source.
+preload = ["@opentui/solid/preload"]
+
 [install]
 exact = true
+
+[test]
+preload = ["@opentui/solid/preload"]

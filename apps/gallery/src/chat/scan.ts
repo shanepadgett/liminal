@@ -4,10 +4,7 @@
  * smooth falloff. The lit run is the header's glide, so the two move together.
  */
 
-import type { Cell } from "../ornament/fade.ts";
-import { alongRun, glideRun } from "../ornament/glide.ts";
-import { mixHex } from "../tokens/oklch.ts";
-import type { RoleColor } from "../tokens/roles.ts";
+import { alongRun, type Cell, glideRun, mixHex, type RoleColor } from "@liminal/sdk/tui";
 
 /** One eighth of a cell, along its top edge: the thinnest line a terminal can draw. */
 const LINE = "▔";

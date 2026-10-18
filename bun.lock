@@ -9,12 +9,14 @@
       },
       "devDependencies": {
         "@effect/tsgo": "0.53.1",
+        "@opentui/solid": "0.6.6",
         "@oxlint/plugins": "1.88.0",
         "@types/bun": "1.4.3",
         "fallow": "3.33.1",
         "oxfmt": "0.73.0",
         "oxlint": "1.88.0",
         "oxlint-tsgolint": "7.0.2004",
+        "solid-js": "1.9.12",
         "typescript": "7.0.2",
       },
     },
@@ -22,28 +24,44 @@
       "name": "@liminal/cli",
       "version": "0.1.0",
       "bin": {
-        "liminal": "./src/main.ts",
+        "liminal": "./src/supervisor.ts",
       },
       "dependencies": {
         "@effect/platform-bun": "4.0.5",
+        "@liminal/frontend": "workspace:*",
         "@liminal/kernel": "workspace:*",
         "@liminal/sdk": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/keymap": "0.6.6",
+        "@opentui/solid": "0.6.6",
         "effect": "4.0.5",
+        "solid-js": "1.9.12",
       },
       "devDependencies": {
         "@liminal/context": "workspace:*",
+        "@liminal/model-scripted": "workspace:*",
         "@liminal/session-log": "workspace:*",
+        "@liminal/settings": "workspace:*",
       },
     },
     "apps/gallery": {
       "name": "@liminal/gallery",
       "version": "0.1.0",
       "dependencies": {
+        "@liminal/sdk": "workspace:*",
         "@opentui/core": "0.6.6",
         "@opentui/keymap": "0.6.6",
         "@opentui/solid": "0.6.6",
         "effect": "4.0.5",
         "solid-js": "1.9.12",
+      },
+    },
+    "packages/frontend": {
+      "name": "@liminal/frontend",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/sdk": "workspace:*",
+        "effect": "4.0.5",
       },
     },
     "packages/kernel": {
@@ -61,6 +79,7 @@
         "@liminal/context": "workspace:*",
         "@liminal/models": "workspace:*",
         "@liminal/session-log": "workspace:*",
+        "@liminal/settings": "workspace:*",
         "@liminal/tool-pipeline": "workspace:*",
         "@liminal/tool-registry": "workspace:*",
       },
@@ -71,6 +90,46 @@
       "peerDependencies": {
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
+      },
+    },
+    "packages/plugins/cancel": {
+      "name": "@liminal/cancel",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/agent-loop": "workspace:*",
+        "@liminal/chat": "workspace:*",
+      },
+      "devDependencies": {
+        "@liminal/context": "workspace:*",
+        "@liminal/model-scripted": "workspace:*",
+        "@liminal/models": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+        "@liminal/settings": "workspace:*",
+        "@liminal/tool-pipeline": "workspace:*",
+        "@liminal/tool-registry": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
+    "packages/plugins/chat": {
+      "name": "@liminal/chat",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/agent-loop": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
       },
     },
     "packages/plugins/command-runner": {
@@ -107,6 +166,31 @@
         "effect": "4.0.5",
       },
     },
+    "packages/plugins/inbox": {
+      "name": "@liminal/inbox",
+      "version": "0.1.0",
+      "dependencies": {
+        "@liminal/agent-loop": "workspace:*",
+        "@liminal/chat": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+      },
+      "devDependencies": {
+        "@liminal/context": "workspace:*",
+        "@liminal/model-scripted": "workspace:*",
+        "@liminal/models": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+        "@liminal/settings": "workspace:*",
+        "@liminal/tool-pipeline": "workspace:*",
+        "@liminal/tool-registry": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/model-codex": {
       "name": "@liminal/model-codex",
       "version": "0.1.0",
@@ -120,6 +204,7 @@
         "@liminal/context": "workspace:*",
         "@liminal/session-log": "workspace:*",
         "@liminal/session-store": "workspace:*",
+        "@liminal/settings": "workspace:*",
         "@liminal/tool-pipeline": "workspace:*",
         "@liminal/tool-registry": "workspace:*",
         "@liminal/tools-file": "workspace:*",
@@ -201,32 +286,56 @@
       "name": "@liminal/tools-file",
       "version": "0.1.0",
       "dependencies": {
+        "@liminal/chat": "workspace:*",
         "@liminal/tool-registry": "workspace:*",
       },
       "peerDependencies": {
         "@liminal/sdk": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
         "effect": "4.0.5",
+        "solid-js": "1.9.12",
       },
     },
     "packages/plugins/tools-shell": {
       "name": "@liminal/tools-shell",
       "version": "0.1.0",
       "dependencies": {
+        "@liminal/chat": "workspace:*",
         "@liminal/command-runner": "workspace:*",
         "@liminal/tool-registry": "workspace:*",
       },
       "peerDependencies": {
         "@liminal/sdk": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
         "effect": "4.0.5",
+        "solid-js": "1.9.12",
       },
     },
     "packages/sdk": {
       "name": "@liminal/sdk",
       "version": "0.1.0",
+      "devDependencies": {
+        "@opentui/core": "0.6.6",
+        "@opentui/keymap": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "solid-js": "1.9.12",
+      },
       "peerDependencies": {
         "@effect/platform-bun": "4.0.5",
+        "@opentui/core": "0.6.6",
+        "@opentui/keymap": "0.6.6",
+        "@opentui/solid": "0.6.6",
         "effect": "4.0.5",
+        "solid-js": "1.9.12",
       },
+      "optionalPeers": [
+        "@opentui/core",
+        "@opentui/keymap",
+        "@opentui/solid",
+        "solid-js",
+      ],
     },
   },
   "packages": {
@@ -338,6 +447,10 @@
 
     "@liminal/agent-loop": ["@liminal/agent-loop@workspace:packages/plugins/agent-loop"],
 
+    "@liminal/cancel": ["@liminal/cancel@workspace:packages/plugins/cancel"],
+
+    "@liminal/chat": ["@liminal/chat@workspace:packages/plugins/chat"],
+
     "@liminal/cli": ["@liminal/cli@workspace:apps/cli"],
 
     "@liminal/command-runner": ["@liminal/command-runner@workspace:packages/plugins/command-runner"],
@@ -346,7 +459,11 @@
 
     "@liminal/credential-store": ["@liminal/credential-store@workspace:packages/plugins/credential-store"],
 
+    "@liminal/frontend": ["@liminal/frontend@workspace:packages/frontend"],
+
     "@liminal/gallery": ["@liminal/gallery@workspace:apps/gallery"],
+
+    "@liminal/inbox": ["@liminal/inbox@workspace:packages/plugins/inbox"],
 
     "@liminal/kernel": ["@liminal/kernel@workspace:packages/kernel"],
 

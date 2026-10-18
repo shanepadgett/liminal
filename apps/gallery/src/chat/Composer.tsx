@@ -8,11 +8,11 @@
 
 import { Match, Show, Switch } from "solid-js";
 
-import type { RoleColor } from "../tokens/roles.ts";
+import { type Hint, Hints, type RoleColor } from "@liminal/sdk/tui";
+
 import { CommandSuggestions } from "./CommandSuggestions.tsx";
 import { FileSuggestions } from "./FileSuggestions.tsx";
 import { type FormState, formHintsOf } from "./formState.ts";
-import { type Hint, Hints } from "./Hints.tsx";
 import { QuestionForm } from "./QuestionForm.tsx";
 import { ScanLine } from "./ScanLine.tsx";
 

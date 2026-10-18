@@ -7,7 +7,8 @@ import { type BoxRenderable, type ScrollBoxRenderable, TextAttributes } from "@o
 import { useRenderer } from "@opentui/solid";
 import { createEffect, createSignal, For, on, Show } from "solid-js";
 
-import type { Palette } from "../tokens/palettes.ts";
+import type { Palette } from "@liminal/sdk/tui";
+
 import type { Bookmark } from "./bookmark.ts";
 import { CHROME } from "./chrome.ts";
 import type { Entry, EntryState, Group, Groups, Section } from "./entries.ts";

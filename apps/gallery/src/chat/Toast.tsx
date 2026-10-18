@@ -7,8 +7,7 @@
 import { TextAttributes } from "@opentui/core";
 import { Show } from "solid-js";
 
-import { EDGE_BAR } from "../ornament/edgeBar.ts";
-import type { RoleColor, RoleName } from "../tokens/roles.ts";
+import { EDGE_BAR, type RoleColor, type RoleName } from "@liminal/sdk/tui";
 
 export type ToastKind = "info" | "success" | "warning" | "error";
 

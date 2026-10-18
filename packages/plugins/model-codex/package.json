@@ -17,6 +17,7 @@
     "@liminal/context": "workspace:*",
     "@liminal/session-log": "workspace:*",
     "@liminal/session-store": "workspace:*",
+    "@liminal/settings": "workspace:*",
     "@liminal/tool-pipeline": "workspace:*",
     "@liminal/tool-registry": "workspace:*",
     "@liminal/tools-file": "workspace:*"

@@ -5,7 +5,8 @@
 
 import { For } from "solid-js";
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "@liminal/sdk/tui";
+
 import { Section } from "./Section.tsx";
 
 export const SIDEBAR_COLUMNS = 36;

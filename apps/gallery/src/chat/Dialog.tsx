@@ -6,9 +6,8 @@
 
 import type { JSX } from "@opentui/solid";
 
-import { HeaderRule } from "../ornament/HeaderRule.tsx";
-import type { RoleColor } from "../tokens/roles.ts";
-import { type Hint, Hints } from "./Hints.tsx";
+import { HeaderRule, type Hint, Hints, type RoleColor } from "@liminal/sdk/tui";
+
 import { SCRIM } from "./scrim.ts";
 
 /** The dialog's width, unless the window is narrower. */

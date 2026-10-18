@@ -5,7 +5,8 @@
 
 import { Index } from "solid-js";
 
-import type { RoleColor, RoleName } from "../tokens/roles.ts";
+import type { RoleColor, RoleName } from "@liminal/sdk/tui";
+
 import { type FormState, isAnswered } from "./formState.ts";
 
 type TabLabel = { readonly text: string; readonly isDone: boolean };

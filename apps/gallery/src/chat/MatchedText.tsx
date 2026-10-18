@@ -5,7 +5,8 @@
 
 import { For } from "solid-js";
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "@liminal/sdk/tui";
+
 import { ELLIPSIS, middleCut } from "./middleCut.ts";
 
 type Run = { readonly text: string; readonly kind: "match" | "plain" | "cut" };

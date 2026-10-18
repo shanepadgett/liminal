@@ -122,6 +122,11 @@ export const PluginState = Schema.Union([ActivePlugin, InactivePlugin]);
 
 export type PluginState = typeof PluginState.Type;
 
+/** An active plugin and its build number, which changes each time the plugin is rebuilt. */
+export const GraphPlugin = Schema.Struct({ name: Schema.String, build: Schema.Int });
+
+export type GraphPlugin = typeof GraphPlugin.Type;
+
 /** The kernel's own commands, served beside every active plugin's group. */
 export class KernelRpcs extends RpcGroup.make(
   Rpc.make("kernel/follow", {
@@ -132,4 +137,6 @@ export class KernelRpcs extends RpcGroup.make(
   }),
   Rpc.make("kernel/events", { success: BusEvent, stream: true }),
   Rpc.make("kernel/plugins", { success: Schema.Array(PluginState) }),
+  /** The active plugins, then the set after each graph change. */
+  Rpc.make("kernel/graph", { success: Schema.Array(GraphPlugin), stream: true }),
 ) {}

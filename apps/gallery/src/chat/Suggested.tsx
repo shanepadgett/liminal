@@ -1,6 +1,7 @@
 /** The answer the assistant suggests for a question, and why, set quietly under the question. */
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "@liminal/sdk/tui";
+
 import type { Recommendation } from "../transcript/script.ts";
 
 const LABEL = "suggested  ";

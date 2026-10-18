@@ -1,11 +1,9 @@
+import { mixHex, type RoleColor, type RoleName } from "@liminal/sdk/tui";
 /**
  * The form a turn left for the user, settled into one line under how long it worked: its title and
  * how many questions it holds. The questions themselves come back in the user's answers. The line
  * inks in with the worked line.
  */
-
-import { mixHex } from "../tokens/oklch.ts";
-import type { RoleColor, RoleName } from "../tokens/roles.ts";
 
 export function Asked(props: {
   readonly color: RoleColor;

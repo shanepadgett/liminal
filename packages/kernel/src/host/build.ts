@@ -53,7 +53,11 @@ const awaitDependencies = Effect.fn("awaitDependencies")(function* (
 });
 
 const importServer = Effect.fn("importServer")(function* (plugin: Manifest) {
-  return yield* Effect.tryPromise(plugin.server).pipe(
+  const load = plugin.server;
+  // A plugin with no server provides nothing, so it builds to no services.
+  if (load === undefined) return { layer: Layer.empty };
+
+  return yield* Effect.tryPromise(load).pipe(
     Effect.flatMap(Schema.decodeUnknownEffect(ServerModule)),
     Effect.catchCause((cause) => Effect.fail(InactiveReason.ImportFailed({ cause }))),
   );
@@ -85,6 +89,8 @@ const buildInScope = Effect.fn("buildInScope")(function* (
 
 /** One plugin's built services and the scope that holds them; graphs may share it. */
 export interface PluginBuild {
+  /** Unique per build across the kernel's life; a kept build keeps its number. */
+  readonly id: number;
   readonly manifest: Manifest;
   readonly services: Built;
   readonly scope: Scope.Closeable;
@@ -95,6 +101,8 @@ export interface BuildOptions {
   readonly reuse: ReadonlyMap<string, PluginBuild>;
   /** Each new build's scope is a child of this one. */
   readonly root: Scope.Scope;
+  /** Numbers each new build. */
+  readonly nextId: Effect.Effect<number>;
 }
 
 const buildPlugin = Effect.fn("buildPlugin")(function* (
@@ -112,7 +120,7 @@ const buildPlugin = Effect.fn("buildPlugin")(function* (
 
   const built = yield* buildInScope(server.layer, Context.merge(base, dependencies), options.root);
 
-  const build: PluginBuild = { manifest: plugin, ...built };
+  const build: PluginBuild = { id: yield* options.nextId, manifest: plugin, ...built };
 
   return build;
 });

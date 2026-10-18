@@ -1,10 +1,9 @@
+import { mixHex } from "@liminal/sdk/tui";
 /**
  * A band of light sweeping across a line of text, left to right, then resting off the end before it
  * comes round again. It is what says the current action is alive: the words stay put and only the
  * light moves.
  */
-
-import { mixHex } from "../tokens/oklch.ts";
 
 /** One sweep, and the rest after it. */
 export const SHIMMER_PERIOD_MS = 2400;

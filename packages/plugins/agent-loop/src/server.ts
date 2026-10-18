@@ -6,13 +6,18 @@ import { Context } from "@liminal/context/contract";
 import { Models } from "@liminal/models/contract";
 import { type ModelRequest, Registry, type SessionId, type Tool } from "@liminal/sdk";
 import { SessionLog } from "@liminal/session-log/contract";
+import { Settings } from "@liminal/settings/contract";
 import { ToolPipeline } from "@liminal/tool-pipeline/contract";
 import { Tools } from "@liminal/tool-registry/contract";
 
 import {
   AfterFailureHooks,
   AgentLoop,
+  AgentLoopRpcs,
+  AgentLoopSection,
   BeforeCallHooks,
+  DefaultsInvalid,
+  NoDefaultModel,
   StepOutcome,
   type Turn,
   type TurnEnd,
@@ -88,10 +93,37 @@ const make = Effect.gen(function* () {
   const turns = yield* makeTurns(log);
   yield* turns.resume;
 
-  return AgentLoop.of({ step, run, start: turns.start, cancel: turns.cancel });
+  return AgentLoop.of({
+    step,
+    run,
+    start: turns.start,
+    defaults: readDefaults(yield* Settings),
+    cancel: turns.cancel,
+  });
 });
 
-export const layer = Layer.effect(AgentLoop, make).pipe(
+/** Reads the `agent-loop` section on each call, so a settings edit applies to the next turn. */
+const readDefaults = (settings: Settings["Service"]) =>
+  Effect.gen(function* () {
+    const { model, thinking } = yield* settings
+      .section("agent-loop", AgentLoopSection)
+      .pipe(Effect.mapError((error) => new DefaultsInvalid({ message: error.message })));
+
+    if (model === undefined) return yield* new NoDefaultModel();
+
+    return { model, thinking };
+  });
+
+const rpcs = AgentLoopRpcs.toLayer(
+  Effect.gen(function* () {
+    const loop = yield* AgentLoop;
+
+    return AgentLoopRpcs.of({ "agent-loop/defaults": () => loop.defaults });
+  }),
+);
+
+export const layer = rpcs.pipe(
+  Layer.provideMerge(Layer.effect(AgentLoop, make)),
   Layer.provideMerge(Registry.layer(BeforeCallHooks)),
   Layer.provideMerge(Registry.layer(AfterFailureHooks)),
   Layer.provideMerge(Registry.layer(TurnEndingHooks)),

@@ -6,7 +6,7 @@
  */
 
 import { mixHex } from "../tokens/oklch.ts";
-import type { RoleColor, RoleName } from "../tokens/roles.ts";
+import { type RoleColor, type RoleName } from "../tokens/roles.ts";
 import { type Cell, FADE, HAIRLINE } from "./fade.ts";
 
 /** One glide there and back. */

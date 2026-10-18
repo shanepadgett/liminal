@@ -7,8 +7,8 @@
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { ErrorBoundary, onCleanup, Show } from "solid-js";
 
-import type { Palette } from "../tokens/palettes.ts";
-import { resolveRoles } from "../tokens/roles.ts";
+import { type Palette, resolveRoles } from "@liminal/sdk/tui";
+
 import { CHROME } from "./chrome.ts";
 import type { EntryState, Fill } from "./entries.ts";
 import type { Area } from "./sizes.ts";

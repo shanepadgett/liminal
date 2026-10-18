@@ -7,7 +7,8 @@
 
 import { Index, Show } from "solid-js";
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "@liminal/sdk/tui";
+
 import { Asked } from "./Asked.tsx";
 import type { Block, Ending, TurnFrame } from "./frame.ts";
 import { Said } from "./Said.tsx";

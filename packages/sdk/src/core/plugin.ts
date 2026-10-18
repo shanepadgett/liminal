@@ -5,6 +5,7 @@ import type { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
 import type { Rpc, RpcGroup } from "effect/rpc";
 
 import type { Directories } from "./directories.ts";
+import type { FrontendPart } from "./frontend.ts";
 import type { EventBus } from "./protocol.ts";
 import type { Work } from "./work.ts";
 
@@ -34,6 +35,16 @@ export interface ServerModule<Provided, Error, Needed> {
   readonly layer: Layer.Layer<Provided, Error, Needed>;
 }
 
+/** A plugin's `server`: loads its Layer, checked against the manifest. */
+export type ServerLoader<
+  Provides extends ServiceTags,
+  Requires extends ServiceTags,
+  Error,
+  Rpcs extends Rpc.Any,
+> = () => Promise<
+  ServerModule<Services<Provides> | Rpc.ToHandler<Rpcs>, Error, Services<Requires> | BaseServices>
+>;
+
 export interface Plugin<
   Provides extends ServiceTags = ServiceTags,
   Requires extends ServiceTags = ServiceTags,
@@ -51,15 +62,52 @@ export interface Plugin<
   readonly enabledByDefault: boolean;
   /** The commands the kernel serves from this plugin; the server's layer handles each one. */
   readonly rpcs?: RpcGroup.RpcGroup<Rpcs>;
-  /** Loaded only after the graph resolves, so a disabled plugin's code never runs. */
-  readonly server: () => Promise<
-    ServerModule<Services<Provides> | Rpc.ToHandler<Rpcs>, Error, Services<Requires> | BaseServices>
-  >;
+  /**
+   * Loaded only after the graph resolves, so a disabled plugin's code never runs. A plugin with no
+   * services and no commands, such as a UI-only one, has none.
+   */
+  readonly server?: ServerLoader<Provides, Requires, Error, Rpcs>;
+  /**
+   * The plugin's TUI part, a module whose default export is `defineTui(...)`; loaded by the TUI
+   * only while the plugin is active.
+   */
+  readonly tui?: () => Promise<{ readonly default: FrontendPart<unknown> }>;
 }
+
+/** An active plugin of the kernel's current graph, as an in-process frontend sees it. */
+export interface GraphMember {
+  readonly name: string;
+  /** Changes each time the plugin is rebuilt. */
+  readonly build: number;
+  /** The manifest's part loaders; each module is checked when loaded. */
+  readonly plugin: { readonly tui?: () => Promise<object> };
+}
+
+/** A plugin with a server part, as its tests build it. */
+export type ServerPlugin<
+  Provides extends ServiceTags = ServiceTags,
+  Requires extends ServiceTags = ServiceTags,
+  Uses extends ServiceTags = ServiceTags,
+  Error = unknown,
+  Rpcs extends Rpc.Any = never,
+> = Plugin<Provides, Requires, Uses, Error, Rpcs> & {
+  readonly server: ServerLoader<Provides, Requires, Error, Rpcs>;
+};
+
+/** `server` is required once the plugin provides a service or serves a command. */
+type NeedsServer<
+  Provides extends ServiceTags,
+  Requires extends ServiceTags,
+  Error,
+  Rpcs extends Rpc.Any,
+> = [Services<Provides> | Rpc.ToHandler<Rpcs>] extends [never]
+  ? unknown
+  : { readonly server: ServerLoader<Provides, Requires, Error, Rpcs> };
 
 /**
  * Declares a plugin. Fails to type-check unless the server's layer provides every `provides` tag
- * and needs nothing outside `requires` and the base services.
+ * and needs nothing outside `requires` and the base services. The result keeps the parts it was
+ * given, so a plugin that has a `server` is a ServerPlugin.
  */
 export const definePlugin = <
   const Provides extends ServiceTags,
@@ -67,6 +115,11 @@ export const definePlugin = <
   const Uses extends ServiceTags,
   Error,
   Rpcs extends Rpc.Any = never,
+  Given extends object = object,
 >(
-  plugin: Plugin<Provides, Requires, Uses, Error, Rpcs>,
-): Plugin<Provides, Requires, Uses, Error, Rpcs> => plugin;
+  plugin: Plugin<Provides, Requires, Uses, Error, Rpcs>
+    & NeedsServer<Provides, Requires, Error, Rpcs>
+    & Given,
+): Plugin<Provides, Requires, Uses, Error, Rpcs>
+  & NeedsServer<Provides, Requires, Error, Rpcs>
+  & Given => plugin;

@@ -4,8 +4,9 @@
  * far. Questions left open are sent as skipped.
  */
 
+import type { Hint } from "@liminal/sdk/tui";
+
 import type { Question } from "../transcript/script.ts";
-import type { Hint } from "./Hints.tsx";
 
 /** What the user has given a question so far. */
 export type Draft =

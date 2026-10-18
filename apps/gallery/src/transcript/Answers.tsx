@@ -10,8 +10,8 @@
 
 import { Index, Show } from "solid-js";
 
-import { EDGE_BAR } from "../ornament/edgeBar.ts";
-import type { RoleColor } from "../tokens/roles.ts";
+import { EDGE_BAR, type RoleColor } from "@liminal/sdk/tui";
+
 import { answerTextOf, notesOf, passedOverOf, tagsOf } from "./questions.ts";
 import type { Answered } from "./script.ts";
 

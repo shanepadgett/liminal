@@ -3,9 +3,8 @@
  * Idle, it is a blank row of the surface, so starting and stopping never moves the layout.
  */
 
-import { GLIDE_PERIOD_MS } from "../ornament/glide.ts";
-import { Track } from "../ornament/Track.tsx";
-import type { RoleColor } from "../tokens/roles.ts";
+import { GLIDE_PERIOD_MS, type RoleColor, Track } from "@liminal/sdk/tui";
+
 import { ditherCells, glideLight, scanLevels } from "./scan.ts";
 
 export function ScanLine(props: {

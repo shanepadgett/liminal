@@ -8,8 +8,8 @@ import { TextAttributes } from "@opentui/core";
 import type { BoxRenderable } from "@opentui/core";
 import { createSignal, For, Index } from "solid-js";
 
-import { mixHex } from "../tokens/oklch.ts";
-import type { RoleColor } from "../tokens/roles.ts";
+import { mixHex, type RoleColor } from "@liminal/sdk/tui";
+
 import type { Streaming } from "./frame.ts";
 import { headOf, inkRunsAt, wordEndAt } from "./ink.ts";
 import { wrapWords } from "./wrapWords.ts";

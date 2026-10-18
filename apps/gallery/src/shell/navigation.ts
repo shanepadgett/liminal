@@ -5,7 +5,8 @@
  * cycled with `t`, and the frame size, cycled with `z`, stay the same wherever the user goes.
  */
 
-import type { Palette } from "../tokens/palettes.ts";
+import type { Palette } from "@liminal/sdk/tui";
+
 import type { Bookmark } from "./bookmark.ts";
 import type { Entry, Group } from "./entries.ts";
 import type { FrameSize } from "./sizes.ts";

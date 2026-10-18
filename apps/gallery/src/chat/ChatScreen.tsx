@@ -10,7 +10,8 @@
 import type { BoxRenderable } from "@opentui/core";
 import { createSignal, Match, Show, Switch } from "solid-js";
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "@liminal/sdk/tui";
+
 import { Conversation } from "../transcript/Conversation.tsx";
 import { momentOf } from "../transcript/play.ts";
 import { ASK, BOOT, FIX } from "../transcript/sample.ts";

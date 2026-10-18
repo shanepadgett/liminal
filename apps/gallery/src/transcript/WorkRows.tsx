@@ -9,8 +9,8 @@
 import { TextAttributes } from "@opentui/core";
 import { createSignal, For, Index, Show } from "solid-js";
 
-import { mixHex } from "../tokens/oklch.ts";
-import type { RoleColor, RoleName } from "../tokens/roles.ts";
+import { mixHex, type RoleColor, type RoleName } from "@liminal/sdk/tui";
+
 import { actionWordingsOf, type Wording, wordingOf } from "./wording.ts";
 import type { WorkGroup } from "./workGroups.ts";
 

@@ -3,7 +3,7 @@
 import { Effect, Layer } from "effect";
 import type { Rpc } from "effect/rpc";
 
-import type { Plugin, Services, ServiceTags } from "../core/index.ts";
+import type { ServerPlugin, Services, ServiceTags } from "../core/index.ts";
 import { testBaseServices } from "./base.ts";
 
 /** The plugin's server Layer over `fakes` and the test base services; `fakes` must cover `requires`. */
@@ -15,7 +15,7 @@ export const testPlugin = <
   FakeError,
   Rpcs extends Rpc.Any = never,
 >(
-  plugin: Plugin<Provides, Requires, Uses, Error, Rpcs>,
+  plugin: ServerPlugin<Provides, Requires, Uses, Error, Rpcs>,
   fakes: Layer.Layer<Services<Requires>, FakeError>,
 ) =>
   Layer.unwrap(
@@ -32,5 +32,5 @@ export const serverOf = <
   Error,
   Rpcs extends Rpc.Any = never,
 >(
-  plugin: Plugin<Provides, Requires, Uses, Error, Rpcs>,
+  plugin: ServerPlugin<Provides, Requires, Uses, Error, Rpcs>,
 ) => Layer.unwrap(Effect.map(Effect.promise(plugin.server), (server) => server.layer));

@@ -7,7 +7,7 @@
 import { Context, Deferred, Effect, Exit, Scope, Semaphore, SubscriptionRef } from "effect";
 import type { RpcGroup } from "effect/rpc";
 
-import { type BaseServices, type HoldGraph, makeWork, Work } from "@liminal/sdk";
+import { type BaseServices, type GraphMember, type HoldGraph, makeWork, Work } from "@liminal/sdk";
 
 import { build, type PluginBuild } from "../host/build.ts";
 import { load } from "../host/host.ts";
@@ -27,6 +27,14 @@ export interface Graph {
   /** Done once the graph has closed. */
   readonly closed: Deferred.Deferred<void>;
 }
+
+/** The graph's active plugins, each with its build number. */
+export const membersOf = (graph: Graph): ReadonlyArray<GraphMember> =>
+  graph.builds.map((built) => ({
+    name: built.manifest.name,
+    build: built.id,
+    plugin: built.manifest,
+  }));
 
 /** Shared counts: a graph is closed at 0 holders, a build at 0 graphs. */
 const makeCounts = (root: Scope.Scope) => {
@@ -85,6 +93,13 @@ const makeCounts = (root: Scope.Scope) => {
   return { open, retain, release };
 };
 
+/** Counts up from 1, one per run. */
+const makeCounter = () => {
+  let last = 0;
+
+  return Effect.sync(() => ++last);
+};
+
 /** Closes builds made for a change that failed; none of them is shared yet. */
 const discard = (builds: ReadonlyArray<PluginBuild>) =>
   Effect.forEach(builds.toReversed(), (made) => Scope.close(made.scope, Exit.void), {
@@ -99,6 +114,7 @@ export const makeGraphs = Effect.fn("makeGraphs")(function* (folders: ReadonlyAr
   const first = yield* Deferred.make<Graph>();
   const lock = yield* Semaphore.make(1);
   let current: Graph | undefined;
+  const nextId = makeCounter();
 
   /** Waits for the first graph, so work started while it builds runs once it is current. */
   const acquire = Effect.flatMap(Deferred.await(first), (initial) =>
@@ -124,7 +140,7 @@ export const makeGraphs = Effect.fn("makeGraphs")(function* (folders: ReadonlyAr
     const reuse =
       previous === undefined ? new Map() : keptBuilds(previous, loaded.resolution, names);
 
-    const built = yield* build(loaded.resolution, { reuse, root }).pipe(
+    const built = yield* build(loaded.resolution, { reuse, root, nextId }).pipe(
       Effect.provideService(Work, work),
     );
 

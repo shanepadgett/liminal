@@ -10,4 +10,5 @@ export default definePlugin({
   uses: [],
   enabledByDefault: true,
   server: () => import("./src/server.ts"),
+  tui: () => import("./src/tui.tsx"),
 });

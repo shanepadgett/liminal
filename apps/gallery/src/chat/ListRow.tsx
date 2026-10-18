@@ -5,7 +5,7 @@
 
 import type { JSX } from "@opentui/solid";
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "@liminal/sdk/tui";
 
 export function ListRow(props: {
   readonly color: RoleColor;

@@ -7,7 +7,8 @@
 
 import { Index, Show } from "solid-js";
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "@liminal/sdk/tui";
+
 import { optionsOf } from "../transcript/questions.ts";
 import type { AnswerOption, Question } from "../transcript/script.ts";
 import type { Draft } from "./formState.ts";

@@ -6,9 +6,14 @@
 
 import type { TerminalColors } from "@opentui/core";
 
-import { hexToOklch } from "./oklch.ts";
-import type { Palette, RampName } from "./palettes.ts";
-import { FINE_STEPS, type RampSpec, STANDARD_STEPS } from "./ramp.ts";
+import {
+  FINE_STEPS,
+  hexToOklch,
+  type Palette,
+  type RampName,
+  type RampSpec,
+  STANDARD_STEPS,
+} from "@liminal/sdk/tui";
 
 /** The ANSI slot each ramp borrows its hue from. */
 const ANSI_SLOT: Readonly<Record<Exclude<RampName, "neutral">, number>> = {

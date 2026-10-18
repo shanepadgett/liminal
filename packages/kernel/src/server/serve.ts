@@ -1,11 +1,11 @@
 /** The kernel's own commands: following sessions, the event bus, and the plugins' states. */
 
-import { Effect, Option } from "effect";
+import { Effect, Option, Stream } from "effect";
 import { RpcServer } from "effect/rpc";
 
 import { ActivePlugin, EventBus, InactivePlugin, KernelRpcs, type PluginState } from "@liminal/sdk";
 
-import type { Graphs } from "../graph/graphs.ts";
+import { type Graphs, membersOf } from "../graph/graphs.ts";
 import { describeReason, PluginStatus } from "../host/status.ts";
 import { followAcross } from "./follow.ts";
 
@@ -28,6 +28,10 @@ export const serveKernel = Effect.fn("serveKernel")(function* (graphs: Graphs) {
           graphs.acquire,
           (graph) => Effect.succeed(graph.status.map(toState)),
           graphs.release,
+        ),
+      "kernel/graph": () =>
+        graphs.changes.pipe(
+          Stream.map((graph) => membersOf(graph).map(({ name, build }) => ({ name, build }))),
         ),
     }),
   );

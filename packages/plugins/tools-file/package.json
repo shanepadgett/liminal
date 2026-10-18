@@ -8,11 +8,15 @@
     "./contract": "./src/contract.ts"
   },
   "dependencies": {
+    "@liminal/chat": "workspace:*",
     "@liminal/tool-registry": "workspace:*"
   },
   "peerDependencies": {
     "@liminal/sdk": "workspace:*",
-    "effect": "4.0.5"
+    "@opentui/core": "0.6.6",
+    "@opentui/solid": "0.6.6",
+    "effect": "4.0.5",
+    "solid-js": "1.9.12"
   },
   "liminal": [
     "./plugin.ts"

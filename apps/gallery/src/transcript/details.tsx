@@ -5,7 +5,8 @@
 
 import { For } from "solid-js";
 
-import type { RoleColor, RoleName } from "../tokens/roles.ts";
+import type { RoleColor, RoleName } from "@liminal/sdk/tui";
+
 import type { Check, DiffLine } from "./script.ts";
 
 /** A command shows only its newest lines; the rest scrolls away. */

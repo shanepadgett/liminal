@@ -15,6 +15,7 @@ import { effectTest, serverOf } from "@liminal/sdk/testing";
 import sessionLog from "@liminal/session-log";
 import { SessionLog, TextEntry, ToolResultEntry, userMessage } from "@liminal/session-log/contract";
 import sessionStore from "@liminal/session-store";
+import settings from "@liminal/settings";
 import toolPipeline from "@liminal/tool-pipeline";
 import toolRegistry from "@liminal/tool-registry";
 import toolsFile from "@liminal/tools-file";
@@ -34,6 +35,7 @@ const stack = serverOf(agentLoop).pipe(
   Layer.provideMerge(serverOf(toolRegistry)),
   Layer.provideMerge(serverOf(sessionLog)),
   Layer.provideMerge(serverOf(sessionStore)),
+  Layer.provideMerge(serverOf(settings)),
   Layer.provideMerge(codexStack(http, oauth(fakeAccessToken("acc-1"), Number.MAX_SAFE_INTEGER))),
 );
 

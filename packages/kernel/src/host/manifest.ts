@@ -5,7 +5,7 @@ import type { RpcGroup } from "effect/rpc";
 
 import type { ServiceTag } from "@liminal/sdk";
 
-/** A manifest's `server`; the module its Promise holds is checked by `ServerModule`. */
+/** A manifest's `server` or `tui`; the module its Promise holds is checked where it is loaded. */
 type LoadServer = () => Promise<object>;
 
 const isLoadServer = (input: unknown): input is LoadServer => Predicate.isFunction(input);
@@ -32,7 +32,8 @@ export const Manifest = Schema.Struct({
   uses: Tags,
   enabledByDefault: Schema.Boolean,
   rpcs: Schema.optionalKey(Schema.declare(isRpcGroup, { title: "RpcGroup" })),
-  server: Schema.declare(isLoadServer, { title: "server loader" }),
+  server: Schema.optionalKey(Schema.declare(isLoadServer, { title: "server loader" })),
+  tui: Schema.optionalKey(Schema.declare(isLoadServer, { title: "tui loader" })),
 });
 
 export type Manifest = typeof Manifest.Type;

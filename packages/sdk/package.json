@@ -4,10 +4,35 @@
   "type": "module",
   "exports": {
     ".": "./src/core/index.ts",
-    "./testing": "./src/testing/index.ts"
+    "./testing": "./src/testing/index.ts",
+    "./tui": "./src/tui/index.ts"
+  },
+  "devDependencies": {
+    "@opentui/core": "0.6.6",
+    "@opentui/keymap": "0.6.6",
+    "@opentui/solid": "0.6.6",
+    "solid-js": "1.9.12"
   },
   "peerDependencies": {
     "@effect/platform-bun": "4.0.5",
-    "effect": "4.0.5"
+    "@opentui/core": "0.6.6",
+    "@opentui/keymap": "0.6.6",
+    "@opentui/solid": "0.6.6",
+    "effect": "4.0.5",
+    "solid-js": "1.9.12"
+  },
+  "peerDependenciesMeta": {
+    "@opentui/core": {
+      "optional": true
+    },
+    "@opentui/keymap": {
+      "optional": true
+    },
+    "@opentui/solid": {
+      "optional": true
+    },
+    "solid-js": {
+      "optional": true
+    }
   }
 }

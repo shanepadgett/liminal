@@ -4,7 +4,8 @@
  * session holds for a moment, then plays again from the first of those turns.
  */
 
-import type { RoleColor } from "../tokens/roles.ts";
+import type { RoleColor } from "@liminal/sdk/tui";
+
 import { Conversation } from "./Conversation.tsx";
 import { sessionDurationOf } from "./play.ts";
 import type { Script } from "./script.ts";

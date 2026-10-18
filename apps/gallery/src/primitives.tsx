@@ -5,16 +5,15 @@
 
 import { For } from "solid-js";
 
+import { HeaderRule, type Hint, Hints, type RoleColor, type RoleName } from "@liminal/sdk/tui";
+
 import { Chip } from "./chat/Chip.tsx";
-import { type Hint, Hints } from "./chat/Hints.tsx";
 import { ListRow } from "./chat/ListRow.tsx";
 import { matchIndices } from "./chat/match.ts";
 import { MatchedText } from "./chat/MatchedText.tsx";
 import { Section } from "./chat/Section.tsx";
 import { only, withRoles } from "./entryViews.ts";
-import { HeaderRule } from "./ornament/HeaderRule.tsx";
 import type { EntryState, Group } from "./shell/entries.ts";
-import type { RoleColor, RoleName } from "./tokens/roles.ts";
 
 const ruleState = (name: string, isWorking: boolean): EntryState => ({
   name,

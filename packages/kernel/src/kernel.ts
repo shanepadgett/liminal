@@ -1,13 +1,13 @@
 /** The kernel: holds the plugin graphs and serves them to clients over the protocol. */
 
-import { Effect, Layer, type Scope } from "effect";
+import { Effect, Layer, type Scope, Stream } from "effect";
 import { RpcClient, RpcSerialization, RpcServer } from "effect/rpc";
 import { Socket, SocketServer } from "effect/socket";
 
-import { EventBus, type HoldGraph } from "@liminal/sdk";
+import { EventBus, type GraphMember, type HoldGraph } from "@liminal/sdk";
 
 import type { ChangeFailed } from "./graph/change.ts";
-import { makeGraphs } from "./graph/graphs.ts";
+import { makeGraphs, membersOf } from "./graph/graphs.ts";
 import type { BootOptions } from "./host/host.ts";
 import type { PluginStatus } from "./host/status.ts";
 import { makeMemoryServer } from "./server/memory.ts";
@@ -26,6 +26,8 @@ export interface Kernel {
   readonly reload: (
     names: ReadonlyArray<string>,
   ) => Effect.Effect<ReadonlyArray<PluginStatus>, ChangeFailed>;
+  /** The current graph's active plugins, then the set after each graph change. */
+  readonly graph: Stream.Stream<ReadonlyArray<GraphMember>>;
   /** A client protocol over a new in-memory connection; closing the scope disconnects. */
   readonly connect: Effect.Effect<RpcClient.Protocol["Service"], never, Scope.Scope>;
 }
@@ -60,6 +62,7 @@ export const start = Effect.fn("start")(function* (options: BootOptions) {
     ),
     use: graphs.hold,
     reload: graphs.reload,
+    graph: graphs.changes.pipe(Stream.map(membersOf)),
     connect,
   };
 
