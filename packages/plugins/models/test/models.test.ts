@@ -2,14 +2,20 @@
 
 import { expect } from "bun:test";
 
-import { Effect, Layer, Option, Predicate, Stream } from "effect";
+import { Effect, Layer, Option, Predicate, Queue, Stream } from "effect";
 
 import { ModelCatalog } from "@liminal/model-catalog/contract";
-import { CatalogUnavailable, type ModelInfo } from "@liminal/sdk";
+import { CatalogUnavailable, ModelError, type ModelInfo } from "@liminal/sdk";
 import { effectTest, testPlugin } from "@liminal/sdk/testing";
 
 import models from "../plugin.ts";
-import { type ModelProvider, ModelProviders, Models, ModelSource } from "../src/contract.ts";
+import {
+  type ModelProvider,
+  ModelProviders,
+  Models,
+  ModelSource,
+  type PlanModel,
+} from "../src/contract.ts";
 
 const info = (id: string, contextWindow = 400_000): ModelInfo => ({
   id,
@@ -93,6 +99,47 @@ effectTest(
 
     const offline = yield* Effect.flip(service.listModels("gone"));
     expect(Predicate.isTagged(offline, "CatalogUnavailable")).toBe(true);
+  }),
+  testLayer,
+);
+
+/** A plan list naming one model. */
+const only = (id: string) => [{ id, contextWindow: Option.none() }];
+
+effectTest(
+  "a plan list comes from the kept copy at once and is read again behind it; an auth failure forgets it",
+  Effect.gen(function* () {
+    const reads = yield* Queue.unbounded<Effect.Effect<ReadonlyArray<PlanModel>, ModelError>>();
+    const plan = Effect.flatten(Queue.take(reads));
+    yield* register(provider("plan", ModelSource.PlanCatalog({ catalogId: "openai", plan })));
+    const service = yield* Models;
+    const list = Effect.map(service.listModels("plan"), ids);
+
+    yield* Queue.offer(reads, Effect.succeed(only("gpt-a")));
+    expect(yield* list).toEqual(["gpt-a"]);
+
+    // The plan is not read yet, so this list is the kept one; the read behind it waits.
+    expect(yield* list).toEqual(["gpt-a"]);
+    yield* Queue.offer(reads, Effect.succeed(only("gpt-b")));
+
+    const latest = Effect.andThen(Effect.yieldNow, list).pipe(
+      Effect.repeat({ until: (listed) => listed[0] === "gpt-b", times: 100 }),
+    );
+
+    expect(yield* latest).toEqual(["gpt-b"]);
+
+    yield* Queue.offer(
+      reads,
+      Effect.fail(new ModelError({ reason: "auth", message: "signed out" })),
+    );
+
+    yield* Queue.offer(reads, Effect.succeed(only("gpt-c")));
+
+    const refetched = Effect.andThen(Effect.yieldNow, list).pipe(
+      Effect.repeat({ until: (listed) => listed[0] === "gpt-c", times: 100 }),
+    );
+
+    expect(yield* refetched).toEqual(["gpt-c"]);
   }),
   testLayer,
 );

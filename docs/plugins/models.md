@@ -28,7 +28,9 @@ Status: built
 
 - One plugin per provider adds one entry to `ModelProviders`
 - Several providers are active at once
-- A provider's models come from a fixed list, the `models.dev` catalog (`model-catalog`), or the catalog filtered by its plan's list, read on each listing
+- A provider's models come from a fixed list, the `models.dev` catalog (`model-catalog`), or the catalog filtered by its plan's list
+- Plan lists are kept in `plans.json` in the data folder; a listing returns the kept list at once and reads the plan again in the background; only a provider with no kept list waits
+- A background read failing with `auth` forgets the kept list
 - `describe` finds one model without reading the plan list
 - A provider with a login can give a check; listing its models fails with that check's `auth` error while it has no usable login
 - Each model lists its own thinking options as the provider names them: effort names as given, labelled token budgets, or off and on; none when it cannot reason

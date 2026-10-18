@@ -1,4 +1,7 @@
-/** Models' server: routes each call to its provider in the ModelProviders registry. */
+/**
+ * Models' server: routes each call to its provider in the ModelProviders registry; plan lists come
+ * from the kept copy and are read again behind it.
+ */
 
 import { Effect, Layer, Option, Stream } from "effect";
 
@@ -12,6 +15,7 @@ import {
 } from "@liminal/sdk";
 
 import { ModelSource, ModelProviders, Models, ModelsRpcs, type PlanModel } from "./contract.ts";
+import { makePlans } from "./server/plans.ts";
 
 /** The catalog's models the plan offers, in the plan's order, each with the plan's context window. */
 const onPlan = (catalog: ReadonlyArray<ModelInfo>, plan: ReadonlyArray<PlanModel>) =>
@@ -27,6 +31,7 @@ const onPlan = (catalog: ReadonlyArray<ModelInfo>, plan: ReadonlyArray<PlanModel
 const make = Effect.gen(function* () {
   const providers = yield* ModelProviders;
   const catalog = yield* ModelCatalog;
+  const plans = yield* makePlans;
 
   const provider = Effect.fn("Models.provider")(function* (id: string) {
     const found = yield* providers.get(id);
@@ -43,9 +48,10 @@ const make = Effect.gen(function* () {
     if (checkLogin !== undefined) yield* checkLogin;
     if (!ModelSource.$is("PlanCatalog")(source)) return yield* listed(source);
 
-    const [models, plan] = yield* Effect.all([catalog.models(source.catalogId), source.plan], {
-      concurrency: 2,
-    });
+    const [models, plan] = yield* Effect.all(
+      [catalog.models(source.catalogId), plans.planOf(id, source.plan)],
+      { concurrency: 2 },
+    );
 
     return onPlan(models, plan);
   });
