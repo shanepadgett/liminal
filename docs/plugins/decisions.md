@@ -24,8 +24,8 @@ Status: built
 ### Models
 
 - Provider plugins register the decision models their login serves, through `uses: [DecisionModels]`, only when `decisions` is loaded
-- `model-openrouter` registers `openrouter/jev` (System One, `~typesafe/jev-latest`) and `openrouter/luna` (Decisions, `openai/gpt-6-luna-decisions`)
-- `model-openai` registers `openai/luna` (Decisions, `gpt-6-luna`) on the API key
+- `model-openrouter` registers only `openrouter/jev` (System One, `~typesafe/jev-latest`); OpenRouter never serves Luna Decisions
+- `model-openai` registers `openai/luna` (Decisions, `gpt-6-luna`) on the API key; it is the only Luna Decisions model
 - Each model reports whether it has a usable key; one call is one POST, never retried
 
 ### Classify

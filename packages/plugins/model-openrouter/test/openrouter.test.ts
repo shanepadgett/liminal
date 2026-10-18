@@ -269,10 +269,10 @@ effectTest(
 );
 
 effectTest(
-  "registers Jev and Luna Decisions on the key, and asks Jev first through System One",
+  "registers only Jev on the key, and asks it through System One",
   Effect.gen(function* () {
     const registered = yield* (yield* DecisionModels).list;
-    expect(registered.map((model) => model.id)).toEqual(["openrouter/jev", "openrouter/luna"]);
+    expect(registered.map((model) => model.id)).toEqual(["openrouter/jev"]);
 
     const question = BoolQuestion.make({
       instructions: "Does it reach the network?",

@@ -20,7 +20,7 @@ import { LoginMethod, LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
 import { ModelError, type ModelRequest, type ThinkingValue, ThinkingOff } from "@liminal/sdk";
 import { type ProviderPrompt, replyOf } from "@liminal/sdk/ai";
-import { openAiDecisions, systemOne } from "@liminal/sdk/ai/decisions";
+import { systemOne } from "@liminal/sdk/ai/decisions";
 
 import { openRouterKeyVariable, openRouterLogin, openRouterProvider } from "../contract.ts";
 
@@ -103,7 +103,7 @@ const languageModel = (
     }).pipe(Effect.provideService(OpenRouterClient.OpenRouterClient, client));
   });
 
-/** Jev and Luna Decisions on the OpenRouter key, when decisions is loaded. */
+/** Jev on the OpenRouter key, when decisions is loaded; Luna Decisions runs only on an OpenAI key. */
 const registerDecisions = Effect.fn("openrouter.registerDecisions")(function* (
   http: HttpClient.HttpClient,
   key: Effect.Effect<Redacted.Redacted, ModelError>,
@@ -120,22 +120,11 @@ const registerDecisions = Effect.fn("openrouter.registerDecisions")(function* (
     available,
     classify: systemOne(http, { url: `${apiUrl}/systemone`, key, model: "~typesafe/jev-latest" }),
   });
-
-  yield* decisionModels.value.register({
-    id: "openrouter/luna",
-    family: "luna",
-    available,
-    classify: openAiDecisions(http, {
-      url: `${apiUrl}/decisions`,
-      key,
-      model: "openai/gpt-6-luna-decisions",
-    }),
-  });
 });
 
 /**
- * Registers provider `openrouter`, its API key login, and Jev and Luna Decisions when decisions is
- * loaded; needs an `HttpClient`, which tests replace.
+ * Registers provider `openrouter`, its API key login, and Jev when decisions is loaded; needs an
+ * `HttpClient`, which tests replace.
  */
 export const openRouterLayer = Layer.effectDiscard(
   Effect.gen(function* () {
