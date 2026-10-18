@@ -233,6 +233,17 @@
         "effect": "4.0.5",
       },
     },
+    "packages/plugins/palette": {
+      "name": "@liminal/palette",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/reload": {
       "name": "@liminal/reload",
       "version": "0.1.0",
@@ -486,6 +497,8 @@
     "@liminal/model-scripted": ["@liminal/model-scripted@workspace:packages/plugins/model-scripted"],
 
     "@liminal/models": ["@liminal/models@workspace:packages/plugins/models"],
+
+    "@liminal/palette": ["@liminal/palette@workspace:packages/plugins/palette"],
 
     "@liminal/reload": ["@liminal/reload@workspace:packages/plugins/reload"],
 

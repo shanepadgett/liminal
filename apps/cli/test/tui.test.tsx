@@ -29,7 +29,7 @@ import { awaitRebuild, bootOptions, testReload } from "./support.ts";
 
 const s1 = SessionId.make("s1");
 
-const parts = ["cancel", "chat", "inbox", "reload", "tools-file", "tools-shell"];
+const parts = ["cancel", "chat", "inbox", "palette", "reload", "tools-file", "tools-shell"];
 
 /**
  * Boots the kernel, with `reload` when given, prepares it with `before`, then mounts the TUI once
@@ -268,6 +268,29 @@ effectTest(
     yield* send(setup, "/nope hi");
 
     expect(yield* frameWith(setup, "not a command")).toContain("/nope hi");
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "ctrl+p lists the palette's commands with their keys, and enter runs one",
+  Effect.gen(function* () {
+    const { setup } = yield* boot(() => Effect.void);
+
+    yield* frameWith(setup, "Ask anything");
+    setup.mockInput.pressKey("p", { ctrl: true });
+
+    const palette = yield* frameWith(setup, "Type to filter");
+    expect(palette).toMatch(/Reload\s+ctrl\+r/);
+    expect(palette).toMatch(/Quit\s+ctrl\+c/);
+
+    yield* Effect.promise(() => setup.mockInput.typeText("relo"));
+    yield* frameWhere(setup, (frame) => !frame.includes("Quit"));
+    setup.mockInput.pressEnter();
+
+    expect(yield* frameWhere(setup, (frame) => !frame.includes("Type to filter"))).toContain(
+      "Ask anything",
+    );
   }),
   testBaseServices,
 );
