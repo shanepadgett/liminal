@@ -21,4 +21,6 @@ How frontends host plugins and how plugins extend the UI.
 - In-process frontends import UI parts directly from disk
 - Attached frontends fetch UI part bundles from the server
 - TUI keys go through `@opentui/keymap`: named commands, bindings that point at them
+- A command is a keymap command a plugin's UI part registers; optional slash and palette details list it in the composer's slash menu and the command palette
+- A command's `run` is UI code: it opens a dialog or calls its plugin's RPCs
 - The gallery has its own key map

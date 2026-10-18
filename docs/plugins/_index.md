@@ -56,7 +56,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | Plugin | Does | Status |
 | --- | --- | --- |
 | [credential-store](credential-store.md) | Stores secrets | built |
-| one login plugin per provider or flow | OAuth or API key login | to plan |
+| logins | The login methods provider plugins register (API key, browser OAuth, device code), their flows and `/connect`; `credential-store` stays storage only | to plan |
 
 ## Tools
 
