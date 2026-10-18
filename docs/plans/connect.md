@@ -64,7 +64,7 @@ flowchart LR
 | API packages | `@effect/ai-openai`, `@effect/ai-anthropic`, `@effect/ai-openrouter`, `@effect/ai-openai-compat` (per `docs/plugins/models.md`). Native tool changes come from a provider layer that wraps the package client (`docs/plans/core-contracts.md`); OpenCode Go Messages replies get their missing `usage` fields filled before decoding |
 | Model lists | A new `model-catalog` plugin owns the `models.dev` catalog and its local cache; `models` depends on it; replaceable like `credential-store` |
 | Catalog refresh | Startup uses the cached copy; a background refresh runs when the cache is older than a set age |
-| Plan-limited logins | Codex, ChatGPT and Claude subscription fetch their live plan list; `/model` shows only catalog models on that list (Tau `fetchPlanLists`) |
+| Plan-limited logins | Codex and ChatGPT fetch their live plan list; `/model` shows only catalog models on that list (Tau `fetchPlanLists`) |
 | Callback server | `BunHttpServer.layer` (`@effect/platform-bun`) with `HttpServer.serve`, scoped to the login so the port closes when it ends; the browser opens through the platform `open` command |
 | Sign-out | Confirm dialog, then remove the credential. `chatgpt` revokes first; a failed revoke still removes it and tells the user to disconnect the app by hand |
 | Live test credentials | Live recording tests read Liminal's own credential store only |
@@ -79,6 +79,113 @@ One commit each, with gallery updates.
 4. `model-anthropic`: Claude subscription and API key
 5. `model-chatgpt`: Sign in with ChatGPT
 6. `model-openrouter`, `model-opencode-go`, `model-local`
+
+## Step 1: model-catalog
+
+Lets `/model` list every catalog provider's models with names, limits, thinking levels and prices from `models.dev`, with no provider-specific list code.
+
+### Files
+
+```text
+packages/plugins/model-catalog/          new plugin
+  plugin.ts                              provides ModelCatalog; requires nothing
+  src/contract.ts                        ModelCatalog, CatalogUnavailable
+  src/server.ts                          layer: cache, refresh, FetchHttpClient
+  src/server/models-dev.ts               models.dev entry Schema; entry -> ModelInfo
+  src/server/cache.ts                    read and write <data>/catalog.json
+  test/catalog.test.ts                   fixture subset served at HttpClient; TestClock for age
+  test/fixtures/models-dev.json          a few openai and anthropic entries
+packages/plugins/models/
+  plugin.ts                              requires ModelCatalog
+  src/contract.ts                        ModelProvider.models -> source: ModelSource
+  src/server.ts                          listModels joins catalog and plan list
+  test/models.test.ts                    Listed, Catalog and PlanCatalog joins
+packages/plugins/model-codex/src/server/
+  catalog.ts -> plan.ts                  plan list only: slug and context window
+  provider.ts                            source: PlanCatalog("openai", plan)
+packages/plugins/model-scripted/src/server.ts   source: Listed
+docs/plugins/model-catalog.md            new plugin file
+docs/plugins/models.md                   "Each provider owns its model list" rewritten
+```
+
+### Types
+
+```ts
+// model-catalog/src/contract.ts
+class CatalogUnavailable extends Schema.TaggedError("CatalogUnavailable", {
+  catalogId: Schema.String, message: Schema.String })
+
+class ModelCatalog extends Context.Service<ModelCatalog, {
+  /** Tool-calling models models.dev lists under catalogId; fetches when the cache lacks it. */
+  readonly models: (catalogId: string) => Effect<ReadonlyArray<ModelInfo>, CatalogUnavailable>
+}>
+
+// models/src/contract.ts
+type PlanModel = { readonly id: string; readonly contextWindow: Option<number> }
+
+type ModelSource = Data.TaggedEnum<{
+  Listed: { models: Effect<ReadonlyArray<ModelInfo>, ModelError> }            // scripted, local
+  Catalog: { catalogId: string }                                             // openai, anthropic, openrouter
+  PlanCatalog: { catalogId: string; plan: Effect<ReadonlyArray<PlanModel>, ModelError> }  // codex, chatgpt
+}>
+
+interface ModelProvider { id; name; source: ModelSource; stream; nativeToolChanges }
+
+// ModelsRpcs "models/list" error: ModelError | ProviderNotFound | CatalogUnavailable
+```
+
+### Cache file `<Directories.data>/catalog.json`
+
+| Field | Holds |
+| --- | --- |
+| `fetchedAt` | Milliseconds of the last full fetch |
+| `providers` | `Record<catalogId, { models: Record<modelId, Json> }>`, only the ids asked for; each model decodes on its own so one bad entry is skipped |
+
+The full `api.json` is over 5 MB, so the cache keeps only catalog ids a provider asked for (Tau `keepProviders`).
+
+### Call path
+
+```text
+model-catalog layer start
+  read catalog.json into a Ref (missing or undecodable file: empty)
+  fork in scope: refresh when fetchedAt is older than one day
+
+refresh(ids)
+  GET https://models.dev/api.json
+  keep ids; set fetchedAt; write catalog.json
+  failure: log, keep the old Ref and file
+
+ModelCatalog.models(catalogId)
+  catalogId missing from Ref -> refresh(known ids + catalogId)
+  still missing -> CatalogUnavailable
+  decode each entry; drop tool_call false; map to ModelInfo
+
+Models.listModels(provider)
+  Listed       -> source.models
+  Catalog      -> catalog.models(catalogId)
+  PlanCatalog  -> both at once; keep catalog models on the plan; plan context window wins
+```
+
+### Entry to `ModelInfo`
+
+| `ModelInfo` | From models.dev |
+| --- | --- |
+| `name`, `contextWindow`, `maxOutput` | `name`, `limit.context`, `limit.output` |
+| `input` | `modalities.input` filtered to `text`, `image` |
+| `price` | `cost.input`, `output`, `cache_read`, `cache_write` |
+| `thinking` | `reasoning` false: none. Effort values map by name (`none` is `off`). Budget or toggle: see Open |
+
+### Deletes
+
+- `model-codex` `catalog.ts`: `modelInfo`, `outputLimit` and the reasoning-level mapping; Codex details come from the catalog.
+- `ModelProvider.models`.
+
+### Open
+
+- **Bundled snapshot.** Recommend none: first run fetches; offline with no cache shows `CatalogUnavailable` under catalog providers. Tau bundles one (`catalog-snapshot.json`, refreshed by a mise task).
+- **Budget and toggle thinking.** Recommend budget models offer `low`, `medium`, `high` (plus `off` when they can turn off), and the provider maps each to tokens; toggle models offer `off` and `medium`.
+- **Plan list caching.** Recommend fetching the plan list on each `/model` open, as Codex does today; Tau caches it with the catalog.
+- **Models from settings.** Tau lets settings add or correct models; recommend leaving it to step 6 with `model-local`.
 
 ## Deletes or replaces
 

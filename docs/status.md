@@ -27,7 +27,7 @@ Reload at turn end is built ([plans/reload.md](plans/reload.md)): each plugin pa
 
 - Review reload at turn end ([plans/reload.md](plans/reload.md), its `Open` list).
 - Review slash commands and dialogs ([plans/commands.md](plans/commands.md), its `Open` list). Commands per [requirements/05-frontends.md](requirements/05-frontends.md).
-- Write the code-level plan for connect and login step 1, `model-catalog` ([plans/connect.md](plans/connect.md)). Its build covers every Tau provider and login method plus Anthropic API key; each needs its provider plugin.
+- Review the step 1 code plan for connect and login, `model-catalog`, and its `Open` list ([plans/connect.md](plans/connect.md)). Its build covers every Tau provider and login method plus Anthropic API key; each needs its provider plugin.
 - Review the transcript in a live terminal ([plans/transcript.md](plans/transcript.md)).
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
