@@ -7,10 +7,9 @@
 
 import { For, Show } from "solid-js";
 
-import type { RoleColor } from "@liminal/sdk/tui";
+import { matchIndices, type RoleColor } from "@liminal/sdk/tui";
 
 import { ListRow } from "./ListRow.tsx";
-import { matchIndices } from "./match.ts";
 import { MatchedText } from "./MatchedText.tsx";
 import { SuggestionList } from "./SuggestionList.tsx";
 

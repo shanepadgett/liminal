@@ -27,11 +27,10 @@ From `@opentui/keymap` 0.6.6 (`docs/reference/copies/@opentui/core/0.6.6/package
 
 | Need | API |
 | --- | --- |
-| Custom `slash`, `palette` fields on a command | `keymap.registerCommandFields`; `getCommands()` returns the original top-level fields |
-| `title`, `desc`, `category` | `registerMetadataFields()` from `@opentui/keymap/addons` |
+| `title`, `desc`, `category` | metadata fields, registered by `createDefaultOpenTuiKeymap` |
 | List commands with their keys | `getCommandEntries({ visibility: "reachable", filter })` |
 | Run a command with slash arguments | `runCommand(name, { payload })` |
-| Re-read on change | `useKeymapSelector` from `@opentui/keymap/solid` |
+| Re-read on change | `keymap.on("state")` |
 
 ## Architecture
 
@@ -49,8 +48,8 @@ flowchart LR
 | Decision | Shape | Beat |
 | --- | --- | --- |
 | Part-level commands | registered in a part's `setup`, removed when its Scope closes; `useBindings` stays for keys local to one component | `useBindings` only: commands vanish while their component is off screen |
-| Slash and palette fields | a Liminal keymap addon in `@liminal/sdk/tui`: `registerCommandFields` for `slash: { name, aliases?, arguments? }` and `palette: true`, plus `registerMetadataFields` for `title`, `desc`, `category` | `registerExCommands`: forces `:` and makes each alias its own command |
-| Dialog stack | in `@liminal/sdk/tui`, drawn by the App root over the root slot; `show(component)`, `close()`, `esc` closes the top; `SelectDialog`, `ConfirmDialog`, `PromptDialog` building blocks; results reach plugins through callbacks that call RPCs via the bridge | Promise-returning dialogs |
+| Slash and palette fields | kept on each `Command` in `TuiCommands`' registry; `listed()` joins them with the keymap's reachable entries and their keys | `registerExCommands`: forces `:` and makes each alias its own command |
+| Dialog stack | in `@liminal/sdk/tui`, drawn by the App root over the root slot; `show(component)`, `close()`, `esc` closes the top; `SelectDialog` building block (confirm and prompt dialogs come with their first user, in the connect plan); results reach plugins through callbacks that call RPCs via the bridge | Promise-returning dialogs |
 
 | Piece | Owner | Change |
 | --- | --- | --- |
@@ -74,14 +73,15 @@ interface Command {
   readonly run: (args: string) => void
 }
 class TuiCommands  // register(commands, bindings?): Effect<void, never, Scope>
-class TuiDialogs   // show(component): void; close(): void; open: Accessor<boolean>
+class TuiDialogs   // show(component): void; close(): void; top: Accessor<DialogComponent | undefined>
 defineTui(...)     // setup may require TuiHost | TuiCommands | TuiDialogs | Scope
 ```
 
 ```text
 packages/frontend/src/parts.ts   FrontendOptions gains `services`, a Context given to each part's setup
-packages/sdk/src/tui/commands.ts TuiCommands, the slash and palette addon, args payload decoding
-packages/sdk/src/tui/dialogs.tsx TuiDialogs stack, DialogFrame, SelectDialog, ConfirmDialog, PromptDialog
+packages/sdk/src/tui/commands.ts TuiCommands, slashCommand, args payload decoding
+packages/sdk/src/tui/dialogs.tsx TuiDialogs stack, DialogLayer, DialogFrame
+packages/sdk/src/tui/SelectDialog.tsx SelectDialog
 packages/sdk/src/tui/match.ts    matchIndices, moved from the gallery
 apps/cli/src/tui/run.tsx         split: makeTerminal (renderer, keymap, dialogs), then mount
 apps/cli/src/main.ts             makeTerminal, startFrontend with services, mount
@@ -98,11 +98,11 @@ apps/cli/src/tui/App.tsx         draws the top dialog; app.quit moves to TuiComm
 
 ## Build order
 
-One commit per step.
+Steps 1 to 3 share one commit; steps 4 to 6 get one each.
 
 | Step | Work | Proves |
 | --- | --- | --- |
-| 1 | frontend `services`, `makeTerminal`, `TuiCommands`, `TuiDialogs`, slash and palette addon | parts register commands and open dialogs |
+| 1 | frontend `services`, `makeTerminal`, `TuiCommands`, `TuiDialogs` | parts register commands and open dialogs |
 | 2 | `/reload`: `reload.now` at part level | a part-level command with `slash` and `palette` |
 | 3 | slash menu in the composer | `/reload` end to end |
 | 4 | `palette` plugin, `ctrl+p` | listing commands with their keys |
@@ -113,7 +113,7 @@ One commit per step.
 
 | Where | Cases |
 | --- | --- |
-| SDK | `TuiCommands` unregisters when its Scope closes; slash lookup by name and alias; args payload decoding |
+| SDK, `apps/cli/test/commands.test.ts` | `TuiCommands` unregisters when its Scope closes; slash lookup by name and alias; args payload decoding |
 | TUI frames, `apps/cli/test/tui.test.tsx` | `/re` shows `/reload`; `/reload` Enter runs it; `/nope hi` is sent as a prompt; `ctrl+p` lists `/new` and `/reload` with keys; `/new` shows an empty transcript; `/model` pick changes the model line |
 | Server | `agent-loop/set-default` writes the setting and the defaults stream emits it; `models` RPCs list providers and models |
 

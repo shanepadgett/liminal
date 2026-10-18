@@ -8,7 +8,7 @@ import { createSignal } from "solid-js";
 
 import { AgentLoopRpcs } from "@liminal/agent-loop/contract";
 import { ChatSlots } from "@liminal/chat/contract";
-import { defineTui, makeBridge, TuiHost } from "@liminal/sdk/tui";
+import { defineTui, makeBridge, TuiCommands, TuiDialogs, TuiHost } from "@liminal/sdk/tui";
 
 import { InboxRpcs, type Queued } from "./contract.ts";
 import { type ComposerDeps, makeComposer, makeHints, type ModelLine } from "./tui/Composer.tsx";
@@ -24,6 +24,8 @@ export default defineTui({
     const loop = yield* host.client(AgentLoopRpcs);
     const drafts = host.sessionState("draft", () => createSignal(""));
     const [problem, setProblem] = createSignal("");
+    const commands = yield* TuiCommands;
+    const dialogs = yield* TuiDialogs;
 
     const model = bridge.watch(
       Stream.fromEffect(
@@ -56,6 +58,8 @@ export default defineTui({
       queue: (session) => bridge.watch(inbox["inbox/queue"]({ session }), noQueue),
       model,
       problem,
+      commands,
+      dialogOpen: () => dialogs.top() !== undefined,
     };
 
     yield* host.register(

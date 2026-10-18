@@ -5,11 +5,17 @@
 
 import { For } from "solid-js";
 
-import { HeaderRule, type Hint, Hints, type RoleColor, type RoleName } from "@liminal/sdk/tui";
+import {
+  HeaderRule,
+  type Hint,
+  Hints,
+  matchIndices,
+  type RoleColor,
+  type RoleName,
+} from "@liminal/sdk/tui";
 
 import { Chip } from "./chat/Chip.tsx";
 import { ListRow } from "./chat/ListRow.tsx";
-import { matchIndices } from "./chat/match.ts";
 import { MatchedText } from "./chat/MatchedText.tsx";
 import { Section } from "./chat/Section.tsx";
 import { only, withRoles } from "./entryViews.ts";

@@ -9,9 +9,11 @@ import type { Accessor, Setter } from "solid-js";
 import { For, Show } from "solid-js";
 
 import type { SessionId } from "@liminal/sdk";
-import { type Hint, Hints, useBindings, useColor } from "@liminal/sdk/tui";
+import { type Hint, Hints, type TuiCommandsService, useBindings, useColor } from "@liminal/sdk/tui";
 
 import type { Queued, SendMode } from "../contract.ts";
+import { useSlash } from "./slash.ts";
+import { SlashMenu } from "./SlashMenu.tsx";
 
 const INPUT_ROWS = 2;
 
@@ -30,6 +32,10 @@ export interface ComposerDeps {
   readonly model: Accessor<ModelLine>;
   /** The last send's failure, if it failed. */
   readonly problem: Accessor<string>;
+  /** The commands a submitted `/name` runs. */
+  readonly commands: TuiCommandsService;
+  /** Whether a dialog is open, which takes the input's focus. */
+  readonly dialogOpen: Accessor<boolean>;
 }
 
 interface TurnProps {
@@ -78,23 +84,59 @@ function QueuedLines(props: { readonly queued: Queued }) {
   );
 }
 
+/** The textarea: enter submits, shift+enter starts a new line. */
+function Input(props: {
+  readonly ref: (made: TextareaRenderable) => void;
+  readonly focused: boolean;
+  readonly onSubmit: () => void;
+  readonly onChange: () => void;
+}) {
+  const color = useColor();
+  const surface = () => color("surface.raised");
+
+  return (
+    <textarea
+      ref={props.ref}
+      focused={props.focused}
+      height={INPUT_ROWS}
+      placeholder="Ask anything"
+      keyBindings={[
+        { name: "return", action: "submit" },
+        { name: "return", shift: true, action: "newline" },
+      ]}
+      onSubmit={props.onSubmit}
+      onContentChange={props.onChange}
+      backgroundColor={surface()}
+      focusedBackgroundColor={surface()}
+      textColor={color("text.base")}
+      focusedTextColor={color("text.base")}
+      placeholderColor={color("text.faint")}
+      cursorColor={color("text.accent")}
+    />
+  );
+}
+
 export const makeComposer = (deps: ComposerDeps) =>
   function Composer(props: TurnProps) {
     const color = useColor();
     const surface = () => color("surface.raised");
-    const [, setDraft] = deps.draft(props.sessionId);
+    const [draft, setDraft] = deps.draft(props.sessionId);
     const queued = deps.queue(props.sessionId);
     let input: TextareaRenderable | undefined;
+    const slash = useSlash({ commands: deps.commands, draft, input: () => input });
 
     const send = (mode: SendMode) => {
       const text = input?.plainText.trim() ?? "";
       if (text === "") return;
       input?.clear();
-      deps.send(props.sessionId, text, mode);
+      if (!slash.submit(text)) deps.send(props.sessionId, text, mode);
     };
+
+    const queueKeys = () => (props.running ? [{ key: "tab", cmd: "inbox.queue" }] : []);
 
     useBindings(() => ({
       commands: [
+        ...slash.commands,
         {
           name: "inbox.queue",
           run: () => {
@@ -102,7 +144,7 @@ export const makeComposer = (deps: ComposerDeps) =>
           },
         },
       ],
-      bindings: props.running ? [{ key: "tab", cmd: "inbox.queue" }] : [],
+      bindings: slash.open() ? slash.bindings : queueKeys(),
     }));
 
     return (
@@ -114,25 +156,16 @@ export const makeComposer = (deps: ComposerDeps) =>
         paddingY={1}
       >
         <QueuedLines queued={queued()} />
-        <textarea
-          ref={(made: TextareaRenderable) => (input = made)}
-          focused
-          height={INPUT_ROWS}
-          placeholder="Ask anything"
-          keyBindings={[
-            { name: "return", action: "submit" },
-            { name: "return", shift: true, action: "newline" },
-          ]}
+        <Show when={slash.open()}>
+          <SlashMenu matches={slash.matches()} selected={slash.selected()} />
+        </Show>
+        <Input
+          ref={(made) => (input = made)}
+          focused={!deps.dialogOpen()}
           onSubmit={() => {
             send("steer");
           }}
-          onContentChange={() => setDraft(input?.plainText ?? "")}
-          backgroundColor={surface()}
-          focusedBackgroundColor={surface()}
-          textColor={color("text.base")}
-          focusedTextColor={color("text.base")}
-          placeholderColor={color("text.faint")}
-          cursorColor={color("text.accent")}
+          onChange={() => setDraft(input?.plainText ?? "")}
         />
         <ModelLine deps={deps} />
         <Show when={deps.problem() !== ""}>

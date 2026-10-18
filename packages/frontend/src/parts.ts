@@ -58,8 +58,8 @@ export interface FrontendOptions<K extends ComponentKind, H> {
   readonly graph: Stream.Stream<ReadonlyArray<GraphMember>>;
   /** A new kernel connection, closed with the caller's Scope. */
   readonly connect: Effect.Effect<RpcClient.Protocol["Service"], never, Scope.Scope>;
-  /** The service a part's `setup` reads its host from. */
-  readonly host: Context.Key<H, FrontendHost<K>>;
+  /** Every service a part's `setup` reads, given the part's own host. */
+  readonly services: (host: FrontendHost<K>) => Context.Context<H>;
   /** The member's module for this frontend's part, if it has one. */
   readonly part: (member: GraphMember) => PartModule | undefined;
 }
@@ -132,7 +132,7 @@ const run = Effect.fn("run")(function* <K extends ComponentKind, H>(
     Effect.gen(function* () {
       const host = yield* makeHost<K>(name, loader.shared);
 
-      yield* part.setup.pipe(Effect.provideService(loader.options.host, host));
+      yield* part.setup.pipe(Effect.provideContext(loader.options.services(host)));
     }).pipe(Scope.provide(scope)),
   );
 

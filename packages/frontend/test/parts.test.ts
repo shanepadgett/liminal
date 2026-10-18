@@ -55,7 +55,7 @@ const boot = Effect.fn("boot")(function* (members: ReadonlyArray<GraphMember>) {
   const frontend = yield* startFrontend({
     graph: SubscriptionRef.changes(graph),
     connect: Effect.die("the tests never call the kernel"),
-    host: TestHost,
+    services: (host) => Context.make(TestHost, host),
     part: (each) => each.parts.tui,
   });
 

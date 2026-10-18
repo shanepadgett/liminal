@@ -7,17 +7,16 @@
  */
 
 import { BunRuntime, BunServices } from "@effect/platform-bun";
-import { Effect, Layer, Path } from "effect";
+import { Deferred, Effect, Layer, Path } from "effect";
 
 import { startFrontend } from "@liminal/frontend";
 import { start } from "@liminal/kernel";
 import { Directories } from "@liminal/sdk";
-import { TuiHost } from "@liminal/sdk/tui";
 
 import { pluginsFolder, sharedModules } from "./boot.ts";
 import { reloadOptions } from "./reload.ts";
 import { exitWithCode, restartExitCode } from "./supervisor.ts";
-import { runTui } from "./tui/run.tsx";
+import { makeTerminal, mount, openRenderer, tuiServices } from "./tui/run.tsx";
 
 const directories = Layer.effect(
   Directories,
@@ -52,15 +51,17 @@ const run = Effect.gen(function* () {
     reload: yield* reloadOptions(),
   });
 
+  const terminal = yield* makeTerminal(yield* openRenderer);
+
   const frontend = yield* startFrontend({
     graph: kernel.graph,
     connect: kernel.connect,
-    host: TuiHost,
+    services: tuiServices(terminal),
     part: (member) => member.parts.tui,
   });
 
   return yield* Effect.raceFirst(
-    runTui(frontend).pipe(Effect.as(0)),
+    mount(frontend, terminal).pipe(Effect.flatMap(Deferred.await), Effect.as(0)),
     kernel.reloads.restartDue.pipe(Effect.as(restartExitCode)),
   );
 });

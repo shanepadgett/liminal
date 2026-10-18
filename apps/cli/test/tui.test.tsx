@@ -21,11 +21,10 @@ import {
 } from "@liminal/model-scripted/contract";
 import { type ModelPart, SessionId } from "@liminal/sdk";
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
-import { TuiHost } from "@liminal/sdk/tui";
 import { SessionLog, userMessage } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
 
-import { mount } from "../src/tui/run.tsx";
+import { makeTerminal, mount, tuiServices } from "../src/tui/run.tsx";
 import { awaitRebuild, bootOptions, testReload } from "./support.ts";
 
 const s1 = SessionId.make("s1");
@@ -51,10 +50,20 @@ const boot = Effect.fn("boot")(function* <E>(
 
   yield* before(kernel);
 
+  const setup = yield* Effect.acquireRelease(
+    Effect.promise(() => createTestRenderer({ width: 80, height: 24 })),
+    ({ renderer }) =>
+      Effect.sync(() => {
+        renderer.destroy();
+      }),
+  );
+
+  const terminal = yield* makeTerminal(setup.renderer);
+
   const frontend = yield* startFrontend({
     graph: kernel.graph,
     connect: kernel.connect,
-    host: TuiHost,
+    services: tuiServices(terminal),
     part: (member) => member.parts.tui,
   });
 
@@ -64,15 +73,7 @@ const boot = Effect.fn("boot")(function* <E>(
     Stream.runHead,
   );
 
-  const setup = yield* Effect.acquireRelease(
-    Effect.promise(() => createTestRenderer({ width: 80, height: 24 })),
-    ({ renderer }) =>
-      Effect.sync(() => {
-        renderer.destroy();
-      }),
-  );
-
-  yield* mount(frontend, setup.renderer);
+  yield* mount(frontend, terminal);
 
   return { kernel, setup };
 });
@@ -218,6 +219,55 @@ effectTest(
     yield* Queue.offer(changes, [file]);
 
     expect(yield* frameWith(setup, "reload failed")).toContain("error TS2322: broken");
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "typing a slash opens the menu of matching commands",
+  Effect.gen(function* () {
+    const { setup } = yield* boot(() => Effect.void);
+
+    yield* frameWith(setup, "Ask anything");
+    yield* Effect.promise(() => setup.mockInput.typeText("/rel"));
+
+    expect(yield* frameWith(setup, "/reload")).toContain("Apply a reload that waits");
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "enter on the slash menu runs the highlighted command",
+  Effect.gen(function* () {
+    const path = yield* Path.Path;
+    const changes = yield* Queue.unbounded<ReadonlyArray<string>>();
+    const { kernel, setup } = yield* boot(() => Effect.void, testReload(changes, "confirmed"));
+    const file = path.resolve(import.meta.dir, "../../../packages/plugins/cancel/src/tui.tsx");
+
+    const reload = Effect.gen(function* () {
+      yield* Queue.offer(changes, [file]);
+      yield* frameWith(setup, "ctrl+r reload");
+      yield* Effect.promise(() => setup.mockInput.typeText("/rel"));
+      yield* frameWith(setup, "Apply a reload that waits");
+      setup.mockInput.pressEnter();
+    });
+
+    yield* awaitRebuild(kernel.graph, "cancel", reload);
+
+    const after = yield* frameWhere(setup, (frame) => !frame.includes("ctrl+r reload"));
+    expect(after).not.toContain("/reload");
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "a slash word that names no command is sent as a prompt",
+  Effect.gen(function* () {
+    const { setup } = yield* bootScripted(replyText("not a command"));
+
+    yield* send(setup, "/nope hi");
+
+    expect(yield* frameWith(setup, "not a command")).toContain("/nope hi");
   }),
   testBaseServices,
 );
