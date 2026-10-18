@@ -14,10 +14,7 @@ import {
   AfterFailureHooks,
   AgentLoop,
   AgentLoopRpcs,
-  AgentLoopSection,
   BeforeCallHooks,
-  DefaultsInvalid,
-  NoDefaultModel,
   StepOutcome,
   type Turn,
   type TurnEnd,
@@ -25,6 +22,7 @@ import {
   type TurnSettings,
 } from "./contract.ts";
 import { makeCalls } from "./server/calls.ts";
+import { makeDefaults } from "./server/defaults.ts";
 import { makeHooks } from "./server/hooks.ts";
 import { makeCallModel } from "./server/model-call.ts";
 import { replyCalls } from "./server/reply.ts";
@@ -97,28 +95,19 @@ const make = Effect.gen(function* () {
     step,
     run,
     start: turns.start,
-    defaults: readDefaults(yield* Settings),
+    ...(yield* makeDefaults(yield* Settings)),
     cancel: turns.cancel,
   });
 });
-
-/** Reads the `agent-loop` section on each call, so a settings edit applies to the next turn. */
-const readDefaults = (settings: Settings["Service"]) =>
-  Effect.gen(function* () {
-    const { model, thinking } = yield* settings
-      .section("agent-loop", AgentLoopSection)
-      .pipe(Effect.mapError((error) => new DefaultsInvalid({ message: error.message })));
-
-    if (model === undefined) return yield* new NoDefaultModel();
-
-    return { model, thinking };
-  });
 
 const rpcs = AgentLoopRpcs.toLayer(
   Effect.gen(function* () {
     const loop = yield* AgentLoop;
 
-    return AgentLoopRpcs.of({ "agent-loop/defaults": () => loop.defaults });
+    return AgentLoopRpcs.of({
+      "agent-loop/defaults": () => loop.defaultsChanges,
+      "agent-loop/set-default": ({ model, thinking }) => loop.setDefault(model, thinking),
+    });
   }),
 );
 

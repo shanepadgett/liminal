@@ -27,8 +27,8 @@ export interface SelectOption<V> {
 export interface SelectDialogProps<V> extends DialogProps {
   readonly title: string;
   readonly options: ReadonlyArray<SelectOption<V>>;
-  /** Highlighted when the dialog opens. */
-  readonly current?: V;
+  /** Highlighted when the dialog opens; the first option when none. */
+  readonly current?: V | undefined;
   /** Runs after the dialog closes. */
   readonly onSelect: (value: V) => void;
 }

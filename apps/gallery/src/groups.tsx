@@ -14,6 +14,7 @@ import {
   FORM_WRITING,
 } from "./chat/formSamples.ts";
 import type { FormState } from "./chat/formState.ts";
+import { ModelPicker } from "./chat/ModelPicker.tsx";
 import type { ReloadShown } from "./chat/ReloadStatus.tsx";
 import { Sidebar } from "./chat/Sidebar.tsx";
 import { Toast, type ToastKind, type ToastMessage } from "./chat/Toast.tsx";
@@ -118,6 +119,12 @@ const commandsState = (name: string, selected: string): EntryState => ({
   view: withRoles((color) => <CommandPalette color={color} selected={selected} />),
 });
 
+const modelsState = (name: string, selected: string): EntryState => ({
+  name,
+  fill: "screen",
+  view: withRoles((color) => <ModelPicker color={color} selected={selected} />),
+});
+
 export const GROUPS: Groups = [
   {
     title: "Tokens",
@@ -204,6 +211,14 @@ export const GROUPS: Groups = [
             states: [
               commandsState("First command", "session.new"),
               commandsState("Later section", "view.sidebar"),
+            ],
+          },
+          {
+            id: "models",
+            title: "Models",
+            states: [
+              modelsState("Current model", "gpt-5.5"),
+              modelsState("Another provider", "claude-sonnet-4-6"),
             ],
           },
         ],

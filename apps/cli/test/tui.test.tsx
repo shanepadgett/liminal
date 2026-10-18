@@ -29,7 +29,16 @@ import { awaitRebuild, bootOptions, testReload } from "./support.ts";
 
 const s1 = SessionId.make("s1");
 
-const parts = ["cancel", "chat", "inbox", "palette", "reload", "tools-file", "tools-shell"];
+const parts = [
+  "agent-loop",
+  "cancel",
+  "chat",
+  "inbox",
+  "palette",
+  "reload",
+  "tools-file",
+  "tools-shell",
+];
 
 /**
  * Boots the kernel, with `reload` when given, prepares it with `before`, then mounts the TUI once
@@ -315,6 +324,24 @@ effectTest(
     const fresh = yield* frameWhere(setup, (frame) => !frame.includes("hello there"));
     expect(fresh).toContain("Ask anything");
     expect(fresh).not.toContain("/new");
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "/model sets the picked model as the default, and the composer's model line follows",
+  Effect.gen(function* () {
+    const { setup } = yield* boot(() => Effect.void);
+
+    yield* frameWith(setup, "No model is set");
+    yield* Effect.promise(() => setup.mockInput.typeText("/model"));
+    yield* frameWith(setup, "Switch the model");
+    setup.mockInput.pressEnter();
+
+    expect(yield* frameWith(setup, "Models")).toContain("Scripted");
+    setup.mockInput.pressEnter();
+
+    expect(yield* frameWith(setup, "scripted (medium)")).not.toContain("Type to filter");
   }),
   testBaseServices,
 );

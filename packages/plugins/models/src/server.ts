@@ -4,7 +4,7 @@ import { Effect, Layer, Option, Stream } from "effect";
 
 import { KeyedRegistry, ProviderNotFound } from "@liminal/sdk";
 
-import { ModelProviders, Models } from "./contract.ts";
+import { ModelProviders, Models, ModelsRpcs } from "./contract.ts";
 
 const make = Effect.gen(function* () {
   const providers = yield* ModelProviders;
@@ -24,6 +24,18 @@ const make = Effect.gen(function* () {
   });
 });
 
-export const layer = Layer.effect(Models, make).pipe(
+const rpcs = ModelsRpcs.toLayer(
+  Effect.gen(function* () {
+    const models = yield* Models;
+
+    return ModelsRpcs.of({
+      "models/providers": () => models.listProviders,
+      "models/list": ({ provider }) => models.listModels(provider),
+    });
+  }),
+);
+
+export const layer = rpcs.pipe(
+  Layer.provideMerge(Layer.effect(Models, make)),
   Layer.provideMerge(KeyedRegistry.layer(ModelProviders, (provider) => provider.id)),
 );

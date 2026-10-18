@@ -1,15 +1,16 @@
 /** Models: the registry providers join and the service that routes each call to one. */
 
-import { Context, type Effect, type Stream } from "effect";
+import { Context, type Effect, Schema, type Stream } from "effect";
+import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
   KeyedRegistry,
-  type ModelError,
+  ModelError,
   type ModelEvent,
-  type ModelInfo,
+  ModelInfo,
   type ModelRequest,
-  type ProviderNotFound,
-  type ProviderInfo,
+  ProviderNotFound,
+  ProviderInfo,
 } from "@liminal/sdk";
 
 /** What a provider plugin registers. */
@@ -41,3 +42,13 @@ export class Models extends Context.Service<
     ) => Effect.Effect<ReadonlyArray<ModelInfo>, ModelError | ProviderNotFound>;
   }
 >()("liminal/models/Models") {}
+
+/** Models' commands for frontends: the active providers and each one's models. */
+export class ModelsRpcs extends RpcGroup.make(
+  Rpc.make("models/providers", { success: Schema.Array(ProviderInfo) }),
+  Rpc.make("models/list", {
+    payload: { provider: Schema.String },
+    success: Schema.Array(ModelInfo),
+    error: Schema.Union([ModelError, ProviderNotFound]),
+  }),
+) {}

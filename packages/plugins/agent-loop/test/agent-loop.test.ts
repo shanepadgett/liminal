@@ -42,6 +42,8 @@ import {
   AgentLoop,
   BeforeCall,
   BeforeCallHooks,
+  DefaultsMissing,
+  DefaultsSet,
   NoDefaultModel,
   StepOutcome,
   TurnEndedEntry,
@@ -433,6 +435,35 @@ effectTest(
 
     yield* (yield* Settings).write("global", ["agent-loop", "model"], settings.model);
     expect(yield* loop.defaults).toEqual({ model: settings.model, thinking: "medium" });
+  }),
+  stack,
+);
+
+effectTest(
+  "setDefault writes the global settings and the defaults stream shows it",
+  Effect.gen(function* () {
+    const loop = yield* AgentLoop;
+    const first = yield* Latch.make();
+
+    const views = yield* loop.defaultsChanges.pipe(
+      Stream.tap(() => first.open),
+      Stream.take(2),
+      Stream.runCollect,
+      Effect.forkChild,
+    );
+
+    yield* first.await;
+    yield* loop.setDefault(settings.model, "high");
+
+    const turn = { model: settings.model, thinking: "high" } as const;
+    const seen = yield* Fiber.join(views);
+
+    expect(seen).toEqual([
+      DefaultsMissing.make({ message: new NoDefaultModel().message }),
+      DefaultsSet.make({ settings: turn }),
+    ]);
+
+    expect(yield* loop.defaults).toEqual(turn);
   }),
   stack,
 );

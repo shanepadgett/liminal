@@ -3,10 +3,10 @@
  * matches, and its key hints.
  */
 
-import { Effect, Stream } from "effect";
+import { Effect, Predicate, Stream } from "effect";
 import { createSignal } from "solid-js";
 
-import { AgentLoopRpcs } from "@liminal/agent-loop/contract";
+import { AgentLoopRpcs, type DefaultsView } from "@liminal/agent-loop/contract";
 import { ChatSlots } from "@liminal/chat/contract";
 import { defineTui, makeBridge, TuiCommands, TuiDialogs, TuiHost } from "@liminal/sdk/tui";
 
@@ -15,6 +15,11 @@ import { type ComposerDeps, makeComposer, makeHints, type ModelLine } from "./tu
 
 const noQueue: Queued = { steers: [], followUps: [] };
 const loading: ModelLine = { set: false, reason: "" };
+
+const modelLine = (view: DefaultsView): ModelLine =>
+  Predicate.isTagged(view, "DefaultsSet")
+    ? { set: true, model: view.settings.model.id, thinking: view.settings.thinking }
+    : { set: false, reason: view.message };
 
 export default defineTui({
   setup: Effect.gen(function* () {
@@ -27,21 +32,7 @@ export default defineTui({
     const commands = yield* TuiCommands;
     const dialogs = yield* TuiDialogs;
 
-    const model = bridge.watch(
-      Stream.fromEffect(
-        loop["agent-loop/defaults"]().pipe(
-          Effect.match({
-            onFailure: (error): ModelLine => ({ set: false, reason: error.message }),
-            onSuccess: (settings): ModelLine => ({
-              set: true,
-              model: settings.model.id,
-              thinking: settings.thinking,
-            }),
-          }),
-        ),
-      ),
-      loading,
-    );
+    const model = bridge.watch(loop["agent-loop/defaults"]().pipe(Stream.map(modelLine)), loading);
 
     const deps: ComposerDeps = {
       draft: (session) => drafts.of(session),

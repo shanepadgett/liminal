@@ -1,4 +1,7 @@
-/** Agent-loop: runs a turn, step by step, until a final answer or a plugin ends it. */
+/**
+ * Agent-loop: runs a turn, step by step, until a final answer or a plugin ends it; `/model` sets
+ * the default model.
+ */
 
 import { Context } from "@liminal/context/contract";
 import { Models } from "@liminal/models/contract";
@@ -24,4 +27,5 @@ export default definePlugin({
   enabledByDefault: true,
   rpcs: AgentLoopRpcs,
   server: () => import("./src/server.ts"),
+  tui: () => import("./src/tui.tsx"),
 });

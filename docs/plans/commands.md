@@ -57,7 +57,7 @@ flowchart LR
 | Palette, `ctrl+p` | new `palette` plugin | lists `palette` commands with their keys |
 | `/reload` | `reload` | `reload.now` moves to part level with `slash` and `palette` |
 | `/new` | `chat` | prep: chat keeps a current session it can switch |
-| `/model` | `models` gains a UI part and RPCs listing providers and models; `agent-loop` sets the default model and streams its defaults | composer model line updates live |
+| `/model` | `models` gains RPCs listing providers and models; `agent-loop` sets the default model, streams its defaults and gains a UI part registering `/model` (it already depends on `models`, so no package cycle) | composer model line updates live |
 
 ## Code shape
 
@@ -93,8 +93,9 @@ apps/cli/src/tui/App.tsx         draws the top dialog; app.quit moves to TuiComm
 | Slash menu | `/` at the start opens it; `↑↓` choose, `tab` completes the name, `enter` runs; a command with `arguments` gets the text after its name; text matching no command is sent as a prompt |
 | Focus | the composer gives up focus while a dialog is open |
 | `chat` | the current session is a `SubscriptionRef<SessionId>`; the transcript is `Stream.switchMap(current, follow then scan)`; `/new` creates a session and sets the ref |
-| `models` | `ModelsRpcs`: `models/providers`, `models/list(provider)`; its UI part registers `/model`, a `SelectDialog` grouped by provider |
-| `agent-loop` | `agent-loop/set-default({ model, thinking? })` writes global settings through `Settings.write`; `agent-loop/defaults` streams, emitting after each set; the inbox model line follows it |
+| `models` | `ModelsRpcs`: `models/providers`, `models/list(provider)` |
+| `/model` | agent-loop's UI part: a `SelectDialog` grouped by provider, the current default highlighted; a provider whose list fails is logged and left out |
+| `agent-loop` | `agent-loop/set-default({ model, thinking? })` writes global settings through `Settings.write`; `agent-loop/defaults` streams `DefaultsSet | DefaultsMissing`, emitting after each set (a hand edit shows on the next set or reload); the inbox model line follows it |
 
 ## Build order
 

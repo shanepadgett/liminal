@@ -3,7 +3,7 @@
  * plugins join it.
  */
 
-import { Context, Data, type Duration, Effect, Schema } from "effect";
+import { Context, Data, type Duration, Effect, Schema, type Stream } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
@@ -57,6 +57,22 @@ export class DefaultsInvalid extends Schema.TaggedError<
 export const DefaultsError = Schema.Union([NoDefaultModel, DefaultsInvalid]);
 
 export type DefaultsError = typeof DefaultsError.Type;
+
+/** A new turn's settings, as frontends show them. */
+export const DefaultsSet = Schema.TaggedStruct("DefaultsSet", { settings: TurnSettings });
+
+/** Why no new turn can start: no model is set, or the section does not decode. */
+export const DefaultsMissing = Schema.TaggedStruct("DefaultsMissing", { message: Schema.String });
+
+export const DefaultsView = Schema.Union([DefaultsSet, DefaultsMissing]);
+
+export type DefaultsView = typeof DefaultsView.Type;
+
+/** The global settings file could not take a new default. */
+export class DefaultSetFailed extends Schema.TaggedError<
+  DefaultSetFailed,
+  { readonly brand: unique symbol }
+>()("DefaultSetFailed", { message: Schema.String }) {}
 
 /** A turn began with these settings; without a later TurnEndedEntry it resumes at boot. */
 export const TurnStartedEntry = defineEntry({
@@ -177,6 +193,13 @@ export class AgentLoop extends Context.Service<
     ) => Effect.Effect<void, SessionNotFound | InvalidEntry | StoreError>;
     /** A new turn's settings, from the `agent-loop` settings section; read on each call. */
     readonly defaults: Effect.Effect<TurnSettings, DefaultsError>;
+    /** The defaults now, then again after each `setDefault`. */
+    readonly defaultsChanges: Stream.Stream<DefaultsView>;
+    /** Sets the default model, and the thinking level when given, in the global settings file. */
+    readonly setDefault: (
+      model: ModelRef,
+      thinking?: ThinkingLevel,
+    ) => Effect.Effect<void, DefaultSetFailed>;
     /** Interrupts the session's running turn and saves it as cancelled; no turn running is a no-op. */
     readonly cancel: (
       sessionId: SessionId,
@@ -208,5 +231,9 @@ export const LiveRetry = {
 
 /** Agent-loop's commands for frontends. */
 export class AgentLoopRpcs extends RpcGroup.make(
-  Rpc.make("agent-loop/defaults", { success: TurnSettings, error: DefaultsError }),
+  Rpc.make("agent-loop/defaults", { success: DefaultsView, stream: true }),
+  Rpc.make("agent-loop/set-default", {
+    payload: { model: ModelRef, thinking: Schema.optionalKey(ThinkingLevel) },
+    error: DefaultSetFailed,
+  }),
 ) {}
