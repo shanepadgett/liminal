@@ -1,0 +1,98 @@
+{
+  "fix": [
+    {
+      "name": "lint fix",
+      "command": "mise run fix:lint -- {files}",
+      "details": "Apply safe oxlint fixes to changed code",
+      "include": ["**/*.ts", "**/*.tsx"],
+      "exclude": ["**/fixtures/**"]
+    },
+    {
+      "name": "format",
+      "command": "mise run fix:fmt -- {files}",
+      "details": "Format changed code and config with oxfmt; runs last so lint fixes get formatted",
+      "include": ["**/*.ts", "**/*.tsx", "**/*.json", "**/*.jsonc", "**/*.toml"],
+      "exclude": [".pi/tau/vocabulary.json", "**/fixtures/**"]
+    }
+  ],
+  "check": [
+    { "name": "mise", "command": "mise run check:mise", "include": ["mise.toml"] },
+    {
+      "name": "format",
+      "command": "mise run check:fmt",
+      "details": "Formatting",
+      "include": ["**/*.ts", "**/*.tsx", "**/*.json", "**/*.jsonc", "**/*.toml"],
+      "exclude": [".pi/tau/vocabulary.json", "**/fixtures/**"]
+    },
+    {
+      "name": "types",
+      "command": "mise run check:types",
+      "details": "Types and Effect diagnostics",
+      "include": ["**/*.ts", "**/*.tsx", "tsconfig.json", "**/package.json"],
+      "timeoutSeconds": 300
+    },
+    {
+      "name": "lint",
+      "command": "mise run check:lint",
+      "details": "Type-aware oxlint with Liminal rules",
+      "include": ["**/*.ts", "**/*.tsx", ".oxlintrc.json"],
+      "timeoutSeconds": 300
+    },
+    {
+      "name": "plugin anatomy",
+      "command": "mise run check:anatomy",
+      "include": ["packages/plugins/**", "tools/checks/**"]
+    },
+    {
+      "name": "versions",
+      "command": "mise run check:versions",
+      "details": "Every workspace package shares the root version",
+      "include": ["**/package.json", "tools/checks/**"],
+      "exclude": ["**/fixtures/**"]
+    },
+    {
+      "name": "reference docs",
+      "command": "mise run check:reference",
+      "details": "Dependency docs match pinned versions",
+      "include": [
+        "**/package.json",
+        "bun.lock",
+        "mise.toml",
+        "docs/reference/**",
+        "tools/reference/**"
+      ]
+    },
+    {
+      "name": "dead code",
+      "command": "mise run fallow:dead-code",
+      "details": "Unused code and dependencies, cycles, boundaries",
+      "include": ["**/*.ts", "**/*.tsx", "**/package.json", ".fallowrc.jsonc"]
+    },
+    {
+      "name": "duplicates",
+      "command": "mise run fallow:dupes",
+      "include": ["**/*.ts", "**/*.tsx", ".fallowrc.jsonc"]
+    },
+    {
+      "name": "tests",
+      "command": "mise run test",
+      "details": "Workspace and tool tests under Bun",
+      "include": ["apps/**", "packages/**", "tools/checks/**", "tools/reference/**"],
+      "timeoutSeconds": 300
+    },
+    {
+      "name": "tool tests",
+      "command": "mise run test:tools",
+      "details": "Lint rule tests under Node",
+      "include": ["tools/lint/**"]
+    }
+  ],
+  "commit": [
+    {
+      "name": "full suite",
+      "command": "mise run check",
+      "details": "All repository checks, including versions, before committing",
+      "timeoutSeconds": 300
+    }
+  ]
+}
