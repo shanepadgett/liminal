@@ -31,6 +31,7 @@ Rules:
 | `TuiCommands` | `register` commands and keys, `run`, `listed` |
 | `TuiDialogs` | `show` and `close` a dialog |
 | `TuiToasts` | `show` a toast |
+| `TuiTheme` | `palette` on screen, `select` an id; `useColor` follows it |
 | `TuiInputWaits` | Register input waits for attention notifications |
 
 Example: `packages/plugins/notices/src/tui.tsx`.
@@ -190,7 +191,7 @@ dialogs.show((props: DialogProps) => (
 
 | Component | Use for |
 | --- | --- |
-| `SelectDialog` | A filterable list; options are `{ title, value, description?, category?, keys?, tag?, tone? }`; `actions` bind other keys to the highlighted option, and one with `keepsOpen` runs without closing the dialog |
+| `SelectDialog` | A filterable list; options are `{ title, value, description?, category?, keys?, tag?, tone? }`; `onHighlight` runs as the highlight moves; `actions` bind other keys to the highlighted option, and one with `keepsOpen` runs without closing the dialog |
 | `ConfirmDialog` | A yes or no; `title`, `question`, `action`, `onConfirm` |
 | `PromptField` | A line of input; `question`, `isSecret`, `onSubmit` |
 | `DialogFrame` | Your own dialog body with the standard title, hints and close |
