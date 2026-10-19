@@ -2,7 +2,7 @@
  * The assistant's side of a turn at one moment: what it said with the rows of work between, the
  * growing tip, and once the work is over, how long it worked and the answer or the form it left.
  * Everything the assistant says is full-brightness text and all its work is gray, so the two never
- * blur; every block is a line apart on one left edge.
+ * blur; every block is a line apart on one left edge, but the live line joins the work above it.
  */
 
 import { Index, Show } from "solid-js";
@@ -62,7 +62,11 @@ export function Reply(props: { readonly color: RoleColor; readonly frame: TurnFr
       <Index each={props.frame.blocks}>
         {(block) => <BlockView color={props.color} block={block()} />}
       </Index>
-      <Tip color={props.color} tip={props.frame.tip} />
+      <Tip
+        color={props.color}
+        tip={props.frame.tip}
+        afterWork={props.frame.blocks.at(-1)?.kind === "work"}
+      />
       <Show when={props.frame.ending}>
         {(ending) => <Closing color={props.color} ending={ending()} />}
       </Show>

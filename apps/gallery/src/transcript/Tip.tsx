@@ -80,14 +80,19 @@ function ActionDetail(props: {
   );
 }
 
-export function Tip(props: { readonly color: RoleColor; readonly tip: TipFrame }) {
+/** `afterWork` joins the live line to the work rows above it, with no gap. */
+export function Tip(props: {
+  readonly color: RoleColor;
+  readonly tip: TipFrame;
+  readonly afterWork: boolean;
+}) {
   const thinking = () => (props.tip.kind === "thinking" ? props.tip : undefined);
 
   return (
     <box flexDirection="column">
       <Show when={liveOf(props.tip)}>
         {(live) => (
-          <box flexDirection="column" marginTop={1}>
+          <box flexDirection="column" marginTop={props.afterWork ? 0 : 1}>
             <LiveLine color={props.color} label={live().label} seconds={live().seconds} />
             <box flexDirection="column" paddingLeft={DETAIL_INDENT}>
               <Show when={thinking()}>

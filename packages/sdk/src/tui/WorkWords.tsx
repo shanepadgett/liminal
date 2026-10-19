@@ -40,6 +40,15 @@ export const workColor = (color: RoleColor, part: WorkPart, dim: number) => {
   return mixHex(color(current), color(dimmed), dim);
 };
 
+/** A thought's row: `Thought` and its first line, without the bold a summary heading carries. */
+export const thoughtWording = (text: string): WorkWording => ({
+  verb: "Thought",
+  subject: (text.trim().split("\n")[0] ?? "").replaceAll("**", "").trim(),
+  detail: "",
+  failure: "",
+  oneLine: true,
+});
+
 const after = (text: string) => (text === "" ? "" : ` ${text}`);
 
 const aside = (text: string) => (text === "" ? "" : ` (${text})`);

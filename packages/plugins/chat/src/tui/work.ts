@@ -6,30 +6,22 @@
 
 import { Predicate } from "effect";
 
+import { thoughtWording, type WorkWording } from "@liminal/sdk/tui";
+
 import type { ToolCall, ToolRows, WorkRow } from "../contract.ts";
 import type { Step } from "./transcript-state.ts";
-
-/** A row's words as drawn: `failure` is set once a call ended any way but `done`. */
-export interface Worded {
-  readonly verb: string;
-  readonly subject: string;
-  readonly detail: string;
-  readonly failure: string;
-  /** Whether the subject is cut to one line. */
-  readonly oneLine: boolean;
-}
 
 /** A row of calls; a joined row lists the calls it gathered. */
 export interface CallsGroup {
   readonly kind: "calls";
-  readonly words: Worded;
-  readonly calls: ReadonlyArray<{ readonly call: ToolCall; readonly words: Worded }>;
+  readonly words: WorkWording;
+  readonly calls: ReadonlyArray<{ readonly call: ToolCall; readonly words: WorkWording }>;
 }
 
 /** A thought's row: its title, opening to the whole thought. */
 export interface ThoughtGroup {
   readonly kind: "thought";
-  readonly words: Worded;
+  readonly words: WorkWording;
   readonly text: string;
 }
 
@@ -46,7 +38,7 @@ const rowOf = (call: ToolCall, rows: ToolRows | undefined): WorkRow | undefined 
   return Predicate.isTagged(rows, "Rows") ? rows.fold(call) : undefined;
 };
 
-const wordedOf = (call: ToolCall, row: WorkRow): Worded => ({
+const wordedOf = (call: ToolCall, row: WorkRow): WorkWording => ({
   verb: row.verb,
   subject: row.subject,
   detail: row.detail ?? "",
@@ -54,7 +46,10 @@ const wordedOf = (call: ToolCall, row: WorkRow): Worded => ({
   oneLine: row.oneLine === true,
 });
 
-const joinedWords = (joins: NonNullable<WorkRow["joins"]>, calls: CallsGroup["calls"]): Worded => {
+const joinedWords = (
+  joins: NonNullable<WorkRow["joins"]>,
+  calls: CallsGroup["calls"],
+): WorkWording => {
   const failed = calls.filter(({ words }) => words.failure !== "").length;
 
   return {
@@ -83,12 +78,9 @@ const groupOf = (run: Run): CallsGroup => {
     : { kind: "calls", words: joinedWords(run.joins, calls), calls };
 };
 
-/** A thought's title: its first line, without the bold a summary heading carries. */
-const titleOf = (text: string) => (text.trim().split("\n")[0] ?? "").replaceAll("**", "").trim();
-
 const thoughtOf = (text: string): ThoughtGroup => ({
   kind: "thought",
-  words: { verb: "Thought", subject: titleOf(text), detail: "", failure: "", oneLine: true },
+  words: thoughtWording(text),
   text,
 });
 

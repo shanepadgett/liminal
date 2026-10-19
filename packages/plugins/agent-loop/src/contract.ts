@@ -194,7 +194,7 @@ export class AgentLoop extends Context.Service<
 
 /**
  * One part of a streaming reply: its text so far, and `done` once it has finished streaming. A
- * finished text part keeps its text until the reply is saved.
+ * finished text or thought keeps its text until the reply is saved.
  */
 export const LivePart = Schema.Struct({
   type: Schema.Literals(["text", "reasoning", "tool-call"]),

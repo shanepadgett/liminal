@@ -52,7 +52,7 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 
 ## Open topics
 
-- Attention coverage: `/commit` review and push prompts wait outside the approval system and do not trigger the attention sound; shared input-wait notification design is open.
+- Attention input waits ([plans/attention.md](plans/attention.md)): code plan for shared frontend input waits, commit review/push notifications and approval integration; implementation pending.
 
 - Code conventions: port Tau's standards and custom lint rules, reviewed per rule
 - Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`); [plans/reload.md](plans/reload.md) serves them into each build's `Bun.ModuleGraph`, and plugin packages' exports come from the folder the host loaded them from; an import of a package no plugin folder holds still resolves the plugin's own copy

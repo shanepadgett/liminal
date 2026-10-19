@@ -137,6 +137,11 @@ function Pinned(props: {
   );
 }
 
+/** Whether the last item drawn is a run of work; debug entries draw only in the debug view. */
+const endsInWork = (transcript: TranscriptState, debug: boolean) =>
+  transcript.items.findLast((item) => item.kind === "work" || debug || item.entry.user !== "debug")
+    ?.kind === "work";
+
 const toggled = (seqs: ReadonlySet<number>, seq: number): ReadonlySet<number> => {
   const next = new Set(seqs);
   if (!next.delete(seq)) next.add(seq);
@@ -192,7 +197,11 @@ export function Transcript(props: {
                 <SlotView
                   of={ChatSlots.live}
                   cell={live().kind}
-                  props={{ sessionId: props.sessionId, live: live() }}
+                  props={{
+                    sessionId: props.sessionId,
+                    live: live(),
+                    afterWork: endsInWork(props.transcript(), props.debug()),
+                  }}
                 />
               )}
             </Show>

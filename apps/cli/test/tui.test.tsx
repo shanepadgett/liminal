@@ -288,6 +288,44 @@ effectTest(
   trustedServices,
 );
 
+/** A call reading a short path, so its row fits on one line. */
+const readShort = (id: string): ModelPart => ({
+  type: "tool-call",
+  id,
+  name: "read",
+  params: { path: "a.ts" },
+  providerData: {},
+});
+
+effectTest(
+  "a finished thought and the live line join the work above them with no gap",
+  Effect.gen(function* () {
+    const thought: ModelPart = {
+      type: "reasoning",
+      text: "**Checking the test**\n\nIt reads itself.",
+      providerData: {},
+    };
+
+    const gate = yield* Latch.make();
+    // The reply's start, its thought, and the start of its next call, held there.
+    const thinking = reply([thought, readShort("c2")]).slice(0, 6);
+
+    const { setup } = yield* bootScripted(reply([readShort("c1")]), [
+      ...thinking,
+      { type: "gate", gate },
+    ]);
+
+    yield* send(setup, "look twice");
+
+    const lines = (yield* frameWith(setup, "Thought Checking the test")).split("\n");
+    const row = lines.findIndex((line) => line.includes("\u25c6 Read"));
+
+    expect(lines[row + 1]).toContain("\u25c6 Thought Checking the test");
+    expect(lines[row + 2]?.trim()).not.toBe("");
+  }),
+  trustedServices,
+);
+
 effectTest(
   "esc interrupts the running turn",
   Effect.gen(function* () {

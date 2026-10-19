@@ -96,10 +96,14 @@ export const ChatSlots = {
   }),
   /** A tool call's opened detail, keyed by tool name; its metadata words the call's row. */
   tool: Slot.keyed<ToolView, ToolRows, "session">("chat/tool", { scope: "session" }),
-  /** The session's live state at the transcript's end, keyed by live kind. */
-  live: Slot.keyed<{ readonly live: LiveState }, NoProps, "session">("chat/live", {
-    scope: "session",
-  }),
+  /**
+   * The session's live state at the transcript's end, keyed by live kind. `afterWork` says the
+   * transcript ends in a run of work, so live work can join it with no gap.
+   */
+  live: Slot.keyed<{ readonly live: LiveState; readonly afterWork: boolean }, NoProps, "session">(
+    "chat/live",
+    { scope: "session" },
+  ),
   /** Where the user writes; the first registration whose `select` matches takes it. */
   composer: Slot.chain<TurnProps, true, "session">("chat/composer", { scope: "session" }),
   /** Short items after the composer's model line, such as the approval mode; drawn by the composer. */

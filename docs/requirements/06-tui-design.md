@@ -64,6 +64,7 @@ Brightness follows importance, and what is newest is brightest.
 - A group opens on a click to one row per action; a thought opens to its text; past turns fold the same way
 - Work dims once left behind: a stretch fades to dim over 600ms once the assistant next speaks, and all of it dims when the turn's work is over
 - Thoughts are work rows: thoughts and tool calls between two things the assistant said form one block, no blank line between rows
+- The live line joins the work block above it with no blank line; a finished thought shows as its work row while the reply still streams
 - Notices, checkpoints and the `Worked for` row are dimmer than the assistant's words
 - Only failures have color: `(failed)` or `(lint failed)` in the danger color; no green counts or check marks
 - Thinking streams in with its newest characters warming up from the background; the rest of the word is laid out unseen, so words never jump lines

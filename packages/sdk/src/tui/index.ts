@@ -31,7 +31,15 @@ export { useClock } from "./clock.ts";
 export { formatDuration } from "./duration.ts";
 export { LiveLine } from "./LiveLine.tsx";
 export { Vapor } from "./Vapor.tsx";
-export { type WorkPart, WorkWords, workColor, type WorkWording } from "./WorkWords.tsx";
+
+export {
+  thoughtWording,
+  type WorkPart,
+  WorkWords,
+  workColor,
+  type WorkWording,
+} from "./WorkWords.tsx";
+
 export { Tail } from "./Tail.tsx";
 export { createPin } from "./pin.ts";
 export { clampLines, cutLine, wrapText, wrapWords } from "./wrap.ts";
