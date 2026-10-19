@@ -31,6 +31,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | cancel | Stops a running turn | to plan |
 | [usage](usage.md) | Context and cost of a session's model calls, in the sidebar | built |
 | [questions](questions.md) | `ask_question`, `/qna`, the form and the answers | built |
+| [commit](commit.md) | `/commit`: commit checks, a planned split into conventional commits, then the push question | built |
 
 ## Context
 
