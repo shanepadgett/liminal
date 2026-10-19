@@ -326,10 +326,13 @@
         "@liminal/session-store": "workspace:*",
       },
       "peerDependencies": {
+        "@liminal/chat": "workspace:*",
         "@liminal/command-runner": "workspace:*",
         "@liminal/context": "workspace:*",
         "@liminal/sdk": "workspace:*",
+        "@opentui/solid": "0.6.6",
         "effect": "4.0.5",
+        "solid-js": "1.9.12",
       },
     },
     "packages/plugins/files": {

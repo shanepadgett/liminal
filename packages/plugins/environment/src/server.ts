@@ -1,4 +1,7 @@
-/** Environment's server: the facts and files sections, read again on every request. */
+/**
+ * Environment's server: the facts and files sections, read again on every request, and the Session
+ * section's stream.
+ */
 
 import { Effect, FileSystem, Layer, Path } from "effect";
 
@@ -12,8 +15,10 @@ import {
 } from "@liminal/context/contract";
 import { Directories } from "@liminal/sdk";
 
+import { EnvironmentRpcs } from "./contract.ts";
 import { factLines } from "./server/facts.ts";
 import { fileLines } from "./server/files.ts";
+import { watchSession } from "./server/session.ts";
 import type { Workspace } from "./server/workspace.ts";
 
 /** The lines as a present section; a failed read keeps the saved value. */
@@ -23,17 +28,29 @@ const present = <E>(lines: Effect.Effect<Lines, E>) =>
     Effect.orElseSucceed((): SectionRead<Lines> => ({ type: "unavailable" })),
   );
 
-export const layer = Layer.effectDiscard(
+/** The services the sections and the Session stream read the workspace through. */
+const workspaceOf = Effect.gen(function* () {
+  return {
+    fs: yield* FileSystem.FileSystem,
+    path: yield* Path.Path,
+    runner: yield* CommandRunner,
+    folder: (yield* Directories).workspace,
+  } satisfies Workspace;
+});
+
+const rpcs = EnvironmentRpcs.toLayer(
+  Effect.gen(function* () {
+    const workspace = yield* workspaceOf;
+    const { home } = yield* Directories;
+
+    return EnvironmentRpcs.of({ "environment/session": () => watchSession(workspace, home) });
+  }),
+);
+
+const sectionsLayer = Layer.effectDiscard(
   Effect.gen(function* () {
     const sections = yield* PromptSections;
-    const path = yield* Path.Path;
-
-    const workspace: Workspace = {
-      fs: yield* FileSystem.FileSystem,
-      path,
-      runner: yield* CommandRunner,
-      folder: (yield* Directories).workspace,
-    };
+    const workspace = yield* workspaceOf;
 
     yield* sections.register(
       definePromptSection<Lines>({
@@ -60,3 +77,5 @@ export const layer = Layer.effectDiscard(
     );
   }),
 );
+
+export const layer = Layer.mergeAll(sectionsLayer, rpcs);

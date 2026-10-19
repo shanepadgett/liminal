@@ -1,8 +1,8 @@
 /**
  * The session sidebar. It runs the full height on the right, set off from the chat column by one
- * vertical line, and holds what is true of the whole session rather than one message: the context
- * the latest call used, what the session cost, how close compaction is, the commands left running
- * and the attached references.
+ * vertical line, and holds what is true of the whole session rather than one message: the folder
+ * and git branch Liminal runs in, the context the latest call used, what the session cost, how
+ * close compaction is, the commands left running and the attached references.
  */
 
 import type { JSX } from "@opentui/solid";
@@ -61,6 +61,10 @@ export function Sidebar(props: { readonly color: RoleColor }) {
       paddingTop={1}
       gap={1}
     >
+      <Block color={props.color} title="Session">
+        <Stat color={props.color} label="folder" value="~/dev/open-source/liminal" />
+        <Stat color={props.color} label="branch" value="main" />
+      </Block>
       <Block color={props.color} title="Context">
         <Stat color={props.color} label="used" value="84K · 42%" />
         <Stat color={props.color} label="window" value="200K" />
