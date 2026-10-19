@@ -7,17 +7,20 @@
 import { Effect, Option, Schema, Stream, SubscriptionRef } from "effect";
 
 import type { Models } from "@liminal/models/contract";
-import { type ModelRef, type SessionId, thinkingOptionOf } from "@liminal/sdk";
+import { type ModelInfo, type ModelRef, type SessionId, thinkingOptionOf } from "@liminal/sdk";
 import { type SessionLog, TurnSettings, TurnStartedEntry } from "@liminal/session-log/contract";
 import type { Settings } from "@liminal/settings/contract";
 
 import {
   AgentLoopSection,
+  Cycled,
+  type CycleResult,
   DefaultSetFailed,
   DefaultsInvalid,
   DefaultsMissing,
   DefaultsSet,
   NoDefaultModel,
+  NoOptions,
 } from "../contract.ts";
 
 const decodeSettings = Schema.decodeUnknownOption(TurnSettings);
@@ -49,6 +52,18 @@ const thinkingLabel = (models: Models["Service"], turn: TurnSettings) =>
     Effect.map((info) => Option.fromNullishOr(thinkingOptionOf(info, turn.thinking)?.label)),
     Effect.catch(() => Effect.succeedNone),
   );
+
+/**
+ * The option after the one `current` names, wrapping around; a `current` the model does not offer
+ * counts as its default. None when the model offers fewer than two options.
+ */
+export const nextThinking = (info: ModelInfo, current?: string) => {
+  if (info.thinking.length < 2) return Option.none();
+
+  const at = info.thinking.findIndex((option) => option.id === thinkingOptionOf(info, current)?.id);
+
+  return Option.fromNullishOr(info.thinking[(at + 1) % info.thinking.length]);
+};
 
 /** The settings as frontends show them, or why there are none. */
 const viewOf = <E extends { readonly message: string }>(
@@ -108,6 +123,21 @@ export const makeDefaults = Effect.fn("makeDefaults")(function* ({
     Effect.mapError((error) => new DefaultSetFailed({ message: error.message })),
   );
 
+  const cycleThinking = Effect.fn("AgentLoop.cycleThinking")(
+    function* (session: SessionId) {
+      const turn = yield* sessionSettings(session);
+      const info = yield* models.describe(turn.model);
+      const next = nextThinking(info, turn.thinking);
+
+      if (Option.isNone(next)) return NoOptions.make({}) satisfies CycleResult;
+
+      yield* pick(session, turn.model, next.value.id);
+
+      return Cycled.make({ label: next.value.label }) satisfies CycleResult;
+    },
+    Effect.mapError((error) => new DefaultSetFailed({ message: error.message })),
+  );
+
   /** A turn started in the session, so it has used any pick. */
   const started = (session: SessionId) =>
     Effect.suspend(() => {
@@ -124,6 +154,7 @@ export const makeDefaults = Effect.fn("makeDefaults")(function* ({
         Stream.mapEffect(() => viewOf(models, sessionSettings(session))),
       ),
     pick,
+    cycleThinking,
     started,
   };
 });

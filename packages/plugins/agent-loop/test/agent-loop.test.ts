@@ -24,6 +24,7 @@ import {
   defineTool,
   draft,
   type Entry,
+  type ModelInfo,
   ModelError,
   type ModelPart,
   SessionId,
@@ -51,14 +52,17 @@ import {
   AfterFailure,
   AfterFailureHooks,
   AgentLoop,
+  AgentLoopSection,
   BeforeCall,
   BeforeCallHooks,
+  Cycled,
   DefaultsMissing,
   DefaultsSet,
   NoDefaultModel,
   StepOutcome,
   TurnEndingHooks,
 } from "../src/contract.ts";
+import { nextThinking } from "../src/server/defaults.ts";
 
 const stack = serverOf(agentLoop).pipe(
   Layer.provideMerge(serverOf(tools)),
@@ -594,4 +598,61 @@ effectTest(
     expect(yield* loop.sessionSettings(SessionId.make("s3"))).toEqual(settings);
   }),
   stack,
+);
+
+effectTest(
+  "cycling thinking picks the next option of the session's model, wrapping after the last",
+  Effect.gen(function* () {
+    const loop = yield* AgentLoop;
+    const thinkingOf = Effect.map(loop.sessionSettings(s1), (turn) => turn.thinking);
+
+    yield* loop.pick(s1, settings.model, "off");
+
+    expect(yield* loop.cycleThinking(s1)).toEqual(Cycled.make({ label: "low" }));
+    expect(yield* thinkingOf).toBe("low");
+
+    yield* loop.cycleThinking(s1);
+    expect(yield* thinkingOf).toBe("high");
+
+    yield* loop.cycleThinking(s1);
+    expect(yield* thinkingOf).toBe("off");
+
+    expect(yield* (yield* Settings).section("agent-loop", AgentLoopSection)).toEqual({
+      model: settings.model,
+      thinking: "off",
+    });
+  }),
+  stack,
+);
+
+effectTest(
+  "cycling from an option the model lacks moves on from the model's default",
+  Effect.gen(function* () {
+    const loop = yield* AgentLoop;
+
+    yield* loop.pick(s1, settings.model, "xhigh");
+
+    expect(yield* loop.cycleThinking(s1)).toEqual(Cycled.make({ label: "high" }));
+  }),
+  stack,
+);
+
+effectTest(
+  "a model with fewer than two thinking options has nothing to cycle",
+  Effect.sync(() => {
+    const option = { id: "only", label: "only", value: ThinkingEffort.make({ effort: "low" }) };
+
+    const model: ModelInfo = {
+      id: "m",
+      name: "M",
+      contextWindow: 1,
+      maxOutput: 1,
+      thinking: [],
+      input: ["text"],
+    };
+
+    expect(Option.isNone(nextThinking(model))).toBe(true);
+    expect(Option.isNone(nextThinking({ ...model, thinking: [option] }, "only"))).toBe(true);
+  }),
+  Layer.empty,
 );

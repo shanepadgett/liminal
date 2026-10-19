@@ -60,6 +60,16 @@ export const DefaultsSet = Schema.TaggedStruct("DefaultsSet", {
   thinkingLabel: Schema.optionalKey(Schema.String),
 });
 
+/** The session's thinking option moved to the next one the model offers. */
+export const Cycled = Schema.TaggedStruct("Cycled", { label: Schema.String });
+
+/** The session's model offers fewer than two thinking options, so there is nothing to cycle. */
+export const NoOptions = Schema.TaggedStruct("NoOptions", {});
+
+export const CycleResult = Schema.Union([Cycled, NoOptions]);
+
+export type CycleResult = typeof CycleResult.Type;
+
 /** Why no new turn can start: no model is set, or the section does not decode. */
 export const DefaultsMissing = Schema.TaggedStruct("DefaultsMissing", { message: Schema.String });
 
@@ -196,6 +206,11 @@ export class AgentLoop extends Context.Service<
       model: ModelRef,
       thinking?: string,
     ) => Effect.Effect<void, DefaultSetFailed>;
+    /**
+     * Picks the next thinking option of the session's model for its next turn, as `pick` does,
+     * wrapping from the last to the first; `NoOptions` when the model offers fewer than two.
+     */
+    readonly cycleThinking: (sessionId: SessionId) => Effect.Effect<CycleResult, DefaultSetFailed>;
     /** Interrupts the session's running turn and saves it as cancelled; no turn running is a no-op. */
     readonly cancel: (
       sessionId: SessionId,
@@ -237,6 +252,11 @@ export class AgentLoopRpcs extends RpcGroup.make(
   }),
   Rpc.make("agent-loop/pick", {
     payload: { session: SessionId, model: ModelRef, thinking: Schema.optionalKey(ThinkingChoice) },
+    error: DefaultSetFailed,
+  }),
+  Rpc.make("agent-loop/cycle-thinking", {
+    payload: { session: SessionId },
+    success: CycleResult,
     error: DefaultSetFailed,
   }),
 ) {}

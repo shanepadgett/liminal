@@ -118,8 +118,8 @@ export const ChatSlots = {
   /** Further key hints after the composer's, one group per registration. */
   hints: Slot.list<TurnProps, "session">("chat/hints", { scope: "session" }),
   /**
-   * The sidebar's sections, top to bottom by `order`: usage's Context at 0 and Cost at 10,
-   * compaction's at 20.
+   * The sidebar's sections, top to bottom by `order`: environment's Session at -10, usage's Context
+   * at 0 and Cost at 10, compaction's at 20.
    */
   sidebar: Slot.list<NoProps, "session">("chat/sidebar", { scope: "session" }),
 };

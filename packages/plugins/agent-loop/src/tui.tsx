@@ -1,17 +1,18 @@
 /**
  * Agent-loop's TUI part: `/model` lists every signed-in provider's models, then the picked model's
  * thinking options, and picks both for the next turn of the session on screen. A provider whose
- * list failed shows the failure. It draws the streaming reply and the retry line at the
- * transcript's end.
+ * list failed shows the failure. `ctrl+t` moves the session's thinking option to the next one its
+ * model offers. It draws the streaming reply and the retry line at the transcript's end.
  */
 
 import { Effect, Option, Predicate, Stream } from "effect";
-import { createSignal, onCleanup } from "solid-js";
+import { type Accessor, createSignal, onCleanup } from "solid-js";
 
 import { ChatSlots } from "@liminal/chat/contract";
 import { ModelsRpcs } from "@liminal/models/contract";
 import type { ModelRef, SessionId } from "@liminal/sdk";
 import {
+  type Command,
   type DialogProps,
   defineTui,
   makeBridge,
@@ -20,10 +21,13 @@ import {
   TuiDialogs,
   type TuiDialogsService,
   TuiHost,
+  TuiToasts,
+  type TuiToastsService,
 } from "@liminal/sdk/tui";
 
 import {
   AgentLoopRpcs,
+  type CycleResult,
   DefaultsMissing,
   type DefaultsView,
   LiveReply,
@@ -43,6 +47,9 @@ import {
 
 /** Where the model line's items go. */
 const LINE_ORDER = 70;
+
+/** What the toast says when the model has no thinking option to move to. */
+const NO_OPTIONS = "This model has no thinking options to cycle";
 
 /** The session's model's key, if one is set. */
 const currentKey = (view: DefaultsView) =>
@@ -125,12 +132,62 @@ const showModels = (switching: Switching, listed: ReadonlyArray<ProviderModels>)
   ));
 };
 
+/** Tells the user a cycle found no thinking option to move to. */
+const toastNoOptions = (toasts: TuiToastsService) => (result: CycleResult) =>
+  Effect.sync(() => {
+    if (Predicate.isTagged(result, "NoOptions"))
+      toasts.show({ kind: "info", title: "Thinking", message: NO_OPTIONS });
+  });
+
+/** Tells the user why a cycle failed. */
+const toastFailure = (toasts: TuiToastsService) => (error: { readonly message: string }) =>
+  Effect.sync(() => {
+    toasts.show({ kind: "error", title: "Thinking", message: error.message });
+  });
+
+/** What the model commands do for the session on screen. */
+interface ModelActions {
+  readonly switchModel: (session: SessionId) => void;
+  readonly cycleThinking: (session: SessionId) => void;
+}
+
+/** `/model` and the thinking cycle, each acting on the session on screen when there is one. */
+const modelCommands = (
+  onScreen: Accessor<SessionId | undefined>,
+  actions: ModelActions,
+): ReadonlyArray<Command> => [
+  {
+    name: "model.switch",
+    title: "Switch model",
+    desc: "Switch the model",
+    category: "Model",
+    slash: { name: "model" },
+    palette: true,
+    run: () => {
+      const session = onScreen();
+      if (session !== undefined) actions.switchModel(session);
+    },
+  },
+  {
+    name: "thinking.cycle",
+    title: "Cycle thinking",
+    desc: "Use the next thinking option of the model",
+    category: "Model",
+    palette: true,
+    run: () => {
+      const session = onScreen();
+      if (session !== undefined) actions.cycleThinking(session);
+    },
+  },
+];
+
 export default defineTui({
   setup: Effect.gen(function* () {
     const host = yield* TuiHost;
     const bridge = yield* makeBridge;
     const commands = yield* TuiCommands;
     const dialogs = yield* TuiDialogs;
+    const toasts = yield* TuiToasts;
     const loop = yield* host.client(AgentLoopRpcs);
     const models = yield* host.client(ModelsRpcs);
 
@@ -156,19 +213,17 @@ export default defineTui({
       );
     };
 
-    yield* commands.register([
-      {
-        name: "model.switch",
-        title: "Switch model",
-        desc: "Switch the model",
-        category: "Model",
-        slash: { name: "model" },
-        palette: true,
-        run: () => {
-          const session = onScreen();
-          if (session !== undefined) switchModel(session);
-        },
-      },
+    const cycleThinking = (session: SessionId) => {
+      bridge.run(
+        loop["agent-loop/cycle-thinking"]({ session }).pipe(
+          Effect.tap(toastNoOptions(toasts)),
+          Effect.tapError(toastFailure(toasts)),
+        ),
+      );
+    };
+
+    yield* commands.register(modelCommands(onScreen, { switchModel, cycleThinking }), [
+      { key: "ctrl+t", cmd: "thinking.cycle" },
     ]);
 
     yield* host.register(

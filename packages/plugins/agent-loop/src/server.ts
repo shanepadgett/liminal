@@ -124,6 +124,7 @@ const rpcs = AgentLoopRpcs.toLayer(
     return AgentLoopRpcs.of({
       "agent-loop/session-defaults": ({ session }) => loop.sessionDefaults(session),
       "agent-loop/pick": ({ session, model, thinking }) => loop.pick(session, model, thinking),
+      "agent-loop/cycle-thinking": ({ session }) => loop.cycleThinking(session),
     });
   }),
 );
