@@ -9,7 +9,7 @@ import type { WorkspaceFiles } from "@liminal/files/contract";
 import type { Tool } from "@liminal/sdk";
 import type { ShellSafety } from "@liminal/shell-safety/contract";
 import { EditParams, WriteParams } from "@liminal/tools-edit/contract";
-import { ShellParams } from "@liminal/tools-shell/contract";
+import { ShellCommand } from "@liminal/tools-shell/contract";
 import { type ToolCall, type ToolCheck, ToolDecision } from "@liminal/tools/contract";
 
 import type { Modes } from "./modes.ts";
@@ -23,7 +23,7 @@ export interface CheckDeps {
   readonly workspace: string;
 }
 
-const decodeShell = Schema.decodeUnknownOption(ShellParams);
+const decodeShell = Schema.decodeUnknownOption(ShellCommand);
 const decodePath = Schema.decodeUnknownOption(Schema.Union([EditParams, WriteParams]));
 
 /** The command line of a `shell` call, if it is one with valid params. */
