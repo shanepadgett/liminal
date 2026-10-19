@@ -123,6 +123,10 @@ export const wordingOf = (group: WorkGroup, tense: Tense): Wording =>
           counted(script.calls.length, "call", "calls"),
         ),
       browsed: ({ web }) => webOf(web, tense),
+      managed: ({ process }) =>
+        tense === "past"
+          ? worded(process.done, process.subject, process.state)
+          : worded(process.doing, process.subject),
       recalled: ({ recall }) =>
         worded(
           tense === "past" ? "Recalled" : "Recalling",

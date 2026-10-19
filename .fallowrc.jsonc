@@ -9,6 +9,8 @@
     "tools/reference/check.ts",
     // The supervisor runs it as a child process by path.
     "apps/cli/src/main.ts",
+    // The processes plugin starts its holder program by path.
+    "packages/plugins/processes/src/server/holder/main.ts",
     "apps/gallery/src/main.tsx",
     "apps/gallery/src/watch.ts",
     // The kernel loads test plugins by folder.

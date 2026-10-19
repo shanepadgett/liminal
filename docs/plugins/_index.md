@@ -84,7 +84,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | tools-shell | `shell` over the command runner | built |
 | [tools-run](tools-run.md) | `run`: a script whose functions are the other tools | built |
 | [tools-web](tools-web.md) | `websearch` and `webfetch`, with searchers providers register | built |
-| [processes](processes.md) | Commands that keep running across turns and restarts | planned |
+| [processes](processes.md) | Commands that keep running across turns and restarts | built |
 
 ## Settings
 

@@ -59,6 +59,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "models",
         "notices",
         "palette",
+        "processes",
         "reload",
         "session-log",
         "session-store",

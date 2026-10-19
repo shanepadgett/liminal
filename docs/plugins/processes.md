@@ -2,11 +2,13 @@
 
 Commands the agent starts and leaves running across turns and restarts.
 
-Status: planned
+Status: built
 
 ## Provides
 
-- Tools: start a command, wait on it, read its output, type into it, stop it
+- Tools: start a command, wait on it, read its output, type into it, stop it, list them
+- A Processes section in the sidebar
+- A notice entry when a command exits
 
 ## Requirements
 
@@ -15,10 +17,6 @@ Status: planned
 - Commands run on Bun's built-in PTY when they need a terminal
 - A small separate program holds running commands; the server reconnects to it after a restart
 - A resumed turn tells the agent which of its commands are still running
-
-## Open
-
-- The holder program's protocol and lifetime
 
 ## References
 

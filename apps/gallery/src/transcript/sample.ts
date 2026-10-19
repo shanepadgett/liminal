@@ -48,6 +48,28 @@ export const BOOT: Script = {
       },
     },
     {
+      kind: "act",
+      ms: 900,
+      action: {
+        kind: "process",
+        doing: "Starting",
+        done: "Started",
+        subject: "bun run dev",
+        state: "running",
+      },
+    },
+    {
+      kind: "act",
+      ms: 1400,
+      action: {
+        kind: "process",
+        doing: "Waiting on",
+        done: "Waited on",
+        subject: "p1",
+        state: "running",
+      },
+    },
+    {
       kind: "say",
       ms: 2200,
       text: "The host reads manifests before any plugin code. Running the kernel tests to confirm the activation order.",

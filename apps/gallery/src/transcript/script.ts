@@ -27,7 +27,18 @@ export type Action =
   /** A web page read as text. */
   | { readonly kind: "webfetch"; readonly url: string }
   /** The model read back entries a checkpoint folded away. */
-  | { readonly kind: "recall"; readonly from: number; readonly through: number };
+  | { readonly kind: "recall"; readonly from: number; readonly through: number }
+  /**
+   * A call on a long-running command: starting it, waiting on it, typing into it or stopping it,
+   * with the words it reads as while it runs and once done, and the command's state after.
+   */
+  | {
+      readonly kind: "process";
+      readonly doing: string;
+      readonly done: string;
+      readonly subject: string;
+      readonly state: string;
+    };
 
 export type Beat =
   | { readonly kind: "think"; readonly text: string; readonly ms: number }

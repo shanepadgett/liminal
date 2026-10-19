@@ -495,6 +495,27 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/processes": {
+      "name": "@liminal/processes",
+      "version": "0.1.0",
+      "dependencies": {
+        "@effect/platform-bun": "4.0.5",
+      },
+      "devDependencies": {
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/agent-loop": "workspace:*",
+        "@liminal/chat": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@liminal/tools": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/reload": {
       "name": "@liminal/reload",
       "version": "0.1.0",
@@ -686,7 +707,6 @@
         "@liminal/models": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "@liminal/session-log": "workspace:*",
-        "@opentui/core": "0.6.6",
         "@opentui/solid": "0.6.6",
         "effect": "4.0.5",
         "solid-js": "1.9.12",
@@ -907,6 +927,8 @@
     "@liminal/notices": ["@liminal/notices@workspace:packages/plugins/notices"],
 
     "@liminal/palette": ["@liminal/palette@workspace:packages/plugins/palette"],
+
+    "@liminal/processes": ["@liminal/processes@workspace:packages/plugins/processes"],
 
     "@liminal/reload": ["@liminal/reload@workspace:packages/plugins/reload"],
 

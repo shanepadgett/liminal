@@ -300,6 +300,49 @@ statusOf = last turn start's model -> measure -> { size, budget, stage, notesThr
 - The sidebar's sections show a muted note before the session's first reply.
 - The budget turns the warning color from the warning stage.
 
+## Step 7: processes
+
+A new `processes` plugin. Its holder program runs the commands; the server part talks to it over Effect RPC on a Unix socket, so commands live through a server restart or a plugin swap. The holder serves every Liminal server of the user; commands are kept per session.
+
+```mermaid
+flowchart LR
+  tools["process_* tools"] --> link["HolderLink"]
+  hooks["before-call and turn-ending hooks"] --> link
+  rpcs["processes/list, processes/output"] --> link
+  link -- "HolderRpcs over <temp>/processes-1.sock" --> holder["holder program"]
+  holder --> commands["Bun.spawn: pipes or Bun.Terminal"]
+```
+
+| Where | Change |
+| --- | --- |
+| `processes` contract | `ProcessState` (Running, Exited code, Stopped), `ProcessSummary { id, command, pty, state }`, `WaitResult`, errors `UnknownProcess`, `ProcessNotRunning`, `ProcessStartFailed`, `BadPattern`, `HolderUnavailable`; `NoticeEntry` `processes/notice` (model reads it, shown as a line); `ProcessesRpcs`: `processes/list` and `processes/output` streams |
+| `processes` `src/holder/` | `protocol.ts` `HolderRpcs`; `buffer.ts` first and last half of output, read mark; `spawn.ts` detached `sh -c` on pipes or `Bun.Terminal`, stop = `ps` descendants then the group, TERM then KILL; `commands.ts` the per-session registry; `serve.ts` socket server counting connections, ends after 10 idle seconds; `main.ts` entry |
+| `processes` server | `link.ts` connects, starting the holder only to start a command; tools `process_start`, `process_wait`, `process_read`, `process_write`, `process_stop`, `process_list`; before-call hook: the resumed reminder and exits; turn-ending hook: exits continue the turn |
+| `processes` TUI | Rows `Started`, `Waited on`, `Read`, `Typed into`, `Stopped`, `Listed`; an opened `process_start` row tails the command's live output; Processes sidebar section at order 30, ended commands stay a minute; the notice line |
+| gallery | Processes section in `Sidebar`; process rows in the sample transcript |
+
+```ts
+// holder protocol, one socket per protocol version
+HolderRpcs: holder/hello, holder/start, holder/list, holder/watch (stream), holder/read,
+  holder/write, holder/wait, holder/stop, holder/exits, holder/output (stream)
+
+// server
+HolderLink {
+  current: SubscriptionRef<Option<Client>>   // set on connect, cleared when a call fails on the socket
+  running: Effect<Option<Client>>            // connects only when a holder answers
+  ensure: Effect<Client, HolderUnavailable>  // starts `bun src/holder/main.ts <socket>` detached, waits up to 5s
+}
+beforeCall(turn) =
+  reminder: once per session per server life, when commands are running: "Still running: p1 `bun dev` ..."
+  exits: holder/exits -> "p2 `bun test` exited with code 1. Its last output: ..."
+  -> Proceed({ input: notices })
+turnEnding(turn) = holder/exits -> notices; any continues the turn
+```
+
+- The holder ends when no command runs and no server has been connected for 10 seconds; its socket file goes with it.
+- A stale socket file that refuses connections is removed before the holder listens.
+- Ended commands keep their output in the holder until it ends.
+
 ## New dependency
 
 - `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Unpatched here: its console logs are cut only when the script ends.

@@ -1,9 +1,11 @@
 /**
  * The work between two things the assistant said, gathered into groups that each read as one row: a
  * thought, a run of reads and searches explored together, a run of edits, a command, a checks run,
- * a script and the calls it made, a web search or fetch, or a recall of folded history. Reads and
- * searches in a row join one group, and so do edits in a row.
+ * a script and the calls it made, a web search or fetch, a call on a long-running command, or a
+ * recall of folded history. Reads and searches in a row join one group, and so do edits in a row.
  */
+
+import { Match } from "effect";
 
 import type { Action, Check } from "./script.ts";
 
@@ -24,6 +26,8 @@ export type Recall = Extract<Action, { readonly kind: "recall" }>;
 
 export type Web = Extract<Action, { readonly kind: "websearch" | "webfetch" }>;
 
+export type Process = Extract<Action, { readonly kind: "process" }>;
+
 export type WorkGroup =
   | { readonly kind: "thought"; readonly text: string; readonly seconds: number }
   | { readonly kind: "explored"; readonly actions: readonly Looked[] }
@@ -32,27 +36,27 @@ export type WorkGroup =
   | { readonly kind: "checked"; readonly checks: readonly Check[] }
   | { readonly kind: "scripted"; readonly script: Scripted }
   | { readonly kind: "recalled"; readonly recall: Recall }
-  | { readonly kind: "browsed"; readonly web: Web };
+  | { readonly kind: "browsed"; readonly web: Web }
+  | { readonly kind: "managed"; readonly process: Process };
 
-const groupOf = (work: Work): WorkGroup => {
-  if (work.kind === "thought") return work;
+const groupOfAction = (action: Action): WorkGroup =>
+  Match.value(action).pipe(
+    Match.discriminatorsExhaustive("kind")({
+      read: (read): WorkGroup => ({ kind: "explored", actions: [read] }),
+      search: (search): WorkGroup => ({ kind: "explored", actions: [search] }),
+      edit: (edit): WorkGroup => ({ kind: "edited", edits: [edit] }),
+      run: (run): WorkGroup => ({ kind: "ran", run }),
+      checks: ({ checks }): WorkGroup => ({ kind: "checked", checks }),
+      script: (script): WorkGroup => ({ kind: "scripted", script }),
+      recall: (recall): WorkGroup => ({ kind: "recalled", recall }),
+      websearch: (web): WorkGroup => ({ kind: "browsed", web }),
+      webfetch: (web): WorkGroup => ({ kind: "browsed", web }),
+      process: (process): WorkGroup => ({ kind: "managed", process }),
+    }),
+  );
 
-  const { action } = work;
-
-  if (action.kind === "read" || action.kind === "search") {
-    return { kind: "explored", actions: [action] };
-  }
-
-  if (action.kind === "edit") return { kind: "edited", edits: [action] };
-  if (action.kind === "run") return { kind: "ran", run: action };
-  if (action.kind === "script") return { kind: "scripted", script: action };
-  if (action.kind === "recall") return { kind: "recalled", recall: action };
-
-  if (action.kind === "websearch" || action.kind === "webfetch")
-    return { kind: "browsed", web: action };
-
-  return { kind: "checked", checks: action.checks };
-};
+const groupOf = (work: Work): WorkGroup =>
+  work.kind === "thought" ? work : groupOfAction(work.action);
 
 /** The two groups as one, when the second carries on the first. */
 const joined = (last: WorkGroup, next: WorkGroup): WorkGroup | undefined => {
