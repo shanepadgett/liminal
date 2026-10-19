@@ -14,6 +14,7 @@ Status: built
 - The whole text goes to `<tmpdir>/liminal/tool-output/<session>/<call>.txt`, readable only by the user
 - Runs outermost, so it sees every call's final outcome, inner calls of `run` included
 - Denials pass unchanged
+- `LongOutput` fits any long text the same way, such as a checks report
 
 ## References
 

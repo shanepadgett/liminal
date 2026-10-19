@@ -1,14 +1,14 @@
 /**
- * The spill wrapper: a result or failure message past the limits keeps its first and last halves,
- * with a line naming the private file that holds the whole text.
+ * Long output: text past the limits keeps its first and last halves, with a line naming the private
+ * file that holds the whole text. The spill wrapper fits every call's outcome this way.
  */
 
 import { Effect, FileSystem, Option, Path, Schema } from "effect";
 
-import { Directories, type Pipeline } from "@liminal/sdk";
-import type { AllowedCall, ToolCall, ToolOutcome } from "@liminal/tools/contract";
+import { Directories, type Pipeline, type SessionId } from "@liminal/sdk";
+import type { AllowedCall, ToolOutcome } from "@liminal/tools/contract";
 
-import { outputLimits } from "../contract.ts";
+import { LongOutput, outputLimits } from "../contract.ts";
 
 const PRIVATE_FOLDER = 0o700;
 const PRIVATE_FILE = 0o600;
@@ -55,31 +55,45 @@ const withText = (outcome: ToolOutcome, text: string): ToolOutcome =>
     ? { status: "done", output: { ...outcome.output, result: text } }
     : { ...outcome, message: text };
 
-export const spillWrapper = Effect.gen(function* () {
+/** The long-output service: cut text names the private file that holds the whole of it. */
+export const makeLongOutput = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const { temp } = yield* Directories;
 
-  /** Writes `text` to the call's private file and returns its path. */
-  const save = Effect.fn("ToolOutput.save")(function* (call: ToolCall, text: string) {
-    const root = path.join(temp, "tool-output");
-    const folder = path.join(root, encodeURIComponent(call.sessionId));
+  /** Writes `text` to the session's private file `name` and returns its path. */
+  const save = Effect.fn("LongOutput.save")(function* (
+    session: SessionId,
+    name: string,
+    text: string,
+  ) {
+    const folder = path.join(temp, "tool-output", encodeURIComponent(session));
     yield* fs.makeDirectory(folder, { recursive: true, mode: PRIVATE_FOLDER });
 
-    const file = path.join(folder, `${encodeURIComponent(call.callId)}.txt`);
+    const file = path.join(folder, `${encodeURIComponent(name)}.txt`);
     yield* fs.writeFileString(file, text, { mode: PRIVATE_FILE });
 
     return file;
   });
 
-  const spill = (call: ToolCall, text: string) =>
-    save(call, text).pipe(
+  const fit = (session: SessionId, name: string, text: string) => {
+    if (!isLong(text)) return Effect.succeed(text);
+
+    return save(session, name, text).pipe(
       Effect.map((file) => `Full output saved at ${file}; read or search it for the rest.`),
       Effect.catch((error) =>
         Effect.succeed(`The full output could not be saved: ${error.message}`),
       ),
       Effect.map((where) => cutText(text, where)),
     );
+  };
+
+  return LongOutput.of({ fit });
+});
+
+/** The wrapper: fits each call's result or failure message, named by its call id. */
+export const spillWrapper = Effect.gen(function* () {
+  const output = yield* LongOutput;
 
   const wrapper: Pipeline.Middleware<AllowedCall, ToolOutcome, never> = ({ call }, next) =>
     Effect.flatMap(next, (outcome) => {
@@ -88,7 +102,9 @@ export const spillWrapper = Effect.gen(function* () {
       const text = textOf(outcome);
       if (!isLong(text)) return Effect.succeed(outcome);
 
-      return Effect.map(spill(call, text), (cut) => withText(outcome, cut));
+      return Effect.map(output.fit(call.sessionId, call.callId, text), (cut) =>
+        withText(outcome, cut),
+      );
     });
 
   return wrapper;

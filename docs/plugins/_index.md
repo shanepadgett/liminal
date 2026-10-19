@@ -77,7 +77,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | permissions | Rules for what tools may do | to plan |
 | [approval](approval.md) | Decides the tool calls a check asks about: decision model, reviewer, then the user | built |
 | [tool-output](tool-output.md) | Cuts long tool output and saves the whole text to a file | built |
-| checks | The checks tool, and runs the checks itself, with its own entry kind, when the model ends its turn without them | to plan |
+| [checks](checks.md) | Fixers after each writing call; the `checks` tool; runs due checks itself when a turn ends without them | built |
 | command-runner | Runs one command to its end, with a timeout | built |
 | tools-read | `read`: a text file in windows of lines | built |
 | tools-edit | `edit` replaces text that appears once in a file; `write` writes a whole file, with its folders | built |

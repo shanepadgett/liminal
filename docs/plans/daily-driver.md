@@ -142,6 +142,54 @@ history { from: Seq, through: Seq } -> log.read(session, { after: from - 1, thro
 - Notes in the view already name their entry range; the `history` guidance points the model at them.
 - The ended-by-plugin notice is the only place the user sees why a turn stopped; the loop guard is its first user.
 
+## Step 3: checks
+
+```
+packages/plugins/tool-output/src/contract.ts  LongOutput service: fit(session, name, text) -> the cut text naming its file
+packages/plugins/tool-output/src/server/      spill wrapper uses LongOutput; one file layout for both
+packages/plugins/checks/                      new plugin
+  src/contract.ts                             checks.json schema; Changes; CheckReport; entries; checksTool
+  src/server/file.ts                          <project>/checks.json -> Option<ProjectChecks>; untrusted -> none
+  src/server/snapshot.ts                      git status -z under the workspace + content hash per path
+  src/server/history.ts                       this turn's changes, last report, failed settles (pure)
+  src/server/run.ts                           dueChecks (globs on workspace paths), runChecks -> CheckReport
+  src/server/fix.ts                           ToolWrappers order 10: snapshot around a writing call, run fixers
+  src/server/tool.ts                          the checks tool; re-registered before each model call to follow the file
+  src/server/settle.ts                        TurnEndingHooks order 50: runs due checks, sends failures back
+  src/tui.tsx                                 checks tool rows; report entry row; fixed debug line
+```
+
+```ts
+// contract
+ChecksFile = { fix?, check?, commit?: Array<{ name, command, details?, include?, exclude?, cwd?, env?, timeoutSeconds? }> }
+Changes   = { type: "files", paths } | { type: "unknown" }       // paths from the workspace
+CheckReport = { passed: string[], failed: Array<{ name, output }> }
+ChangesEntry "checks/changes"  model false, hidden
+FixedEntry   "checks/fixed"    model false, debug      // "Fixed with format, lint on 3 files"
+ReportEntry  "checks/report"   model true,  shown      // report text + next step, as a user message
+
+// fix wrapper: tool.hints.readOnlyHint -> next unchanged
+before = snapshot; outcome = next; after = snapshot
+none of them -> ChangesEntry(unknown); else paths = changed(before, after)
+fixers due on paths -> run, FixedEntry; paths = changed(before, snapshot)
+paths non-empty -> ChangesEntry(files)
+
+// tool (no params; Record<String, Never> so the schema is type: object)
+due = dueChecks(check, changesThisTurn); none -> "No checks apply to the changes in this run."
+report -> passed: result; failed: ToolFailed(report text + fix-and-check-again), details = report
+
+// settle hook
+no config, no change after the last report (checks/report or a checks result) -> []
+report = runChecks(due)
+passed, or failed and 3 earlier failed reports this turn -> append ReportEntry, []   // the turn ends
+failed -> [ReportEntry]                                                              // the turn continues
+```
+
+- `{files}` in a command becomes the matching changed files, absolute and shell-quoted; a check that takes files and has none left is skipped.
+- Unknown changes (no git, or git failed) make every check due, with no files.
+- The tool draws as the gallery's checks row: `Running checks`, `Ran checks (all passed)`, `Ran checks (lint failed)`; opened, each check's mark and the failures' output. The settle report draws the same row.
+- Edits to `checks.json` apply from the next model call.
+
 ## New dependency
 
 - `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Step 4's plan studies how OpenCode uses it and writes the `run` guidance from that.

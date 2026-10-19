@@ -6,9 +6,11 @@
 import { definePlugin } from "@liminal/sdk";
 import { ToolWrappers } from "@liminal/tools/contract";
 
+import { LongOutput } from "./src/contract.ts";
+
 export default definePlugin({
   name: "tool-output",
-  provides: [],
+  provides: [LongOutput],
   requires: [ToolWrappers],
   uses: [],
   enabledByDefault: true,

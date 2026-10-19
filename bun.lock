@@ -191,6 +191,26 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/checks": {
+      "name": "@liminal/checks",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/agent-loop": "workspace:*",
+        "@liminal/chat": "workspace:*",
+        "@liminal/command-runner": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@liminal/tool-output": "workspace:*",
+        "@liminal/tools": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/command-runner": {
       "name": "@liminal/command-runner",
       "version": "0.1.0",
@@ -775,6 +795,8 @@
     "@liminal/cancel": ["@liminal/cancel@workspace:packages/plugins/cancel"],
 
     "@liminal/chat": ["@liminal/chat@workspace:packages/plugins/chat"],
+
+    "@liminal/checks": ["@liminal/checks@workspace:packages/plugins/checks"],
 
     "@liminal/cli": ["@liminal/cli@workspace:apps/cli"],
 
