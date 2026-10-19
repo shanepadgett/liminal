@@ -26,7 +26,7 @@ Status: built
 - Every entry has a sequence number that memories and checkpoints can point at
 - Sequence numbers are per session and start at 1; a fork continues from its cut point
 - A plugin defines its entry kinds in its contract with `defineEntry`; kind names carry the plugin's name as a prefix
-- Entry kinds have no version field before release
+- Each entry kind has a version; its definition migrates rows saved under older versions
 - Each kind sets whether the model sees its entries and whether the user sees them shown, hidden or only in debug; a kind may let each entry set the user setting
 - A turn's start (with its settings) and end (with its reason) are core entries, `session-log/turn-started` and `session-log/turn-ended`; steps are derived from the order of entries
 - Each entry saves, when written, the text the model sees and a plain text for the user, so it keeps its place in the transcript and context when its plugin is off
@@ -35,6 +35,7 @@ Status: built
 - Model content is saved in Liminal's own part types, not a dependency's message format
 - A writer passes its own entry definition with each entry; `append` checks the data against that definition
 - Reading back decodes with the newest registered definition of a kind
+- An entry the model never sees whose data fails to decode keeps its JSON and does not stop the read
 - The store numbers entries inside its own write; `session-log` holds no write lock
 - A batch of entries saves in one transaction
 - Subscribers are told the newest sequence number and read new entries from the store
