@@ -79,10 +79,17 @@ const addWorkspaceAndTitle = Effect.gen(function* () {
   `;
 });
 
+/** The name the agent gives a session; the title stays the first user message. */
+const addName = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+  yield* sql`ALTER TABLE sessions ADD COLUMN name TEXT NOT NULL DEFAULT ''`;
+});
+
 /** Applies the migrations the database has not seen yet. */
 export const migrate = SqliteMigrator.run({
   loader: SqliteMigrator.fromRecord({
     "0001_create_tables": createTables,
     "0002_workspace_and_title": addWorkspaceAndTitle,
+    "0003_name": addName,
   }),
 });

@@ -32,7 +32,7 @@ const toStoreError = (error: { readonly message: string; readonly cause: unknown
 const toSummary = (stored: StoredSession): SessionSummary => ({
   id: SessionId.make(stored.id),
   parentId: stored.parentId === null ? null : SessionId.make(stored.parentId),
-  title: stored.title,
+  title: stored.name === "" ? stored.title : stored.name,
   createdAt: DateTime.makeUnsafe(stored.createdAt),
   updatedAt: DateTime.makeUnsafe(stored.updatedAt),
   lastSeq: stored.lastSeq,

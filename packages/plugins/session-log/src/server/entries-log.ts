@@ -1,6 +1,6 @@
 /** A session's entries: appending, reading and following them. */
 
-import { Array as Arr, DateTime, Effect, PubSub, Ref, Stream } from "effect";
+import { Array as Arr, DateTime, Effect, Option, PubSub, Ref, Schema, Stream } from "effect";
 
 import {
   type Entry,
@@ -14,7 +14,7 @@ import {
 } from "@liminal/sdk";
 import type { StoredEntry, StoreError as StoredStoreError } from "@liminal/session-store/contract";
 
-import { type SeqRange, UserEntry } from "../contract.ts";
+import { NamedEntry, type SeqRange, UserEntry } from "../contract.ts";
 import { fromStore, type LogDeps } from "./deps.ts";
 import { prepare, restore, toSaved } from "./entries.ts";
 
@@ -71,14 +71,28 @@ const followWith =
 /** A session's name: the first line of its first user message. */
 const titleOf = (text: string) => text.trim().split("\n", 1)[0]?.trim() ?? "";
 
-/** Names the session after the first user message among `drafts`; a named session keeps its name. */
-const nameAfter = (deps: LogDeps, session: SessionId, drafts: ReadonlyArray<EntryDraft>) => {
-  const user = drafts.find((draft) => draft.entry.kind === UserEntry.kind);
+/** The name in the newest named entry among `drafts`. */
+const nameOf = (drafts: ReadonlyArray<EntryDraft>) =>
+  Arr.findLast(drafts, (draft) => draft.entry.kind === NamedEntry.kind).pipe(
+    Option.flatMap((draft) => Schema.decodeUnknownOption(NamedEntry.data)(draft.data)),
+    Option.map((data) => data.name),
+  );
 
-  return user === undefined
-    ? Effect.void
-    : fromStore(deps.store.nameSession(session, titleOf(user.text)));
-};
+/**
+ * Titles the session after the first user message among `drafts`, which a titled session keeps, and
+ * names it after the newest named entry, which replaces any earlier name.
+ */
+const nameAfter = Effect.fn("SessionLog.nameAfter")(function* (
+  deps: LogDeps,
+  session: SessionId,
+  drafts: ReadonlyArray<EntryDraft>,
+) {
+  const user = drafts.find((draft) => draft.entry.kind === UserEntry.kind);
+  if (user !== undefined) yield* fromStore(deps.store.nameSession(session, titleOf(user.text)));
+
+  const name = nameOf(drafts);
+  if (Option.isSome(name)) yield* fromStore(deps.store.setName(session, name.value));
+});
 
 export const makeEntries = (deps: LogDeps) => {
   const read = Effect.fn("SessionLog.read")(function* (session: SessionId, range: SeqRange) {

@@ -33,6 +33,8 @@ export const StoredSession = Schema.Struct({
   workspace: Schema.String,
   /** Its first user message, cut to one line; empty until there is one. */
   title: Schema.String,
+  /** The name the agent gave it; empty until it has one. */
+  name: Schema.String,
   createdAt: Schema.Int,
   /** When its last entry was saved, or `createdAt` while it has none. */
   updatedAt: Schema.Int,
@@ -88,6 +90,11 @@ export class SessionStore extends Context.Service<
     readonly nameSession: (
       id: string,
       title: string,
+    ) => Effect.Effect<void, SessionNotFound | StoreError>;
+    /** Names the session `name`, replacing any earlier name. */
+    readonly setName: (
+      id: string,
+      name: string,
     ) => Effect.Effect<void, SessionNotFound | StoreError>;
     /** The sessions started in `workspace`, most recently updated first. */
     readonly listSessions: (

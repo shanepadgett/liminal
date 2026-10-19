@@ -630,6 +630,24 @@
         "effect": "4.0.5",
       },
     },
+    "packages/plugins/session-name": {
+      "name": "@liminal/session-name",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/context": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/chat": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@liminal/tools": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/session-store": {
       "name": "@liminal/session-store",
       "version": "0.1.0",
@@ -1076,6 +1094,8 @@
     "@liminal/sdk": ["@liminal/sdk@workspace:packages/sdk"],
 
     "@liminal/session-log": ["@liminal/session-log@workspace:packages/plugins/session-log"],
+
+    "@liminal/session-name": ["@liminal/session-name@workspace:packages/plugins/session-name"],
 
     "@liminal/session-store": ["@liminal/session-store@workspace:packages/plugins/session-store"],
 

@@ -18,6 +18,7 @@ const SessionRow = Schema.Struct({
   forkSeq: Schema.NullOr(Schema.Int),
   workspace: Schema.String,
   title: Schema.String,
+  name: Schema.String,
 });
 
 type SessionRow = typeof SessionRow.Type;
@@ -49,7 +50,7 @@ const findSession = Effect.fn("findSession")(function* (sessionId: string) {
   const sql = yield* SqlClient.SqlClient;
 
   const rows = yield* sql`
-    SELECT parent_id AS "parentId", fork_seq AS "forkSeq", workspace, title FROM sessions
+    SELECT parent_id AS "parentId", fork_seq AS "forkSeq", workspace, title, name FROM sessions
     WHERE id = ${sessionId}
   `.pipe(Effect.flatMap(Schema.decodeUnknownEffect(Schema.Array(SessionRow))));
 
@@ -81,8 +82,8 @@ export const forkSession = Effect.fn("forkSession")(function* (
   const row = yield* findSession(parent);
 
   yield* sql`
-    INSERT INTO sessions (id, parent_id, fork_seq, created_at, workspace, title)
-    VALUES (${id}, ${parent}, ${seq}, ${now}, ${row.workspace}, ${row.title})
+    INSERT INTO sessions (id, parent_id, fork_seq, created_at, workspace, title, name)
+    VALUES (${id}, ${parent}, ${seq}, ${now}, ${row.workspace}, ${row.title}, ${row.name})
   `;
 
   yield* indexSession(id, now, seq);
@@ -93,6 +94,13 @@ export const nameSession = Effect.fn("nameSession")(function* (id: string, title
   yield* findSession(id);
 
   yield* sql`UPDATE sessions SET title = ${title} WHERE id = ${id} AND title = ''`;
+});
+
+export const setName = Effect.fn("setName")(function* (id: string, name: string) {
+  const sql = yield* SqlClient.SqlClient;
+  yield* findSession(id);
+
+  yield* sql`UPDATE sessions SET name = ${name} WHERE id = ${id}`;
 });
 
 /** One session's slice of a read: its entries with `seq <= through`. */

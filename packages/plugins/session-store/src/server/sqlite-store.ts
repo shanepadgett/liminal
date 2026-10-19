@@ -40,6 +40,7 @@ const make = Effect.gen(function* () {
       run("appendEntries")(sql.withTransaction(Queries.appendEntries(sessionId, entries))),
     readEntries: (sessionId, range) => run("readEntries")(Queries.readEntries(sessionId, range)),
     nameSession: (id, title) => run("nameSession")(Queries.nameSession(id, title)),
+    setName: (id, name) => run("setName")(Queries.setName(id, name)),
     listSessions: (workspace) => run("listSessions")(listSessions(workspace)),
     lastEntriesOfKinds: (kinds) => run("lastEntriesOfKinds")(Queries.lastEntriesOfKinds(kinds)),
     recentEntriesOfKinds: (kinds, since) =>

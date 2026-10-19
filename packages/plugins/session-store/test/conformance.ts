@@ -137,6 +137,7 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
         const listed = {
           workspace: "/work",
           title: "",
+          name: "",
           parentId: null,
           createdAt: 0,
           updatedAt: 2000,
@@ -170,6 +171,21 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
         const listed = yield* store.listSessions("/work");
         expect(listed.map((session) => session.title)).toEqual(["first", "first"]);
         expect(yield* failureOf(store.nameSession("missing", "x"))).toBeInstanceOf(SessionNotFound);
+      }),
+  ],
+  [
+    "sets a session's name, replacing the last; a fork copies it",
+    (store) =>
+      Effect.gen(function* () {
+        yield* store.createSession("s1", "/work");
+        yield* store.nameSession("s1", "first prompt");
+        yield* store.setName("s1", "one");
+        yield* store.setName("s1", "two");
+        yield* store.forkSession("s2", "s1", 0);
+        const listed = yield* store.listSessions("/work");
+        expect(listed.map((session) => session.name)).toEqual(["two", "two"]);
+        expect(listed.map((session) => session.title)).toEqual(["first prompt", "first prompt"]);
+        expect(yield* failureOf(store.setName("missing", "x"))).toBeInstanceOf(SessionNotFound);
       }),
   ],
   [

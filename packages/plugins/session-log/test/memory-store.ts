@@ -13,6 +13,7 @@ import {
 interface MemorySession {
   readonly workspace: string;
   readonly title: string;
+  readonly name: string;
   readonly parent: { readonly id: string; readonly seq: number } | undefined;
   readonly entries: ReadonlyArray<StoredEntry>;
   readonly live: StoredLive | undefined;
@@ -58,6 +59,7 @@ const withEntries = (
 const empty = (workspace: string): MemorySession => ({
   workspace,
   title: "",
+  name: "",
   parent: undefined,
   entries: [],
   live: undefined,
@@ -75,8 +77,14 @@ const make = Effect.gen(function* () {
     createSession: (id, workspace) => put(id, empty(workspace)),
     forkSession: (id, parent, seq) =>
       Effect.flatMap(existing(parent), (found) =>
-        put(id, { ...empty(found.workspace), title: found.title, parent: { id: parent, seq } }),
+        put(id, {
+          ...empty(found.workspace),
+          title: found.title,
+          name: found.name,
+          parent: { id: parent, seq },
+        }),
       ),
+    setName: (id, name) => Effect.flatMap(existing(id), (session) => put(id, { ...session, name })),
     nameSession: (id, title) =>
       Effect.flatMap(existing(id), (session) =>
         session.title === "" ? put(id, { ...session, title }) : Effect.void,
@@ -114,6 +122,7 @@ const make = Effect.gen(function* () {
                   parentId: session.parent?.id ?? null,
                   workspace,
                   title: session.title,
+                  name: session.name,
                   createdAt: 0,
                   updatedAt: session.entries.at(-1)?.at ?? 0,
                   lastSeq: lastSeqOf(sessions, id),

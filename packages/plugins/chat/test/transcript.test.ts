@@ -19,6 +19,7 @@ import {
   fold,
   isLeftBehind,
   type Step,
+  titleOf,
   type Transcript,
 } from "../src/tui/transcript-state.ts";
 import { groupsOf } from "../src/tui/work.ts";
@@ -198,6 +199,30 @@ describe("transcript", () => {
       "Thought Checking tests",
       "Read c.ts",
     ]);
+  });
+
+  test("the title is the first user line until the model names the session", () => {
+    const prompted = folded([saved("session-log/user", { text: "  fix the login bug\nit loops" })]);
+    expect(titleOf(prompted)).toBe("fix the login bug");
+
+    const later = fold(prompted, saved("session-log/user", { text: "and the logout" }));
+    expect(titleOf(later)).toBe("fix the login bug");
+
+    const named = fold(
+      later,
+      saved("session-log/named", { name: "Fixing a login redirect loop" }, "debug"),
+    );
+
+    expect(titleOf(named)).toBe("Fixing a login redirect loop");
+
+    const renamed = fold(
+      named,
+      saved("session-log/named", { name: "Fixing login and logout" }, "debug"),
+    );
+
+    expect(titleOf(renamed)).toBe("Fixing login and logout");
+
+    expect(titleOf(emptyTranscript)).toBe("");
   });
 
   test("work is left behind once someone speaks after it or the turn ends", () => {

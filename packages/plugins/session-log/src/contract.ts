@@ -32,7 +32,10 @@ import {
 export const SessionSummary = Schema.Struct({
   id: SessionId,
   parentId: Schema.NullOr(SessionId),
-  /** The first line of its first user message; empty until there is one. */
+  /**
+   * Its name when the agent gave it one, else the first line of its first user message; empty until
+   * there is either.
+   */
   title: Schema.String,
   createdAt: Schema.DateTimeUtc,
   updatedAt: Schema.DateTimeUtc,
@@ -240,6 +243,22 @@ export const TurnEndedEntry = defineEntry({
   user: "hidden",
 });
 
+/** A session's name: one plain line of about 10 words. */
+export const SessionName = Schema.String.check(
+  Schema.isTrimmed(),
+  Schema.isNonEmpty(),
+  Schema.isMaxLength(80),
+  Schema.isPattern(/^[^\n\r]*$/, { message: "a name is one line" }),
+);
+
+/** The model named the session; the newest one is its name. */
+export const NamedEntry = defineEntry({
+  kind: "session-log/named",
+  data: Schema.Struct({ name: SessionName }),
+  model: false,
+  user: "debug",
+});
+
 /** The core entry kinds, registered by session-log's server. */
 export const coreEntries: ReadonlyArray<EntryDefinition> = [
   UserEntry,
@@ -250,6 +269,7 @@ export const coreEntries: ReadonlyArray<EntryDefinition> = [
   InnerCallEntry,
   TurnStartedEntry,
   TurnEndedEntry,
+  NamedEntry,
 ];
 
 /**

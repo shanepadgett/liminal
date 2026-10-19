@@ -6,7 +6,12 @@
 import { Array as Arr, Effect, Option, Schema } from "effect";
 
 import { defineTool, type Entry, Seq, type SessionId, ToolFailed } from "@liminal/sdk";
-import { type SessionLog, ToolCallEntry } from "@liminal/session-log/contract";
+import {
+  NamedEntry,
+  SessionName,
+  type SessionLog,
+  ToolCallEntry,
+} from "@liminal/session-log/contract";
 import { type ToolCheck, ToolDecision } from "@liminal/tools/contract";
 
 import {
@@ -74,6 +79,12 @@ const Params = Schema.Struct({
     description:
       "What you need to continue: the user's request and limits, unfinished work, blockers, unanswered questions and the exact next action last; 500 to 1,500 characters",
   }),
+  name: Schema.optionalKey(
+    SessionName.annotate({
+      description:
+        "A new name for the session, one plain sentence of about 10 words. Fill it only when the current session name no longer describes the work; leave it out otherwise",
+    }),
+  ),
 });
 
 const alone = "Call checkpoint alone, without other tool calls.";
@@ -95,7 +106,7 @@ export const checkpointToolOf = (deps: CheckpointDeps) =>
     },
     runAlongside: false,
     safeToRerun: false,
-    run: ({ handoff }, { sessionId, callId }) =>
+    run: ({ handoff, name }, { sessionId, callId }) =>
       Effect.gen(function* () {
         const entries = yield* deps.log.read(sessionId, {});
 
@@ -109,6 +120,9 @@ export const checkpointToolOf = (deps: CheckpointDeps) =>
 
         yield* deps.log.append(sessionId, [
           { entry: HandoffEntry, data: { handoff }, text: handoff },
+          ...(name === undefined
+            ? []
+            : [{ entry: NamedEntry, data: { name }, text: `Session named: ${name}` }]),
         ]);
 
         return {

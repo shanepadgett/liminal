@@ -276,6 +276,7 @@ Rules:
 - `result` is what the model reads. `details` is JSON for the TUI only.
 - Fail with `ToolFailed({ message })` for anything the model should see and react to. Never let a tool die.
 - To word the call in the transcript, register a tool row in the TUI part; see [tui.md](tui.md#show-a-tool-call).
+- To stop a tool without changing the request's cached tool list, keep it listed and register a `ToolChecks` check that denies it; example: `packages/plugins/session-name/src/server/once.ts`.
 
 Example: `packages/plugins/tools-read/`.
 

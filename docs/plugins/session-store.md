@@ -21,6 +21,7 @@ Status: built
 - Keeps one live slot per session, overwritten on each update
 - Each session records the workspace folder it was started in and a title; a fork copies both
 - A session's title is set once, from the first line of its first user message
+- A session's name is set by `setName`, replacing any earlier name; it is kept apart from the title, and a fork copies both
 - Lists sessions by workspace folder, newest first
 - Reads the own entries of given kinds in every folder's sessions saved to since a given time
 

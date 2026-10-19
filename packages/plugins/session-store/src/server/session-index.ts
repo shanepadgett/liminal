@@ -57,7 +57,7 @@ export const listSessions = Effect.fn("listSessions")(function* (workspace: stri
   const sql = yield* SqlClient.SqlClient;
 
   return yield* sql`
-    SELECT s.id, s.parent_id AS "parentId", s.workspace, s.title, s.created_at AS "createdAt",
+    SELECT s.id, s.parent_id AS "parentId", s.workspace, s.title, s.name, s.created_at AS "createdAt",
       i.updated_at AS "updatedAt", i.last_seq AS "lastSeq"
     FROM sessions s JOIN session_index i ON i.session_id = s.id
     WHERE s.workspace = ${workspace}

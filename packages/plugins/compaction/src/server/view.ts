@@ -4,11 +4,11 @@
  * or model switch are dropped, so the context sends a fresh baseline.
  */
 
-import { Option, Predicate } from "effect";
+import { Array as Arr, Option, Predicate, Schema } from "effect";
 
 import { SystemEntry } from "@liminal/context/contract";
 import { type Entry, type ModelContent, reminder } from "@liminal/sdk";
-import { ReasoningEntry, ToolCallEntry } from "@liminal/session-log/contract";
+import { NamedEntry, ReasoningEntry, ToolCallEntry } from "@liminal/session-log/contract";
 
 import {
   type Checkpoint,
@@ -80,6 +80,15 @@ const checkpointCall = (entries: ReadonlyArray<Entry>, checkpoint: Checkpoint) =
   return new Set([...reply, ...result].map((entry) => entry.seq));
 };
 
+const decodeNamed = Schema.decodeUnknownOption(NamedEntry.data);
+
+/** The session's current name, from its newest named entry, wherever it sits in the log. */
+const nameIn = (entries: ReadonlyArray<Entry>) =>
+  Arr.findLast(entries, (entry) => entry.kind === NamedEntry.kind).pipe(
+    Option.flatMap((entry) => decodeNamed(entry.data)),
+    Option.map((data) => data.name),
+  );
+
 /** The view folded at `checkpoint`. */
 const foldAt = (entries: ReadonlyArray<Entry>, checkpoint: Checkpoint, stored: Stored) => {
   const at = checkpoint.entry.seq;
@@ -98,12 +107,18 @@ const foldAt = (entries: ReadonlyArray<Entry>, checkpoint: Checkpoint, stored: S
     ],
   });
 
+  const name = Option.match(nameIn(entries), {
+    onNone: () => [],
+    onSome: (text) => [built(checkpoint.entry, `Session name: ${text}`, false)],
+  });
+
   return [
     ...texts.map((text, index) => built(checkpoint.entry, text, index === texts.length - 1)),
     ...entries.filter(
       (entry) => entry.seq >= checkpoint.data.tailFrom && entry.seq < at && isKept(entry),
     ),
     ...handoff,
+    ...name,
     ...entries.filter((entry) => entry.seq > at && isKept(entry)),
   ];
 };

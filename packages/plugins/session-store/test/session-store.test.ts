@@ -78,6 +78,7 @@ effectTest(
         parentId: null,
         workspace: "/work",
         title: "",
+        name: "",
         createdAt: 0,
         updatedAt: 5000,
         lastSeq: 1,

@@ -65,6 +65,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "references",
         "reload",
         "session-log",
+        "session-name",
         "session-store",
         "settings",
         "shell-safety",

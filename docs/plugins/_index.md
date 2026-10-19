@@ -15,7 +15,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | session-fork | Starts a new session from a point in another | to plan |
 | session-resume | Reopens a past session | to plan |
 | session-list | Lists sessions | to plan |
-| session-title | Names a session | to plan |
+| [session-name](session-name.md) | `name_session`: the model names its session once; checkpoints rename it | built |
 | session-export | Writes a session out as JSONL | to plan |
 | session-search | Searches across sessions | to plan |
 | checkpoints | Conversation save points to rewind to | to plan |

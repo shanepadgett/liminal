@@ -127,18 +127,20 @@ const toolNamed = (name: string) =>
   );
 
 /** A saved `checkpoint` call and its done result, around the tool's own run. */
-const callCheckpoint = (handoff: string) =>
+const callCheckpoint = (handoff: string, name?: string, callId = "k1") =>
   Effect.gen(function* () {
     const log = yield* SessionLog;
-    const params = { handoff };
+    const params = name === undefined ? { handoff } : { handoff, name };
 
     yield* log.append(s1, [
       draft(ToolCallEntry, {
-        data: { id: "k1", name: "checkpoint", params },
+        data: { id: callId, name: "checkpoint", params },
         model: [
           {
             role: "assistant",
-            parts: [{ type: "tool-call", id: "k1", name: "checkpoint", params, providerData: {} }],
+            parts: [
+              { type: "tool-call", id: callId, name: "checkpoint", params, providerData: {} },
+            ],
           },
         ],
         text: "",
@@ -146,18 +148,18 @@ const callCheckpoint = (handoff: string) =>
     ]);
 
     const tool = yield* toolNamed("checkpoint");
-    const output = yield* tool.run(params, { sessionId: s1, callId: "k1" });
+    const output = yield* tool.run(params, { sessionId: s1, callId });
 
     yield* log.append(s1, [
       draft(ToolResultEntry, {
-        data: { callId: "k1", name: "checkpoint", status: "done", result: output.result },
+        data: { callId, name: "checkpoint", status: "done", result: output.result },
         model: [
           {
             role: "user",
             parts: [
               {
                 type: "tool-result",
-                callId: "k1",
+                callId,
                 name: "checkpoint",
                 result: output.result,
                 isFailure: false,
@@ -209,6 +211,43 @@ effectTest(
     );
 
     expect(yield* check("checkpoint")).toBeUndefined();
+  }),
+  stack,
+);
+
+effectTest(
+  "a checkpoint with a name renames the session and the folded view shows the name",
+  Effect.gen(function* () {
+    yield* start(said(300), userMessage("the early request"));
+    yield* callCheckpoint("Two of five files are done.", "Migrating five files to the new API");
+
+    const log = yield* SessionLog;
+
+    expect((yield* log.list).map((session) => session.title)).toEqual([
+      "Migrating five files to the new API",
+    ]);
+
+    expect(yield* requestTexts).toContain("Session name: Migrating five files to the new API");
+
+    yield* callCheckpoint("Four of five files are done.", undefined, "k2");
+
+    expect((yield* log.list).map((session) => session.title)).toEqual([
+      "Migrating five files to the new API",
+    ]);
+
+    expect(yield* requestTexts).toContain("Session name: Migrating five files to the new API");
+  }),
+  stack,
+);
+
+effectTest(
+  "a checkpoint without a name adds no name line",
+  Effect.gen(function* () {
+    yield* start(said(300), userMessage("the early request"));
+    yield* callCheckpoint("Two of five files are done.");
+
+    const texts = yield* requestTexts;
+    expect(texts.some((text) => text.startsWith("Session name:"))).toBe(false);
   }),
   stack,
 );

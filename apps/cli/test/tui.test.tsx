@@ -347,7 +347,7 @@ effectTest(
 );
 
 effectTest(
-  "the header offers ctrl+r once a checked reload waits, and ctrl+r applies it",
+  "the footer offers ctrl+r once a checked reload waits, and ctrl+r applies it",
   Effect.gen(function* () {
     const path = yield* Path.Path;
     const changes = yield* Queue.unbounded<ReadonlyArray<string>>();
