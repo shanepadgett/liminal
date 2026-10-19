@@ -50,7 +50,7 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 - Session name ([plans/session-name.md](plans/session-name.md)): `name_session` and the checkpoint's `name` field are built; check live that the model names once, renames only at a checkpoint, and the `/sessions` dialog shows the name
 - Entry versions and graph-scoped registries ([plans/entry-versions.md](plans/entry-versions.md)): step 1 (graph-scoped registries) built, awaiting review; step 2 (entry versions) next
 - Check memory live ([plans/compaction.md](plans/compaction.md)): the checkpoint rule, and the handoff and note lines in the debug view.
-- Memory files ([plans/memory.md](plans/memory.md)): steps 1 (gallery) and 2 (rename) built; step 3, the file wrapper and file lists, next
+- Memory files ([plans/memory.md](plans/memory.md)): steps 1 to 3 built; step 4, restoring files at a checkpoint, next
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [memory](plugins/memory.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
 

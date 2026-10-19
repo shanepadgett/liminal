@@ -4,21 +4,44 @@
  * checkpoint once the cache is lost.
  */
 
-import { expect } from "bun:test";
+import { expect, test } from "bun:test";
 
-import { Duration, Effect, Fiber, Layer, Option, Predicate, Schema, Stream } from "effect";
+import {
+  Context as EffectContext,
+  Duration,
+  Effect,
+  Fiber,
+  FileSystem,
+  Layer,
+  Option,
+  Path,
+  Predicate,
+  Ref,
+  Schema,
+  Stream,
+} from "effect";
 import { RpcTest } from "effect/rpc";
 import { TestClock } from "effect/testing";
 
 import agentLoop from "@liminal/agent-loop";
 import { type BeforeCall, BeforeCallHooks } from "@liminal/agent-loop/contract";
+import { CommandRunner } from "@liminal/command-runner/contract";
 import context from "@liminal/context";
 import { Context, MessageEntry } from "@liminal/context/contract";
 import modelCatalog from "@liminal/model-catalog";
 import modelScripted from "@liminal/model-scripted";
 import { reply, ScriptedModel, scriptedProvider } from "@liminal/model-scripted/contract";
 import models from "@liminal/models";
-import { defineTool, draft, type EntryDraft, type ModelRef, SessionId } from "@liminal/sdk";
+import {
+  defineTool,
+  Directories,
+  draft,
+  type EntryDraft,
+  type ModelRef,
+  Pipeline,
+  Seq,
+  SessionId,
+} from "@liminal/sdk";
 import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
 import sessionLog from "@liminal/session-log";
 import {
@@ -33,7 +56,14 @@ import sessionStore from "@liminal/session-store";
 import settingsPlugin from "@liminal/settings";
 import { Settings } from "@liminal/settings/contract";
 import tools from "@liminal/tools";
-import { ToolChecks, ToolDecision, Tools } from "@liminal/tools/contract";
+import {
+  type ToolCall,
+  ToolChecks,
+  ToolDecision,
+  type ToolOutcome,
+  Tools,
+  ToolWrappers,
+} from "@liminal/tools/contract";
 
 import memory from "../plugin.ts";
 import {
@@ -42,10 +72,37 @@ import {
   MemoryRpcs,
   HandoffEntry,
   historyTool,
+  type MemoryFile,
   NoteEntry,
+  TouchedEntry,
 } from "../src/contract.ts";
+import { keptFound, mergeLists, mergeRanges } from "../src/server/files.ts";
+import { statusPaths } from "../src/server/touched.ts";
+
+/** What the stub `git status` prints, as `-z` output. */
+class GitStatus extends EffectContext.Service<GitStatus, Ref.Ref<string>>()("test/GitStatus") {
+  static readonly layer = Layer.effect(GitStatus, Ref.make(""));
+}
+
+/** A runner that only answers `git status`, from `GitStatus`. */
+const stubRunner = Layer.effect(
+  CommandRunner,
+  Effect.gen(function* () {
+    const status = yield* GitStatus;
+
+    return CommandRunner.of({
+      run: () =>
+        Effect.map(Ref.get(status), (stdout) => ({
+          end: { type: "exited", code: 0 },
+          stdout,
+          stderr: "",
+        })),
+    });
+  }),
+).pipe(Layer.provideMerge(GitStatus.layer));
 
 const stack = serverOf(memory).pipe(
+  Layer.provideMerge(stubRunner),
   Layer.provideMerge(serverOf(agentLoop)),
   Layer.provideMerge(serverOf(tools)),
   Layer.provideMerge(serverOf(context)),
@@ -309,12 +366,20 @@ effectTest(
   stack,
 );
 
-/** The scripted model's next reply submits `note`. */
-const enqueueNote = (note: string) =>
+/** The scripted model's next reply submits a short-term memory with `summary`. */
+const enqueueNote = (summary: string, files: Record<string, Schema.Json> = {}) =>
   Effect.flatMap(ScriptedModel, (scripted) =>
     scripted.enqueue(
       reply(
-        [{ type: "tool-call", id: "n1", name: "submit_note", params: { note }, providerData: {} }],
+        [
+          {
+            type: "tool-call",
+            id: "n1",
+            name: "submit_short_term",
+            params: { summary, ...files },
+            providerData: {},
+          },
+        ],
         { reason: "tool-calls" },
       ),
     ),
@@ -426,3 +491,208 @@ effectTest(
   }),
   stack,
 );
+
+/** Runs `next` as `call` in session `s1` through the registered wrappers. */
+const wrapped = <R>(
+  call: Omit<ToolCall, "sessionId">,
+  next: Effect.Effect<ToolOutcome, never, R>,
+) =>
+  Effect.gen(function* () {
+    const wrappers = yield* (yield* ToolWrappers).list;
+    const services = yield* Effect.context<R>();
+
+    return yield* Pipeline.run(wrappers, { call: { sessionId: s1, ...call }, tool: shell }, () =>
+      Effect.provideContext(next, services),
+    );
+  });
+
+const done: ToolOutcome = { status: "done", output: { result: "ok" } };
+
+/** Writes `content` to `file` in the workspace. */
+const writeFile = (file: string, content: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const target = path.join((yield* Directories).workspace, file);
+    yield* fs.makeDirectory(path.dirname(target), { recursive: true });
+    yield* fs.writeFileString(target, content);
+  });
+
+const decodeTouched = Schema.decodeUnknownOption(TouchedEntry.data);
+
+/** Every saved `memory/touched` entry's data. */
+const touched = Effect.map(
+  Effect.flatMap(SessionLog, (log) => log.read(s1, {})),
+  (entries) =>
+    entries.flatMap((entry) =>
+      entry.kind === TouchedEntry.kind ? Option.toArray(decodeTouched(entry.data)) : [],
+    ),
+);
+
+effectTest(
+  "the file wrapper records reads, edits, writes and shell changes, inner calls included",
+  Effect.gen(function* () {
+    yield* start();
+    const status = yield* GitStatus;
+    yield* writeFile("src/e.ts", "one\ntwo\n");
+    yield* writeFile("src/dirty.ts", "before");
+    yield* Ref.set(status, " M src/dirty.ts\0");
+
+    yield* wrapped(
+      { callId: "c1", name: "read", params: { path: "src/a.ts", offset: 10, limit: 5 } },
+      Effect.succeed(done),
+    );
+
+    yield* wrapped(
+      {
+        callId: "c2",
+        name: "edit",
+        params: { path: "src/e.ts", oldText: "two", newText: "TWO\nthree" },
+      },
+      Effect.as(writeFile("src/e.ts", "one\nTWO\nthree\n").pipe(Effect.orDie), done),
+    );
+
+    yield* wrapped(
+      { callId: "r1/0", outer: "r1", name: "write", params: { path: "src/w.ts", content: "" } },
+      Effect.succeed(done),
+    );
+
+    const shellRun = Effect.gen(function* () {
+      yield* writeFile("src/s.ts", "changed").pipe(Effect.orDie);
+      yield* Ref.set(status, " M src/dirty.ts\0 M src/s.ts\0R  new.ts\0old.ts\0");
+      yield* writeFile("new.ts", "moved").pipe(Effect.orDie);
+
+      return done;
+    });
+
+    yield* wrapped(
+      { callId: "c3", name: "shell", params: { command: "sed -i s/a/b/ src/s.ts" } },
+      shellRun,
+    );
+
+    yield* wrapped(
+      { callId: "c4", name: "read", params: { path: "src/failed.ts" } },
+      Effect.succeed<ToolOutcome>({ status: "failed", message: "no such file" }),
+    );
+
+    yield* wrapped(
+      { callId: "c5", name: "read", params: { path: "/elsewhere/x.ts" } },
+      Effect.succeed(done),
+    );
+
+    expect(yield* touched).toEqual([
+      {
+        callId: "c1",
+        files: [{ path: "src/a.ts", ranges: [{ from: 10, through: 14 }], edited: false }],
+      },
+      {
+        callId: "c2",
+        files: [{ path: "src/e.ts", ranges: [{ from: 2, through: 3 }], edited: true }],
+      },
+      { callId: "r1/0", files: [{ path: "src/w.ts", ranges: [], edited: true }] },
+      {
+        callId: "c3",
+        files: [
+          { path: "src/s.ts", ranges: [], edited: true },
+          { path: "new.ts", ranges: [], edited: true },
+        ],
+      },
+    ]);
+  }),
+  stack,
+);
+
+const touchedDraft = (files: ReadonlyArray<(typeof TouchedEntry.data.Type)["files"][number]>) =>
+  draft(TouchedEntry, { data: { callId: "c1", files }, text: "" });
+
+const found = (path: string) => ({ path, ranges: [], relevant: true, reason: "config" });
+
+effectTest(
+  "a short-term memory labels the files its range touched and keeps found files that exist and are named",
+  Effect.gen(function* () {
+    yield* writeFile("src/found.ts", "x");
+    yield* writeFile("src/unnamed.ts", "x");
+
+    yield* start(
+      userMessage("ran cat src/found.ts src/ghost.ts"),
+      touchedDraft([
+        { path: "src/a.ts", ranges: [{ from: 1, through: 40 }], edited: false },
+        { path: "src/b.ts", ranges: [], edited: true },
+      ]),
+      said(100),
+      said(100),
+    );
+
+    yield* enqueueNote("Read two files.", {
+      labels: [{ path: "src/b.ts", relevant: false, reason: "unrelated" }],
+      found: [found("src/found.ts"), found("src/ghost.ts"), found("src/unnamed.ts")],
+    });
+
+    yield* beforeCall;
+    yield* notesSaved(1);
+    yield* callCheckpoint("Next: the tests.");
+
+    const texts = (yield* requestTexts).join("\n");
+
+    expect(texts).toContain(
+      "Read two files.\n\nRelevant files:\n- src/a.ts (lines 1–40)\n- src/found.ts: config\n\nExplored, not relevant:\n- src/b.ts: unrelated",
+    );
+
+    expect(texts).not.toContain("ghost.ts:");
+    expect(texts).not.toContain("unnamed");
+  }),
+  stack,
+);
+
+const file = (path: string, seq: number, fields: Partial<MemoryFile> = {}): MemoryFile => ({
+  path,
+  ranges: [],
+  edited: false,
+  relevant: true,
+  reason: "",
+  seq: Seq.make(seq),
+  ...fields,
+});
+
+test("file lists merge by path: the newest label wins, lines join and edits stay", () => {
+  const older = [
+    file("a.ts", 1, { ranges: [{ from: 1, through: 10 }], edited: true, reason: "old" }),
+    file("b.ts", 2),
+  ];
+
+  const newer = [
+    file("a.ts", 5, { ranges: [{ from: 8, through: 20 }], relevant: false, reason: "done" }),
+  ];
+
+  expect(mergeLists([older, newer])).toEqual([
+    file("a.ts", 5, {
+      ranges: [{ from: 1, through: 20 }],
+      edited: true,
+      relevant: false,
+      reason: "done",
+    }),
+    file("b.ts", 2),
+  ]);
+
+  expect(
+    mergeRanges([
+      { from: 30, through: 40 },
+      { from: 1, through: 5 },
+      { from: 6, through: 9 },
+    ]),
+  ).toEqual([
+    { from: 1, through: 9 },
+    { from: 30, through: 40 },
+  ]);
+
+  expect(
+    keptFound(
+      [{ path: "named.ts", ranges: [], relevant: true, reason: "" }],
+      [],
+      "cat other.ts",
+      Seq.make(3),
+    ),
+  ).toEqual([]);
+
+  expect(statusPaths(" M a.ts\0R  b.ts\0c.ts\0?? d e.ts\0")).toEqual(["a.ts", "b.ts", "d e.ts"]);
+});

@@ -2,7 +2,7 @@
 
 Lets a checkpoint bring back the code the work depends on. Each memory carries a labeled file list. At a checkpoint the relevant files are read once and placed in the model's view, so the model doesn't start by reading them again. The `compaction` plugin becomes `memory`, and its sidebar rows move under Context. Requirements are in [memory.md](../plugins/memory.md).
 
-Round 1, architecture: agreed. Round 2, code-level plan: agreed. Next: step 3.
+Round 1, architecture: agreed. Round 2, code-level plan: agreed. Next: step 4.
 
 ## Systems
 
@@ -150,8 +150,8 @@ ShortTermAnswer = Schema.Struct({
   found: Schema.Array(Schema.Struct({ path, ranges: Array(LineRange), relevant: Boolean, reason: String })),
 });
 
-// store.ts: ShortTerm and LongTerm replace Note and Memory, each with files: ReadonlyArray<MemoryFile>
-// migration 0002: rename notes → short_term, memories → long_term; add files TEXT NOT NULL DEFAULT '[]'
+// store.ts: Note and Memory each gain files: ReadonlyArray<MemoryFile>
+// migration 0002_files: add files TEXT NOT NULL DEFAULT '[]' to notes and memories
 
 // session-store contract
 renameKind: (from: string, to: string) => Effect<void, StoreError>;
@@ -249,7 +249,7 @@ The memory reminder renders the summary, then `Relevant files:` and `Explored, n
 
 1. Gallery: the Context section with the new rows, the rule with its file count and the debug Files line, approved
 2. Rename: package, kinds, settings section, `renameKind`, user-facing words; no behavior change, built
-3. File wrapper and file lists in memories
+3. File wrapper and file lists in memories, built
 4. Restore at checkpoint, the `files` param and the view step
 5. Sidebar rows through `UsageSlots.contextRows`; the rule label; guides and docs
 

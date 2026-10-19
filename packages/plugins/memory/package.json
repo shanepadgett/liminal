@@ -17,6 +17,7 @@
   "peerDependencies": {
     "@liminal/agent-loop": "workspace:*",
     "@liminal/chat": "workspace:*",
+    "@liminal/command-runner": "workspace:*",
     "@liminal/context": "workspace:*",
     "@liminal/models": "workspace:*",
     "@liminal/sdk": "workspace:*",

@@ -9,6 +9,11 @@ import { SqlClient } from "effect/sql";
 
 import { Seq, SessionId, whileLocked } from "@liminal/sdk";
 
+import { MemoryFile } from "../contract.ts";
+
+/** A file list as `memories.db` stores it: JSON text. */
+const FilesJson = Schema.fromJsonString(Schema.Array(MemoryFile));
+
 /** A summary of entries `from` through `through`. */
 export const Note = Schema.Struct({
   number: Schema.Int,
@@ -17,6 +22,8 @@ export const Note = Schema.Struct({
   through: Seq,
   text: Schema.String,
   tokens: Schema.Int,
+  /** The files the entries touched or named, labeled. */
+  files: FilesJson,
 });
 
 export type Note = typeof Note.Type;
@@ -29,6 +36,8 @@ export const Memory = Schema.Struct({
   throughSeq: Seq,
   text: Schema.String,
   tokens: Schema.Int,
+  /** Every condensed note's files merged, the newest label winning. */
+  files: FilesJson,
 });
 
 export type Memory = typeof Memory.Type;
@@ -90,9 +99,17 @@ const createTables = Effect.gen(function* () {
   yield* sql`CREATE INDEX memories_by_session ON memories (session, number)`;
 });
 
-const migrate = SqliteMigrator.run({
-  loader: SqliteMigrator.fromRecord({ "0001_create_tables": createTables }),
+const addFiles = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+  yield* sql`ALTER TABLE notes ADD COLUMN files TEXT NOT NULL DEFAULT '[]'`;
+  yield* sql`ALTER TABLE memories ADD COLUMN files TEXT NOT NULL DEFAULT '[]'`;
 });
+
+const migrate = SqliteMigrator.run({
+  loader: SqliteMigrator.fromRecord({ "0001_create_tables": createTables, "0002_files": addFiles }),
+});
+
+const encodeFiles = (files: ReadonlyArray<MemoryFile>) => JSON.stringify(files);
 
 const decodeNotes = Schema.decodeUnknownEffect(Schema.Array(Note));
 const decodeMemories = Schema.decodeUnknownEffect(Schema.Array(Memory));
@@ -121,7 +138,8 @@ const make = Effect.gen(function* () {
       query(
         Effect.flatMap(
           sql`
-            SELECT number, session, from_seq AS "from", through_seq AS through, text, tokens
+            SELECT number, session, from_seq AS "from", through_seq AS through, text, tokens,
+              files
             FROM notes WHERE session = ${session} ORDER BY number
           `,
           decodeNotes,
@@ -132,7 +150,7 @@ const make = Effect.gen(function* () {
         Effect.flatMap(
           sql`
             SELECT number, session, through_note AS throughNote, through_seq AS throughSeq, text,
-              tokens
+              tokens, files
             FROM memories WHERE session = ${session} ORDER BY number
           `,
           decodeMemories,
@@ -142,8 +160,9 @@ const make = Effect.gen(function* () {
       query(
         Effect.map(
           numberOf(sql`
-            INSERT INTO notes (session, from_seq, through_seq, text, tokens)
-            VALUES (${note.session}, ${note.from}, ${note.through}, ${note.text}, ${note.tokens})
+            INSERT INTO notes (session, from_seq, through_seq, text, tokens, files)
+            VALUES (${note.session}, ${note.from}, ${note.through}, ${note.text}, ${note.tokens},
+              ${encodeFiles(note.files)})
             RETURNING number
           `),
           (number) => ({ ...note, number }),
@@ -153,9 +172,9 @@ const make = Effect.gen(function* () {
       query(
         Effect.map(
           numberOf(sql`
-            INSERT INTO memories (session, through_note, through_seq, text, tokens)
+            INSERT INTO memories (session, through_note, through_seq, text, tokens, files)
             VALUES (${memory.session}, ${memory.throughNote}, ${memory.throughSeq}, ${memory.text},
-              ${memory.tokens})
+              ${memory.tokens}, ${encodeFiles(memory.files)})
             RETURNING number
           `),
           (number) => ({ ...memory, number }),

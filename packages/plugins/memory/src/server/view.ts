@@ -10,6 +10,7 @@ import { SystemEntry } from "@liminal/context/contract";
 import { type Entry, type ModelContent, reminder } from "@liminal/sdk";
 import { NamedEntry, ReasoningEntry, ToolCallEntry } from "@liminal/session-log/contract";
 
+import { filesText } from "./files.ts";
 import {
   type Checkpoint,
   handoffOf,
@@ -45,6 +46,10 @@ const built = (checkpoint: Entry, text: string, isCacheEnd: boolean): Entry => {
   };
 };
 
+/** A memory's summary, then its file list. */
+const withFiles = (text: string, files: Note["files"]) =>
+  files.length === 0 ? text : `${text}\n\n${filesText(files)}`;
+
 /** The memory and note texts the checkpoint uses, oldest first. */
 const rememberedTexts = (checkpoint: Checkpoint, stored: Stored): ReadonlyArray<string> => {
   const { longTerm, shortTerm } = checkpoint.data;
@@ -57,11 +62,14 @@ const rememberedTexts = (checkpoint: Checkpoint, stored: Stored): ReadonlyArray<
       : [
           reminder(
             "memory",
-            `Long-term memory of entries 1–${memory.throughSeq}:\n\n${memory.text}`,
+            `Long-term memory of entries 1–${memory.throughSeq}:\n\n${withFiles(memory.text, memory.files)}`,
           ),
         ]),
     ...notes.map((note) =>
-      reminder("memory", `Entries ${note.from}–${note.through}:\n\n${note.text}`),
+      reminder(
+        "memory",
+        `Short-term memory of entries ${note.from}–${note.through}:\n\n${withFiles(note.text, note.files)}`,
+      ),
     ),
   ];
 };

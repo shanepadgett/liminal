@@ -70,6 +70,41 @@ export const NoteEntry = defineEntry({
   user: "shown",
 });
 
+/** Lines `from` through `through` of a file, counted from 1. */
+export const LineRange = Schema.Struct({ from: Schema.Int, through: Schema.Int });
+
+export type LineRange = typeof LineRange.Type;
+
+/** A file one call read or changed; no ranges means the whole file. */
+export const TouchedFile = Schema.Struct({
+  /** Relative to the workspace. */
+  path: Schema.String,
+  ranges: Schema.Array(LineRange),
+  edited: Schema.Boolean,
+});
+
+export type TouchedFile = typeof TouchedFile.Type;
+
+/** What one call, the model's own or one inside `run`, read or changed. */
+export const TouchedEntry = defineEntry({
+  kind: "memory/touched",
+  data: Schema.Struct({ callId: Schema.String, files: Schema.Array(TouchedFile) }),
+  model: false,
+  user: "hidden",
+});
+
+/** A file a memory knows about, labeled by whether the work still needs it. */
+export const MemoryFile = Schema.Struct({
+  ...TouchedFile.fields,
+  relevant: Schema.Boolean,
+  /** Why it matters, or why it does not. */
+  reason: Schema.String,
+  /** The last entry that touched it, so newer files sort first. */
+  seq: Seq,
+});
+
+export type MemoryFile = typeof MemoryFile.Type;
+
 /** The tool the model calls to write a checkpoint. */
 export const checkpointTool = "checkpoint";
 
