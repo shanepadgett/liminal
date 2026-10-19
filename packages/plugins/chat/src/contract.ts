@@ -1,7 +1,7 @@
 /**
  * Chat: the TUI's chat screen and the slots other plugins draw into: header items, transcript
- * entries, tool rows, the live tip, the composer and the key hints. Entries marked `debug` show
- * only while the debug view is on.
+ * entries, tool rows, the live tip, the composer, the key hints and the sidebar's sections. Entries
+ * marked `debug` show only while the debug view is on.
  */
 
 import { Data, Effect, Option, Schema } from "effect";
@@ -110,6 +110,11 @@ export const ChatSlots = {
   }),
   /** Further key hints after the composer's, one group per registration. */
   hints: Slot.list<TurnProps, "session">("chat/hints", { scope: "session" }),
+  /**
+   * The sidebar's sections, top to bottom by `order`: usage's Context at 0 and Cost at 10,
+   * compaction's at 20.
+   */
+  sidebar: Slot.list<NoProps, "session">("chat/sidebar", { scope: "session" }),
 };
 
 /** The `chat` section of `settings.json`. */

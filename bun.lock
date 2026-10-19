@@ -672,6 +672,26 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/usage": {
+      "name": "@liminal/usage",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/model-catalog": "workspace:*",
+        "@liminal/model-scripted": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+        "@liminal/settings": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/chat": "workspace:*",
+        "@liminal/models": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/sdk": {
       "name": "@liminal/sdk",
       "version": "0.1.0",
@@ -917,6 +937,8 @@
     "@liminal/tools-web": ["@liminal/tools-web@workspace:packages/plugins/tools-web"],
 
     "@liminal/trust": ["@liminal/trust@workspace:packages/plugins/trust"],
+
+    "@liminal/usage": ["@liminal/usage@workspace:packages/plugins/usage"],
 
     "@opencode/codemode": ["@opencode/codemode@2.0.32", "", { "dependencies": { "acorn": "8.15.0", "effect": "4.0.1" } }, "sha512-xccESqd/Glpu7Rn1TRxCNaGimxD4hSLHO56bSciplX8n4EQnsj0pTIsRH5h9Lp+6JhmC8PcFko6AsNrcp1LuGA=="],
 

@@ -1,9 +1,11 @@
 /** How full a session's context is: the budget, the size of the view and the stage it reached. */
 
-import { Option, Schema } from "effect";
+import { Option } from "effect";
 
 import type { Entry, ModelContent, ModelPart } from "@liminal/sdk";
-import { Finish } from "@liminal/session-log/contract";
+import { finishOf } from "@liminal/session-log/contract";
+
+import { Stage } from "../contract.ts";
 
 /** Tokens kept free below the context window for the reply. */
 const RESERVE = 16_000;
@@ -33,12 +35,6 @@ export const tokensOf = (entry: Pick<Entry, "model">): number =>
 
 /** The estimated tokens of a text. */
 export const textTokens = (text: string): number => Math.ceil(text.length / CHARS_PER_TOKEN);
-
-const decodeFinish = Schema.decodeUnknownOption(Schema.Struct({ finish: Finish }));
-
-/** The finish saved on a reply's last part. */
-export const finishOf = (entry: Entry): Option.Option<Finish> =>
-  Option.map(decodeFinish(entry.data), ({ finish }) => finish);
 
 /** The estimated tokens of every entry's model content. */
 export const sumTokens = (entries: ReadonlyArray<Pick<Entry, "model">>): number => {
@@ -76,9 +72,7 @@ export const sizeOf = (view: ReadonlyArray<Entry>, since: number): number => {
 };
 
 /** How full the context is, in order. */
-export const STAGES = ["none", "notice", "warning", "forced"] as const;
-
-export type Stage = (typeof STAGES)[number];
+export const STAGES = Stage.literals;
 
 /** The share of the budget at which each stage starts. */
 const STARTS: Readonly<Record<Exclude<Stage, "none">, number>> = {

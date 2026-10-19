@@ -3,7 +3,7 @@
  * with.
  */
 
-import { Context, type Effect, Schema, type Stream } from "effect";
+import { Context, type Effect, Option, Schema, type Stream } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
@@ -249,3 +249,17 @@ export const userMessage = (text: string): EntryDraft<typeof UserEntry.data.Type
     model: [{ role: "user", parts: [{ type: "text", text, providerData: {} }] }],
     text,
   });
+
+const decodeFinish = Schema.decodeUnknownOption(Schema.Struct({ finish: Finish }));
+
+/** The finish saved on a reply's last part; none for any other entry. */
+export const finishOf = (entry: Entry): Option.Option<Finish> =>
+  Option.map(decodeFinish(entry.data), ({ finish }) => finish);
+
+const decodeTurn = Schema.decodeUnknownOption(TurnSettings);
+
+/** The model a turn-started entry names; none for any other entry. */
+export const turnModelOf = (entry: Entry): Option.Option<ModelRef> =>
+  entry.kind === TurnStartedEntry.kind
+    ? Option.map(decodeTurn(entry.data), (settings) => settings.model)
+    : Option.none();

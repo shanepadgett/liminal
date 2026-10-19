@@ -9,9 +9,10 @@ import { Array as Arr, DateTime, Duration, Effect, FiberMap, Option, Schema } fr
 import { BeforeCall, type BeforeCallHook } from "@liminal/agent-loop/contract";
 import { contextMessage, MessageEntry } from "@liminal/context/contract";
 import { type Entry, type ModelRef, reminder, type SessionId } from "@liminal/sdk";
+import { finishOf } from "@liminal/session-log/contract";
 
-import { IdleTrigger, SwitchTrigger, type Trigger } from "../contract.ts";
-import { finishOf, isAtLeast, type Stage, STAGES } from "./budget.ts";
+import { IdleTrigger, type Stage, SwitchTrigger, type Trigger } from "../contract.ts";
+import { isAtLeast, STAGES } from "./budget.ts";
 import { type CheckpointDeps, covered, saveCheckpoint } from "./checkpoint.ts";
 import { isSameModel, latestCheckpoint, turnStartsOf } from "./history.ts";
 import { type MeasureDeps, type Measured, measure } from "./measure.ts";

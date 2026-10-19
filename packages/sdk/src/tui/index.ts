@@ -26,6 +26,15 @@ export { type Bridge, makeBridge } from "./bridge.ts";
 export { type Hint, Hints } from "./Hints.tsx";
 export { useMarkdownStyle } from "./markdown.ts";
 export { Tail } from "./Tail.tsx";
+
+export {
+  formatShare,
+  formatTokens,
+  SidebarNote,
+  SidebarSection,
+  SidebarStat,
+} from "./SidebarSection.tsx";
+
 export { useCopy } from "./copy.ts";
 
 export {

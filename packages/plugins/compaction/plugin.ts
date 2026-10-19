@@ -12,6 +12,8 @@ import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
 import { ToolChecks, Tools } from "@liminal/tools/contract";
 
+import { CompactionRpcs } from "./src/contract.ts";
+
 export default definePlugin({
   name: "compaction",
   provides: [],
@@ -28,6 +30,7 @@ export default definePlugin({
   ],
   uses: [],
   enabledByDefault: true,
+  rpcs: CompactionRpcs,
   server: () => import("./src/server.ts"),
   tui: () => import("./src/tui.tsx"),
 });

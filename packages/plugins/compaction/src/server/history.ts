@@ -11,8 +11,7 @@ import {
   TextEntry,
   ToolCallEntry,
   ToolResultEntry,
-  TurnSettings,
-  TurnStartedEntry,
+  turnModelOf,
 } from "@liminal/session-log/contract";
 
 import { CheckpointData, CheckpointEntry, HandoffEntry } from "../contract.ts";
@@ -31,7 +30,6 @@ const decodeResult = Schema.decodeUnknownOption(
 
 const decodeCall = Schema.decodeUnknownOption(Schema.Struct({ id: Schema.String }));
 const decodeHandoff = Schema.decodeUnknownOption(HandoffEntry.data);
-const decodeSettings = Schema.decodeUnknownOption(TurnSettings);
 
 /** The result entry of call `callId`. */
 export const resultOf = (entries: ReadonlyArray<Entry>, callId: string): Option.Option<Entry> =>
@@ -82,12 +80,7 @@ export interface TurnStart {
 /** Every turn start, oldest first. */
 export const turnStartsOf = (entries: ReadonlyArray<Entry>): ReadonlyArray<TurnStart> =>
   entries.flatMap((entry) =>
-    entry.kind === TurnStartedEntry.kind
-      ? Option.match(decodeSettings(entry.data), {
-          onNone: () => [],
-          onSome: ({ model }) => [{ entry, model }],
-        })
-      : [],
+    Option.match(turnModelOf(entry), { onNone: () => [], onSome: (model) => [{ entry, model }] }),
   );
 
 export const isSameModel = (left: ModelRef, right: ModelRef): boolean =>

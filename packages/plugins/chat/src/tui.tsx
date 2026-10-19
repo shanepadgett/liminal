@@ -4,7 +4,7 @@
  * and restarts. `/new` switches to a new session; `/sessions` to one of this folder's sessions. It
  * draws the user's and the model's words; every other plugin registers views for its own entry and
  * live kinds. `/debug` flips the debug view for the run, with a toast saying which; the `debug`
- * setting sets where it starts.
+ * setting sets where it starts. Ctrl+b shows or hides the session sidebar.
  */
 
 import { Effect, Schema, Stream, SubscriptionRef } from "effect";
@@ -25,6 +25,7 @@ import { ChatRpcs, ChatSlots } from "./contract.ts";
 import { ChatScreen } from "./tui/ChatScreen.tsx";
 import { Prompt, Said, Thought } from "./tui/entries.tsx";
 import { sessionsCommand } from "./tui/sessions.tsx";
+import { makeSidebar, SidebarChoice } from "./tui/Sidebar.tsx";
 import { emptyTranscript, fold } from "./tui/transcript-state.ts";
 
 /** A session id no session has yet. */
@@ -75,6 +76,28 @@ const debugView = Effect.gen(function* () {
   return debug;
 });
 
+/** The sidebar, and ctrl+b, which shows or hides it. */
+const sidebarToggle = Effect.gen(function* () {
+  const host = yield* TuiHost;
+  const sidebar = makeSidebar(host.keep("sidebar", SidebarChoice, (): SidebarChoice => "open"));
+
+  yield* (yield* TuiCommands).register(
+    [
+      {
+        name: "view.sidebar",
+        title: "Sidebar",
+        desc: "Show or hide the session sidebar",
+        category: "View",
+        palette: true,
+        run: sidebar.toggle,
+      },
+    ],
+    [{ key: "ctrl+b", cmd: "view.sidebar" }],
+  );
+
+  return sidebar;
+});
+
 export default defineTui({
   setup: Effect.gen(function* () {
     const host = yield* TuiHost;
@@ -108,6 +131,7 @@ export default defineTui({
     const toasts = yield* TuiToasts;
 
     yield* sessionsCommand(current);
+    const sidebar = yield* sidebarToggle;
 
     yield* commands.register([
       {
@@ -132,6 +156,7 @@ export default defineTui({
           transcript={() => view().transcript}
           debug={debug}
           toasts={toasts}
+          sidebar={sidebar}
         />
       ),
       Object.values(ChatSlots),

@@ -266,6 +266,40 @@ Some -> register({ name: "Claude", search: messagesSearch(http, fs, claudeSignin
 - Exa runs on its free endpoint, or with `EXA_API_KEY`; its searches start at least 2 seconds apart.
 - Both tools run alongside others and approval allows them.
 
+## Step 6: sidebar, usage and cost
+
+`chat` owns the sidebar and its slot; sections come from other plugins. A new `usage` plugin counts each session's calls from the log and streams them to its TUI part; `compaction` streams its budget the same way. Both re-read after each burst of new entries.
+
+| Where | Change |
+| --- | --- |
+| `session-log` contract | `finishOf(entry)`, `turnModelOf(entry)`, moved from `compaction` |
+| `sdk/tui` | `SidebarSection`, `SidebarStat`, `SidebarNote`, `formatTokens`, `formatShare` |
+| `chat` contract | `ChatSlots.sidebar`: list slot, session scope |
+| `chat` TUI | `Sidebar.tsx`: 42 columns; docked from 122 columns, else a drawer over the dimmed chat; Ctrl+B `view.sidebar`; docked choice kept across reloads; a drawer starts closed and escape closes it |
+| new `usage` | `SessionUsage { context, contextWindow?, cacheHit?, cost?, unpriced }`; `usage/session` stream; Context at order 0, Cost at 10 |
+| `compaction` | `Stage` and `CompactionStatus { size, budget, stage, notesThrough?, checkpoints }` in the contract; `compaction/status` stream; Compaction section at order 20 |
+| gallery | `Sidebar` shows the three sections at 42 columns |
+
+```ts
+// usage server
+watchUsage(session) = log.subscribe(session).debounce(100ms).mapEffect(usageNow)
+usageNow(session) =
+  counted = countCalls(log.read(session))   // model from each turn-started entry; usage from each finish
+  none -> nothing yet
+  described = each model in counted.byModel -> Models.describe (option)
+  usageOf(counted, described):
+    sent = input + cacheRead + cacheWrite of the latest call
+    context = sent + output; contextWindow from the latest call's model; cacheHit = cacheRead / sent
+    cost = sum of priced models' usage * price / 1M; unpriced = models with no price
+
+// compaction server
+watchStatus(session) = log.subscribe(session).debounce(100ms).mapEffect(statusOf)
+statusOf = last turn start's model -> measure -> { size, budget, stage, notesThrough, checkpoints }
+```
+
+- The sidebar's sections show a muted note before the session's first reply.
+- The budget turns the warning color from the warning stage.
+
 ## New dependency
 
 - `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Unpatched here: its console logs are cut only when the script ends.

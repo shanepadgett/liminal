@@ -4,8 +4,9 @@
  */
 
 import { Effect, Schema } from "effect";
+import { Rpc, RpcGroup } from "effect/rpc";
 
-import { defineEntry, ModelRef, Seq } from "@liminal/sdk";
+import { defineEntry, ModelRef, Seq, SessionId } from "@liminal/sdk";
 
 /** The `compaction` section of `settings.json`. */
 export const CompactionSettings = Schema.Struct({
@@ -82,3 +83,33 @@ export const HistoryParams = Schema.Struct({
   from: EntryNumber.annotate({ description: "First entry to read" }),
   through: EntryNumber.annotate({ description: "Last entry to read" }),
 });
+
+/** How full the context is, in order: none, then a nudge at half, three quarters, then forced. */
+export const Stage = Schema.Literals(["none", "notice", "warning", "forced"]);
+
+export type Stage = typeof Stage.Type;
+
+/** How full a session's context is, for the sidebar's Compaction section. */
+export const CompactionStatus = Schema.Struct({
+  /** The view's tokens: the last reply's, plus estimates for the entries after it. */
+  size: Schema.Int,
+  /** The most tokens a request may hold before the model must write a checkpoint. */
+  budget: Schema.Int,
+  stage: Stage,
+  /** The last entry the background notes cover; absent before the first note. */
+  notesThrough: Schema.optionalKey(Seq),
+  /** The checkpoints written so far. */
+  checkpoints: Schema.Int,
+});
+
+export type CompactionStatus = typeof CompactionStatus.Type;
+
+/** Compaction's commands for frontends. */
+export class CompactionRpcs extends RpcGroup.make(
+  /** The session's status once it has a turn, then again after each change to its log. */
+  Rpc.make("compaction/status", {
+    payload: { session: SessionId },
+    success: CompactionStatus,
+    stream: true,
+  }),
+) {}

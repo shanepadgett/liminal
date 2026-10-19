@@ -29,7 +29,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | inbox | The composer and all sending: starts a turn when idle, queues steers and follow-ups while one runs | planned |
 | retry | Retries failed model calls | to plan |
 | cancel | Stops a running turn | to plan |
-| usage | Counts tokens and cost | to plan |
+| [usage](usage.md) | Context and cost of a session's model calls, in the sidebar | built |
 | [questions](questions.md) | `ask_question`, the form and the answers | planned |
 
 ## Context

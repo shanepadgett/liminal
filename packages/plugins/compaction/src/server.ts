@@ -1,6 +1,6 @@
 /**
  * Compaction's server: `memories.db` in the data folder, the view step, the `checkpoint` tool, the
- * `history` tool, the forced check and the before-call hook.
+ * `history` tool, the forced check, the before-call hook and the status the sidebar shows.
  */
 
 import { Effect, FiberMap, Layer } from "effect";
@@ -13,10 +13,11 @@ import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
 import { ToolChecks, Tools } from "@liminal/tools/contract";
 
-import { CheckpointEntry, HandoffEntry, NoteEntry } from "./contract.ts";
+import { CheckpointEntry, CompactionRpcs, HandoffEntry, NoteEntry } from "./contract.ts";
 import { beforeCallOf, type CompactionDeps } from "./server/before-call.ts";
 import { checkpointToolOf, forcedCheck } from "./server/checkpoint.ts";
 import { historyToolOf } from "./server/recall.ts";
+import { watchStatus } from "./server/status.ts";
 import { Memories, memoriesLayer } from "./server/store.ts";
 import { viewOf } from "./server/view.ts";
 
@@ -60,6 +61,21 @@ const register = Effect.gen(function* () {
   yield* (yield* BeforeCallHooks).register(beforeCallOf(deps, writers), { order: 0 });
 });
 
+const rpcs = CompactionRpcs.toLayer(
+  Effect.gen(function* () {
+    const deps = {
+      log: yield* SessionLog,
+      memories: yield* Memories,
+      models: yield* Models,
+      settings: yield* Settings,
+    };
+
+    return CompactionRpcs.of({ "compaction/status": ({ session }) => watchStatus(deps, session) });
+  }),
+);
+
 const memories = Layer.unwrap(Effect.map(dataFile("memories.db"), memoriesLayer));
 
-export const layer = Layer.effectDiscard(register).pipe(Layer.provide(memories));
+export const layer = Layer.mergeAll(Layer.effectDiscard(register), rpcs).pipe(
+  Layer.provide(memories),
+);

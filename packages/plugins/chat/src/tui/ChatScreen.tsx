@@ -1,15 +1,18 @@
 /**
  * The chat screen: the header (wordmark, hairlines that glide while a turn runs, then the header
  * items), the transcript, the composer and the key hints, in a column filling the terminal, with
- * the current toast in its top right. Switching sessions draws the session's parts afresh.
+ * the current toast in its top right, and the session sidebar on the right. Switching sessions
+ * draws the session's parts afresh.
  */
 
-import { type Accessor, Show } from "solid-js";
+import { useTerminalDimensions } from "@opentui/solid";
+import { type Accessor, createEffect, Show } from "solid-js";
 
 import type { SessionId } from "@liminal/sdk";
 import { HeaderRule, SlotView, type TuiToastsService, useColor } from "@liminal/sdk/tui";
 
 import { ChatSlots } from "../contract.ts";
+import { Sidebar, type SidebarState } from "./Sidebar.tsx";
 import { ToastCorner } from "./Toast.tsx";
 import type { Transcript as TranscriptState } from "./transcript-state.ts";
 import { Transcript } from "./Transcript.tsx";
@@ -57,24 +60,36 @@ function SessionView(props: ScreenProps & { readonly running: boolean }) {
   );
 }
 
-export function ChatScreen(props: ScreenProps & { readonly toasts: TuiToastsService }) {
+export function ChatScreen(
+  props: ScreenProps & { readonly toasts: TuiToastsService; readonly sidebar: SidebarState },
+) {
   const color = useColor();
+  const terminal = useTerminalDimensions();
   const running = () => props.transcript().running;
 
+  createEffect(() => {
+    props.sidebar.setColumns(terminal().width);
+  });
+
   return (
-    <box flexDirection="column" width="100%" height="100%" backgroundColor={color("surface.base")}>
-      <Header running={running()} />
+    <box flexDirection="row" width="100%" height="100%" backgroundColor={color("surface.base")}>
+      <box flexDirection="column" flexGrow={1} minWidth={0}>
+        <Header running={running()} />
+        <Show when={props.sessionId} keyed>
+          {(sessionId) => (
+            <SessionView
+              sessionId={sessionId}
+              transcript={props.transcript}
+              debug={props.debug}
+              running={running()}
+            />
+          )}
+        </Show>
+        <ToastCorner toasts={props.toasts} />
+      </box>
       <Show when={props.sessionId} keyed>
-        {(sessionId) => (
-          <SessionView
-            sessionId={sessionId}
-            transcript={props.transcript}
-            debug={props.debug}
-            running={running()}
-          />
-        )}
+        {(sessionId) => <Sidebar sessionId={sessionId} state={props.sidebar} />}
       </Show>
-      <ToastCorner toasts={props.toasts} />
     </box>
   );
 }

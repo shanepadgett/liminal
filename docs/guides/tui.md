@@ -56,8 +56,11 @@ The chat screen's slots, from `@liminal/chat/contract`:
 | `ChatSlots.composer` | chain | | `{ running, sessionId, matched }` |
 | `ChatSlots.composerHints` | chain | | `{ running, sessionId, matched }` |
 | `ChatSlots.hints` | list | | `{ running, sessionId }` |
+| `ChatSlots.sidebar` | list | | `{ sessionId }` |
 
 - Take `ChatSlots.composer` and `ChatSlots.composerHints` with the same `select` and a priority below 0, so your keys replace the composer's.
+
+- A sidebar section is a `ChatSlots.sidebar` registration drawn with `SidebarSection`, `SidebarStat` and `SidebarNote` from `@liminal/sdk/tui`; the sidebar is 42 columns wide, its border and padding included. Example: `packages/plugins/usage/src/tui.tsx`.
 
 - To declare your own slot, export `Slot.single|list|keyed|chain("<plugin>/<place>", { scope })` from your contract and pass it as `declares` when you register the component that draws it. `scope` is `"root"` or `"session"`; session slots get `sessionId`.
 

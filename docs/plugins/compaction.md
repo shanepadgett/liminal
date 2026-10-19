@@ -12,6 +12,7 @@ Status: built
 
 - A checkpoint entry kind
 - A view step in the context's chain
+- The sidebar's Compaction section
 
 ## Requirements
 
@@ -62,6 +63,11 @@ Status: built
 - The `checkpoint` tool call has no work row; only the rule shows
 - Each note or memory written shows in the debug view as one line with its entry range and tokens
 - Nudges show only in the debug view
+
+## Sidebar
+
+- `compaction/status` streams the session's size, budget, stage, how far notes reach and the checkpoint count, again after each burst of new entries
+- The Compaction section shows budget used and its share, notes through an entry, and checkpoints; the budget is in the warning color from the warning stage
 
 ## References
 

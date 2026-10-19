@@ -6,8 +6,8 @@ import type { Models } from "@liminal/models/contract";
 import type { Entry, ModelRef, SessionId } from "@liminal/sdk";
 import type { Settings } from "@liminal/settings/contract";
 
-import { CompactionSettings } from "../contract.ts";
-import { budgetOf, type Stage, sizeOf, stageOf } from "./budget.ts";
+import { CompactionSettings, type Stage } from "../contract.ts";
+import { budgetOf, sizeOf, stageOf } from "./budget.ts";
 import type { Memories } from "./store.ts";
 import { measuredSince, type Stored, viewOf } from "./view.ts";
 

@@ -6,7 +6,8 @@
 
 import { expect } from "bun:test";
 
-import { Duration, Effect, Layer, Option, Predicate, Schema, Stream } from "effect";
+import { Duration, Effect, Fiber, Layer, Option, Predicate, Schema, Stream } from "effect";
+import { RpcTest } from "effect/rpc";
 import { TestClock } from "effect/testing";
 
 import agentLoop from "@liminal/agent-loop";
@@ -38,6 +39,7 @@ import compaction from "../plugin.ts";
 import {
   CheckpointData,
   CheckpointEntry,
+  CompactionRpcs,
   HandoffEntry,
   historyTool,
   NoteEntry,
@@ -348,6 +350,28 @@ effectTest(
 
     const failed = yield* Effect.flip(history.run({ from: 3, through: 2 }, callContext));
     expect(failed.message).toContain("through");
+  }),
+  stack,
+);
+
+effectTest(
+  "the status streams the size against the budget once the log settles",
+  Effect.gen(function* () {
+    yield* start(said(600));
+    const client = yield* RpcTest.makeClient(CompactionRpcs);
+
+    const first = yield* client["compaction/status"]({ session: s1 }).pipe(
+      Stream.runHead,
+      Effect.forkChild,
+    );
+
+    yield* TestClock.adjust(Duration.seconds(1));
+
+    const status = Option.getOrThrow(yield* Fiber.join(first));
+    expect(status.budget).toBe(BUDGET);
+    expect(status.stage).toBe("notice");
+    expect(status.checkpoints).toBe(0);
+    expect(status.notesThrough).toBeUndefined();
   }),
   stack,
 );
