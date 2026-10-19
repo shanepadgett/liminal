@@ -1,15 +1,15 @@
 /** When the session on screen needs the user: the events that call for the sound. */
 
-import { Option, Predicate, Schema, Stream } from "effect";
+import { type Effect, Option, Predicate, Schema, Stream } from "effect";
 
-import type { PendingAsk } from "@liminal/approval/contract";
-import type { FollowEvent } from "@liminal/sdk";
+import type { FollowEvent, SessionId } from "@liminal/sdk";
+import type { InputWait } from "@liminal/sdk/tui";
 import { TurnEndedEntry } from "@liminal/session-log/contract";
 
 const endOf = Schema.decodeUnknownOption(TurnEndedEntry.data);
 
 /** What called for the sound. */
-export type Chime = "turn-ended" | "approval";
+export type Chime = "turn-ended" | "input-wait";
 
 /** Each turn that ends after the saved entries, unless the user cancelled it. */
 export const turnEnds = <E>(events: Stream.Stream<FollowEvent, E>): Stream.Stream<Chime, E> =>
@@ -24,18 +24,34 @@ export const turnEnds = <E>(events: Stream.Stream<FollowEvent, E>): Stream.Strea
     Stream.as<Chime>("turn-ended"),
   );
 
-/** Each list of pending asks that holds an ask the list before it did not. */
-export const newAsks = <E>(
-  lists: Stream.Stream<ReadonlyArray<PendingAsk>, E>,
+/** Playback is injected so the session's notification path also runs without native audio. */
+export const chimeWith = <E>(
+  session: SessionId,
+  events: Stream.Stream<FollowEvent, E>,
+  waits: Stream.Stream<ReadonlyArray<InputWait>>,
+  play: Effect.Effect<void>,
+): Stream.Stream<Chime, E> =>
+  Stream.merge(turnEnds(events), newWaits(session, waits)).pipe(Stream.tap(() => play));
+
+/** Only new identities for the session on screen call for attention. */
+export const newWaits = <E>(
+  session: SessionId,
+  lists: Stream.Stream<ReadonlyArray<InputWait>, E>,
 ): Stream.Stream<Chime, E> =>
   lists.pipe(
     Stream.mapAccum(
       (): ReadonlySet<string> => new Set(),
-      (before, asks) => {
-        const now = new Set(asks.map(({ id }) => id));
-        const isNew = asks.some(({ id }) => !before.has(id));
+      (before, waits) => {
+        const now = new Set(
+          waits.flatMap(({ sessionId, source, id }) =>
+            sessionId === session ? [JSON.stringify([source, id])] : [],
+          ),
+        );
 
-        return [now, isNew ? (["approval"] as const) : []];
+        const isNew = [...now].some((id) => !before.has(id));
+
+        // The literal is the input-wait member of Chime.
+        return [now, isNew ? (["input-wait"] as const) : []];
       },
     ),
   );

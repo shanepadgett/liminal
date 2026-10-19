@@ -53,6 +53,8 @@ const s1 = SessionId.make("s1");
 
 const parts = [
   "agent-loop",
+  "approval",
+  "commit",
   "cancel",
   "chat",
   "inbox",

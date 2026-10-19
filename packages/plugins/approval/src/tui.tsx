@@ -17,10 +17,12 @@ import {
   TuiCommands,
   TuiDialogs,
   TuiHost,
+  TuiInputWaits,
 } from "@liminal/sdk/tui";
 
 import { type ApprovalMode, ApprovalEntry, ApprovalRpcs } from "./contract.ts";
 import { AnswerRow } from "./tui/AnswerRow.tsx";
+import { trackAsks } from "./tui/input-waits.ts";
 import { type LabelDeps, makeModeLabel } from "./tui/ModeLabel.tsx";
 
 const modeOptions: ReadonlyArray<SelectOption<ApprovalMode>> = [
@@ -40,6 +42,7 @@ export default defineTui({
     const commands = yield* TuiCommands;
     const dialogs = yield* TuiDialogs;
     const client = yield* host.client(ApprovalRpcs);
+    const inputWaits = yield* TuiInputWaits;
     const [onScreen, setOnScreen] = createSignal<SessionId | undefined>();
 
     const deps: LabelDeps = {
@@ -48,7 +51,8 @@ export default defineTui({
           client["approval/mode"]({ session }).pipe(Stream.map(Option.some)),
           Option.none<ApprovalMode>(),
         ),
-      pending: (session) => bridge.watch(client["approval/pending"]({ session }), []),
+      pending: (session) =>
+        bridge.watch(trackAsks(client["approval/pending"]({ session }), inputWaits), []),
       setMode: (session, mode) => {
         bridge.run(client["approval/set-mode"]({ session, mode }));
       },

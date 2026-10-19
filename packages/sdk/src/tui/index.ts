@@ -106,6 +106,13 @@ export {
   type SelectOption,
 } from "./SelectDialog.tsx";
 
+export {
+  type InputWait,
+  makeTuiInputWaits,
+  TuiInputWaits,
+  type TuiInputWaitsService,
+} from "./input-waits.ts";
+
 export { ConfirmDialog, type ConfirmDialogProps } from "./ConfirmDialog.tsx";
 export { PromptField, type PromptFieldProps } from "./PromptField.tsx";
 export { matchIndices, type MatchRun, matchRuns } from "./match.ts";

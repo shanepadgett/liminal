@@ -16,6 +16,9 @@ import type { FrontendHost } from "@liminal/sdk";
 import {
   makeTuiCommands,
   makeTuiDialogs,
+  makeTuiInputWaits,
+  TuiInputWaits,
+  type TuiInputWaitsService,
   makeTuiToasts,
   type SolidKind,
   TuiCommands,
@@ -37,6 +40,7 @@ export interface Terminal {
   readonly commands: TuiCommandsService;
   readonly dialogs: TuiDialogsService;
   readonly toasts: TuiToastsService;
+  readonly inputWaits: TuiInputWaitsService;
 }
 
 /** The terminal's renderer, destroyed when the caller's Scope closes. */
@@ -82,17 +86,27 @@ export const makeTerminal = Effect.fn("makeTerminal")(function* (renderer: CliRe
   const commands = yield* makeTuiCommands(keymap);
   const toasts = yield* makeTuiToasts;
   yield* copySelections(renderer, toasts);
-  const terminal: Terminal = { renderer, keymap, commands, dialogs: makeTuiDialogs(), toasts };
+  const inputWaits = yield* makeTuiInputWaits;
+
+  const terminal: Terminal = {
+    renderer,
+    keymap,
+    commands,
+    dialogs: makeTuiDialogs(),
+    toasts,
+    inputWaits,
+  };
 
   return terminal;
 });
 
-/** What each part's setup reads: its own host and the terminal's commands, dialogs and toasts. */
+/** Every part shares the terminal's commands, dialogs, toasts and input waits. */
 export const tuiServices = (terminal: Terminal) => (host: FrontendHost<SolidKind>) =>
   Context.make(TuiHost, host).pipe(
     Context.add(TuiCommands, terminal.commands),
     Context.add(TuiDialogs, terminal.dialogs),
     Context.add(TuiToasts, terminal.toasts),
+    Context.add(TuiInputWaits, terminal.inputWaits),
   );
 
 /**

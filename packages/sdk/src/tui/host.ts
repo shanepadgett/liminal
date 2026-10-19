@@ -6,6 +6,7 @@ import type { Component } from "solid-js";
 import type { ComponentKind, FrontendHost, FrontendPart } from "../core/frontend.ts";
 import type { TuiCommands } from "./commands.ts";
 import type { TuiDialogs } from "./dialogs.tsx";
+import type { TuiInputWaits } from "./input-waits.ts";
 import type { TuiToasts } from "./toasts.ts";
 
 /** Solid components, as the frontend host types them. */
@@ -20,7 +21,7 @@ export class TuiHost extends Context.Service<TuiHost, FrontendHost<SolidKind>>()
 ) {}
 
 /** The services every TUI part's setup can read. */
-export type TuiServices = TuiHost | TuiCommands | TuiDialogs | TuiToasts;
+export type TuiServices = TuiHost | TuiCommands | TuiDialogs | TuiToasts | TuiInputWaits;
 
 /** Declares a plugin's TUI part. */
 export const defineTui = <E extends Cause.YieldableError>(part: {

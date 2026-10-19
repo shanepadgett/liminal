@@ -147,7 +147,6 @@
       "name": "@liminal/attention",
       "version": "0.1.0",
       "peerDependencies": {
-        "@liminal/approval": "workspace:*",
         "@liminal/chat": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "@liminal/session-log": "workspace:*",

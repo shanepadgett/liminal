@@ -7,7 +7,6 @@
     "./contract": "./src/contract.ts"
   },
   "peerDependencies": {
-    "@liminal/approval": "workspace:*",
     "@liminal/chat": "workspace:*",
     "@liminal/sdk": "workspace:*",
     "@liminal/session-log": "workspace:*",

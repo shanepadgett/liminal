@@ -33,7 +33,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | [questions](questions.md) | `ask_question`, `/qna`, the form and the answers | built |
 | [commit](commit.md) | `/commit`: commit checks, a planned split into conventional commits, then the push question | built |
 | [skills](skills.md) | Agent Skills: the model's list, `/<name>` commands and `@skill:` tags | built |
-| [attention](attention.md) | A sound when the on-screen session's turn ends or asks for approval | built |
+| [attention](attention.md) | A sound when the on-screen session's turn ends or a workflow waits for input | built |
 
 ## Context
 

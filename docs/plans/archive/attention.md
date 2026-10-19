@@ -28,7 +28,7 @@ flowchart LR
 
 ## Contracts and injection
 
-Proposed local TypeScript contracts, exported from `@liminal/sdk/tui`:
+Local TypeScript contracts, exported from `@liminal/sdk/tui`:
 
 ```ts
 interface InputWait {

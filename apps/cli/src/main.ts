@@ -113,7 +113,7 @@ const tui = Effect.fn("tui")(function* (session: Option.Option<SessionId>) {
   const restart = Effect.andThen(
     Option.match(handoffFile, {
       onNone: () => Effect.void,
-      onSome: (file) => giveHandoff(file, frontend.handoff()),
+      onSome: (file) => Effect.suspend(() => giveHandoff(file, frontend.handoff())),
     }),
     Effect.succeed(restartExitCode),
   );

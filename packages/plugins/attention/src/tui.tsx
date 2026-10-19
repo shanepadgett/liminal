@@ -1,16 +1,15 @@
 /**
  * Attention's TUI part: follows the session on screen and plays the notification sound when its
- * turn ends or a tool call waits for approval.
+ * turn ends or a workflow waits for input.
  */
 
 import { Effect, Option, Stream } from "effect";
 
-import { ApprovalRpcs } from "@liminal/approval/contract";
 import { ChatSlots } from "@liminal/chat/contract";
 import type { SessionId } from "@liminal/sdk";
-import { defineTui, makeBridge, TuiHost } from "@liminal/sdk/tui";
+import { defineTui, makeBridge, TuiHost, TuiInputWaits } from "@liminal/sdk/tui";
 
-import { newAsks, turnEnds } from "./tui/chimes.ts";
+import { chimeWith } from "./tui/chimes.ts";
 import { playerOf, playWith } from "./tui/sound.ts";
 
 /** After the other composer lines; draws nothing. */
@@ -22,7 +21,7 @@ export default defineTui({
     if (Option.isNone(player)) return;
 
     const host = yield* TuiHost;
-    const approval = yield* host.client(ApprovalRpcs);
+    const inputWaits = yield* TuiInputWaits;
     const bridge = yield* makeBridge;
     const play = playWith(player.value);
 
@@ -31,11 +30,7 @@ export default defineTui({
       { id: "attention", order: LINE_ORDER },
       function Chimes(props: { readonly sessionId: SessionId }) {
         bridge.watch(
-          Stream.merge(
-            turnEnds(host.follow(props.sessionId)),
-            newAsks(approval["approval/pending"]({ session: props.sessionId })),
-          ).pipe(
-            Stream.tap(() => play),
+          chimeWith(props.sessionId, host.follow(props.sessionId), inputWaits.changes, play).pipe(
             Stream.map(Option.some),
           ),
           Option.none(),

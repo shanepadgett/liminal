@@ -23,7 +23,7 @@ Rules:
 - Components are Solid components rendered by OpenTUI (`<box>`, `<text>`, `<markdown>`).
 - Never import your server files. Share types and schemas through `src/contract.ts`.
 
-`setup` can read four services:
+`setup` can read five services:
 
 | Service | Gives |
 | --- | --- |
@@ -31,6 +31,7 @@ Rules:
 | `TuiCommands` | `register` commands and keys, `run`, `listed` |
 | `TuiDialogs` | `show` and `close` a dialog |
 | `TuiToasts` | `show` a toast |
+| `TuiInputWaits` | Register input waits for attention notifications |
 
 Example: `packages/plugins/notices/src/tui.tsx`.
 
@@ -193,6 +194,26 @@ dialogs.show((props: DialogProps) => (
 | `DialogFrame` | Your own dialog body with the standard title, hints and close |
 
 Examples: `packages/plugins/agent-loop/src/tui.tsx`, `packages/plugins/logins/src/tui/`.
+
+## Request user attention
+
+1. Read `TuiInputWaits` in `setup` and pass its `waitForUser` function to your workflow.
+2. Install the answer callback, then wrap the effect that waits for its answer. Register only when the prompt can accept input, not while its dialog shows work.
+3. Keep `source` (your plugin name) and `id` stable for the same pending request within a session. Give separate questions separate ids.
+
+```ts
+const inputWaits = yield* TuiInputWaits;
+const approved = yield* inputWaits.waitForUser(
+  { sessionId, source: "commit", id: "review" },
+  Deferred.await(answer),
+);
+```
+
+The wrapper releases the wait on answer, failure or interruption. Use `register` in a request-owned scope when a stream supplies pending requests instead of an answer effect. Retain registrations across unchanged snapshots and close their scopes when requests disappear or the stream stops. Watch that stream through `makeBridge` so component disposal and plugin unload stop it.
+
+The attention plugin handles sound and filters waits to the on-screen session. Your plugin does not depend on attention, and still works when it is disabled. Forms that end the agent turn use the existing turn-end notification; do not register a second wait for them. In tests, inject `waitForUser` from `makeTuiInputWaits` and observe `changes`.
+
+Examples: `packages/plugins/commit/src/tui/flow.ts`, `packages/plugins/approval/src/tui/input-waits.ts`.
 
 ## Show a toast
 

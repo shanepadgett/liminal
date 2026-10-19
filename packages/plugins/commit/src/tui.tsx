@@ -14,6 +14,7 @@ import {
   TuiCommands,
   TuiDialogs,
   TuiHost,
+  TuiInputWaits,
   type ToastKind,
   TuiToasts,
 } from "@liminal/sdk/tui";
@@ -38,7 +39,14 @@ export default defineTui({
       toasts.show({ kind, title: "Commit", message: text });
     };
 
-    const deps: FlowDeps = { client: yield* host.client(CommitRpcs), finish };
+    const inputWaits = yield* TuiInputWaits;
+
+    const deps: FlowDeps = {
+      client: yield* host.client(CommitRpcs),
+      finish,
+      waitForUser: inputWaits.waitForUser,
+    };
+
     const bridge = yield* makeBridge;
     const [onScreen, setOnScreen] = createSignal<SessionId | undefined>();
 

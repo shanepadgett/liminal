@@ -23,7 +23,7 @@ interface Registration<A> {
 const itemsOf = <A>(registrations: ReadonlyArray<Registration<A>>): ReadonlyArray<A> =>
   registrations.map((registration) => registration.item);
 
-const make = Effect.fn("Registry.make")(function* <A>() {
+export const make = Effect.fn("Registry.make")(function* <A>() {
   const ref = yield* SubscriptionRef.make<ReadonlyArray<Registration<A>>>([]);
 
   const register = (item: A, options: { readonly order: number }) => {

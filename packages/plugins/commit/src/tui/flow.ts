@@ -8,7 +8,7 @@ import type { RpcClient, RpcClientError, RpcGroup } from "effect/rpc";
 import { type Accessor, createSignal } from "solid-js";
 
 import type { SessionId } from "@liminal/sdk";
-import type { ToastKind } from "@liminal/sdk/tui";
+import type { ToastKind, TuiInputWaitsService } from "@liminal/sdk/tui";
 
 import {
   commitsText,
@@ -48,7 +48,7 @@ interface Steps {
   readonly client: Client;
   readonly show: (step: CommitStep) => void;
   /** Waits for the user's answer to the step on screen. */
-  readonly ask: Effect.Effect<boolean>;
+  readonly ask: (id: "review" | "push") => Effect.Effect<boolean>;
 }
 
 const committedText = (hashes: ReadonlyArray<string>) =>
@@ -118,7 +118,7 @@ const pushed = Effect.fn("commit.pushed")(function* (
   if (target === null) return yield* end(`${done}.`, "success");
 
   steps.show(CommitStep.Push({ target: target.name, count: hashes.length }));
-  if (!(yield* steps.ask)) return yield* end(`${done}.`, "success");
+  if (!(yield* steps.ask("push"))) return yield* end(`${done}.`, "success");
 
   steps.show(CommitStep.Pushing({ target: target.name, count: hashes.length }));
 
@@ -144,7 +144,7 @@ const commitAll = Effect.fn("commit.all")(function* (
   );
 
   steps.show(CommitStep.Review({ commits }));
-  if (!(yield* steps.ask)) return yield* end("Commit cancelled.", "info");
+  if (!(yield* steps.ask("review"))) return yield* end("Commit cancelled.", "info");
 
   return yield* pushed(steps, start.root, yield* applied(steps, start.root, commits));
 });
@@ -160,6 +160,7 @@ export interface CommitFlow {
 
 /** The flow's pieces; `finish` gets the toast that ends it. */
 export interface FlowDeps {
+  readonly waitForUser: TuiInputWaitsService["waitForUser"];
   readonly client: Client;
   readonly finish: (text: string, kind: ToastKind) => void;
 }
@@ -170,12 +171,27 @@ export const makeFlow = (deps: FlowDeps, session: SessionId, instruction: string
   const [reply, setReply] = createSignal<(yes: boolean) => void>();
   const stop = Deferred.makeUnsafe<void>();
 
-  const ask = Effect.callback<boolean>((resume) => {
-    setReply(() => (yes: boolean) => {
-      setReply();
-      resume(Effect.succeed(yes));
-    });
-  });
+  const ask = Effect.fn("commit.ask")(function* (id: "review" | "push") {
+    const answer = yield* Deferred.make<boolean>();
+
+    yield* Effect.acquireRelease(
+      Effect.sync(() =>
+        setReply(() => (yes: boolean) => {
+          setReply();
+          Deferred.doneUnsafe(answer, Effect.succeed(yes));
+        }),
+      ),
+      () =>
+        Effect.sync(() => {
+          setReply();
+        }),
+    );
+
+    return yield* deps.waitForUser(
+      { sessionId: session, source: "commit", id },
+      Deferred.await(answer),
+    );
+  }, Effect.scoped);
 
   const steps: Steps = { client: deps.client, show: (next) => setStep(next), ask };
 
