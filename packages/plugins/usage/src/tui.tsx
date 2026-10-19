@@ -21,9 +21,7 @@ import {
   TuiHost,
 } from "@liminal/sdk/tui";
 
-import { type SessionUsage, type UsageReport, UsageRpcs } from "./contract.ts";
-
-const NO_CALL = "No model call yet";
+import { idleUsage, type SessionUsage, type UsageReport, UsageRpcs } from "./contract.ts";
 
 /** `84K · 42%`, or `84K` when the window is unknown. */
 const usedText = (usage: SessionUsage) =>
@@ -48,22 +46,18 @@ function Context(props: { readonly usage: SessionUsage }) {
   );
 }
 
-/** The session's line: its cost, or why there is none. */
-function SessionCost(props: { readonly usage: SessionUsage | undefined }) {
-  return (
-    <Show when={props.usage} fallback={<SidebarNote text={NO_CALL} />}>
-      {(usage) => (
-        <Show when={usage().cost} keyed fallback={<SidebarNote text="No price for this model" />}>
-          {(cost) => <SidebarStat label="session" value={costText(cost)} />}
-        </Show>
-      )}
-    </Show>
+/** The session's line: its cost, or that its model has no price. */
+function SessionCost(props: { readonly usage: SessionUsage }) {
+  return props.usage.cost === undefined ? (
+    <SidebarNote text="No price for this model" />
+  ) : (
+    <SidebarStat label="session" value={costText(props.usage.cost)} />
   );
 }
 
 function Cost(props: { readonly report: UsageReport }) {
   const unpriced = () =>
-    props.report.session?.cost === undefined ? 0 : props.report.session.unpriced;
+    props.report.session.cost === undefined ? 0 : props.report.session.unpriced;
 
   return (
     <SidebarSection title="Cost">
@@ -81,20 +75,8 @@ function Cost(props: { readonly report: UsageReport }) {
   );
 }
 
-/** Context before the session's first reply. */
 function ContextSection(props: { readonly report: UsageReport }) {
-  return (
-    <Show
-      when={props.report.session}
-      fallback={
-        <SidebarSection title="Context">
-          <SidebarNote text={NO_CALL} />
-        </SidebarSection>
-      }
-    >
-      {(usage) => <Context usage={usage()} />}
-    </Show>
-  );
+  return <Context usage={props.report.session} />;
 }
 
 type Watch = (session: SessionId) => Accessor<UsageReport>;
@@ -114,7 +96,8 @@ export default defineTui({
     const bridge = yield* makeBridge;
     const client = yield* host.client(UsageRpcs);
 
-    const watch = (session: SessionId) => bridge.watch(client["usage/session"]({ session }), {});
+    const watch = (session: SessionId) =>
+      bridge.watch(client["usage/session"]({ session }), { session: idleUsage() });
 
     yield* host.register(
       ChatSlots.sidebar,

@@ -26,7 +26,7 @@ import sessionStore from "@liminal/session-store";
 import settingsPlugin from "@liminal/settings";
 
 import usage from "../plugin.ts";
-import { UsageRpcs } from "../src/contract.ts";
+import { idleUsage, UsageRpcs } from "../src/contract.ts";
 import { usageOf } from "../src/server.ts";
 import { callKinds, callsSince, countCalls } from "../src/server/count.ts";
 
@@ -200,13 +200,31 @@ effectTest(
 );
 
 effectTest(
+  "a session with no call reports nothing used",
+  Effect.gen(function* () {
+    const client = yield* RpcTest.makeClient(UsageRpcs);
+
+    const first = yield* client["usage/session"]({ session: s1 }).pipe(
+      Stream.take(1),
+      Stream.runHead,
+      Effect.forkChild,
+    );
+
+    yield* TestClock.adjust(Duration.seconds(1));
+
+    expect(yield* Fiber.join(first)).toEqual(Option.some({ session: idleUsage() }));
+  }),
+  served,
+);
+
+effectTest(
   "a session followed before its first prompt counts once it replies",
   Effect.gen(function* () {
     const scripted: ModelRef = { provider: scriptedProvider, id: "scripted" };
     const client = yield* RpcTest.makeClient(UsageRpcs);
 
     const first = yield* client["usage/session"]({ session: s1 }).pipe(
-      Stream.filter((report) => report.session !== undefined),
+      Stream.filter((report) => report.session.context > 0),
       Stream.take(1),
       Stream.runHead,
       Effect.forkChild,

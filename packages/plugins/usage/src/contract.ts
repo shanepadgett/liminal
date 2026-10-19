@@ -21,10 +21,17 @@ export const SessionUsage = Schema.Struct({
 
 export type SessionUsage = typeof SessionUsage.Type;
 
+/** The usage of a session with no call yet, in `contextWindow` when its next model is known. */
+export const idleUsage = (contextWindow?: number): SessionUsage => {
+  const idle = { context: 0, cacheHit: 0, cost: 0, unpriced: 0 };
+
+  return contextWindow === undefined ? idle : { ...idle, contextWindow };
+};
+
 /** What the sidebar shows: the session's usage and what every folder's calls cost today. */
 export const UsageReport = Schema.Struct({
-  /** The session's usage; absent before its first reply. */
-  session: Schema.optionalKey(SessionUsage),
+  /** The session's usage; all zero before its first reply. */
+  session: SessionUsage,
   /** US dollars for every session's priced calls since local midnight; absent when none has. */
   today: Schema.optionalKey(Schema.Finite),
 });

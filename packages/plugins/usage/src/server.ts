@@ -5,11 +5,12 @@
 
 import { Array as Arr, DateTime, Duration, Effect, Option, Stream } from "effect";
 
+import { AgentLoop } from "@liminal/agent-loop/contract";
 import { Models } from "@liminal/models/contract";
 import type { ModelInfo, SessionId } from "@liminal/sdk";
 import { SessionLog } from "@liminal/session-log/contract";
 
-import { type SessionUsage, type UsageReport, UsageRpcs } from "./contract.ts";
+import { idleUsage, type SessionUsage, type UsageReport, UsageRpcs } from "./contract.ts";
 import {
   callKinds,
   callsSince,
@@ -26,6 +27,8 @@ const SETTLE = Duration.millis(100);
 interface Deps {
   readonly log: SessionLog["Service"];
   readonly models: Models["Service"];
+  /** The session's next model, which sizes the window before its first reply; absent without it. */
+  readonly loop: Option.Option<AgentLoop["Service"]>;
 }
 
 /** One model's calls and its details; none where they could not be read. */
@@ -95,16 +98,31 @@ export const usageOf = (counted: Counted, described: ReadonlyArray<Described>): 
   };
 };
 
-/** The session's usage now; none before its first reply or before the session is saved. */
+/** The window of the model the session's next turn would use; none when it cannot be told. */
+const nextWindow = Effect.fn("usage.window")(
+  function* (deps: Deps, session: SessionId) {
+    if (Option.isNone(deps.loop)) return Option.none<number>();
+    const settings = yield* deps.loop.value.sessionSettings(session);
+    const info = yield* deps.models.describe(settings.model);
+
+    return Option.some(info.contextWindow);
+  },
+  Effect.orElseSucceed(() => Option.none<number>()),
+);
+
+/** The session's usage now: its calls', or nothing used in its next model's window. */
 const sessionNow = Effect.fn("usage.session")(function* (deps: Deps, session: SessionId) {
   const entries = yield* deps.log
     .read(session, {})
     .pipe(Effect.catchTag("SessionNotFound", () => Effect.succeed([])));
 
   const counted = countCalls(entries);
-  if (Option.isNone(counted)) return Option.none<SessionUsage>();
 
-  return Option.some(usageOf(counted.value, yield* describeAll(deps, counted.value.byModel)));
+  if (Option.isSome(counted)) {
+    return usageOf(counted.value, yield* describeAll(deps, counted.value.byModel));
+  }
+
+  return idleUsage(Option.getOrUndefined(yield* nextWindow(deps, session)));
 });
 
 /** Local midnight today. */
@@ -126,19 +144,30 @@ const usageNow = Effect.fn("usage.now")(function* (deps: Deps, session: SessionI
   const [usage, today] = yield* Effect.all([sessionNow(deps, session), todayNow(deps)]);
 
   const report: UsageReport = {
-    ...Option.match(usage, { onNone: () => ({}), onSome: (shown) => ({ session: shown }) }),
+    session: usage,
     ...Option.match(today, { onNone: () => ({}), onSome: (cost) => ({ today: cost }) }),
   };
 
   return [report];
 });
 
+/** A signal for each new entry, and each pick of the session's next model. */
+const changes = (deps: Deps, session: SessionId) => {
+  const entries = Stream.map(deps.log.subscribe(session, {}), () => {});
+  if (Option.isNone(deps.loop)) return entries;
+
+  return Stream.merge(
+    entries,
+    Stream.map(deps.loop.value.sessionDefaults(session), () => {}),
+  );
+};
+
 /**
  * The session's report now, then after each burst of new entries; a failed count is skipped. A
  * session followed before its first prompt reads as having no calls until it exists.
  */
 const watchUsage = (deps: Deps, session: SessionId) =>
-  deps.log.subscribe(session, {}).pipe(
+  changes(deps, session).pipe(
     Stream.debounce(SETTLE),
     Stream.mapEffect(() =>
       usageNow(deps, session).pipe(
@@ -155,7 +184,11 @@ const watchUsage = (deps: Deps, session: SessionId) =>
 
 export const layer = UsageRpcs.toLayer(
   Effect.gen(function* () {
-    const deps: Deps = { log: yield* SessionLog, models: yield* Models };
+    const deps: Deps = {
+      log: yield* SessionLog,
+      models: yield* Models,
+      loop: yield* Effect.serviceOption(AgentLoop),
+    };
 
     return UsageRpcs.of({ "usage/session": ({ session }) => watchUsage(deps, session) });
   }),
