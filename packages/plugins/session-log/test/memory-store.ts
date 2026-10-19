@@ -147,6 +147,22 @@ const make = Effect.gen(function* () {
               : [],
           ),
       ),
+    renameKind: (from, to) =>
+      Ref.update(
+        ref,
+        (sessions) =>
+          new Map(
+            [...sessions].map(([id, session]) => [
+              id,
+              {
+                ...session,
+                entries: session.entries.map((entry) =>
+                  entry.kind === from ? { ...entry, kind: to } : entry,
+                ),
+              },
+            ]),
+          ),
+      ),
     readLive: (id) => Effect.map(existing(id), (session) => session.live),
     writeLive: (id, live) =>
       Effect.flatMap(existing(id), (session) => put(id, { ...session, live })),

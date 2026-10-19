@@ -19,11 +19,11 @@ import { type MeasureDeps, type Measured, measure } from "./measure.ts";
 import { type NoteDeps, noteWriter } from "./notes.ts";
 import { measuredSince } from "./view.ts";
 
-/** Everything compaction's server reads and writes with. */
-export type CompactionDeps = CheckpointDeps & MeasureDeps & NoteDeps;
+/** Everything memory's server reads and writes with. */
+export type MemoryDeps = CheckpointDeps & MeasureDeps & NoteDeps;
 
-/** The label of compaction's messages to the model. */
-const LABEL = "compaction";
+/** The label of memory's messages to the model. */
+const LABEL = "memory";
 
 const NUDGES: Readonly<Record<Exclude<Stage, "none">, string>> = {
   notice: reminder(
@@ -87,8 +87,8 @@ const switchedFrom = (entries: ReadonlyArray<Entry>, model: ModelRef): Option.Op
 };
 
 /** The time since the last reply, when it is past the provider's cache lifetime. */
-const idleFor = Effect.fn("compaction.idleFor")(function* (
-  deps: CompactionDeps,
+const idleFor = Effect.fn("memory.idleFor")(function* (
+  deps: MemoryDeps,
   entries: ReadonlyArray<Entry>,
   provider: string,
 ) {
@@ -105,8 +105,8 @@ const idleFor = Effect.fn("compaction.idleFor")(function* (
 });
 
 /** The automatic checkpoint due now: notes cover more than the latest one, and the cache is lost. */
-const dueTrigger = Effect.fn("compaction.dueTrigger")(function* (
-  deps: CompactionDeps,
+const dueTrigger = Effect.fn("memory.dueTrigger")(function* (
+  deps: MemoryDeps,
   measured: Measured,
   model: ModelRef,
 ) {
@@ -131,7 +131,7 @@ const dueTrigger = Effect.fn("compaction.dueTrigger")(function* (
 
 /** The hook, with the writers it starts kept in `writers` while the server runs. */
 export const beforeCallOf =
-  (deps: CompactionDeps, writers: FiberMap.FiberMap<SessionId>): BeforeCallHook =>
+  (deps: MemoryDeps, writers: FiberMap.FiberMap<SessionId>): BeforeCallHook =>
   ({ sessionId, settings }) =>
     Effect.gen(function* () {
       const { model } = settings;
@@ -167,7 +167,7 @@ export const beforeCallOf =
     }).pipe(
       Effect.catch((error) =>
         Effect.as(
-          Effect.logWarning("compaction failed before the call", error),
+          Effect.logWarning("memory failed before the call", error),
           BeforeCall.Proceed({ input: [] }),
         ),
       ),

@@ -15,7 +15,7 @@ import { makeHooks } from "./server/hooks.ts";
 import { type HolderClient, type HolderLink, makeHolderLink } from "./server/link.ts";
 import { makeTools } from "./server/tools.ts";
 
-/** Hooks run after compaction's and before checks settle the turn. */
+/** Hooks run after memory's and before checks settle the turn. */
 const HOOK_ORDER = 40;
 
 const register = Effect.fn("processes.register")(function* (link: HolderLink) {

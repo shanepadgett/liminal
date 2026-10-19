@@ -1,6 +1,6 @@
 /**
- * The sidebar's Compaction section: how much of the budget the context fills, in the warning color
- * from three quarters on, how far the background notes reach, and the checkpoints written.
+ * The sidebar's Memory section: how much of the budget the context fills, in the warning color from
+ * three quarters on, how far the background notes reach, and the checkpoints written.
  */
 
 import { Option } from "effect";
@@ -15,14 +15,14 @@ import {
   SidebarStat,
 } from "@liminal/sdk/tui";
 
-import type { CompactionStatus } from "../contract.ts";
+import type { MemoryStatus } from "../contract.ts";
 
-const budgetText = (status: CompactionStatus) =>
+const budgetText = (status: MemoryStatus) =>
   status.budget <= 0
     ? formatTokens(status.size)
     : `${formatTokens(status.size)} · ${formatShare(status.size / status.budget)}`;
 
-function Status(props: { readonly status: CompactionStatus }) {
+function Status(props: { readonly status: MemoryStatus }) {
   const tone = () =>
     props.status.stage === "warning" || props.status.stage === "forced"
       ? "feedback.warning"
@@ -32,7 +32,7 @@ function Status(props: { readonly status: CompactionStatus }) {
     <>
       <SidebarStat label="budget" value={budgetText(props.status)} tone={tone()} />
       <SidebarStat
-        label="notes"
+        label="short-term"
         value={
           props.status.notesThrough === undefined
             ? "none yet"
@@ -44,14 +44,12 @@ function Status(props: { readonly status: CompactionStatus }) {
   );
 }
 
-export const makeSection = (
-  watch: (session: SessionId) => Accessor<Option.Option<CompactionStatus>>,
-) =>
-  function CompactionSection(props: { readonly sessionId: SessionId }) {
+export const makeSection = (watch: (session: SessionId) => Accessor<Option.Option<MemoryStatus>>) =>
+  function MemorySection(props: { readonly sessionId: SessionId }) {
     const status = watch(props.sessionId);
 
     return (
-      <SidebarSection title="Compaction">
+      <SidebarSection title="Memory">
         <Show when={Option.getOrUndefined(status())} fallback={<SidebarNote text="No turn yet" />}>
           {(shown) => <Status status={shown()} />}
         </Show>

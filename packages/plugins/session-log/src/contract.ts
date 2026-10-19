@@ -86,6 +86,11 @@ export class SessionLog extends Context.Service<
       kinds: ReadonlyArray<EntryDefinition>,
       since: DateTime.Utc,
     ) => Effect.Effect<ReadonlyArray<Entry>, StoreError>;
+    /**
+     * Gives every saved entry of kind `from` the kind `to`, in every session: for a plugin whose
+     * entry kinds were renamed. Running it again changes nothing.
+     */
+    readonly renameKind: (from: string, to: EntryDefinition) => Effect.Effect<void, StoreError>;
     /** The saved entries after `from.after`, then Synced, then each new entry as it is saved. */
     readonly subscribe: (
       session: SessionId,

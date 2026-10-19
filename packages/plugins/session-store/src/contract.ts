@@ -113,6 +113,8 @@ export class SessionStore extends Context.Service<
       kinds: ReadonlyArray<string>,
       since: number,
     ) => Effect.Effect<ReadonlyArray<StoredEntry>, StoreError>;
+    /** Gives every saved entry of kind `from` the kind `to`, in every session. */
+    readonly renameKind: (from: string, to: string) => Effect.Effect<void, StoreError>;
     readonly readLive: (
       sessionId: string,
     ) => Effect.Effect<StoredLive | undefined, SessionNotFound | StoreError>;

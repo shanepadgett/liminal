@@ -165,7 +165,7 @@ const ask = <S extends Schema.Top & { readonly DecodingServices: never }>(
     }),
   );
 
-const writeNote = Effect.fn("compaction.writeNote")(function* (
+const writeNote = Effect.fn("memory.writeNote")(function* (
   writer: Writer,
   covered: Arr.NonEmptyReadonlyArray<Entry>,
 ) {
@@ -186,13 +186,13 @@ const writeNote = Effect.fn("compaction.writeNote")(function* (
     {
       entry: NoteEntry,
       data: { layer: "short-term", from: note.from, through: note.through, tokens: note.tokens },
-      text: `Short-term note, entries ${note.from}–${note.through}, ${tokensLabel(note.tokens)} tokens`,
+      text: `Short-term memory, entries ${note.from}–${note.through}, ${tokensLabel(note.tokens)} tokens`,
     },
   ]);
 });
 
 /** Writes the next note; false when the unnoted history is too short for one. */
-const writeNext = Effect.fn("compaction.writeNext")(function* (writer: Writer) {
+const writeNext = Effect.fn("memory.writeNext")(function* (writer: Writer) {
   const notes = yield* writer.deps.memories.notes(writer.session);
   const after = Option.match(Arr.last(notes), { onNone: () => 0, onSome: (note) => note.through });
   const entries = (yield* writer.deps.log.read(writer.session, {})).filter(isNoted);
@@ -214,7 +214,7 @@ const memoryPrompt = (memory: Option.Option<Memory>, notes: ReadonlyArray<Note>)
   ].join("\n\n");
 
 /** Condenses older notes into a memory once the notes after the newest memory are long enough. */
-const condense = Effect.fn("compaction.condense")(function* (writer: Writer) {
+const condense = Effect.fn("memory.condense")(function* (writer: Writer) {
   const { deps, session } = writer;
   const notes = yield* deps.memories.notes(session);
   const memory = Arr.last(yield* deps.memories.memories(session));
@@ -269,5 +269,5 @@ export const noteWriter = (
     while (yield* writeNext(writer)) yield* condense(writer);
 
     yield* condense(writer);
-  }).pipe(Effect.catch((error) => Effect.logWarning("compaction notes failed", error)));
+  }).pipe(Effect.catch((error) => Effect.logWarning("memory notes failed", error)));
 };

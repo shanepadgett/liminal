@@ -59,7 +59,7 @@ export class Memories extends Context.Service<
     readonly addNote: (note: Omit<Note, "number">) => Effect.Effect<Note, MemoriesError>;
     readonly addMemory: (memory: Omit<Memory, "number">) => Effect.Effect<Memory, MemoriesError>;
   }
->()("liminal/compaction/Memories") {}
+>()("liminal/memory/Memories") {}
 
 const createTables = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;

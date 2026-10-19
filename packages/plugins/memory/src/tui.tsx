@@ -1,7 +1,7 @@
 /**
- * Compaction's TUI part: the checkpoint rule, the handoff in the debug view and a line per note or
+ * Memory's TUI part: the checkpoint rule, the handoff in the debug view and a line per note or
  * memory, no row for the `checkpoint` call, which the rule stands for, `Recalled entries 12–40` for
- * `history`, and the sidebar's Compaction section.
+ * `history`, and the sidebar's Memory section.
  */
 
 import { Effect, Option, Schema, Stream } from "effect";
@@ -13,8 +13,8 @@ import { defineTui, makeBridge, Tail, TuiHost } from "@liminal/sdk/tui";
 import {
   CheckpointEntry,
   checkpointTool,
-  CompactionRpcs,
-  type CompactionStatus,
+  MemoryRpcs,
+  type MemoryStatus,
   HandoffEntry,
   HistoryParams,
   historyTool,
@@ -53,14 +53,14 @@ export default defineTui({
     yield* host.register(ChatSlots.tool, { key: historyTool, meta: historyRows }, Tail);
 
     const bridge = yield* makeBridge;
-    const client = yield* host.client(CompactionRpcs);
+    const client = yield* host.client(MemoryRpcs);
 
     const watch = (session: SessionId) =>
       bridge.watch(
-        client["compaction/status"]({ session }).pipe(Stream.map(Option.some)),
-        Option.none<CompactionStatus>(),
+        client["memory/status"]({ session }).pipe(Stream.map(Option.some)),
+        Option.none<MemoryStatus>(),
       );
 
-    yield* host.register(ChatSlots.sidebar, { id: "compaction", order: 20 }, makeSection(watch));
+    yield* host.register(ChatSlots.sidebar, { id: "memory", order: 20 }, makeSection(watch));
   }),
 });

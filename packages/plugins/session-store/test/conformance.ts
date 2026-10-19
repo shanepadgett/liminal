@@ -250,6 +250,26 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
         expect(yield* store.recentEntriesOfKinds([], 0)).toEqual([]);
       }),
   ],
+  [
+    "renames a kind in every session, and again changes nothing",
+    (store) =>
+      Effect.gen(function* () {
+        const old = (seq: number): NewEntry => ({ ...draft(seq), kind: "test/old" });
+        yield* store.createSession("s1", "/work");
+        yield* store.createSession("s2", "/elsewhere");
+        yield* store.appendEntries("s1", [old(1), draft(2)]);
+        yield* store.appendEntries("s2", [old(1)]);
+
+        yield* store.renameKind("test/old", "test/new");
+        yield* store.renameKind("test/old", "test/new");
+
+        const kinds = (id: string) =>
+          Effect.map(store.readEntries(id, {}), (entries) => entries.map((saved) => saved.kind));
+
+        expect(yield* kinds("s1")).toEqual(["test/new", "test/note"]);
+        expect(yield* kinds("s2")).toEqual(["test/new"]);
+      }),
+  ],
 ];
 
 const reopenCase = <E>(

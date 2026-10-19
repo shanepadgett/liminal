@@ -72,7 +72,23 @@ const logTest = <E>(
   );
 };
 
+/** `test/note` under a name its plugin used before. */
+const OldNote = defineEntry({ ...Note, kind: "test/old-note" });
+
 describe("SessionLog", () => {
+  logTest("renameKind gives saved entries the new kind, which decodes", (log) =>
+    Effect.gen(function* () {
+      yield* (yield* EntryKinds).register(OldNote);
+      yield* log.append(s1, [draft(OldNote, { data: { body: "a" }, text: "a" })]);
+
+      yield* log.renameKind("test/old-note", Note);
+
+      const [entry] = yield* log.read(s1, {});
+      expect(entry?.kind).toBe("test/note");
+      expect(entry?.data).toEqual({ body: "a" });
+    }),
+  );
+
   logTest("append numbers consecutive seqs and read decodes them", (log) =>
     Effect.gen(function* () {
       yield* log.append(s1, [note("a")]);

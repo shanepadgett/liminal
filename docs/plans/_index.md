@@ -21,4 +21,4 @@ One file per piece of work being planned or built. A plan moves to `archive/` on
 | [shared-checks.md](shared-checks.md) | Built; awaiting review |
 | [session-name.md](session-name.md) | Built; awaiting review |
 | [entry-versions.md](entry-versions.md) | Step 1 built; awaiting review |
-| [memory.md](memory.md) | Step 1 (gallery) built, awaiting review |
+| [memory.md](memory.md) | Steps 1 (gallery) and 2 (rename) built; step 3 (file wrapper) next |

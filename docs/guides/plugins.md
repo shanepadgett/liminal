@@ -237,7 +237,7 @@ For work that should not hold up a turn, such as summarizing history with a smal
 - Catch the work's failures and log them with `Effect.logWarning`; the next start tries again.
 - Save each result in one write, so an interrupted run leaves nothing half-written.
 
-Example: `packages/plugins/compaction/src/server/before-call.ts`.
+Example: `packages/plugins/memory/src/server/before-call.ts`.
 
 ## Register a tool
 

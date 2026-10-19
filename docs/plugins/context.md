@@ -23,7 +23,7 @@ Status: built
 
 ## Requirements
 
-- System prompt, instructions, compaction and cache hints are separate plugins that add to the context
+- System prompt, instructions, memory and cache hints are separate plugins that add to the context
 - Builds model messages from the text saved on each entry; needs no converter per entry kind
 - A shared context message kind holds a plugin's label, its text and a show or hide setting on each entry; plugins use it for nudges and similar messages
 - The system prompt and tool list live in the log: the first request saves every prompt section and tool, and later entries add, replace or remove sections and tools

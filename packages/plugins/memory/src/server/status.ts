@@ -1,11 +1,11 @@
-/** The status the sidebar's Compaction section shows, measured again after each change to the log. */
+/** The status the sidebar's Memory section shows, measured again after each change to the log. */
 
 import { Array as Arr, Duration, Effect, Option, Stream } from "effect";
 
 import type { SessionId } from "@liminal/sdk";
 import type { SessionLog } from "@liminal/session-log/contract";
 
-import type { CompactionStatus } from "../contract.ts";
+import type { MemoryStatus } from "../contract.ts";
 import { checkpointsOf, turnStartsOf } from "./history.ts";
 import { type MeasureDeps, measure } from "./measure.ts";
 
@@ -16,7 +16,7 @@ export type StatusDeps = MeasureDeps & { readonly log: SessionLog["Service"] };
 const SETTLE = Duration.millis(100);
 
 /** The session's status; none before its first turn, which names the model to measure against. */
-const statusOf = Effect.fn("compaction.statusOf")(function* (deps: StatusDeps, session: SessionId) {
+const statusOf = Effect.fn("memory.statusOf")(function* (deps: StatusDeps, session: SessionId) {
   const entries = yield* deps.log
     .read(session, {})
     .pipe(Effect.catchTag("SessionNotFound", () => Effect.succeed([])));
@@ -27,7 +27,7 @@ const statusOf = Effect.fn("compaction.statusOf")(function* (deps: StatusDeps, s
   const measured = yield* measure(deps, session, entries, start.value.model);
   const lastNote = Arr.last(measured.stored.notes);
 
-  const status: CompactionStatus = {
+  const status: MemoryStatus = {
     size: measured.size,
     budget: measured.budget,
     stage: measured.stage,
@@ -48,13 +48,13 @@ export const watchStatus = (deps: StatusDeps, session: SessionId) =>
     Stream.mapEffect(() =>
       statusOf(deps, session).pipe(
         Effect.catch((error) =>
-          Effect.as(Effect.logWarning(`compaction status skipped: ${error.message}`), []),
+          Effect.as(Effect.logWarning(`memory status skipped: ${error.message}`), []),
         ),
       ),
     ),
     Stream.flattenIterable,
     Stream.catch((error) =>
-      Stream.fromEffect(Effect.logWarning(`compaction status ended: ${error.message}`)).pipe(
+      Stream.fromEffect(Effect.logWarning(`memory status ended: ${error.message}`)).pipe(
         Stream.drain,
       ),
     ),

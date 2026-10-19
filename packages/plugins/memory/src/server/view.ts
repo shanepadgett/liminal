@@ -27,7 +27,7 @@ export interface Stored {
 }
 
 /** The kind of the messages the view step builds; they are never saved. */
-const BUILT_KIND = "compaction/memory";
+const BUILT_KIND = "memory/built";
 
 /** A user message built in the step, placed at the checkpoint. */
 const built = (checkpoint: Entry, text: string, isCacheEnd: boolean): Entry => {

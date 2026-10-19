@@ -1,7 +1,7 @@
 /**
- * Compaction: keeps a session within the model's context window. The model writes checkpoints, a
- * cheap model writes notes and memories in the background, and the view step folds the history at
- * the latest checkpoint.
+ * Memory: keeps a session within the model's context window. The model writes checkpoints, a cheap
+ * model writes notes and memories in the background, and the view step folds the history at the
+ * latest checkpoint.
  */
 
 import { BeforeCallHooks } from "@liminal/agent-loop/contract";
@@ -12,10 +12,10 @@ import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
 import { ToolChecks, Tools } from "@liminal/tools/contract";
 
-import { CompactionRpcs } from "./src/contract.ts";
+import { MemoryRpcs } from "./src/contract.ts";
 
 export default definePlugin({
-  name: "compaction",
+  name: "memory",
   provides: [],
   requires: [
     ViewSteps,
@@ -30,7 +30,7 @@ export default definePlugin({
   ],
   uses: [],
   enabledByDefault: true,
-  rpcs: CompactionRpcs,
+  rpcs: MemoryRpcs,
   server: () => import("./src/server.ts"),
   tui: () => import("./src/tui.tsx"),
 });

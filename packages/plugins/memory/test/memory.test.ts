@@ -1,6 +1,6 @@
 /**
- * Compaction against real plugins and the scripted model: nudges at each stage, the forced check,
- * the `checkpoint` tool and the folded view, notes written in the background and the automatic
+ * Memory against real plugins and the scripted model: nudges at each stage, the forced check, the
+ * `checkpoint` tool and the folded view, notes written in the background and the automatic
  * checkpoint once the cache is lost.
  */
 
@@ -35,17 +35,17 @@ import { Settings } from "@liminal/settings/contract";
 import tools from "@liminal/tools";
 import { ToolChecks, ToolDecision, Tools } from "@liminal/tools/contract";
 
-import compaction from "../plugin.ts";
+import memory from "../plugin.ts";
 import {
   CheckpointData,
   CheckpointEntry,
-  CompactionRpcs,
+  MemoryRpcs,
   HandoffEntry,
   historyTool,
   NoteEntry,
 } from "../src/contract.ts";
 
-const stack = serverOf(compaction).pipe(
+const stack = serverOf(memory).pipe(
   Layer.provideMerge(serverOf(agentLoop)),
   Layer.provideMerge(serverOf(tools)),
   Layer.provideMerge(serverOf(context)),
@@ -71,7 +71,7 @@ const turnStarted = draft(TurnStartedEntry, { data: { model }, text: "" });
 
 const start = (...drafts: ReadonlyArray<EntryDraft>) =>
   Effect.gen(function* () {
-    yield* (yield* Settings).write("global", ["compaction", "budget"], BUDGET);
+    yield* (yield* Settings).write("global", ["memory", "budget"], BUDGET);
     const log = yield* SessionLog;
     yield* log.create(s1);
     yield* log.append(s1, [turnStarted, ...drafts]);
@@ -94,7 +94,7 @@ const nudgeTexts = (input: ReadonlyArray<EntryDraft>) =>
   input.flatMap((each) =>
     Option.match(decodeMessage(each.data), {
       onNone: () => [],
-      onSome: ({ label, text }) => (label === "compaction" ? [text] : []),
+      onSome: ({ label, text }) => (label === "memory" ? [text] : []),
     }),
   );
 
@@ -409,9 +409,9 @@ effectTest(
   "the status streams the size against the budget once the log settles",
   Effect.gen(function* () {
     yield* start(said(600));
-    const client = yield* RpcTest.makeClient(CompactionRpcs);
+    const client = yield* RpcTest.makeClient(MemoryRpcs);
 
-    const first = yield* client["compaction/status"]({ session: s1 }).pipe(
+    const first = yield* client["memory/status"]({ session: s1 }).pipe(
       Stream.runHead,
       Effect.forkChild,
     );

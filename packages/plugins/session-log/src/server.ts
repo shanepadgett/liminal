@@ -65,6 +65,7 @@ const make = Effect.gen(function* () {
     list: store
       .listSessions(workspace)
       .pipe(Effect.map(Arr.map(toSummary)), Effect.mapError(toStoreError)),
+    renameKind: (from, to) => store.renameKind(from, to.kind).pipe(Effect.mapError(toStoreError)),
     ...entries,
     ...live,
   });

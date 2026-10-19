@@ -45,6 +45,7 @@ const make = Effect.gen(function* () {
     lastEntriesOfKinds: (kinds) => run("lastEntriesOfKinds")(Queries.lastEntriesOfKinds(kinds)),
     recentEntriesOfKinds: (kinds, since) =>
       run("recentEntriesOfKinds")(Queries.recentEntriesOfKinds(kinds, since)),
+    renameKind: (from, to) => run("renameKind")(Queries.renameKind(from, to)),
     readLive: (sessionId) => run("readLive")(Queries.readLive(sessionId)),
     writeLive: (sessionId, live) => run("writeLive")(Queries.writeLive(sessionId, live)),
   });

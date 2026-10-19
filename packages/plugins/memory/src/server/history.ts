@@ -1,7 +1,4 @@
-/**
- * What compaction reads from a session's log: its checkpoints, its turns and the reply around a
- * call.
- */
+/** What memory reads from a session's log: its checkpoints, its turns and the reply around a call. */
 
 import { Array as Arr, Option, Predicate, Schema } from "effect";
 

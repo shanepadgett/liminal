@@ -1,5 +1,5 @@
 /**
- * Compaction's server: `memories.db` in the data folder, the view step, the `checkpoint` tool, the
+ * Memory's server: `memories.db` in the data folder, the view step, the `checkpoint` tool, the
  * `history` tool, the forced check, the before-call hook and the status the sidebar shows.
  */
 
@@ -13,13 +13,20 @@ import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
 import { ToolChecks, Tools } from "@liminal/tools/contract";
 
-import { CheckpointEntry, CompactionRpcs, HandoffEntry, NoteEntry } from "./contract.ts";
-import { beforeCallOf, type CompactionDeps } from "./server/before-call.ts";
+import { CheckpointEntry, MemoryRpcs, HandoffEntry, NoteEntry } from "./contract.ts";
+import { beforeCallOf, type MemoryDeps } from "./server/before-call.ts";
 import { checkpointToolOf, forcedCheck } from "./server/checkpoint.ts";
 import { historyToolOf } from "./server/recall.ts";
 import { watchStatus } from "./server/status.ts";
 import { Memories, memoriesLayer } from "./server/store.ts";
 import { viewOf } from "./server/view.ts";
+
+/** Kinds this plugin saved under its earlier name, `compaction`. */
+const renamedKinds = [
+  ["compaction/checkpoint", CheckpointEntry],
+  ["compaction/handoff", HandoffEntry],
+  ["compaction/note", NoteEntry],
+] as const;
 
 /** Before approval, so a full context denies without asking. */
 const checkOrder = 50;
@@ -28,7 +35,7 @@ const checkOrder = 50;
 const viewOrder = 100;
 
 const register = Effect.gen(function* () {
-  const deps: CompactionDeps = {
+  const deps: MemoryDeps = {
     log: yield* SessionLog,
     memories: yield* Memories,
     models: yield* Models,
@@ -40,6 +47,10 @@ const register = Effect.gen(function* () {
   yield* kinds.register(CheckpointEntry);
   yield* kinds.register(HandoffEntry);
   yield* kinds.register(NoteEntry);
+
+  yield* Effect.forEach(renamedKinds, ([from, to]) => deps.log.renameKind(from, to), {
+    discard: true,
+  });
 
   yield* (yield* ViewSteps).register(
     (sessionId, entries) =>
@@ -61,7 +72,7 @@ const register = Effect.gen(function* () {
   yield* (yield* BeforeCallHooks).register(beforeCallOf(deps, writers), { order: 0 });
 });
 
-const rpcs = CompactionRpcs.toLayer(
+const rpcs = MemoryRpcs.toLayer(
   Effect.gen(function* () {
     const deps = {
       log: yield* SessionLog,
@@ -70,7 +81,7 @@ const rpcs = CompactionRpcs.toLayer(
       settings: yield* Settings,
     };
 
-    return CompactionRpcs.of({ "compaction/status": ({ session }) => watchStatus(deps, session) });
+    return MemoryRpcs.of({ "memory/status": ({ session }) => watchStatus(deps, session) });
   }),
 );
 

@@ -98,7 +98,7 @@ The transcript shows tool calls as work rows such as `Read src/kernel.ts`. Rows 
 2. Pick the opened row's component. It gets `call`, with `outcome.result` and `outcome.details` once done, and `text`, the result when it is text. The SDK's `Tail` shows the end of `text`, 8 lines unless given `lines`.
 3. Register both under the tool name: `host.register(ChatSlots.tool, { key: "read", meta: rows }, Tail)`.
 
-A tool whose calls the transcript shows as its own entry registers `meta: ToolRows.Hidden()`, and its calls draw no row. Wrap a hand-written `fold` in `ToolRows.Rows({ fold })`. Example: `packages/plugins/compaction/src/tui.tsx`.
+A tool whose calls the transcript shows as its own entry registers `meta: ToolRows.Hidden()`, and its calls draw no row. Wrap a hand-written `fold` in `ToolRows.Rows({ fold })`. Example: `packages/plugins/memory/src/tui.tsx`.
 
 Example: `packages/plugins/tools-read/src/tui.tsx`.
 

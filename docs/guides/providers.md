@@ -65,7 +65,7 @@ yield* (yield* ModelProviders).register({
 | `stream` | One attempt for one request; interrupting the stream cancels the call |
 | `nativeToolChanges` | `true` when the provider turns `tool-change` parts into native items; `false` sends every declared tool on each request |
 | `cheap` | A small, fast model and its thinking value; other plugins read it through `Models.cheap` and use it as the default for side calls such as reviews; a `ModelTask` runs on any model |
-| `cacheLifetime` | How long the provider keeps a prompt cache after a request; compaction reads it through `Models.cacheLifetime` to write a checkpoint once the cache is lost |
+| `cacheLifetime` | How long the provider keeps a prompt cache after a request; memory reads it through `Models.cacheLifetime` to write a checkpoint once the cache is lost |
 
 A provider built on `replyOf` sends `request.toolChoice` (`auto`, `required` or `{ tool }`) for free. A provider with its own stream must map it.
 

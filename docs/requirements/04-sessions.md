@@ -25,7 +25,7 @@ What a chat session is and the rules every session plugin follows. Each part bel
 - Transcript groups and wording are derived, never stored
 - Each session is one line; a fork is a new session that reads its parent's entries up to a point
 - Rewinding a session also rolls back files
-- Visible history is never removed; compaction changes only what the model sees
+- Visible history is never removed; a checkpoint changes only what the model sees
 - JSONL is only an export format
 - Until release, the storage format changes through one-off migrations that are periodically condensed
 

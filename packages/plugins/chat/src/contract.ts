@@ -127,7 +127,7 @@ export const ChatSlots = {
   hints: Slot.list<TurnProps, "session">("chat/hints", { scope: "session" }),
   /**
    * The sidebar's sections, top to bottom by `order`: environment's Session at -10, usage's Context
-   * at 0 and Cost at 10, compaction's at 20.
+   * at 0 and Cost at 10, memory's at 20.
    */
   sidebar: Slot.list<NoProps, "session">("chat/sidebar", { scope: "session" }),
 };

@@ -46,7 +46,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | agents-files | `AGENTS.md` files from `~/.agents`, `~/.liminal` and the repository root down to the workspace, on by default | built |
 | [notices](notices.md) | Session notices only the user sees, in the transcript | built |
 | instruction-files | `~/.liminal/instructions/` and, in a trusted workspace, `.liminal/instructions/` files with `always` or `read-when` front matter | built |
-| [compaction](compaction.md) | Keeps the context within the model's window | built |
+| [memory](memory.md) | Keeps the context within the model's window | built |
 | [cache-hints](cache-hints.md) | Marks prompt cache breakpoints | built |
 | [references](references.md) | Read-only git clones of other repositories that a session attaches; `/references`, `@` tags and the sidebar section | built |
 

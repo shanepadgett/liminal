@@ -1,6 +1,6 @@
 /**
- * Compaction's entry kinds and settings: the checkpoint that folds the model's view, the handoff
- * the model wrote with it, and the notes and memories written in the background.
+ * Memory's entry kinds and settings: the checkpoint that folds the model's view, the handoff the
+ * model wrote with it, and the notes and memories written in the background.
  */
 
 import { Effect, Schema } from "effect";
@@ -8,13 +8,13 @@ import { Rpc, RpcGroup } from "effect/rpc";
 
 import { defineEntry, ModelRef, Seq, SessionId } from "@liminal/sdk";
 
-/** The `compaction` section of `settings.json`. */
-export const CompactionSettings = Schema.Struct({
+/** The `memory` section of `settings.json`. */
+export const MemorySettings = Schema.Struct({
   /** The most tokens a request may hold before the model must write a checkpoint. */
   budget: Schema.Int.pipe(Schema.withDecodingDefaultKey(Effect.succeed(200_000))),
 });
 
-export type CompactionSettings = typeof CompactionSettings.Type;
+export type MemorySettings = typeof MemorySettings.Type;
 
 /** The model called `checkpoint`. */
 export const ModelTrigger = Schema.TaggedStruct("Model", { callId: Schema.String });
@@ -44,7 +44,7 @@ export const CheckpointData = Schema.Struct({
 export type CheckpointData = typeof CheckpointData.Type;
 
 export const CheckpointEntry = defineEntry({
-  kind: "compaction/checkpoint",
+  kind: "memory/checkpoint",
   data: CheckpointData,
   model: false,
   user: "shown",
@@ -52,7 +52,7 @@ export const CheckpointEntry = defineEntry({
 
 /** What the model wrote for itself at its checkpoint. */
 export const HandoffEntry = defineEntry({
-  kind: "compaction/handoff",
+  kind: "memory/handoff",
   data: Schema.Struct({ handoff: Schema.String }),
   model: false,
   user: "debug",
@@ -64,7 +64,7 @@ export type NoteLayer = typeof NoteLayer.Type;
 
 /** A note or memory was written: its range and size only; the text stays in `memories.db`. */
 export const NoteEntry = defineEntry({
-  kind: "compaction/note",
+  kind: "memory/memory-written",
   data: Schema.Struct({ layer: NoteLayer, from: Seq, through: Seq, tokens: Schema.Int }),
   model: false,
   user: "shown",
@@ -89,8 +89,8 @@ export const Stage = Schema.Literals(["none", "notice", "warning", "forced"]);
 
 export type Stage = typeof Stage.Type;
 
-/** How full a session's context is, for the sidebar's Compaction section. */
-export const CompactionStatus = Schema.Struct({
+/** How full a session's context is, for the sidebar's Memory section. */
+export const MemoryStatus = Schema.Struct({
   /** The view's tokens: the last reply's, plus estimates for the entries after it. */
   size: Schema.Int,
   /** The most tokens a request may hold before the model must write a checkpoint. */
@@ -102,14 +102,14 @@ export const CompactionStatus = Schema.Struct({
   checkpoints: Schema.Int,
 });
 
-export type CompactionStatus = typeof CompactionStatus.Type;
+export type MemoryStatus = typeof MemoryStatus.Type;
 
-/** Compaction's commands for frontends. */
-export class CompactionRpcs extends RpcGroup.make(
+/** Memory's commands for frontends. */
+export class MemoryRpcs extends RpcGroup.make(
   /** The session's status once it has a turn, then again after each change to its log. */
-  Rpc.make("compaction/status", {
+  Rpc.make("memory/status", {
     payload: { session: SessionId },
-    success: CompactionStatus,
+    success: MemoryStatus,
     stream: true,
   }),
 ) {}

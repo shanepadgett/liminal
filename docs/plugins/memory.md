@@ -1,4 +1,4 @@
-# compaction
+# memory
 
 Keeps the context within the model's window.
 
@@ -94,7 +94,7 @@ Status: built; memory files planned ([plans/memory.md](../plans/memory.md))
 
 ## Sidebar
 
-- `compaction/status` streams the session's size, budget, stage, memory counts and the checkpoint count, again after each burst of new entries
+- `memory/status` streams the session's size, budget, stage, memory counts and the checkpoint count, again after each burst of new entries
 - No section of its own: the Context section gains budget, short-term, long-term and checkpoints rows
 - Budget shows tokens used and its share, in the warning color from the warning stage
 - Short-term and long-term show counts of memories written

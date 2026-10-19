@@ -6,7 +6,7 @@ import type { Models } from "@liminal/models/contract";
 import type { Entry, ModelRef, SessionId } from "@liminal/sdk";
 import type { Settings } from "@liminal/settings/contract";
 
-import { CompactionSettings, type Stage } from "../contract.ts";
+import { MemorySettings, type Stage } from "../contract.ts";
 import { budgetOf, sizeOf, stageOf } from "./budget.ts";
 import type { Memories } from "./store.ts";
 import { measuredSince, type Stored, viewOf } from "./view.ts";
@@ -27,10 +27,10 @@ export interface Measured {
   readonly stage: Stage;
 }
 
-const defaultSettings: CompactionSettings = { budget: 200_000 };
+const defaultSettings: MemorySettings = { budget: 200_000 };
 
 /** The session, whose log holds `entries`, measured against `model`'s context window. */
-export const measure = Effect.fn("compaction.measure")(function* (
+export const measure = Effect.fn("memory.measure")(function* (
   deps: MeasureDeps,
   session: SessionId,
   entries: ReadonlyArray<Entry>,
@@ -42,13 +42,10 @@ export const measure = Effect.fn("compaction.measure")(function* (
   };
 
   const settings = yield* deps.settings
-    .section("compaction", CompactionSettings)
+    .section("memory", MemorySettings)
     .pipe(
       Effect.catchTag("SettingsInvalid", (error) =>
-        Effect.as(
-          Effect.logWarning(`compaction settings ignored: ${error.message}`),
-          defaultSettings,
-        ),
+        Effect.as(Effect.logWarning(`memory settings ignored: ${error.message}`), defaultSettings),
       ),
     );
 

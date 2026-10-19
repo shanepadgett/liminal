@@ -225,6 +225,11 @@ export const appendEntries = Effect.fn("appendEntries")(function* (
   return stored;
 });
 
+export const renameKind = Effect.fn("renameKind")(function* (from: string, to: string) {
+  const sql = yield* SqlClient.SqlClient;
+  yield* sql`UPDATE entries SET kind = ${to} WHERE kind = ${from}`;
+});
+
 export const readLive = Effect.fn("readLive")(function* (sessionId: string) {
   const sql = yield* SqlClient.SqlClient;
   yield* findSession(sessionId);

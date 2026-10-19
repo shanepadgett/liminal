@@ -23,7 +23,7 @@ Bun layers for Effect's platform services: FileSystem, Path, runtime entry. Its 
 SQLite client for effect/sql on bun:sqlite: SqliteClient layer and SqliteMigrator. SqlClient, Migrator and SqlError come from effect/sql.
 
 - Docs: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/` (1 file: README.md)
-- API (source): `packages/plugins/compaction/node_modules/@effect/sql-sqlite-bun/src/`, modules: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/api-index/@effect-sql-sqlite-bun-src.md`
+- API (source): `packages/plugins/credential-store/node_modules/@effect/sql-sqlite-bun/src/`, modules: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/api-index/@effect-sql-sqlite-bun-src.md`
 
 ## @effect/tsgo 0.53.1
 

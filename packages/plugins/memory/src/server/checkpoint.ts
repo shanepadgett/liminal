@@ -59,7 +59,7 @@ export interface CheckpointDeps {
 }
 
 /** Saves a checkpoint of `trigger` over what the notes cover now. */
-export const saveCheckpoint = Effect.fn("compaction.saveCheckpoint")(function* (
+export const saveCheckpoint = Effect.fn("memory.saveCheckpoint")(function* (
   deps: CheckpointDeps,
   session: SessionId,
   trigger: Trigger,
@@ -94,7 +94,7 @@ export const checkpointToolOf = (deps: CheckpointDeps) =>
   defineTool({
     name: checkpointTool,
     description: [
-      "Folds your context: from your next model call you see your notes, the recent entries and this handoff instead of the full history.",
+      "Folds your context: from your next model call you see your short-term memory, the recent entries and this handoff instead of the full history.",
       "Call it on its own, when a nudge asks and a bounded unit of work is done, never only to send a final answer.",
     ].join(" "),
     parameters: Params,
@@ -127,7 +127,7 @@ export const checkpointToolOf = (deps: CheckpointDeps) =>
 
         return {
           result:
-            "Checkpoint saved. Your next model call starts from your memory, notes, recent entries and this handoff.",
+            "Checkpoint saved. Your next model call starts from your long-term and short-term memory, recent entries and this handoff.",
         };
       }).pipe(
         Effect.catchTags({
@@ -157,7 +157,7 @@ export const forcedCheck =
       return stage === "forced" ? ToolDecision.Deny({ reason: full }) : ToolDecision.Allow();
     }).pipe(
       Effect.catch((error) =>
-        Effect.as(Effect.logWarning("compaction check failed", error), ToolDecision.Allow()),
+        Effect.as(Effect.logWarning("memory check failed", error), ToolDecision.Allow()),
       ),
     );
   };

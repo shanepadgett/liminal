@@ -1,6 +1,6 @@
 # Compaction
 
-Lets a session run past the model's context window. A checkpoint folds the history: from then on the model sees a fresh system prompt, its memories, the recent entries and, when the model wrote the checkpoint, its handoff. The model writes checkpoints; Liminal also writes one when the provider's cache is already lost. The transcript keeps everything. Requirements are in [compaction.md](../plugins/compaction.md); the transcript look is in the gallery (`apps/gallery/src/transcript/Checkpoint.tsx`).
+Lets a session run past the model's context window. A checkpoint folds the history: from then on the model sees a fresh system prompt, its memories, the recent entries and, when the model wrote the checkpoint, its handoff. The model writes checkpoints; Liminal also writes one when the provider's cache is already lost. The transcript keeps everything. Requirements are in [memory.md](../plugins/memory.md); the transcript look is in the gallery (`apps/gallery/src/transcript/Checkpoint.tsx`).
 
 Built in one step.
 
@@ -223,7 +223,7 @@ The gallery's Checkpoint entry gains the note line and an automatic checkpoint s
 
 - `ToolRows` becomes a tagged union; every tool's registration wraps its rows in `Rows`, and `pathRows` returns `Rows`.
 - The budget drops the long-context price threshold: `ModelInfo` has no such field.
-- The `Open` items in `docs/plugins/compaction.md` about checkpoint timing and memory contents are settled.
+- The `Open` items in `docs/plugins/memory.md` about checkpoint timing and memory contents are settled.
 
 ## Guides
 

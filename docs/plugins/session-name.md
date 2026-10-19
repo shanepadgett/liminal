@@ -25,4 +25,4 @@ Status: built
 
 ## References
 
-- Compaction's forced check, which denies tools while keeping them listed
+- Memory's forced check, which denies tools while keeping them listed
