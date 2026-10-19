@@ -66,7 +66,7 @@ export const SendError = Schema.Union([
 export type SendError = typeof SendError.Type;
 
 /** What an `@` tag names; each kind has its own icon in the list. */
-export const TagKind = Schema.Literals(["file", "folder", "reference", "image"]);
+export const TagKind = Schema.Literals(["file", "folder", "reference", "image", "skill"]);
 
 export type TagKind = typeof TagKind.Type;
 

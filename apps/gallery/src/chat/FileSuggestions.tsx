@@ -1,7 +1,7 @@
 /**
- * What an `@` can tag, matching what follows it: files, folders, reference repositories and images.
- * Each row has an emoji for its kind, then the path with the matched characters marked and its
- * middle cut to `…` when it does not fit. A short note on the right says what a reference or an
+ * What an `@` can tag, matching what follows it: files, folders, reference repositories, images and
+ * skills. Each row has an emoji for its kind, then the path with the matched characters marked and
+ * its middle cut to `…` when it does not fit. A short note on the right says what a reference or an
  * image is, as a path alone does not.
  */
 
@@ -13,7 +13,7 @@ import { ListRow } from "./ListRow.tsx";
 import { MatchedText } from "./MatchedText.tsx";
 import { SuggestionList } from "./SuggestionList.tsx";
 
-type Kind = "file" | "folder" | "reference" | "image";
+type Kind = "file" | "folder" | "reference" | "image" | "skill";
 
 /** Emoji that show as emoji by default, so each is two columns in every terminal. */
 const ICONS: Readonly<Record<Kind, string>> = {
@@ -21,6 +21,7 @@ const ICONS: Readonly<Record<Kind, string>> = {
   folder: "📁",
   reference: "📚",
   image: "🌄",
+  skill: "🧩",
 };
 
 type Taggable = { readonly kind: Kind; readonly path: string; readonly note?: string };
@@ -35,6 +36,7 @@ const TAGGABLES: readonly Taggable[] = [
   { kind: "image", path: "docs/images/plugin-host-boot.png", note: "84 KB" },
   { kind: "reference", path: "opencode/packages/plugin/", note: "reference" },
   { kind: "reference", path: "pi/packages/coding-agent/src/core/extensions/", note: "reference" },
+  { kind: "skill", path: "skill:plugin-review", note: "skill" },
   { kind: "file", path: "kernel/src/session/SessionStore.ts" },
   { kind: "file", path: "kernel/package.json" },
   { kind: "file", path: "README.md" },

@@ -491,6 +491,30 @@ esc: Review or Push answers no; Checking or Planning stops the run; Committing a
 - Commits run the repository's hooks; a commit or push may take 10 minutes.
 - Push is always asked, No first.
 
+## Step 12: skills
+
+A new `skills` plugin. Skills follow the Agent Skills format: `<skills folder>/<name>/SKILL.md` with `name`, `description` and `disable-model-invocation` front matter. The model sees a list and reads a skill when its task comes up; the user starts one with `/<name>` or tags it with `@skill:<name>`.
+
+| Where | Change |
+| --- | --- |
+| `context` contract | `splitFrontMatter(text)`: the `key: value` pairs and the body; `instruction-files` uses it in place of its own |
+| `inbox` contract, TUI, gallery | `TagKind` gains `skill`, with its icon |
+| `skills` contract | `SkillSummary { name, description }`; `SkillsRpcs`: `skills/list`, `skills/use { session, name, args }`; `UnknownSkill` |
+| `skills` server | finds skills on each use; prompt section `skills/list` at order 300; a tag source; `skills/use` sends the skill as a user message |
+| `skills` TUI | one `/<name>` command per skill at setup, skipping names another command has |
+
+```ts
+folders     ~/.agents/skills, <global>/skills; trusted: <folder>/.agents/skills, <folder>/.liminal/skills
+            from the repository root down to the workspace; a nearer skill replaces one of the same name
+skill       description required, else a warning notice; name from front matter, else the folder
+            disable-model-invocation: true -> left out of the prompt list, still a command and a tag
+section     `name` (`path`): description, under "read its SKILL.md with the read tool first"
+use         UserEntry shown as "/name args"; the model reads the skill block, then the args
+tag         @skill:name -> TagText with the same skill block
+```
+
+- Commands come from the skills found when the TUI starts or reloads.
+
 ## New dependency
 
 - `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Unpatched here: its console logs are cut only when the script ends.

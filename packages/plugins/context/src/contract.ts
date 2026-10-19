@@ -245,6 +245,39 @@ export const foldersDown = Effect.fn("foldersDown")(function* (
   });
 });
 
+const FENCE = "---";
+
+/** A Markdown file's front matter, as its `key: value` pairs, and the text after it. */
+export interface FrontMatter {
+  readonly pairs: ReadonlyMap<string, string>;
+  readonly body: string;
+}
+
+/** The pairs between the opening and closing `---` lines; none when the text has no front matter. */
+export const splitFrontMatter = (text: string): Option.Option<FrontMatter> => {
+  const lines = text.replaceAll("\r\n", "\n").split("\n");
+  if (lines[0]?.trim() !== FENCE) return Option.none();
+
+  const end = lines.findIndex((line, index) => index > 0 && line.trim() === FENCE);
+  if (end === -1) return Option.none();
+
+  const pairs = new Map(
+    lines.slice(1, end).flatMap((line): ReadonlyArray<readonly [string, string]> => {
+      const colon = line.indexOf(":");
+
+      return colon === -1 ? [] : [[line.slice(0, colon).trim(), line.slice(colon + 1).trim()]];
+    }),
+  );
+
+  return Option.some({
+    pairs,
+    body: lines
+      .slice(end + 1)
+      .join("\n")
+      .trim(),
+  });
+};
+
 /** What reading a list of instruction files found: their texts, and the files that failed. */
 export interface ReadFiles {
   readonly files: FileTexts;

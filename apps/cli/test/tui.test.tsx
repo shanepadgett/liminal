@@ -10,6 +10,7 @@ import {
   Context,
   Deferred,
   Effect,
+  FileSystem,
   Latch,
   Layer,
   Option,
@@ -784,6 +785,33 @@ effectTest(
 
     const after = yield* frameWith(setup, "Not in a git repository.");
     expect(after).toContain("Commit");
+  }),
+  trustedServices,
+);
+
+effectTest(
+  "a skill is a slash command that sends what was typed after it",
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const folder = path.join((yield* Directories).home, ".agents", "skills", "greet");
+    yield* fs.makeDirectory(folder, { recursive: true });
+
+    yield* fs.writeFileString(
+      path.join(folder, "SKILL.md"),
+      "---\ndescription: Greet the reader warmly\n---\nSay hello.",
+    );
+
+    const { setup } = yield* bootScripted(replyText("hi there"), replyText("greeted them"));
+
+    yield* send(setup, "hello there");
+    yield* frameWith(setup, "hi there");
+    yield* slash(setup, "/greet", "Greet the reader warmly");
+    yield* Effect.promise(() => setup.mockInput.typeText("Ada"));
+    setup.mockInput.pressEnter();
+
+    const after = yield* frameWith(setup, "greeted them");
+    expect(after).toContain("/greet Ada");
   }),
   trustedServices,
 );

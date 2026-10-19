@@ -16,6 +16,7 @@ const ICONS: Readonly<Record<TagKind, string>> = {
   folder: "📁",
   reference: "📚",
   image: "🌄",
+  skill: "🧩",
 };
 
 /** The most rows shown before the list scrolls. */

@@ -644,6 +644,32 @@
         "effect": "4.0.5",
       },
     },
+    "packages/plugins/skills": {
+      "name": "@liminal/skills",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/agent-loop": "workspace:*",
+        "@liminal/model-catalog": "workspace:*",
+        "@liminal/model-scripted": "workspace:*",
+        "@liminal/models": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+        "@liminal/settings": "workspace:*",
+        "@liminal/tools": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/chat": "workspace:*",
+        "@liminal/context": "workspace:*",
+        "@liminal/inbox": "workspace:*",
+        "@liminal/notices": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/keymap": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/system-prompt": {
       "name": "@liminal/system-prompt",
       "version": "0.1.0",
@@ -1024,6 +1050,8 @@
     "@liminal/settings": ["@liminal/settings@workspace:packages/plugins/settings"],
 
     "@liminal/shell-safety": ["@liminal/shell-safety@workspace:packages/plugins/shell-safety"],
+
+    "@liminal/skills": ["@liminal/skills@workspace:packages/plugins/skills"],
 
     "@liminal/system-prompt": ["@liminal/system-prompt@workspace:packages/plugins/system-prompt"],
 
