@@ -1,6 +1,7 @@
 /**
  * The agent loop's live states at the transcript's end. A streaming reply shows its text as it
- * arrives, and what it is thinking or calling as quiet rows; a waiting retry says why.
+ * arrives, the paragraph being written fading in, and what it is thinking or calling as quiet rows;
+ * a waiting retry says why.
  */
 
 import { Option, Predicate, Schema } from "effect";
@@ -8,9 +9,10 @@ import { Index, Show } from "solid-js";
 
 import { ChatSlots, type ToolRows } from "@liminal/chat/contract";
 import type { LiveState } from "@liminal/sdk";
-import { useColor, useMarkdownStyle, useSlotMeta } from "@liminal/sdk/tui";
+import { useColor, useSlotMeta } from "@liminal/sdk/tui";
 
 import { type LivePart, LiveReply, LiveRetry } from "../contract.ts";
+import { Said } from "./Said.tsx";
 
 interface LiveProps {
   readonly live: LiveState;
@@ -34,7 +36,6 @@ const callingOf = (name: string | undefined, rows: ToolRows | undefined) => {
 
 function Part(props: { readonly part: LivePart }) {
   const color = useColor();
-  const style = useMarkdownStyle(() => color);
   const rowsOf = useSlotMeta(ChatSlots.tool);
 
   const doing = () =>
@@ -55,28 +56,31 @@ function Part(props: { readonly part: LivePart }) {
         </text>
       }
     >
-      <markdown
-        content={props.part.text ?? ""}
-        syntaxStyle={style()}
-        fg={color("text.base")}
-        streaming
-        conceal
-      />
+      <Said text={props.part.text ?? ""} />
     </Show>
   );
 }
 
-/** The reply streaming in; finished parts leave it once they are saved as entries. */
+/**
+ * The reply streaming in; finished parts leave it once they are saved as entries. Each part keeps
+ * its place, so a part's fade carries on as the parts before it finish.
+ */
 export function Reply(props: LiveProps) {
   const parts = () =>
     Option.match(decodeReply(props.live.data), {
       onNone: () => [],
-      onSome: (reply) => reply.parts.filter((part) => part.done !== true),
+      onSome: (reply) => reply.parts,
     });
 
   return (
     <box flexDirection="column" gap={1}>
-      <Index each={parts()}>{(part) => <Part part={part()} />}</Index>
+      <Index each={parts()}>
+        {(part) => (
+          <Show when={part().done !== true}>
+            <Part part={part()} />
+          </Show>
+        )}
+      </Index>
     </box>
   );
 }

@@ -8,10 +8,10 @@ import { TextAttributes } from "@opentui/core";
 import type { BoxRenderable } from "@opentui/core";
 import { createSignal, For, Index } from "solid-js";
 
-import { mixHex, type RoleColor, wrapWords } from "@liminal/sdk/tui";
+import { inkRunsAt, mixHex, type RoleColor, wordEndAt, wrapWords } from "@liminal/sdk/tui";
 
 import type { Streaming } from "./frame.ts";
-import { headOf, inkRunsAt, wordEndAt } from "./ink.ts";
+import { headOf } from "./ink.ts";
 
 /** How strongly each line shows, newest last. */
 const LINE_STRENGTHS = [0.3, 0.6, 1] as const;

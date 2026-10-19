@@ -30,6 +30,18 @@ export { createPin } from "./pin.ts";
 export { clampLines, wrapText, wrapWords } from "./wrap.ts";
 
 export {
+  type Faded,
+  fadeAt,
+  FRESH_CHARS,
+  type Inks,
+  inkedOf,
+  inkRunsAt,
+  markdownOf,
+  type Run,
+  wordEndAt,
+} from "./ink.ts";
+
+export {
   formatShare,
   formatTokens,
   SidebarNote,

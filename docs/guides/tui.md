@@ -228,6 +228,8 @@ Other helpers from `@liminal/sdk/tui`:
 | `useCopy()` | `copy(text)` to the terminal clipboard and `isCopied()` for feedback |
 | `wrapText`, `wrapWords`, `clampLines` | Text cut into lines of a width, and the first lines ending in `…` |
 | `createPin()` | Which prompt of a scrolled column stays pinned at its top, and how far the next pushes it |
+| `inkRunsAt`, `wordEndAt`, `FRESH_CHARS` | Streaming text as colored runs, the newest `FRESH_CHARS` characters warming up from the background and the rest of the word laid out unseen |
+| `fadeAt(text, head)`, `inkedOf`, `markdownOf` | A streaming answer split into settled Markdown and the inked paragraph being written; all Markdown while a code fence is open |
 
 Examples: `packages/plugins/notices/src/tui/Notice.tsx` (colors, `useCopy`), `packages/plugins/agent-loop/src/tui/live.tsx` (markdown).
 

@@ -7,9 +7,8 @@ import { expect, test } from "bun:test";
 
 import { testRender } from "@opentui/solid";
 
-import { PALETTES, resolveRoles } from "@liminal/sdk/tui";
+import { FRESH_CHARS, PALETTES, resolveRoles } from "@liminal/sdk/tui";
 
-import { FRESH_CHARS } from "../src/transcript/ink.ts";
 import { Said } from "../src/transcript/Said.tsx";
 
 const [palette] = PALETTES;

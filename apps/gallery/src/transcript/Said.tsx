@@ -8,11 +8,17 @@
 
 import { For, Show } from "solid-js";
 
-import { type RoleColor, useMarkdownStyle } from "@liminal/sdk/tui";
+import {
+  type Faded,
+  inkedOf,
+  inkRunsAt,
+  markdownOf,
+  type RoleColor,
+  useMarkdownStyle,
+} from "@liminal/sdk/tui";
 
-import { type Faded, fadedOf } from "./fade.ts";
+import { fadedOf } from "./fade.ts";
 import type { Streaming } from "./frame.ts";
-import { inkRunsAt } from "./ink.ts";
 
 type Inked = Extract<Faded, { readonly kind: "inked" }>;
 
@@ -53,23 +59,15 @@ function Live(props: { readonly color: RoleColor; readonly faded: Inked }) {
 export function Said(props: { readonly color: RoleColor; readonly streaming: Streaming }) {
   const faded = () => fadedOf(props.streaming);
 
-  const inked = () => {
-    const now = faded();
-
-    return now.kind === "inked" ? now : undefined;
-  };
-
-  const markdown = () => {
-    const now = faded();
-
-    return now.kind === "markdown" ? now.text : "";
-  };
-
   return (
     <Show
-      when={inked()}
+      when={inkedOf(faded())}
       fallback={
-        <Markdown color={props.color} text={markdown()} streaming={props.streaming.progress < 1} />
+        <Markdown
+          color={props.color}
+          text={markdownOf(faded())}
+          streaming={props.streaming.progress < 1}
+        />
       }
     >
       {(now) => (

@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 
+import { FRESH_CHARS } from "@liminal/sdk/tui";
+
 import { fadedOf } from "./fade.ts";
-import { FRESH_CHARS } from "./ink.ts";
 
 const text = "First **bold** part.\n\nSecond `code` part.";
 
