@@ -755,7 +755,11 @@ effectTest(
     yield* frameWhere(setup, (frame) => !frame.includes("Have the assistant put"));
     setup.mockInput.pressEnter();
 
-    const form = yield* frameWith(setup, "Where should sessions live?");
+    // The question and its count can arrive in separate frames.
+    const form = yield* frameWhere(
+      setup,
+      (frame) => frame.includes("Where should sessions live?") && frame.includes("1 question"),
+    );
 
     expect(form).toContain("1 question for you");
     expect(form).toContain("enter pick");

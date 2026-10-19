@@ -67,14 +67,14 @@ export const makeModeLabel = (deps: LabelDeps) =>
     useBindings(() => ({
       commands: [
         {
-          name: "approval.cycle",
+          name: "approvals.cycle",
           run: () => {
             const current = mode();
             if (Option.isSome(current)) deps.setMode(props.sessionId, nextMode(current.value));
           },
         },
       ],
-      bindings: [{ key: "shift+tab", cmd: "approval.cycle" }],
+      bindings: [{ key: "shift+tab", cmd: "approvals.cycle" }],
     }));
 
     return (

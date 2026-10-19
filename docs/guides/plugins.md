@@ -349,7 +349,7 @@ Example: `AgentLoopSection` in `packages/plugins/agent-loop/src/contract.ts`, re
 
 ## Store data on disk
 
-1. Put files under `Directories.data` (`~/.liminal/data`), named after your plugin.
+1. Get a path in the data folder (`~/.liminal/data`) with `yield* dataFile(name)` from `@liminal/sdk`, naming the file or folder after your plugin. It makes the data folder when missing.
 2. For SQLite, use `SqliteClient.layer({ filename, busyTimeout: 0 })` from `@effect/sql-sqlite-bun`, and wrap queries that can meet a locked database in `whileLocked` from `@liminal/sdk`.
 3. Run migrations at startup with `SqliteMigrator.run` and `SqliteMigrator.fromRecord({ "0001_create_tables": ... })`.
 
@@ -360,33 +360,9 @@ Rules:
 
 Examples: `packages/plugins/session-store/src/server/`, `packages/plugins/credential-store/src/server/sqlite-store.ts`.
 
-## Load an outside plugin
-
-The host loads every package with a `liminal` field from these folders:
-
-| Folder | Holds |
-| --- | --- |
-| `packages/plugins/` | Built-in plugins |
-| `~/.liminal/plugins/` | The user's plugins |
-| `<project>/.liminal/plugins/` | The project's plugins, once the user trusts the workspace |
-
-`~/.liminal/plugins.json` and `<project>/.liminal/plugins.json` turn plugins on or off by name. Of two plugins that provide one service, the one set `true` replaces the other:
-
-```jsonc
-{
-  "plugins": { "tools-shell": false, "acme-shell": true },
-  // global file only
-  "trustedFolders": ["/Users/me/dev/project"]
-}
-```
-
-- An outside plugin imports built-in contracts as `@liminal/<name>/contract` and gets the host's loaded copy.
-- Two packages with the same name: only the first loads; the other shows as inactive with `PackageNameTaken`.
-
-Example: `apps/cli/test/plugins/pins/` (`@acme/liminal-pins`).
-
 ## See also
 
 - [tui.md](tui.md): the plugin's TUI part.
 - [providers.md](providers.md): model providers.
+- [packaging.md](packaging.md): plugins loaded from outside the repository.
 - [testing.md](testing.md): tests for all of the above.

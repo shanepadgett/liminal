@@ -9,7 +9,7 @@ import { ChildProcessSpawner } from "effect/process";
 
 import { PromptSections } from "@liminal/context/contract";
 import { offerTagSource } from "@liminal/inbox/contract";
-import { Directories } from "@liminal/sdk";
+import { dataFile, Directories } from "@liminal/sdk";
 import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
 
 import { AttachedEntry, ReferencesRpcs } from "./contract.ts";
@@ -30,7 +30,7 @@ const make = Effect.gen(function* () {
     path,
     http: yield* HttpClient.HttpClient,
     spawner,
-    folder: path.join(directories.data, "references"),
+    folder: yield* dataFile("references"),
   });
 
   const attached = yield* makeAttached(yield* SessionLog);

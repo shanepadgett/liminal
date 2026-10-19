@@ -77,8 +77,8 @@ export default defineTui({
 
     yield* commands.register([
       {
-        name: "approval.mode",
-        title: "Approval mode",
+        name: "approvals.mode",
+        title: "Approvals",
         desc: "Choose how this session's tool calls are approved",
         category: "Session",
         slash: { name: "approvals" },

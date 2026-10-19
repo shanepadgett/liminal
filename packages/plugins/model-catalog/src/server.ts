@@ -4,21 +4,10 @@
  * lacks.
  */
 
-import {
-  Clock,
-  Duration,
-  Effect,
-  FileSystem,
-  Layer,
-  Path,
-  Record,
-  Ref,
-  Schema,
-  Semaphore,
-} from "effect";
+import { Clock, Duration, Effect, FileSystem, Layer, Record, Ref, Schema, Semaphore } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/http";
 
-import { CatalogUnavailable, Directories } from "@liminal/sdk";
+import { CatalogUnavailable, dataFile } from "@liminal/sdk";
 
 import { ModelCatalog } from "./contract.ts";
 import { type CatalogCache, readCache, writeCache } from "./server/cache.ts";
@@ -46,9 +35,8 @@ const fetchProviders = (http: HttpClient.HttpClient, ids: ReadonlyArray<string>)
 
 const make = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
-  const path = yield* Path.Path;
   const http = yield* HttpClient.HttpClient;
-  const filename = path.join((yield* Directories).data, "catalog.json");
+  const filename = yield* dataFile("catalog.json");
   const cache = yield* Ref.make<CatalogCache>(yield* readCache(fs, filename));
   const lock = yield* Semaphore.make(1);
 
