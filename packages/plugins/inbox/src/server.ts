@@ -121,9 +121,9 @@ const startTurn = Effect.fn("Inbox.startTurn")(function* (
   session: SessionId,
   pending: Pending,
 ) {
-  const settings = yield* state.loop.defaults.pipe(
-    Effect.mapError((error) => new NoTurnSettings({ message: error.message })),
-  );
+  const settings = yield* state.loop
+    .sessionSettings(session)
+    .pipe(Effect.mapError((error) => new NoTurnSettings({ message: error.message })));
 
   const queued = yield* take(state.queues, session);
   const drafts = Arr.append(draftsOf([...queued.steers, ...queued.followUps]), pending.draft);

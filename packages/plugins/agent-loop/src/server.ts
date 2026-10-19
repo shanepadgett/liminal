@@ -105,11 +105,14 @@ const make = Effect.gen(function* () {
   const turns = yield* makeTurns(log);
   yield* turns.resume;
 
+  const { started, ...defaults } = yield* makeDefaults({ settings: yield* Settings, models, log });
+
   return AgentLoop.of({
     step,
     run,
-    start: turns.start,
-    ...(yield* makeDefaults(yield* Settings, models)),
+    start: (sessionId, settings) =>
+      turns.start(sessionId, settings).pipe(Effect.tap(() => started(sessionId))),
+    ...defaults,
     cancel: turns.cancel,
   });
 });
@@ -119,8 +122,8 @@ const rpcs = AgentLoopRpcs.toLayer(
     const loop = yield* AgentLoop;
 
     return AgentLoopRpcs.of({
-      "agent-loop/defaults": () => loop.defaultsChanges,
-      "agent-loop/set-default": ({ model, thinking }) => loop.setDefault(model, thinking),
+      "agent-loop/session-defaults": ({ session }) => loop.sessionDefaults(session),
+      "agent-loop/pick": ({ session, model, thinking }) => loop.pick(session, model, thinking),
     });
   }),
 );

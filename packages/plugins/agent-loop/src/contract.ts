@@ -13,7 +13,7 @@ import {
   ModelRef,
   type ProviderNotFound,
   Registry,
-  type SessionId,
+  SessionId,
   type SessionNotFound,
   type StoreError,
   type CatalogUnavailable,
@@ -176,12 +176,23 @@ export class AgentLoop extends Context.Service<
       sessionId: SessionId,
       settings: TurnSettings,
     ) => Effect.Effect<void, SessionNotFound | InvalidEntry | StoreError>;
-    /** A new turn's settings, from the `agent-loop` settings section; read on each call. */
+    /** A new session's turn settings, from the `agent-loop` settings section; read on each call. */
     readonly defaults: Effect.Effect<TurnSettings, DefaultsError>;
-    /** The defaults now, then again after each `setDefault`. */
-    readonly defaultsChanges: Stream.Stream<DefaultsView>;
-    /** Sets the default model, and the thinking option when given, in the global settings file. */
-    readonly setDefault: (
+    /**
+     * The settings of the session's next turn: the pick no turn has used yet, else its newest
+     * turn's, else `defaults`.
+     */
+    readonly sessionSettings: (
+      sessionId: SessionId,
+    ) => Effect.Effect<TurnSettings, DefaultsError | StoreError>;
+    /** The session's settings now, then again after each pick, turn start or default change. */
+    readonly sessionDefaults: (sessionId: SessionId) => Stream.Stream<DefaultsView>;
+    /**
+     * Picks the model, and the thinking option when given, for the session's next turn, held in
+     * memory until a turn starts, and sets both as the default in the global settings file.
+     */
+    readonly pick: (
+      sessionId: SessionId,
       model: ModelRef,
       thinking?: string,
     ) => Effect.Effect<void, DefaultSetFailed>;
@@ -219,9 +230,13 @@ export const LiveRetry = {
 
 /** Agent-loop's commands for frontends. */
 export class AgentLoopRpcs extends RpcGroup.make(
-  Rpc.make("agent-loop/defaults", { success: DefaultsView, stream: true }),
-  Rpc.make("agent-loop/set-default", {
-    payload: { model: ModelRef, thinking: Schema.optionalKey(ThinkingChoice) },
+  Rpc.make("agent-loop/session-defaults", {
+    payload: { session: SessionId },
+    success: DefaultsView,
+    stream: true,
+  }),
+  Rpc.make("agent-loop/pick", {
+    payload: { session: SessionId, model: ModelRef, thinking: Schema.optionalKey(ThinkingChoice) },
     error: DefaultSetFailed,
   }),
 ) {}

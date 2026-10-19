@@ -55,8 +55,8 @@ export interface ComposerDeps {
   /** Where `/pop` writes. */
   readonly editor: Editor;
   readonly queue: (session: SessionId) => Accessor<Queued>;
-  /** The model line, or why no turn can start. */
-  readonly model: Accessor<ModelLine>;
+  /** The session's model line, or why no turn can start. */
+  readonly model: (session: SessionId) => Accessor<ModelLine>;
   /** The last send's failure, if it failed. */
   readonly problem: Accessor<string>;
   /** The commands a submitted `/name` runs. */
@@ -76,9 +76,9 @@ const setModel = (line: ModelLine) => (line.set ? line : undefined);
 /** Why no model is set; empty when one is. */
 const reasonOf = (line: ModelLine) => (line.set ? "" : line.reason);
 
-function ModelLine(props: { readonly deps: ComposerDeps }) {
+function ModelLine(props: { readonly line: Accessor<ModelLine> }) {
   const color = useColor();
-  const line = () => props.deps.model();
+  const line = () => props.line();
 
   return (
     <text wrapMode="none">
@@ -204,11 +204,12 @@ const draftKeys = (draft: ReturnType<typeof useDraft>, running: boolean) => [
 /** The model line with the plugins' items after it, then the last send's failure. */
 function StatusLines(props: { readonly deps: ComposerDeps; readonly turn: TurnProps }) {
   const color = useColor();
+  const line = props.deps.model(props.turn.sessionId);
 
   return (
     <>
       <box flexDirection="row" gap={2}>
-        <ModelLine deps={props.deps} />
+        <ModelLine line={line} />
         <SlotView of={ChatSlots.composerLine} props={props.turn} />
       </box>
       <Show when={props.deps.problem() !== ""}>

@@ -9,7 +9,14 @@ import { createSignal } from "solid-js";
 import { AgentLoopRpcs, type DefaultsView } from "@liminal/agent-loop/contract";
 import { ChatSlots } from "@liminal/chat/contract";
 import { SessionId } from "@liminal/sdk";
-import { defineTui, makeBridge, TuiCommands, TuiDialogs, TuiHost } from "@liminal/sdk/tui";
+import {
+  type Bridge,
+  defineTui,
+  makeBridge,
+  TuiCommands,
+  TuiDialogs,
+  TuiHost,
+} from "@liminal/sdk/tui";
 
 import { InboxRpcs, InboxSlots, type Queued } from "./contract.ts";
 import { type ComposerDeps, makeComposer, makeHints, type ModelLine } from "./tui/Composer.tsx";
@@ -25,6 +32,12 @@ const modelLine = (view: DefaultsView): ModelLine =>
   Predicate.isTagged(view, "DefaultsSet")
     ? { set: true, model: view.settings.model.id, thinking: view.thinkingLabel ?? "" }
     : { set: false, reason: view.message };
+
+/** Each session's model line, from its settings as they change. */
+const watchModel =
+  <E,>(bridge: Bridge, views: (session: SessionId) => Stream.Stream<DefaultsView, E>) =>
+  (session: SessionId) =>
+    bridge.watch(views(session).pipe(Stream.map(modelLine)), loading);
 
 export default defineTui({
   setup: Effect.gen(function* () {
@@ -52,7 +65,6 @@ export default defineTui({
 
     const editor = makeEditor();
     const stash = yield* stashes(bridge, editor);
-    const model = bridge.watch(loop["agent-loop/defaults"]().pipe(Stream.map(modelLine)), loading);
 
     const deps: ComposerDeps = {
       draft: (session) => drafts.of(session),
@@ -75,7 +87,7 @@ export default defineTui({
       stash,
       editor,
       queue: (session) => bridge.watch(inbox["inbox/queue"]({ session }), noQueue),
-      model,
+      model: watchModel(bridge, (session) => loop["agent-loop/session-defaults"]({ session })),
       problem,
       commands,
       dialogOpen: () => dialogs.top() !== undefined,

@@ -5,7 +5,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { Effect, Fiber, Layer, Option, Predicate, Stream } from "effect";
+import { Effect, Fiber, Latch, Layer, Option, Predicate, Stream } from "effect";
 import { RpcTest } from "effect/rpc";
 import { TestClock } from "effect/testing";
 
@@ -180,13 +180,16 @@ effectTest(
     const scripted = yield* ScriptedModel;
     yield* scripted.enqueue(replyText("thanks"));
     const seq = yield* askedSeq;
+    const first = yield* Latch.make();
 
     const watching = yield* client["questions/pending"]({ session: s1 }).pipe(
+      Stream.tap(() => first.open),
       Stream.take(2),
       Stream.runCollect,
       Effect.forkChild,
     );
 
+    yield* first.await;
     yield* client["questions/answer"]({ session: s1, seq, answers });
     yield* until(endedTimes(2));
 

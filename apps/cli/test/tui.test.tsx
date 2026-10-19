@@ -775,6 +775,35 @@ effectTest(
 );
 
 effectTest(
+  "/model picks for the session on screen, and going back to a session shows its last turn's model",
+  Effect.gen(function* () {
+    const { setup } = yield* bootScripted(replyText("hi there"));
+
+    yield* send(setup, "hello there");
+    yield* frameWith(setup, "hi there");
+    yield* frameWith(setup, "scripted (low)");
+    yield* slash(setup, "/new", "Start a fresh session");
+    yield* frameWhere(setup, (frame) => !frame.includes("hi there"));
+
+    yield* slash(setup, "/model", "Switch the model");
+    yield* frameWith(setup, "Models");
+    setup.mockInput.pressEnter();
+    yield* frameWith(setup, "Thinking · ");
+    setup.mockInput.pressArrow("down");
+    setup.mockInput.pressEnter();
+    yield* frameWith(setup, "scripted (high)");
+
+    yield* slash(setup, "/sessions", "Switch to a session");
+    yield* frameWith(setup, "Sessions");
+    yield* frameWith(setup, "hello there");
+    setup.mockInput.pressEnter();
+
+    expect(yield* frameWith(setup, "hi there")).toContain("scripted (low)");
+  }),
+  trustedServices,
+);
+
+effectTest(
   "/connect saves an OpenAI API key, closes, and then lists OpenAI as signed in",
   Effect.gen(function* () {
     const { setup } = yield* boot(() => Effect.void);

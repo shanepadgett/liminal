@@ -545,12 +545,12 @@ effectTest(
 );
 
 effectTest(
-  "setDefault writes the global settings and the defaults stream shows it",
+  "a pick sets the default and the session's stream shows it",
   Effect.gen(function* () {
     const loop = yield* AgentLoop;
     const first = yield* Latch.make();
 
-    const views = yield* loop.defaultsChanges.pipe(
+    const views = yield* loop.sessionDefaults(s1).pipe(
       Stream.tap(() => first.open),
       Stream.take(2),
       Stream.runCollect,
@@ -558,7 +558,7 @@ effectTest(
     );
 
     yield* first.await;
-    yield* loop.setDefault(settings.model, "high");
+    yield* loop.pick(s1, settings.model, "high");
 
     const turn = { model: settings.model, thinking: "high" } as const;
     const seen = yield* Fiber.join(views);
@@ -569,6 +569,29 @@ effectTest(
     ]);
 
     expect(yield* loop.defaults).toEqual(turn);
+  }),
+  stack,
+);
+
+effectTest(
+  "a session's next turn uses its unsent pick, then its newest turn's settings",
+  Effect.gen(function* () {
+    yield* start("hello");
+    yield* (yield* ScriptedModel).repeat(replyText("ok"));
+    const loop = yield* AgentLoop;
+    const s2 = SessionId.make("s2");
+    const high = { model: settings.model, thinking: "high" } as const;
+    const low = { model: settings.model, thinking: "low" } as const;
+
+    yield* loop.pick(s1, settings.model, "low");
+    expect(yield* loop.sessionSettings(s1)).toEqual(low);
+
+    yield* loop.start(s1, high);
+    expect(yield* loop.sessionSettings(s1)).toEqual(high);
+
+    yield* loop.pick(s2, settings.model, "off");
+    expect(yield* loop.sessionSettings(s1)).toEqual(high);
+    expect(yield* loop.sessionSettings(SessionId.make("s3"))).toEqual(settings);
   }),
   stack,
 );
