@@ -1,9 +1,10 @@
 /**
  * Chat's TUI part: starts on a new session, which the first prompt creates, follows it, and draws
  * the chat screen into the root slot, declaring the chat slots. The session is kept across reloads
- * and restarts. `/new` switches to a new session. It draws the user's and the model's words; every
- * other plugin registers views for its own entry and live kinds. `/debug` flips the debug view for
- * the run, with a toast saying which; the `debug` setting sets where it starts.
+ * and restarts. `/new` switches to a new session; `/sessions` to one of this folder's sessions. It
+ * draws the user's and the model's words; every other plugin registers views for its own entry and
+ * live kinds. `/debug` flips the debug view for the run, with a toast saying which; the `debug`
+ * setting sets where it starts.
  */
 
 import { Effect, Schema, Stream, SubscriptionRef } from "effect";
@@ -23,6 +24,7 @@ import { ReasoningEntry, TextEntry, UserEntry } from "@liminal/session-log/contr
 import { ChatRpcs, ChatSlots } from "./contract.ts";
 import { ChatScreen } from "./tui/ChatScreen.tsx";
 import { Prompt, Said, Thought } from "./tui/entries.tsx";
+import { sessionsCommand } from "./tui/sessions.tsx";
 import { emptyTranscript, fold } from "./tui/transcript-state.ts";
 
 /** A session id no session has yet. */
@@ -104,6 +106,8 @@ export default defineTui({
 
     const debug = yield* debugView;
     const toasts = yield* TuiToasts;
+
+    yield* sessionsCommand(current);
 
     yield* commands.register([
       {

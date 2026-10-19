@@ -11,6 +11,8 @@ import {
 } from "@liminal/session-store/contract";
 
 interface MemorySession {
+  readonly workspace: string;
+  readonly title: string;
   readonly parent: { readonly id: string; readonly seq: number } | undefined;
   readonly entries: ReadonlyArray<StoredEntry>;
   readonly live: StoredLive | undefined;
@@ -53,9 +55,16 @@ const withEntries = (
   return new Map(sessions).set(id, { ...session, entries: [...session.entries, ...entries] });
 };
 
+const empty = (workspace: string): MemorySession => ({
+  workspace,
+  title: "",
+  parent: undefined,
+  entries: [],
+  live: undefined,
+});
+
 const make = Effect.gen(function* () {
   const ref = yield* Ref.make<Sessions>(new Map());
-  const empty: MemorySession = { parent: undefined, entries: [], live: undefined };
 
   const put = (id: string, session: MemorySession) =>
     Ref.update(ref, (sessions) => new Map(sessions).set(id, session));
@@ -63,9 +72,15 @@ const make = Effect.gen(function* () {
   const existing = (id: string) => Effect.flatMap(Ref.get(ref), (sessions) => find(sessions, id));
 
   return SessionStore.of({
-    createSession: (id) => put(id, empty),
+    createSession: (id, workspace) => put(id, empty(workspace)),
     forkSession: (id, parent, seq) =>
-      Effect.flatMap(existing(parent), () => put(id, { ...empty, parent: { id: parent, seq } })),
+      Effect.flatMap(existing(parent), (found) =>
+        put(id, { ...empty(found.workspace), title: found.title, parent: { id: parent, seq } }),
+      ),
+    nameSession: (id, title) =>
+      Effect.flatMap(existing(id), (session) =>
+        session.title === "" ? put(id, { ...session, title }) : Effect.void,
+      ),
     appendEntries: Effect.fn(function* (id, entries) {
       const sessions = yield* Ref.get(ref);
       yield* find(sessions, id);
@@ -89,15 +104,24 @@ const make = Effect.gen(function* () {
             && (range.through === undefined || entry.seq <= range.through),
         ),
       ).pipe(Effect.tap(() => existing(id))),
-    listSessions: Effect.map(Ref.get(ref), (sessions) =>
-      [...sessions].map(([id, session]): StoredSession => ({
-        id,
-        parentId: session.parent?.id ?? null,
-        createdAt: 0,
-        updatedAt: session.entries.at(-1)?.at ?? 0,
-        lastSeq: lastSeqOf(sessions, id),
-      })),
-    ),
+    listSessions: (workspace) =>
+      Effect.map(Ref.get(ref), (sessions) =>
+        [...sessions].flatMap(([id, session]): ReadonlyArray<StoredSession> =>
+          session.workspace === workspace
+            ? [
+                {
+                  id,
+                  parentId: session.parent?.id ?? null,
+                  workspace,
+                  title: session.title,
+                  createdAt: 0,
+                  updatedAt: session.entries.at(-1)?.at ?? 0,
+                  lastSeq: lastSeqOf(sessions, id),
+                },
+              ]
+            : [],
+        ),
+      ),
     lastEntriesOfKinds: (kinds) =>
       Effect.map(Ref.get(ref), (sessions) =>
         [...sessions.values()].flatMap((session) =>

@@ -16,6 +16,8 @@ import { indexSession } from "./session-index.ts";
 const SessionRow = Schema.Struct({
   parentId: Schema.NullOr(Schema.String),
   forkSeq: Schema.NullOr(Schema.Int),
+  workspace: Schema.String,
+  title: Schema.String,
 });
 
 type SessionRow = typeof SessionRow.Type;
@@ -47,7 +49,8 @@ const findSession = Effect.fn("findSession")(function* (sessionId: string) {
   const sql = yield* SqlClient.SqlClient;
 
   const rows = yield* sql`
-    SELECT parent_id AS "parentId", fork_seq AS "forkSeq" FROM sessions WHERE id = ${sessionId}
+    SELECT parent_id AS "parentId", fork_seq AS "forkSeq", workspace, title FROM sessions
+    WHERE id = ${sessionId}
   `.pipe(Effect.flatMap(Schema.decodeUnknownEffect(Schema.Array(SessionRow))));
 
   const [row] = rows;
@@ -56,11 +59,15 @@ const findSession = Effect.fn("findSession")(function* (sessionId: string) {
   return row;
 });
 
-export const createSession = Effect.fn("createSession")(function* (id: string) {
+export const createSession = Effect.fn("createSession")(function* (id: string, workspace: string) {
   const sql = yield* SqlClient.SqlClient;
   const now = yield* Clock.currentTimeMillis;
 
-  yield* sql`INSERT INTO sessions (id, parent_id, fork_seq, created_at) VALUES (${id}, NULL, NULL, ${now})`;
+  yield* sql`
+    INSERT INTO sessions (id, parent_id, fork_seq, created_at, workspace, title)
+    VALUES (${id}, NULL, NULL, ${now}, ${workspace}, '')
+  `;
+
   yield* indexSession(id, now, 0);
 });
 
@@ -71,10 +78,21 @@ export const forkSession = Effect.fn("forkSession")(function* (
 ) {
   const sql = yield* SqlClient.SqlClient;
   const now = yield* Clock.currentTimeMillis;
-  yield* findSession(parent);
+  const row = yield* findSession(parent);
 
-  yield* sql`INSERT INTO sessions (id, parent_id, fork_seq, created_at) VALUES (${id}, ${parent}, ${seq}, ${now})`;
+  yield* sql`
+    INSERT INTO sessions (id, parent_id, fork_seq, created_at, workspace, title)
+    VALUES (${id}, ${parent}, ${seq}, ${now}, ${row.workspace}, ${row.title})
+  `;
+
   yield* indexSession(id, now, seq);
+});
+
+export const nameSession = Effect.fn("nameSession")(function* (id: string, title: string) {
+  const sql = yield* SqlClient.SqlClient;
+  yield* findSession(id);
+
+  yield* sql`UPDATE sessions SET title = ${title} WHERE id = ${id} AND title = ''`;
 });
 
 /** One session's slice of a read: its entries with `seq <= through`. */

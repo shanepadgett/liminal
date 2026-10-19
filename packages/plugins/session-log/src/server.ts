@@ -5,7 +5,14 @@
 
 import { Array as Arr, Context, DateTime, Effect, Layer, Option, PubSub, Stream } from "effect";
 
-import { EventBus, KeyedRegistry, SessionFeed, SessionId, StoreError } from "@liminal/sdk";
+import {
+  Directories,
+  EventBus,
+  KeyedRegistry,
+  SessionFeed,
+  SessionId,
+  StoreError,
+} from "@liminal/sdk";
 import { SessionStore, type StoredSession } from "@liminal/session-store/contract";
 
 import {
@@ -25,6 +32,7 @@ const toStoreError = (error: { readonly message: string; readonly cause: unknown
 const toSummary = (stored: StoredSession): SessionSummary => ({
   id: SessionId.make(stored.id),
   parentId: stored.parentId === null ? null : SessionId.make(stored.parentId),
+  title: stored.title,
   createdAt: DateTime.makeUnsafe(stored.createdAt),
   updatedAt: DateTime.makeUnsafe(stored.updatedAt),
   lastSeq: stored.lastSeq,
@@ -33,6 +41,7 @@ const toSummary = (stored: StoredSession): SessionSummary => ({
 const make = Effect.gen(function* () {
   const store = yield* SessionStore;
   const bus = yield* EventBus;
+  const { workspace } = yield* Directories;
 
   const entryKinds = yield* EntryKinds;
   yield* Effect.forEach(coreEntries, entryKinds.register, { discard: true });
@@ -49,11 +58,13 @@ const make = Effect.gen(function* () {
 
   const log = SessionLog.of({
     create: (session) =>
-      store.createSession(session).pipe(
+      store.createSession(session, workspace).pipe(
         Effect.mapError(toStoreError),
         Effect.tap(() => bus.publish(SessionsChanged, {})),
       ),
-    list: store.listSessions.pipe(Effect.map(Arr.map(toSummary)), Effect.mapError(toStoreError)),
+    list: store
+      .listSessions(workspace)
+      .pipe(Effect.map(Arr.map(toSummary)), Effect.mapError(toStoreError)),
     ...entries,
     ...live,
   });

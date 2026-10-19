@@ -58,7 +58,7 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
     "numbers a batch after the last seq and reads it back in order",
     (store) =>
       Effect.gen(function* () {
-        yield* store.createSession("s1");
+        yield* store.createSession("s1", "/work");
         const saved = yield* store.appendEntries("s1", [draft(1), draft(2), draft(3)]);
         expect(saved).toEqual([entry("s1", 1), entry("s1", 2), entry("s1", 3)]);
         expect(yield* store.readEntries("s1", {})).toEqual(saved);
@@ -68,7 +68,7 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
     "reads a range after and through a seq",
     (store) =>
       Effect.gen(function* () {
-        yield* store.createSession("s1");
+        yield* store.createSession("s1", "/work");
         yield* store.appendEntries("s1", [draft(1), draft(2), draft(3), draft(4)]);
         expect(seqs(yield* store.readEntries("s1", { after: 1, through: 3 }))).toEqual([2, 3]);
       }),
@@ -77,7 +77,7 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
     "an empty session numbers from 1",
     (store) =>
       Effect.gen(function* () {
-        yield* store.createSession("s1");
+        yield* store.createSession("s1", "/work");
         expect(yield* store.readEntries("s1", {})).toEqual([]);
         expect(seqs(yield* store.appendEntries("s1", [draft(1)]))).toEqual([1]);
         expect(seqs(yield* store.appendEntries("s1", [draft(2)]))).toEqual([2]);
@@ -102,7 +102,7 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
     "concurrent appends take distinct seqs",
     (store) =>
       Effect.gen(function* () {
-        yield* store.createSession("s1");
+        yield* store.createSession("s1", "/work");
         const batch = store.appendEntries("s1", [draft(1), draft(2)]);
         yield* Effect.all([batch, batch, batch], { concurrency: "unbounded" });
         expect(seqs(yield* store.readEntries("s1", {}))).toEqual([1, 2, 3, 4, 5, 6]);
@@ -112,7 +112,7 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
     "a fork reads its parent through the fork seq, then its own entries",
     (store) =>
       Effect.gen(function* () {
-        yield* store.createSession("parent");
+        yield* store.createSession("parent", "/work");
         yield* store.appendEntries("parent", [draft(1), draft(2), draft(3)]);
         yield* store.forkSession("child", "parent", 2);
         expect(yield* store.appendEntries("child", [draft(3)])).toEqual([entry("child", 3)]);
@@ -130,21 +130,53 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
     "lists sessions with their newest entry, most recently updated first",
     (store) =>
       Effect.gen(function* () {
-        yield* store.createSession("s1");
+        yield* store.createSession("s1", "/work");
         yield* store.appendEntries("s1", [draft(1), draft(2)]);
         yield* store.forkSession("s2", "s1", 1);
 
-        expect(yield* store.listSessions).toEqual([
-          { id: "s1", parentId: null, createdAt: 0, updatedAt: 2000, lastSeq: 2 },
-          { id: "s2", parentId: "s1", createdAt: 0, updatedAt: 0, lastSeq: 1 },
+        const listed = {
+          workspace: "/work",
+          title: "",
+          parentId: null,
+          createdAt: 0,
+          updatedAt: 2000,
+          lastSeq: 2,
+        };
+
+        expect(yield* store.listSessions("/work")).toEqual([
+          { ...listed, id: "s1" },
+          { ...listed, id: "s2", parentId: "s1", updatedAt: 0, lastSeq: 1 },
         ]);
+      }),
+  ],
+  [
+    "lists only the sessions started in the folder",
+    (store) =>
+      Effect.gen(function* () {
+        yield* store.createSession("s1", "/work");
+        yield* store.createSession("s2", "/elsewhere");
+        const listed = yield* store.listSessions("/elsewhere");
+        expect(listed.map((session) => session.id)).toEqual(["s2"]);
+      }),
+  ],
+  [
+    "names a session once; a fork keeps its parent's name",
+    (store) =>
+      Effect.gen(function* () {
+        yield* store.createSession("s1", "/work");
+        yield* store.nameSession("s1", "first");
+        yield* store.nameSession("s1", "second");
+        yield* store.forkSession("s2", "s1", 0);
+        const listed = yield* store.listSessions("/work");
+        expect(listed.map((session) => session.title)).toEqual(["first", "first"]);
+        expect(yield* failureOf(store.nameSession("missing", "x"))).toBeInstanceOf(SessionNotFound);
       }),
   ],
   [
     "the live slot is overwritten and cleared",
     (store) =>
       Effect.gen(function* () {
-        yield* store.createSession("s1");
+        yield* store.createSession("s1", "/work");
         expect(yield* store.readLive("s1")).toBeUndefined();
         yield* store.writeLive("s1", { kind: "test/typing", data: "1" });
         yield* store.writeLive("s1", { kind: "test/typing", data: "2" });
@@ -157,9 +189,9 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
     "finds each session's newest entry of some kinds",
     (store) =>
       Effect.gen(function* () {
-        yield* store.createSession("s1");
-        yield* store.createSession("s2");
-        yield* store.createSession("s3");
+        yield* store.createSession("s1", "/work");
+        yield* store.createSession("s2", "/work");
+        yield* store.createSession("s3", "/work");
         const mark = { ...draft(1), kind: "test/mark" };
         yield* store.appendEntries("s1", [mark, draft(2), { ...mark, kind: "test/other" }]);
         yield* store.appendEntries("s2", [draft(1), mark]);
@@ -188,7 +220,7 @@ const reopenCase = <E>(
   Effect.gen(function* () {
     yield* withStore(layer, (store) =>
       Effect.gen(function* () {
-        yield* store.createSession("s1");
+        yield* store.createSession("s1", "/work");
         yield* store.appendEntries("s1", [draft(1)]);
         yield* store.writeLive("s1", { kind: "test/typing", data: "1" });
       }),

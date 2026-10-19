@@ -18,6 +18,7 @@ import {
 import type { FormState } from "./chat/formState.ts";
 import { ModelPicker, ThinkingPicker } from "./chat/ModelPicker.tsx";
 import type { ReloadShown } from "./chat/ReloadStatus.tsx";
+import { SessionPicker } from "./chat/SessionPicker.tsx";
 import { Sidebar } from "./chat/Sidebar.tsx";
 import { Toast, type ToastMessage } from "./chat/Toast.tsx";
 import { TrustPrompt } from "./chat/TrustPrompt.tsx";
@@ -184,6 +185,12 @@ const approvalState = (
   )),
 });
 
+const sessionsState = (name: string, selected: string): EntryState => ({
+  name,
+  fill: "screen",
+  view: withRoles((color) => <SessionPicker color={color} selected={selected} />),
+});
+
 const thinkingState = (name: string, selected: string): EntryState => ({
   name,
   fill: "screen",
@@ -300,6 +307,14 @@ export const GROUPS: Groups = [
               modelsState("Another provider", "claude-sonnet-4-6"),
               thinkingState("Thinking options", "medium"),
               modelsState("A provider whose list failed", "failure:openrouter", true),
+            ],
+          },
+          {
+            id: "sessions",
+            title: "Sessions",
+            states: [
+              sessionsState("Current session", "s4"),
+              sessionsState("An older session", "s2"),
             ],
           },
           { id: "connect", title: "Connect", states: CONNECT_STATES },

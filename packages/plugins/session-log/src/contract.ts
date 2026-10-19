@@ -30,6 +30,8 @@ import {
 export const SessionSummary = Schema.Struct({
   id: SessionId,
   parentId: Schema.NullOr(SessionId),
+  /** The first line of its first user message; empty until there is one. */
+  title: Schema.String,
   createdAt: Schema.DateTimeUtc,
   updatedAt: Schema.DateTimeUtc,
   /** Its highest seq; 0 while it has no entries. */
@@ -53,7 +55,7 @@ export class SessionLog extends Context.Service<
   SessionLog,
   {
     readonly create: (session: SessionId) => Effect.Effect<void, StoreError>;
-    /** Every session, most recently updated first. */
+    /** The sessions started in this workspace, most recently updated first. */
     readonly list: Effect.Effect<ReadonlyArray<SessionSummary>, StoreError>;
     /** Validates and saves the drafts as consecutive entries, all or none. */
     readonly append: (

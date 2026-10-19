@@ -44,7 +44,7 @@ flowchart LR
 
 | Step | Plugins | Joins | Draws |
 | --- | --- | --- | --- |
-| 1. Sessions and the command line | new `sessions`; `apps/cli` | `session-log/list`; `SelectDialog` | `/sessions` dialog; `--session`, `-p`, `--model` |
+| 1. Sessions and the command line | `chat`, which owns `/new`; `session-store`; `session-log`; `settings`; `apps/cli` | `session-log/list`; `SelectDialog`; `effect/cli` | `/sessions` dialog; `--session`, `-p`, `--model` |
 | 2. Small tool hooks | new `tool-output`; `agent-loop`; `compaction` | `ToolWrappers`; `BeforeCallHooks` ends a turn on repeats; `Memories` ranges | `history` tool rows |
 | 3. Checks | new `checks` | `command-runner`; `ToolWrappers` for `fix`; `TurnEndingHooks` re-runs skipped or stale checks and continues the turn on failure | `checks` tool row `Hidden`; its own `checks/report` entry; `fix` runs as debug lines |
 | 4. `run` tool | new `tools-run`; `tools` | Inner calls; `Tools` as script functions; codemode's `search` for deferred functions | Its row opens to the script and output; inner calls fold under it |
@@ -57,6 +57,48 @@ flowchart LR
 | 11. `/commit` | new `commit` | Checks' `commit` mode; `ModelTask` with the cheap model; `command-runner` for git | Plan dialog; push confirm |
 | 12. Skills | new `skills` | `instruction-files`' front matter and trust rule; composer tags; slash commands | `/<skill>`; skill rows |
 | 13. Notification sound | new `attention` (TUI) | Turn end, pending approvals and pending forms in the session feed | None |
+
+## Step 1: sessions and the command line
+
+```
+packages/sdk/src/core/launch.ts            LaunchSettings base service: settings sections from the command line
+packages/plugins/settings/src/server.ts    merges LaunchSettings over the files
+packages/plugins/session-store/src/server/
+  migrations.ts                            0002: sessions.workspace, sessions.title, title backfill
+  queries.ts, session-index.ts             create with workspace; fork copies it; nameSession; list by workspace
+packages/plugins/session-log/src/server/   create stamps Directories.workspace; the first user message names the session
+packages/plugins/chat/src/tui/sessions.tsx /sessions: SelectDialog of this folder's sessions; picks switch the followed session
+apps/gallery/src/chat/SessionPicker.tsx    the same dialog in the gallery; PickerRows.tsx holds the rows it shares with Models
+apps/cli/src/args.ts                       effect/cli command: [prompt] --print/-p --session --model --check -> Launch (Check | Print | Tui)
+apps/cli/src/print.ts                      runTurn: send, follow to the turn's end, return reply, notices, end; printTurn prints it
+```
+
+```ts
+class LaunchSettings extends Context.Service<LaunchSettings, { readonly sections: JsonObject }>
+// SessionStore
+createSession(id, workspace): Effect<void, StoreError>
+nameSession(id, title): Effect<void, StoreError>      // only while it has none
+listSessions(workspace): Effect<ReadonlyArray<StoredSession>, StoreError>
+StoredSession += { workspace: string; title: string }
+SessionSummary += { title: string }                   // SessionLog.list: this workspace's sessions
+```
+
+```
+main
+  parse args
+  --check            start kernel, exit 0
+  --print <prompt>   start kernel (no parts), LaunchSettings from --model
+                     session = --session or new; synced = follow until Synced
+                     inbox/send(session, prompt, follow-up)
+                     follow after synced: collect text entries until turn-ended
+                     print text; exit 0 when answered, else reason on stderr, exit 1
+  otherwise          TUI; handoff from the restart file, else { chat/session: --session }
+```
+
+- `--model provider/model` becomes the launch section `{ "agent-loop": { "model": ... } }`, for this run only.
+- Sessions created before the migration have no workspace and are not listed.
+- An invalid command line exits 2; a printed turn that did not answer exits 1.
+- A new session's id goes to stderr in print mode, so the next run can pass `--session`.
 
 ## New dependency
 

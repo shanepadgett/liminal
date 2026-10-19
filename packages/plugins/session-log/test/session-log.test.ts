@@ -28,7 +28,7 @@ import {
 import { effectTest, testPlugin } from "@liminal/sdk/testing";
 
 import sessionLog from "../plugin.ts";
-import { EntryKinds, SessionLog } from "../src/contract.ts";
+import { EntryKinds, SessionLog, userMessage } from "../src/contract.ts";
 import { memoryStore } from "./memory-store.ts";
 
 const Note = defineEntry({
@@ -176,6 +176,17 @@ describe("SessionLog", () => {
         [SessionId.make("s1"), 2],
         [SessionId.make("s2"), 0],
       ]);
+    }),
+  );
+
+  logTest("the first user message names the session by its first line", (log) =>
+    Effect.gen(function* () {
+      yield* log.append(s1, [note("a")]);
+
+      yield* log.append(s1, [userMessage("\n  fix it\nplease")]);
+      yield* log.append(s1, [userMessage("later")]);
+      const [session] = yield* log.list;
+      expect(session?.title).toBe("fix it");
     }),
   );
 

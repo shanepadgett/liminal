@@ -480,6 +480,30 @@ effectTest(
 );
 
 effectTest(
+  "/sessions lists this folder's sessions by their first message and switches to the one picked",
+  Effect.gen(function* () {
+    const { setup } = yield* bootScripted(replyText("hi there"));
+
+    yield* send(setup, "hello there");
+    yield* frameWith(setup, "hi there");
+    yield* Effect.promise(() => setup.mockInput.typeText("/new"));
+    yield* frameWith(setup, "Start a fresh session");
+    setup.mockInput.pressEnter();
+    yield* frameWhere(setup, (frame) => !frame.includes("hi there"));
+
+    yield* Effect.promise(() => setup.mockInput.typeText("/sessions"));
+    yield* frameWith(setup, "Switch to a session");
+    setup.mockInput.pressEnter();
+    yield* frameWith(setup, "Sessions");
+    yield* frameWith(setup, "hello there");
+    setup.mockInput.pressEnter();
+
+    expect(yield* frameWith(setup, "hi there")).toContain("hello there");
+  }),
+  trustedServices,
+);
+
+effectTest(
   "a turn stopped by a model error shows an error notice with a copy button",
   Effect.gen(function* () {
     const error = new ModelError({ reason: "auth", message: "token expired" });

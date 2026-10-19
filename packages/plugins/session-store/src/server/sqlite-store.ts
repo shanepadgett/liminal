@@ -34,12 +34,13 @@ const make = Effect.gen(function* () {
       );
 
   return SessionStore.of({
-    createSession: (id) => run("createSession")(Queries.createSession(id)),
+    createSession: (id, workspace) => run("createSession")(Queries.createSession(id, workspace)),
     forkSession: (id, parent, seq) => run("forkSession")(Queries.forkSession(id, parent, seq)),
     appendEntries: (sessionId, entries) =>
       run("appendEntries")(sql.withTransaction(Queries.appendEntries(sessionId, entries))),
     readEntries: (sessionId, range) => run("readEntries")(Queries.readEntries(sessionId, range)),
-    listSessions: run("listSessions")(listSessions()),
+    nameSession: (id, title) => run("nameSession")(Queries.nameSession(id, title)),
+    listSessions: (workspace) => run("listSessions")(listSessions(workspace)),
     lastEntriesOfKinds: (kinds) => run("lastEntriesOfKinds")(Queries.lastEntriesOfKinds(kinds)),
     readLive: (sessionId) => run("readLive")(Queries.readLive(sessionId)),
     writeLive: (sessionId, live) => run("writeLive")(Queries.writeLive(sessionId, live)),

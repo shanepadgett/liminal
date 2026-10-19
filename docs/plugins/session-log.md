@@ -43,10 +43,12 @@ Status: built
 - Following a session not created yet reads as empty until its first entries are saved
 - A subscriber that falls behind reads the missed entries from the store; no entry is skipped
 - Live state is a separate feed that delivers only the newest value, and becomes an entry when saved
+- Creating a session stamps the `Directories` workspace; listing shows only that workspace's sessions
+- The first user message names its session
 
 ## Open
 
-- Entry kinds for session metadata such as the title, and usage outside a reply
+- An entry kind for usage outside a reply
 
 ## References
 

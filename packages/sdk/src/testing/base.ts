@@ -10,6 +10,7 @@ import {
   type BaseServices,
   Directories,
   EventBus,
+  LaunchSettings,
   makeTurnGate,
   makeWork,
   ProjectTrust,
@@ -67,6 +68,7 @@ const memoryTrust = Layer.effect(
 export const testBaseServices: Layer.Layer<BaseServices, PlatformError> = Layer.mergeAll(
   temporaryDirectories,
   memoryTrust,
+  LaunchSettings.none,
   EventBus.layer,
   callerWork,
   openGate,

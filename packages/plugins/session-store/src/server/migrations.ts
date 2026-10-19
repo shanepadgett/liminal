@@ -54,7 +54,35 @@ const createTables = Effect.gen(function* () {
   yield* sql`CREATE INDEX entries_kind ON entries (kind, session_id, seq)`;
 });
 
+/**
+ * Each session's folder and name. Sessions saved before have no folder; each is named from its
+ * first user message.
+ */
+const addWorkspaceAndTitle = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+  yield* sql`ALTER TABLE sessions ADD COLUMN workspace TEXT NOT NULL DEFAULT ''`;
+  yield* sql`ALTER TABLE sessions ADD COLUMN title TEXT NOT NULL DEFAULT ''`;
+  yield* sql`CREATE INDEX sessions_workspace ON sessions (workspace)`;
+
+  yield* sql`
+    UPDATE sessions SET title = COALESCE((
+      SELECT trim(
+        CASE WHEN instr(t, char(10)) > 0 THEN substr(t, 1, instr(t, char(10)) - 1) ELSE t END,
+        char(9, 13, 32)
+      )
+      FROM (
+        SELECT trim(json_extract(e.data, '$.text'), char(9, 10, 13, 32)) AS t FROM entries e
+        WHERE e.session_id = sessions.id AND e.kind = 'session-log/user'
+        ORDER BY e.seq LIMIT 1
+      )
+    ), '')
+  `;
+});
+
 /** Applies the migrations the database has not seen yet. */
 export const migrate = SqliteMigrator.run({
-  loader: SqliteMigrator.fromRecord({ "0001_create_tables": createTables }),
+  loader: SqliteMigrator.fromRecord({
+    "0001_create_tables": createTables,
+    "0002_workspace_and_title": addWorkspaceAndTitle,
+  }),
 });

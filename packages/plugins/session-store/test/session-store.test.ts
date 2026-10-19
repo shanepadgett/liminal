@@ -29,7 +29,7 @@ effectTest(
   Effect.gen(function* () {
     const first = Context.get(yield* Layer.build(layer), SessionStore);
     const second = Context.get(yield* Layer.build(layer), SessionStore);
-    yield* first.createSession("s1");
+    yield* first.createSession("s1", "/work");
 
     yield* Effect.all(
       [
@@ -51,7 +51,7 @@ effectTest(
   "the index rebuilds from the log when its version changes",
   Effect.gen(function* () {
     const store = Context.get(yield* Layer.build(layer), SessionStore);
-    yield* store.createSession("s1");
+    yield* store.createSession("s1", "/work");
     yield* store.appendEntries("s1", [{ ...note, at: 5000 }]);
 
     const directories = yield* Directories;
@@ -72,8 +72,16 @@ effectTest(
 
     const reopened = Context.get(yield* Layer.build(layer), SessionStore);
 
-    expect(yield* reopened.listSessions).toEqual([
-      { id: "s1", parentId: null, createdAt: 0, updatedAt: 5000, lastSeq: 1 },
+    expect(yield* reopened.listSessions("/work")).toEqual([
+      {
+        id: "s1",
+        parentId: null,
+        workspace: "/work",
+        title: "",
+        createdAt: 0,
+        updatedAt: 5000,
+        lastSeq: 1,
+      },
     ]);
   }),
   testBaseServices,

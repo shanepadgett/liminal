@@ -3,6 +3,7 @@ export * from "./composition.ts";
 export * from "./decision.ts";
 export { dataFile, Directories } from "./directories.ts";
 export * from "./jsonc.ts";
+export { LaunchSettings } from "./launch.ts";
 
 export {
   type BaseServices,

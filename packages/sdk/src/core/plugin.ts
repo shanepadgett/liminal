@@ -7,6 +7,7 @@ import type { Rpc, RpcGroup } from "effect/rpc";
 import type { ProjectTrust } from "./composition.ts";
 import type { Directories } from "./directories.ts";
 import type { FrontendPart } from "./frontend.ts";
+import type { LaunchSettings } from "./launch.ts";
 import type { EventBus } from "./protocol.ts";
 import type { TurnGate } from "./turn-gate.ts";
 import type { Work } from "./work.ts";
@@ -19,6 +20,7 @@ export type BaseServices =
   | Crypto.Crypto
   | Directories
   | ProjectTrust
+  | LaunchSettings
   | EventBus
   | TurnGate
   | Work;

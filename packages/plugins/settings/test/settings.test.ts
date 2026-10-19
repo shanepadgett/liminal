@@ -4,7 +4,7 @@ import { expect } from "bun:test";
 
 import { Effect, FileSystem, Layer, Path, Schema } from "effect";
 
-import { Directories, ProjectTrust } from "@liminal/sdk";
+import { Directories, LaunchSettings, ProjectTrust } from "@liminal/sdk";
 import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
 
 import settings from "../plugin.ts";
@@ -95,4 +95,24 @@ effectTest(
     expect(JSON.parse(project)).toEqual({ editor: { theme: "solar" } });
   }),
   stack,
+);
+
+effectTest(
+  "launch settings hold over every settings file",
+  Effect.gen(function* () {
+    yield* writeFile("global", `{ "editor": { "theme": "light", "rulers": [80] } }`);
+    const store = yield* Settings;
+    expect(yield* store.section("editor", Editor)).toEqual({ theme: "solarized", rulers: [80] });
+  }),
+  serverOf(settings).pipe(
+    Layer.provideMerge(
+      Layer.merge(
+        testBaseServices,
+        Layer.succeed(
+          LaunchSettings,
+          LaunchSettings.of({ sections: { editor: { theme: "solarized" } } }),
+        ),
+      ),
+    ),
+  ),
 );

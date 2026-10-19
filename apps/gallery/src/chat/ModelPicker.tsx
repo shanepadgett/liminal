@@ -12,6 +12,7 @@ import type { Hint, RoleColor } from "@liminal/sdk/tui";
 
 import { Dialog } from "./Dialog.tsx";
 import { ListRow } from "./ListRow.tsx";
+import { FilterLine, NamedRow } from "./PickerRows.tsx";
 import { Section } from "./Section.tsx";
 
 type Model = { readonly id: string; readonly name: string };
@@ -68,43 +69,6 @@ const HINTS: readonly Hint[] = [
   ["enter", "select"],
 ];
 
-function ModelRow(props: {
-  readonly color: RoleColor;
-  readonly model: Model;
-  readonly isSelected: boolean;
-}) {
-  return (
-    <ListRow color={props.color} isSelected={props.isSelected}>
-      <box flexDirection="row" gap={2} flexGrow={1}>
-        <text
-          flexShrink={0}
-          wrapMode="none"
-          fg={props.color(props.isSelected ? "text.base" : "text.muted")}
-        >
-          {props.model.name}
-        </text>
-        <text
-          flexGrow={1}
-          wrapMode="none"
-          fg={props.color(props.isSelected ? "text.muted" : "text.faint")}
-        >
-          {props.model.id}
-        </text>
-      </box>
-    </ListRow>
-  );
-}
-
-/** The empty filter line at the top of a picker. */
-function FilterLine(props: { readonly color: RoleColor }) {
-  return (
-    <text flexShrink={0}>
-      <span style={{ fg: props.color("text.accent") }}>{"› "}</span>
-      <span style={{ fg: props.color("text.ghost") }}>Type to filter</span>
-    </text>
-  );
-}
-
 /** A model's thinking options; a token budget shows its tokens in the label. */
 const THINKING: readonly Model[] = [
   { id: "off", name: "off" },
@@ -154,9 +118,10 @@ export function ModelPicker(props: {
               <Section color={props.color} title={provider.name} />
               <For each={provider.models}>
                 {(model) => (
-                  <ModelRow
+                  <NamedRow
                     color={props.color}
-                    model={model}
+                    name={model.name}
+                    detail={model.id}
                     isSelected={model.id === props.selected}
                   />
                 )}

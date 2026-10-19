@@ -29,6 +29,10 @@ export type StoredLive = typeof StoredLive.Type;
 export const StoredSession = Schema.Struct({
   id: Schema.String,
   parentId: Schema.NullOr(Schema.String),
+  /** The folder it was started in; empty for sessions saved before workspaces were kept. */
+  workspace: Schema.String,
+  /** Its first user message, cut to one line; empty until there is one. */
+  title: Schema.String,
   createdAt: Schema.Int,
   /** When its last entry was saved, or `createdAt` while it has none. */
   updatedAt: Schema.Int,
@@ -58,8 +62,9 @@ export class StoreError extends Schema.TaggedError<StoreError, { readonly brand:
 export class SessionStore extends Context.Service<
   SessionStore,
   {
-    readonly createSession: (id: string) => Effect.Effect<void, StoreError>;
-    /** A new session that starts with `parent`'s entries through `seq`. */
+    /** A new session started in the folder `workspace`. */
+    readonly createSession: (id: string, workspace: string) => Effect.Effect<void, StoreError>;
+    /** A new session that starts with `parent`'s entries through `seq`, in its folder. */
     readonly forkSession: (
       id: string,
       parent: string,
@@ -79,8 +84,15 @@ export class SessionStore extends Context.Service<
       sessionId: string,
       range: SeqRange,
     ) => Effect.Effect<ReadonlyArray<StoredEntry>, SessionNotFound | StoreError>;
-    /** Every session, most recently updated first. */
-    readonly listSessions: Effect.Effect<ReadonlyArray<StoredSession>, StoreError>;
+    /** Names the session `title` while it has no name; a named session keeps its name. */
+    readonly nameSession: (
+      id: string,
+      title: string,
+    ) => Effect.Effect<void, SessionNotFound | StoreError>;
+    /** The sessions started in `workspace`, most recently updated first. */
+    readonly listSessions: (
+      workspace: string,
+    ) => Effect.Effect<ReadonlyArray<StoredSession>, StoreError>;
     /** Per session, its newest entry of any of `kinds`; sessions with none are left out. */
     readonly lastEntriesOfKinds: (
       kinds: ReadonlyArray<string>,

@@ -19,6 +19,9 @@ Status: built
 - A fork reads its parent's entries up to a point instead of copying them
 - Creates sessions, and forks as sessions with a parent and a cut point
 - Keeps one live slot per session, overwritten on each update
+- Each session records the workspace folder it was started in and a title; a fork copies both
+- A session's title is set once, from the first line of its first user message
+- Lists sessions by workspace folder, newest first
 
 ## Open
 

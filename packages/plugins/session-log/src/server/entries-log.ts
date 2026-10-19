@@ -13,7 +13,7 @@ import {
   Synced,
 } from "@liminal/sdk";
 
-import type { SeqRange } from "../contract.ts";
+import { type SeqRange, UserEntry } from "../contract.ts";
 import { fromStore, type LogDeps } from "./deps.ts";
 import { prepare, restore, toSaved } from "./entries.ts";
 
@@ -67,6 +67,18 @@ const followWith =
     );
   };
 
+/** A session's name: the first line of its first user message. */
+const titleOf = (text: string) => text.trim().split("\n", 1)[0]?.trim() ?? "";
+
+/** Names the session after the first user message among `drafts`; a named session keeps its name. */
+const nameAfter = (deps: LogDeps, session: SessionId, drafts: ReadonlyArray<EntryDraft>) => {
+  const user = drafts.find((draft) => draft.entry.kind === UserEntry.kind);
+
+  return user === undefined
+    ? Effect.void
+    : fromStore(deps.store.nameSession(session, titleOf(user.text)));
+};
+
 export const makeEntries = (deps: LogDeps) => {
   const read = Effect.fn("SessionLog.read")(function* (session: SessionId, range: SeqRange) {
     const stored = yield* fromStore(deps.store.readEntries(session, range));
@@ -91,6 +103,7 @@ export const makeEntries = (deps: LogDeps) => {
       ),
     );
 
+    yield* nameAfter(deps, session, drafts);
     yield* PubSub.publish(deps.appended, session);
 
     return Arr.zipWith(prepared, saved, (each, row): Entry => ({

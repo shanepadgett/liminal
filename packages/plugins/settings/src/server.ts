@@ -1,8 +1,11 @@
-/** Settings' server: `<global>/settings.json`, then `<project>/settings.json` once trusted. */
+/**
+ * Settings' server: `<global>/settings.json`, then `<project>/settings.json` once trusted, then the
+ * launch settings, such as `--model`.
+ */
 
 import { Effect, FileSystem, Layer, Path, Result, Schema, Semaphore } from "effect";
 
-import { Directories, editJson, parseJsonObject, ProjectTrust } from "@liminal/sdk";
+import { Directories, editJson, LaunchSettings, parseJsonObject, ProjectTrust } from "@liminal/sdk";
 
 import {
   type SectionSchema,
@@ -68,6 +71,7 @@ const settingsFiles = Effect.gen(function* () {
 const make = Effect.gen(function* () {
   const { load, write } = yield* settingsFiles;
   const trust = yield* ProjectTrust;
+  const launch = yield* LaunchSettings;
   const writes = yield* Semaphore.make(1);
 
   /** The layers that load: global always, project only in a trusted workspace. */
@@ -81,9 +85,9 @@ const make = Effect.gen(function* () {
         ),
       );
 
-      if (!trusted) return [global];
+      if (!trusted) return [global, launch.sections];
 
-      return [global, yield* load("project", section)];
+      return [global, yield* load("project", section), launch.sections];
     });
 
   const section = <S extends SectionSchema>(name: string, schema: S) =>
