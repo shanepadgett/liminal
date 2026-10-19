@@ -23,6 +23,7 @@ Status: built
 ### Finding skills
 
 - Skills are read from `~/.agents/skills` and the global `skills/` folder, then, in a trusted workspace, `.agents/skills` and `.liminal/skills` from the repository root down to the workspace
+- Only folders in a skills folder are skills; files there, such as `.DS_Store`, are ignored
 - A nearer skill replaces a farther one of the same name
 - Front matter needs `description`; `name` defaults to the folder name and must be one word
 - A skill without front matter or a description is skipped and told to the session once

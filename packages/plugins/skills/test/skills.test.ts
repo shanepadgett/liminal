@@ -72,7 +72,10 @@ const put = Effect.fn("put")(function* (folder: string, name: string, text: stri
 const skill = (description: string, body: string, extra = "") =>
   `---\ndescription: ${description}\n${extra}---\n${body}`;
 
-/** A user skill, a project skill of the same name, a user-only skill and a broken one. */
+/**
+ * A user skill, a project skill of the same name, a user-only skill and a broken one, beside a file
+ * that is not a skill.
+ */
 const setUp = Effect.gen(function* () {
   const path = yield* Path.Path;
   const { home, project } = yield* Directories;
@@ -80,6 +83,7 @@ const setUp = Effect.gen(function* () {
   yield* put(user, "review", skill("Review the user's way", "User review."));
   yield* put(user, "deploy", skill("Ship it", "Deploy steps.", "disable-model-invocation: true\n"));
   yield* put(user, "broken", "No front matter.");
+  yield* (yield* FileSystem.FileSystem).writeFileString(path.join(user, ".DS_Store"), "");
   yield* (yield* ProjectTrust).trust;
 
   const nearer = yield* put(

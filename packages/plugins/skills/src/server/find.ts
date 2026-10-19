@@ -77,10 +77,22 @@ const foldersOf = Effect.fn("skills.folders")(function* ({ fs, path, directories
   ];
 });
 
-/** The `SKILL.md` files under `folder`, by skill folder name; none when it is missing. */
+/** Whether `path` is a folder, following symlinks; false when it cannot be read. */
+const isFolder = (fs: FileSystem.FileSystem, path: string) =>
+  fs.stat(path).pipe(
+    Effect.map((info) => info.type === "Directory"),
+    Effect.orElseSucceed(() => false),
+  );
+
+/**
+ * The `SKILL.md` files of the folders directly in `folder`, by name; files such as `.DS_Store` are
+ * not skills. None when `folder` is missing.
+ */
 const skillFilesIn = ({ fs, path }: Finder, folder: string) =>
   fs.readDirectory(folder).pipe(
-    Effect.map((names) => names.toSorted().map((name) => path.join(folder, name, SKILL_FILE))),
+    Effect.map((names) => names.toSorted().map((name) => path.join(folder, name))),
+    Effect.flatMap((entries) => Effect.filter(entries, (entry) => isFolder(fs, entry))),
+    Effect.map((folders) => folders.map((skill) => path.join(skill, SKILL_FILE))),
     Effect.orElseSucceed((): ReadonlyArray<string> => []),
   );
 
