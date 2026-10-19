@@ -378,6 +378,18 @@ effectTest(
 );
 
 effectTest(
+  "the first note is written once one note's range of history exists",
+  Effect.gen(function* () {
+    yield* start(said(130));
+    yield* enqueueNote("The user's first request.");
+
+    yield* beforeCall;
+    yield* notesSaved(1);
+  }),
+  stack,
+);
+
+effectTest(
   "history reads an entry range back as a transcript and refuses a range that runs backwards",
   Effect.gen(function* () {
     yield* start(userMessage("first ask"), userMessage("second ask"), userMessage("third ask"));

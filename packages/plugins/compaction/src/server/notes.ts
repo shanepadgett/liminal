@@ -1,7 +1,6 @@
 /**
- * The note writer: once a session is long enough, the provider's small model summarizes each run of
- * about 16,000 tokens into a short-term note, then condenses older notes into one long-term
- * memory.
+ * The note writer: the provider's small model summarizes each run of about 16,000 tokens of history
+ * into a short-term note, then condenses older notes into one long-term memory.
  */
 
 import { Array as Arr, Effect, Number as Num, Option, Schema } from "effect";
@@ -14,9 +13,6 @@ import type { SessionLog } from "@liminal/session-log/contract";
 import { NoteEntry } from "../contract.ts";
 import { sumTokens, textTokens, tokensOf } from "./budget.ts";
 import { type Memories, type Memory, type Note, unfoldedNotes } from "./store.ts";
-
-/** Notes start once the session's history reaches this many tokens. */
-const START = 50_000;
 
 /** The tokens of history each note covers at most. */
 const RANGE = 16_000;
@@ -142,13 +138,11 @@ const userText = (text: string): ReadonlyArray<ModelContent> => [
 
 const tokensLabel = (tokens: number) => tokens.toLocaleString("en-US");
 
-/** One session's writer: where it reads and writes, and when it starts. */
+/** One session's writer: where it reads and writes, and how much each note covers. */
 interface Writer {
   readonly deps: NoteDeps;
   readonly session: SessionId;
   readonly provider: string;
-  /** The history's tokens before the first note. */
-  readonly start: number;
   /** The most tokens of history one note covers. */
   readonly range: number;
 }
@@ -202,8 +196,6 @@ const writeNext = Effect.fn("compaction.writeNext")(function* (writer: Writer) {
   const notes = yield* writer.deps.memories.notes(writer.session);
   const after = Option.match(Arr.last(notes), { onNone: () => 0, onSome: (note) => note.through });
   const entries = (yield* writer.deps.log.read(writer.session, {})).filter(isNoted);
-  if (sumTokens(entries) < writer.start) return false;
-
   const unnoted = entries.filter((entry) => entry.seq > after);
   if (sumTokens(unnoted) < writer.range) return false;
 
@@ -262,8 +254,8 @@ const condense = Effect.fn("compaction.condense")(function* (writer: Writer) {
 });
 
 /**
- * Writes every note `session`'s history is due, then condenses. A small budget starts notes sooner
- * and makes each one shorter. A failure stops until the next model call.
+ * Writes every note `session`'s history is due, then condenses. A small budget makes each note
+ * cover less history. A failure stops until the next model call.
  */
 export const noteWriter = (
   deps: NoteDeps,
@@ -271,13 +263,7 @@ export const noteWriter = (
   provider: string,
   budget: number,
 ) => {
-  const writer: Writer = {
-    deps,
-    session,
-    provider,
-    start: Math.min(START, budget / 4),
-    range: Math.min(RANGE, budget / 8),
-  };
+  const writer: Writer = { deps, session, provider, range: Math.min(RANGE, budget / 8) };
 
   return Effect.gen(function* () {
     while (yield* writeNext(writer)) yield* condense(writer);
