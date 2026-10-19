@@ -24,6 +24,7 @@ Status: built
 - A model without a price shows `No price for this model`
 - The report follows each pick of the session's next model
 - Context registers at sidebar order 0, Cost at 10
+- Context ends with the rows other plugins register in `UsageSlots.contextRows`, such as memory's budget and counts
 
 ## References
 

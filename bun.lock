@@ -393,6 +393,7 @@
         "@liminal/settings": "workspace:*",
         "@liminal/tools": "workspace:*",
         "@liminal/tools-read": "workspace:*",
+        "@liminal/usage": "workspace:*",
         "@opentui/core": "0.6.6",
         "@opentui/solid": "0.6.6",
         "effect": "4.0.5",

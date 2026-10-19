@@ -13,7 +13,7 @@ import { NoticeEntry, type ProcessSummary, ProcessesRpcs, processTools } from ".
 import { processRows } from "./tui/rows.ts";
 import { makeSection, makeStartDetail, NoticeLine, TextDetail } from "./tui/views.tsx";
 
-/** After memory's section. */
+/** After usage's Cost section. */
 const SECTION_ORDER = 30;
 
 const NONE: ReadonlyArray<ProcessSummary> = [];

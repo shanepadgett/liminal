@@ -3,7 +3,7 @@
 import { Schema } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
-import { SessionId } from "@liminal/sdk";
+import { type NoProps, SessionId, Slot } from "@liminal/sdk";
 
 /** What a session's model calls used: the latest call's context, and the cost of them all. */
 export const SessionUsage = Schema.Struct({
@@ -37,6 +37,12 @@ export const UsageReport = Schema.Struct({
 });
 
 export type UsageReport = typeof UsageReport.Type;
+
+/** The slots usage declares. */
+export const UsageSlots = {
+  /** Rows at the end of the sidebar's Context section, such as memory's budget and counts. */
+  contextRows: Slot.list<NoProps, "session">("usage/context-rows", { scope: "session" }),
+};
 
 /** Usage's commands for frontends. */
 export class UsageRpcs extends RpcGroup.make(

@@ -1,7 +1,7 @@
 /**
  * Memory's TUI part: the checkpoint rule, the handoff in the debug view and a line per note or
- * memory, no row for the `checkpoint` call, which the rule stands for, `Recalled entries 12–40` for
- * `history`, and the sidebar's Memory section.
+ * memory, the files a checkpoint read back, no row for the `checkpoint` call, which the rule stands
+ * for, `Recalled entries 12–40` for `history`, and memory's rows in the sidebar's Context section.
  */
 
 import { Effect, Option, Schema, Stream } from "effect";
@@ -9,6 +9,7 @@ import { Effect, Option, Schema, Stream } from "effect";
 import { ChatSlots, ToolRows } from "@liminal/chat/contract";
 import type { SessionId } from "@liminal/sdk";
 import { defineTui, makeBridge, Tail, TuiHost } from "@liminal/sdk/tui";
+import { UsageSlots } from "@liminal/usage/contract";
 
 import {
   CheckpointEntry,
@@ -19,10 +20,11 @@ import {
   HistoryParams,
   historyTool,
   NoteEntry,
+  RestoredEntry,
 } from "./contract.ts";
 import { Checkpoint } from "./tui/Checkpoint.tsx";
-import { HandoffLine, NoteLine } from "./tui/DebugLine.tsx";
-import { makeSection } from "./tui/Section.tsx";
+import { makeContextRows } from "./tui/ContextRows.tsx";
+import { HandoffLine, NoteLine, RestoredLine } from "./tui/DebugLine.tsx";
 
 const decodeRange = Schema.decodeUnknownOption(HistoryParams);
 
@@ -43,6 +45,7 @@ export default defineTui({
     yield* host.register(ChatSlots.entry, { key: CheckpointEntry.kind, meta: {} }, Checkpoint);
     yield* host.register(ChatSlots.entry, { key: HandoffEntry.kind, meta: {} }, HandoffLine);
     yield* host.register(ChatSlots.entry, { key: NoteEntry.kind, meta: {} }, NoteLine);
+    yield* host.register(ChatSlots.entry, { key: RestoredEntry.kind, meta: {} }, RestoredLine);
 
     yield* host.register(
       ChatSlots.tool,
@@ -61,6 +64,10 @@ export default defineTui({
         Option.none<MemoryStatus>(),
       );
 
-    yield* host.register(ChatSlots.sidebar, { id: "memory", order: 20 }, makeSection(watch));
+    yield* host.register(
+      UsageSlots.contextRows,
+      { id: "memory", order: 0 },
+      makeContextRows(watch),
+    );
   }),
 });

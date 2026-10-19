@@ -1,4 +1,4 @@
-/** The status the sidebar's Memory section shows, measured again after each change to the log. */
+/** The status the sidebar's Context section shows, measured again after each change to the log. */
 
 import { Array as Arr, Duration, Effect, Option, Stream } from "effect";
 
@@ -25,17 +25,14 @@ const statusOf = Effect.fn("memory.statusOf")(function* (deps: StatusDeps, sessi
   if (Option.isNone(start)) return [];
 
   const measured = yield* measure(deps, session, entries, start.value.model);
-  const lastNote = Arr.last(measured.stored.notes);
 
   const status: MemoryStatus = {
     size: measured.size,
     budget: measured.budget,
     stage: measured.stage,
+    shortTerm: measured.stored.notes.length,
+    longTerm: measured.stored.memories.length,
     checkpoints: checkpointsOf(entries).length,
-    ...Option.match(lastNote, {
-      onNone: () => ({}),
-      onSome: (note) => ({ notesThrough: note.through }),
-    }),
   };
 
   return [status];

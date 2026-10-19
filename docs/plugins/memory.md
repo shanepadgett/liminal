@@ -2,7 +2,7 @@
 
 Keeps the context within the model's window.
 
-Status: built; memory files planned ([plans/memory.md](../plans/memory.md))
+Status: built ([plans/memory.md](../plans/memory.md)); awaiting review
 
 ## Requires
 

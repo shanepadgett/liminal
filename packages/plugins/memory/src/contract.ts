@@ -143,15 +143,17 @@ export const Stage = Schema.Literals(["none", "notice", "warning", "forced"]);
 
 export type Stage = typeof Stage.Type;
 
-/** How full a session's context is, for the sidebar's Memory section. */
+/** How full a session's context is and what memory holds, for the sidebar's Context section. */
 export const MemoryStatus = Schema.Struct({
   /** The view's tokens: the last reply's, plus estimates for the entries after it. */
   size: Schema.Int,
   /** The most tokens a request may hold before the model must write a checkpoint. */
   budget: Schema.Int,
   stage: Stage,
-  /** The last entry the background notes cover; absent before the first note. */
-  notesThrough: Schema.optionalKey(Seq),
+  /** The short-term memories written so far. */
+  shortTerm: Schema.Int,
+  /** The long-term memories written so far. */
+  longTerm: Schema.Int,
   /** The checkpoints written so far. */
   checkpoints: Schema.Int,
 });

@@ -65,6 +65,7 @@ The chat screen's slots, from `@liminal/chat/contract`:
 - A chain's component stays mounted while the same registration matches; new owner props and `matched` arrive as prop changes.
 
 - A sidebar section is a `ChatSlots.sidebar` registration drawn with `SidebarSection`, `SidebarStat` and `SidebarNote` from `@liminal/sdk/tui`; the sidebar is 42 columns wide, its border and padding included. `order` may be negative; environment's Session section is first at -10. Example: `packages/plugins/usage/src/tui.tsx`.
+- To add rows to the Context section instead of a section of your own, register `SidebarStat` rows in `UsageSlots.contextRows` from `@liminal/usage/contract` (list, `{ sessionId }`). Example: `packages/plugins/memory/src/tui/ContextRows.tsx`.
 
 - To declare your own slot, export `Slot.single|list|keyed|chain("<plugin>/<place>", { scope })` from your contract and pass it as `declares` when you register the component that draws it. `scope` is `"root"` or `"session"`; session slots get `sessionId`.
 

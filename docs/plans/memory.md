@@ -2,7 +2,7 @@
 
 Lets a checkpoint bring back the code the work depends on. Each memory carries a labeled file list. At a checkpoint the relevant files are read once and placed in the model's view, so the model doesn't start by reading them again. The `compaction` plugin becomes `memory`, and its sidebar rows move under Context. Requirements are in [memory.md](../plugins/memory.md).
 
-Round 1, architecture: agreed. Round 2, code-level plan: agreed. Next: step 5.
+Round 1, architecture: agreed. Round 2, code-level plan: agreed. All five steps built; awaiting review.
 
 ## Systems
 
@@ -251,6 +251,6 @@ The memory reminder renders the summary, then `Relevant files:` and `Explored, n
 2. Rename: package, kinds, settings section, `renameKind`, user-facing words; no behavior change, built
 3. File wrapper and file lists in memories, built
 4. Restore at checkpoint, the `files` param and the view step, built
-5. Sidebar rows through `UsageSlots.contextRows`; the rule label; guides and docs
+5. Sidebar rows through `UsageSlots.contextRows`; the rule label; guides and docs, built
 
 An edit's lines are found by locating `newText` in the file after the call. Both layers share the `memory/memory-written` kind; its `layer` field and transcript line name the layer.

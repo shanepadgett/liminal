@@ -494,7 +494,7 @@ effectTest(
     expect(status.budget).toBe(BUDGET);
     expect(status.stage).toBe("notice");
     expect(status.checkpoints).toBe(0);
-    expect(status.notesThrough).toBeUndefined();
+    expect([status.shortTerm, status.longTerm]).toEqual([0, 0]);
   }),
   stack,
 );

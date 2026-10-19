@@ -1,7 +1,8 @@
 /**
  * Usage's TUI part: the sidebar's Context and Cost sections. Context is the latest call's tokens
- * out of the model's window and how much of its request the cache served; Cost adds up the
- * session's calls and every session's calls since local midnight.
+ * out of the model's window and how much of its request the cache served, then the rows other
+ * plugins register in `UsageSlots.contextRows`; Cost adds up the session's calls and every
+ * session's calls since local midnight.
  */
 
 import type { JSX } from "@opentui/solid";
@@ -18,10 +19,17 @@ import {
   SidebarNote,
   SidebarSection,
   SidebarStat,
+  SlotView,
   TuiHost,
 } from "@liminal/sdk/tui";
 
-import { idleUsage, type SessionUsage, type UsageReport, UsageRpcs } from "./contract.ts";
+import {
+  idleUsage,
+  type SessionUsage,
+  type UsageReport,
+  UsageRpcs,
+  UsageSlots,
+} from "./contract.ts";
 
 /** `84K · 42%`, or `84K` when the window is unknown. */
 const usedText = (usage: SessionUsage) =>
@@ -31,7 +39,7 @@ const usedText = (usage: SessionUsage) =>
 
 const costText = (cost: number) => `$${cost.toFixed(2)}`;
 
-function Context(props: { readonly usage: SessionUsage }) {
+function Context(props: { readonly usage: SessionUsage; readonly sessionId: SessionId }) {
   return (
     <SidebarSection title="Context">
       <SidebarStat label="used" value={usedText(props.usage)} />
@@ -42,6 +50,7 @@ function Context(props: { readonly usage: SessionUsage }) {
         label="cache hit"
         value={props.usage.cacheHit === undefined ? "–" : formatShare(props.usage.cacheHit)}
       />
+      <SlotView of={UsageSlots.contextRows} props={{ sessionId: props.sessionId }} />
     </SidebarSection>
   );
 }
@@ -75,19 +84,22 @@ function Cost(props: { readonly report: UsageReport }) {
   );
 }
 
-function ContextSection(props: { readonly report: UsageReport }) {
-  return <Context usage={props.report.session} />;
+function ContextSection(props: { readonly report: UsageReport; readonly sessionId: SessionId }) {
+  return <Context usage={props.report.session} sessionId={props.sessionId} />;
 }
 
 type Watch = (session: SessionId) => Accessor<UsageReport>;
 
 /** A sidebar section drawn from the session's report. */
 const makeSection =
-  (watch: Watch, Shown: (props: { readonly report: UsageReport }) => JSX.Element) =>
+  (
+    watch: Watch,
+    Shown: (props: { readonly report: UsageReport; readonly sessionId: SessionId }) => JSX.Element,
+  ) =>
   (props: { readonly sessionId: SessionId }) => {
     const report = watch(props.sessionId);
 
-    return <Shown report={report()} />;
+    return <Shown report={report()} sessionId={props.sessionId} />;
   };
 
 export default defineTui({
@@ -103,6 +115,7 @@ export default defineTui({
       ChatSlots.sidebar,
       { id: "context", order: 0 },
       makeSection(watch, ContextSection),
+      [UsageSlots.contextRows],
     );
 
     yield* host.register(ChatSlots.sidebar, { id: "cost", order: 10 }, makeSection(watch, Cost));
