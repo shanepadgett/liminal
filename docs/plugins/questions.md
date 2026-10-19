@@ -30,7 +30,9 @@ Status: built
 
 - A pending form is derived from the session log: the latest form with no answers, cancel or user message after it
 - While a form waits it takes the composer's draft area and key hints; steering waits for the answers
-- Tab and shift+tab move between tabs, up and down move rows, enter picks or accepts, `n` notes an option, esc drops a note or cancels the form
+- Tab and shift+tab move between tabs, as do left and right beside options; a tab already answered opens on its answer
+- Up and down move rows, enter picks or accepts, `n` notes an option, esc drops a note or cancels the form
+- The keys under the form always list `tab next` and `shift+tab back`
 - One tab per question, then additional context; questions left open are sent as skipped
 - Answering or cancelling names the form's entry; a form no longer waiting fails with `FormGone`
 

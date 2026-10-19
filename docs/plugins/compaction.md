@@ -27,7 +27,7 @@ Status: built
 ### Checkpoint
 
 - The model writes a checkpoint through a `checkpoint` tool, called alone, with a handoff
-- Hidden nudges at 50% and 75% of the budget; at the budget every other tool is refused until a checkpoint
+- Hidden nudges at 50% and 75% of the budget; the 50% nudge says to keep working, the 75% nudge says to finish the current bounded unit and then checkpoint, and both say to send a final answer rather than checkpoint for it; at the budget every other tool is refused until a checkpoint
 - Budget is the lesser of the context window less a 16,000-token reserve and a setting defaulting to 200,000
 - Size is the last reply's input and output tokens, plus 4 characters per token for entries since
 - After a checkpoint the model sees the system prompt, long-term memories, short-term notes, recent entries, the handoff, then what follows
@@ -61,7 +61,7 @@ Status: built
 - A checkpoint draws as a faint rule spanning the transcript, labeled "Checkpoint", with a blank line above and below
 - The handoff shows only in the debug view, under the rule, folded to its first line and unfolding on click
 - The `checkpoint` tool call has no work row; only the rule shows
-- Each note or memory written shows in the debug view as one line with its entry range and tokens
+- Each note or memory written shows in the transcript as one faint line with its entry range and tokens
 - Nudges show only in the debug view
 
 ## Sidebar

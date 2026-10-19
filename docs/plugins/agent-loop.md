@@ -23,7 +23,12 @@ Status: built
 - Inbox, retry, cancel and usage are separate plugins
 - Its settings section holds the default `model` and `thinking` for new turns; `thinking` is one of the model's option ids
 - A session's model and thinking are those of its last sent turn; a session with no turns uses the default
-- Picking a model in a session applies to that session's next turn and sets the default for new sessions
+- Picking a model in a session applies to that session's next turn only; it does not change the default
+- `ctrl+d` in `/model` sets the highlighted model as the default for new sessions: it asks for the model's thinking option as a pick does, then saves both to the global settings file, removing a saved thinking option the model does not offer
+- `/model` tags the default model `default`
+- A new session, at launch or on `/new`, uses the default; with none set it uses the model of the newest turn in any session, else it has no model
+- Its settings section holds `favorites`, a list of models; `ctrl+f` in `/model` adds the highlighted model to it or removes it, saving to the global settings file at once
+- `/model` lists the favorites in a Favorites section above the providers, each moved out of its provider's section
 - `ctrl+t` picks the next thinking option of the session's model, in the model's option order, wrapping from the last to the first; a model with fewer than two options shows a toast
 - A pick not yet sent with a turn is held in memory per session until a turn uses it or the app restarts; it is not saved in the session
 - A turn uses the saved thinking option when the model offers it, else the model's default, else off
