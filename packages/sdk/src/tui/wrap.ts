@@ -55,3 +55,7 @@ export const clampLines = (lines: readonly string[], count: number, columns: num
 
   return [...kept.slice(0, -1), `${cut}…`];
 };
+
+/** `text` on one line of `columns`, cut at a word and ending in `…` when it does not fit. */
+export const cutLine = (text: string, columns: number) =>
+  columns < 1 ? "" : (clampLines(wrapWords(text, columns), 1, columns)[0] ?? "");

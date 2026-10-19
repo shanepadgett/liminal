@@ -27,7 +27,7 @@ export { type Hint, Hints } from "./Hints.tsx";
 export { useMarkdownStyle } from "./markdown.ts";
 export { Tail } from "./Tail.tsx";
 export { createPin } from "./pin.ts";
-export { clampLines, wrapText, wrapWords } from "./wrap.ts";
+export { clampLines, cutLine, wrapText, wrapWords } from "./wrap.ts";
 
 export {
   type Faded,

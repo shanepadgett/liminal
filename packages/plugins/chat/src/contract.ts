@@ -37,6 +37,8 @@ export interface WorkRow {
   readonly subject: string;
   readonly detail?: string;
   readonly joins?: { readonly verb: string; readonly noun: string };
+  /** Cuts the subject to one line with `…`, its detail still shown; the opened row has it all. */
+  readonly oneLine?: boolean;
 }
 
 /**

@@ -13,6 +13,8 @@ export interface Worded {
   readonly subject: string;
   readonly detail: string;
   readonly failure: string;
+  /** Whether the subject is cut to one line. */
+  readonly oneLine: boolean;
 }
 
 /** One drawn row; a joined row lists the calls it gathered. */
@@ -36,6 +38,7 @@ const wordedOf = (call: ToolCall, row: WorkRow): Worded => ({
   subject: row.subject,
   detail: row.detail ?? "",
   failure: failureOf(call),
+  oneLine: row.oneLine === true,
 });
 
 const joinedWords = (joins: NonNullable<WorkRow["joins"]>, calls: WorkGroup["calls"]): Worded => {
@@ -46,6 +49,7 @@ const joinedWords = (joins: NonNullable<WorkRow["joins"]>, calls: WorkGroup["cal
     subject: `${calls.length} ${joins.noun}`,
     detail: "",
     failure: failed === 0 ? "" : `${failed} failed`,
+    oneLine: false,
   };
 };
 

@@ -263,6 +263,32 @@ effectTest(
 );
 
 effectTest(
+  "a run row cuts its script to one line",
+  Effect.gen(function* () {
+    const run: ModelPart = {
+      type: "tool-call",
+      id: "c1",
+      name: "run",
+      params: {
+        code: `const paths = [${"'far/away.ts', ".repeat(20)}]; console.log(paths.length);`,
+      },
+      providerData: {},
+    };
+
+    const { setup } = yield* bootScripted(reply([run]), replyText("ran it"));
+
+    yield* send(setup, "run far away");
+
+    const lines = (yield* frameWith(setup, "ran it")).split("\n");
+    const row = lines.findIndex((line) => line.includes("\u25c6 Ran"));
+
+    expect(lines[row]).toContain("\u2026");
+    expect(lines[row + 1]).not.toContain("far/away");
+  }),
+  trustedServices,
+);
+
+effectTest(
   "esc interrupts the running turn",
   Effect.gen(function* () {
     const gate = yield* Latch.make();

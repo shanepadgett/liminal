@@ -5,11 +5,12 @@
  * row.
  */
 
+import type { BoxRenderable } from "@opentui/core";
 import { Option, Schema } from "effect";
 import { createSignal, For, Index, Show } from "solid-js";
 
 import type { SessionId } from "@liminal/sdk";
-import { type RoleColor, SlotView, useColor, useSlotMeta } from "@liminal/sdk/tui";
+import { cutLine, type RoleColor, SlotView, useColor, useSlotMeta } from "@liminal/sdk/tui";
 
 import { ChatSlots, type ToolCall } from "../contract.ts";
 import { groupsOf, type WorkGroup, type Worded } from "./work.ts";
@@ -22,21 +23,44 @@ const after = (text: string) => (text === "" ? "" : ` ${text}`);
 
 const aside = (text: string) => (text === "" ? "" : ` (${text})`);
 
+/**
+ * The mark stands in its own column, so wrapped words line up under the verb. A one-line row cuts
+ * its subject to fit beside the verb and asides.
+ */
 function Words(props: {
   readonly color: RoleColor;
   readonly mark: string;
   readonly words: Worded;
 }) {
-  // The mark stands in its own column, so wrapped words line up under the verb.
+  const [body, setBody] = createSignal<BoxRenderable>();
+  const [columns, setColumns] = createSignal(0);
+
+  const detail = () => aside(props.words.detail);
+  const failure = () => aside(props.words.failure);
+
+  const subject = () => {
+    const { verb, subject: whole, oneLine } = props.words;
+    if (!oneLine) return whole;
+
+    return cutLine(whole, columns() - verb.length - 1 - detail().length - failure().length);
+  };
+
   return (
     <box flexDirection="row">
       <text fg={props.color("text.ghost")} flexShrink={0}>{`${props.mark} `}</text>
-      <text flexGrow={1} flexShrink={1}>
-        <b style={{ fg: props.color("text.muted") }}>{props.words.verb}</b>
-        <span style={{ fg: props.color("text.faint") }}>{after(props.words.subject)}</span>
-        <span style={{ fg: props.color("text.ghost") }}>{aside(props.words.detail)}</span>
-        <span style={{ fg: props.color("feedback.danger") }}>{aside(props.words.failure)}</span>
-      </text>
+      <box
+        ref={setBody}
+        flexGrow={1}
+        flexShrink={1}
+        onSizeChange={() => setColumns(body()?.width ?? 0)}
+      >
+        <text wrapMode={props.words.oneLine ? "none" : "word"}>
+          <b style={{ fg: props.color("text.muted") }}>{props.words.verb}</b>
+          <span style={{ fg: props.color("text.faint") }}>{after(subject())}</span>
+          <span style={{ fg: props.color("text.ghost") }}>{detail()}</span>
+          <span style={{ fg: props.color("feedback.danger") }}>{failure()}</span>
+        </text>
+      </box>
     </box>
   );
 }

@@ -90,7 +90,7 @@ Example: `packages/plugins/agent-loop/src/tui/live.tsx`.
 
 The transcript shows tool calls as work rows such as `Read src/kernel.ts`. Rows with the same `joins.verb` in a row merge into one, such as `Explored 3 files`.
 
-1. Word the row. For a tool whose params have a `path`, use `pathRows({ running, done, joins })` from `@liminal/chat/contract`. Otherwise write a `fold(call)` that returns a `WorkRow`: `verb`, `subject`, optional `detail` and `joins: { verb, noun }`. `call.outcome` is absent while the call runs, so pick the running verb then.
+1. Word the row. For a tool whose params have a `path`, use `pathRows({ running, done, joins })` from `@liminal/chat/contract`. Otherwise write a `fold(call)` that returns a `WorkRow`: `verb`, `subject`, optional `detail`, `joins: { verb, noun }` and `oneLine` to cut a long subject to one line with `…`. `call.outcome` is absent while the call runs, so pick the running verb then.
 2. Pick the opened row's component. It gets `call`, with `outcome.result` and `outcome.details` once done, and `text`, the result when it is text. The SDK's `Tail` shows the end of `text`, 8 lines unless given `lines`.
 3. Register both under the tool name: `host.register(ChatSlots.tool, { key: "read", meta: rows }, Tail)`.
 

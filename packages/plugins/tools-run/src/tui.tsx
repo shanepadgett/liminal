@@ -1,6 +1,6 @@
 /**
- * The run tool's TUI part: a `run` call reads as `Ran <first line of the script>` with how many
- * calls it made, and an opened row shows the script and the tail of its output.
+ * The run tool's TUI part: a `run` call reads as `Ran <first line of the script>`, cut to one row,
+ * with how many calls it made, and an opened row shows the script and the tail of its output.
  */
 
 import { Effect, Option, Schema } from "effect";
@@ -31,6 +31,7 @@ const fold = (call: ToolCall) => ({
   verb: call.outcome === undefined ? "Running" : "Ran",
   subject: firstLine(codeOf(call)),
   detail: callsOf(call),
+  oneLine: true,
 });
 
 function Script(props: ToolView) {

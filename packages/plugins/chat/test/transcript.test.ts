@@ -95,7 +95,7 @@ describe("transcript", () => {
     const groups = groupsOf(work.calls, (name) => (name === "read" ? read : undefined));
 
     expect(groups.map((group) => group.words)).toEqual([
-      { verb: "Explored", subject: "2 files", detail: "", failure: "1 failed" },
+      { verb: "Explored", subject: "2 files", detail: "", failure: "1 failed", oneLine: false },
     ]);
   });
 

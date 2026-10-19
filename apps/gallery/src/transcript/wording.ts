@@ -19,6 +19,8 @@ export type Wording = {
   readonly detail: string;
   /** What went wrong, or empty. */
   readonly failure: string;
+  /** Cuts the subject to one line with `…`, the detail still shown. */
+  readonly oneLine?: boolean;
 };
 
 const counted = (count: number, one: string, many: string) =>
@@ -116,12 +118,14 @@ export const wordingOf = (group: WorkGroup, tense: Tense): Wording =>
         return worded("Ran", run.command, "", run.hasPassed ? "" : "failed");
       },
       checked: (checked) => checkedOf(checked.checks, tense),
-      scripted: ({ script }) =>
-        worded(
+      scripted: ({ script }) => ({
+        ...worded(
           tense === "past" ? "Ran" : "Running",
           script.code.split("\n")[0] ?? "",
           counted(script.calls.length, "call", "calls"),
         ),
+        oneLine: true,
+      }),
       browsed: ({ web }) => webOf(web, tense),
       managed: ({ process }) =>
         tense === "past"

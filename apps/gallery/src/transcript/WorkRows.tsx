@@ -7,10 +7,10 @@
  * redrawn, so an opened row stays open.
  */
 
-import { TextAttributes } from "@opentui/core";
+import { type BoxRenderable, TextAttributes } from "@opentui/core";
 import { createSignal, For, Index, Show } from "solid-js";
 
-import { mixHex, type RoleColor, type RoleName } from "@liminal/sdk/tui";
+import { cutLine, mixHex, type RoleColor, type RoleName } from "@liminal/sdk/tui";
 
 import { actionWordingsOf, type Wording, wordingOf } from "./wording.ts";
 import { innerGroupsOf, type WorkGroup } from "./workGroups.ts";
@@ -51,17 +51,38 @@ export function WordedRow(props: {
   readonly dim: number;
 }) {
   const fg = (part: Part) => partColor(props.color, part, props.dim);
+  const [body, setBody] = createSignal<BoxRenderable>();
+  const [columns, setColumns] = createSignal(0);
 
-  // The mark stands in its own column, so wrapped words line up under the verb.
+  const detail = () => aside(props.wording.detail);
+  const failure = () => aside(props.wording.failure);
+  const isOneLine = () => props.wording.oneLine === true;
+
+  const subject = () => {
+    const { verb, subject: whole } = props.wording;
+    if (!isOneLine()) return whole;
+
+    return cutLine(whole, columns() - verb.length - 1 - detail().length - failure().length);
+  };
+
+  // The mark stands in its own column, so wrapped words line up under the verb. A one-line row cuts
+  // its subject to fit beside the verb and asides.
   return (
     <box flexDirection="row">
       <text fg={fg("mark")} flexShrink={0}>{`${props.mark} `}</text>
-      <text flexGrow={1} flexShrink={1}>
-        <b style={{ fg: fg("verb") }}>{props.wording.verb}</b>
-        <span style={{ fg: fg("subject") }}>{after(props.wording.subject)}</span>
-        <span style={{ fg: fg("detail") }}>{aside(props.wording.detail)}</span>
-        <span style={{ fg: fg("failure") }}>{aside(props.wording.failure)}</span>
-      </text>
+      <box
+        ref={setBody}
+        flexGrow={1}
+        flexShrink={1}
+        onSizeChange={() => setColumns(body()?.width ?? 0)}
+      >
+        <text wrapMode={isOneLine() ? "none" : "word"}>
+          <b style={{ fg: fg("verb") }}>{props.wording.verb}</b>
+          <span style={{ fg: fg("subject") }}>{after(subject())}</span>
+          <span style={{ fg: fg("detail") }}>{detail()}</span>
+          <span style={{ fg: fg("failure") }}>{failure()}</span>
+        </text>
+      </box>
     </box>
   );
 }
