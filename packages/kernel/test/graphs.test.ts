@@ -12,7 +12,7 @@ import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 
 import { awaitState } from "./support/boot.ts";
 import { current, rebuilt, started, writeFresh, writeSource } from "./support/plugins.ts";
-import { Reader } from "./support/swap.ts";
+import { Reader, Steady } from "./support/swap.ts";
 
 describe("graph changes", () => {
   effectTest(
@@ -102,6 +102,40 @@ describe("graph changes", () => {
       expect(old).toBe(before.reader);
       expect(old.value).toBe("one");
       expect(yield* Ref.get(old.closed)).toBe(true);
+    }),
+    testBaseServices,
+  );
+
+  effectTest(
+    "a candidate's registrations stay hidden until it applies, and the old graph keeps its own",
+    Effect.gen(function* () {
+      const run = yield* started({ mode: () => Effect.succeed("confirmed") });
+
+      const readersNow = run.kernel.use(
+        (services) => Context.getUnsafe(services, Steady).readers.list,
+      );
+
+      const release = yield* Deferred.make<void>();
+
+      const oldHolder = yield* run.kernel
+        .use((services) =>
+          Deferred.await(release).pipe(
+            Effect.andThen(Context.getUnsafe(services, Steady).readers.list),
+          ),
+        )
+        .pipe(Effect.forkChild);
+
+      yield* writeSource("two");
+      yield* run.touch("source");
+      yield* awaitState(run.kernel, Predicate.isTagged("Ready"));
+
+      expect(yield* readersNow).toEqual(["one"]);
+
+      yield* rebuilt(run, "source", run.kernel.reloads.request);
+      expect(yield* readersNow).toEqual(["two"]);
+
+      yield* Deferred.done(release, Exit.void);
+      expect(yield* Fiber.join(oldHolder)).toEqual(["one"]);
     }),
     testBaseServices,
   );

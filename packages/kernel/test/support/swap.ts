@@ -1,12 +1,13 @@
 /**
  * Plugins for graph change tests: `source` reads its value from a file when it builds, `reader`
- * needs `source`, and `steady` needs nothing. Each graph loads its own copy of this module, so a
- * build carries a flag its scope sets on close, for the test to read.
+ * needs `source` and registers its value with `steady` when it is on, and `steady` needs nothing.
+ * Each graph loads its own copy of this module, so a build carries a flag its scope sets on close,
+ * for the test to read.
  */
 
-import { Context, Effect, FileSystem, Layer, Path, Ref } from "effect";
+import { Context, Effect, FileSystem, Layer, Option, Path, Ref } from "effect";
 
-import { Directories, TurnGate } from "@liminal/sdk";
+import { Directories, Registry, TurnGate } from "@liminal/sdk";
 
 /** One build of a plugin; `closed` turns true when the build's scope closes. */
 interface Built {
@@ -24,7 +25,11 @@ export class Reader extends Context.Service<Reader, Valued>()("fixture/Reader") 
 
 export class Steady extends Context.Service<
   Steady,
-  Built & { readonly hold: TurnGate["Service"]["hold"] }
+  Built & {
+    readonly hold: TurnGate["Service"]["hold"];
+    /** The value of each reader build registered here. */
+    readonly readers: Registry.Registry<string>;
+  }
 >()("fixture/Steady") {}
 
 /** A plugin whose value comes from a file in its own package. */
@@ -60,6 +65,8 @@ export const readerLayer = Layer.effect(
   Reader,
   Effect.gen(function* () {
     const source = yield* Source;
+    const steady = yield* Effect.serviceOption(Steady);
+    if (Option.isSome(steady)) yield* steady.value.readers.register(source.value, { order: 0 });
 
     return { closed: yield* closedFlag, value: source.value };
   }),
@@ -70,6 +77,6 @@ export const steadyLayer = Layer.effect(
   Effect.gen(function* () {
     const gate = yield* TurnGate;
 
-    return { closed: yield* closedFlag, hold: gate.hold };
+    return { closed: yield* closedFlag, hold: gate.hold, readers: yield* Registry.make<string>() };
   }),
 );

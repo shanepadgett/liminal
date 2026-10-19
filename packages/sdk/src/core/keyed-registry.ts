@@ -1,9 +1,11 @@
 /**
- * Named collections that plugins add to. The newest addition under a name wins, so a rebuilt
- * plugin's items take over from its old build's while both are registered.
+ * Named collections that plugins add to. A caller sees only the additions of the builds in the
+ * graph it holds; among those, the newest under a name wins.
  */
 
 import { Context, Effect, Layer, Option, type Scope, Stream, SubscriptionRef } from "effect";
+
+import { addRegistration, visibleIn } from "./build-scope.ts";
 
 export interface KeyedRegistry<A> {
   /** Adds `item` under its name; removed when the caller's Scope closes. */
@@ -20,6 +22,7 @@ export interface KeyedRegistry<A> {
 interface Registration<A> {
   readonly name: string;
   readonly item: A;
+  readonly build: Option.Option<number>;
 }
 
 /** The last registration under each name, sorted by name. */
@@ -37,26 +40,25 @@ const newestOf = <A>(registrations: ReadonlyArray<Registration<A>>): ReadonlyArr
 const make = Effect.fn("KeyedRegistry.make")(function* <A>(nameOf: (item: A) => string) {
   const ref = yield* SubscriptionRef.make<ReadonlyArray<Registration<A>>>([]);
 
-  const register = (item: A) => {
-    const registration: Registration<A> = { name: nameOf(item), item };
-
-    return Effect.acquireRelease(
-      SubscriptionRef.update(ref, (current) => [...current, registration]),
-      () =>
-        SubscriptionRef.update(ref, (current) => current.filter((entry) => entry !== registration)),
+  const register = (item: A) =>
+    addRegistration(
+      ref,
+      (build): Registration<A> => ({ name: nameOf(item), item, build }),
+      (current, added) => [...current, added],
     );
-  };
+
+  const visible = visibleIn(ref);
 
   const get = (name: string) =>
-    Effect.map(SubscriptionRef.get(ref), (registrations) =>
+    Effect.map(visible.current, (registrations) =>
       Option.fromUndefinedOr(registrations.findLast((entry) => entry.name === name)?.item),
     );
 
   const registry: KeyedRegistry<A> = {
     register,
     get,
-    list: Effect.map(SubscriptionRef.get(ref), newestOf),
-    changes: SubscriptionRef.changes(ref).pipe(Stream.map(newestOf)),
+    list: Effect.map(visible.current, newestOf),
+    changes: Stream.map(visible.changes, newestOf),
   };
 
   return registry;

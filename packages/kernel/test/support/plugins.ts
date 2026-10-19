@@ -14,14 +14,17 @@ import { Fresh, Reader, Source, sourceFile, Steady } from "./swap.ts";
 
 const swapUrl = import.meta.resolve("./swap.ts");
 
-const manifest = (name: string, provides: string, requires: string, server: string) =>
+/** A fixture plugin: its name, then its provides, requires and uses lists, then its server. */
+type Fixture = readonly [string, string, string, string, string];
+
+const manifest = ([name, provides, requires, uses, server]: Fixture) =>
   [
     `import { Fresh, Reader, Source, Steady } from "${swapUrl}";`,
     "export default {",
     `  name: "${name}",`,
     `  provides: [${provides}],`,
     `  requires: [${requires}],`,
-    "  uses: [],",
+    `  uses: [${uses}],`,
     "  enabledByDefault: true,",
     `  server: () => ${server},`,
     "};",
@@ -31,10 +34,10 @@ const fromSwap = (layer: string) =>
   `import("${swapUrl}").then((module) => ({ layer: module.${layer} }))`;
 
 const plugins = [
-  ["source", "Source", "", fromSwap("sourceLayer")],
-  ["reader", "Reader", "Source", fromSwap("readerLayer")],
-  ["steady", "Steady", "", fromSwap("steadyLayer")],
-  ["fresh", "Fresh", "", 'import("./server.ts")'],
+  ["source", "Source", "", "", fromSwap("sourceLayer")],
+  ["reader", "Reader", "Source", "Steady", fromSwap("readerLayer")],
+  ["steady", "Steady", "", "", fromSwap("steadyLayer")],
+  ["fresh", "Fresh", "", "", 'import("./server.ts")'],
 ] as const;
 
 const freshServer = [
@@ -55,15 +58,13 @@ const writePlugins = Effect.fn("writePlugins")(function* (folder: string) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
 
-  for (const [name, provides, requires, server] of plugins) {
+  for (const plugin of plugins) {
+    const [name] = plugin;
     const dir = path.join(folder, name);
     yield* fs.makeDirectory(dir);
     yield* fs.writeFileString(path.join(dir, "package.json"), '{ "liminal": ["./plugin.ts"] }');
 
-    yield* fs.writeFileString(
-      path.join(dir, "plugin.ts"),
-      manifest(name, provides, requires, server),
-    );
+    yield* fs.writeFileString(path.join(dir, "plugin.ts"), manifest(plugin));
   }
 
   yield* fs.writeFileString(path.join(folder, "fresh", "server.ts"), freshServer);

@@ -1,4 +1,5 @@
 /** The root `@liminal/sdk` surface: what manifests, contracts and servers import. */
+export { HeldBuilds, RegisteringBuild } from "./build-scope.ts";
 export * from "./composition.ts";
 export * from "./decision.ts";
 export { dataFile, Directories } from "./directories.ts";

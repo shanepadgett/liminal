@@ -30,7 +30,10 @@ export class Work extends Context.Service<
   }
 >()("liminal/Work") {}
 
-/** Runs `f` with the services of one graph, holding that graph until `f` ends. */
+/**
+ * Runs `f` with the services of one graph, holding that graph until `f` ends; registries read in
+ * `f` show only that graph's builds.
+ */
 export type HoldGraph = <A, E>(
   f: (services: Context.Context<never>) => Effect.Effect<A, E>,
 ) => Effect.Effect<A, E>;

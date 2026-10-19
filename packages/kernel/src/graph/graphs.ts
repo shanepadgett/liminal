@@ -5,13 +5,14 @@
  * makes it current.
  */
 
-import { Context, Deferred, Effect, Exit, Scope, Semaphore, SubscriptionRef } from "effect";
+import { Context, Deferred, Effect, Exit, Option, Scope, Semaphore, SubscriptionRef } from "effect";
 import type { RpcGroup } from "effect/rpc";
 
 import {
   type BaseServices,
   type CompositionInvalid,
   type GraphMember,
+  HeldBuilds,
   type HoldGraph,
   makeWork,
   Work,
@@ -128,6 +129,19 @@ const discardFresh = (fresh: Candidate["fresh"]) =>
     Effect.andThen(Effect.forEach(fresh.packages, (loaded) => loaded.dispose, { discard: true })),
   );
 
+/** Holds a graph from `acquire` while `f` runs; registries read in `f` show that graph's builds. */
+const holdWith =
+  (acquire: Effect.Effect<Graph>, release: (graph: Graph) => Effect.Effect<void>): HoldGraph =>
+  (f) =>
+    Effect.acquireUseRelease(
+      acquire,
+      (graph) =>
+        f(graph.services).pipe(
+          Effect.provideService(HeldBuilds, Context.get(graph.services, HeldBuilds)),
+        ),
+      release,
+    );
+
 export interface GraphOptions {
   /** Read for every graph, so each change picks up the user's latest choices. */
   readonly composition: Effect.Effect<Composition, CompositionInvalid>;
@@ -179,8 +193,12 @@ const makeCandidate = Effect.fn("makeCandidate")(function* (
     return yield* new ChangeFailed({ failed });
   }
 
+  // Requests on the graph and holders of it see only these builds' registrations.
+  const held = new Set(built.builds.map((made) => made.id));
+
   const graph: Unopened = {
     ...built,
+    services: Context.add(built.services, HeldBuilds, Option.some(held)),
     status,
     providers: loaded.resolution.providers,
     packages: loaded.packages,
@@ -208,8 +226,7 @@ export const makeGraphs = Effect.fn("makeGraphs")(function* (options: GraphOptio
     }),
   );
 
-  const hold: HoldGraph = (f) =>
-    Effect.acquireUseRelease(acquire, (graph) => f(graph.services), counts.release);
+  const hold = holdWith(acquire, counts.release);
 
   const work = yield* makeWork(hold);
   const builder: Builder = { options, root, nextId: makeCounter(), work };

@@ -3,7 +3,7 @@
 import { Cause, Context, Deferred, Effect, Exit, Layer, Option, Schema, Scope } from "effect";
 import type { RpcGroup } from "effect/rpc";
 
-import type { BaseServices, PartModule } from "@liminal/sdk";
+import { type BaseServices, type PartModule, RegisteringBuild } from "@liminal/sdk";
 
 import { type Manifest, ServerModule, type ServerLayer } from "./manifest.ts";
 import type { Resolution } from "./resolve.ts";
@@ -71,13 +71,16 @@ const buildInScope = Effect.fn("buildInScope")(function* (
   layer: ServerLayer,
   context: Context.Context<BaseServices>,
   root: Scope.Scope,
+  id: number,
 ) {
   const scope = yield* Scope.fork(root);
 
   // definePlugin checks that the layer needs only its requires and the base services, all in `context`;
   // the uses found are in `context` too, for `Effect.serviceOption`.
   const exit = yield* Effect.exit(
-    Effect.provideContext(Layer.buildWithScope(layer, scope), context),
+    Layer.buildWithScope(layer, scope).pipe(
+      Effect.provideContext(Context.add(context, RegisteringBuild, Option.some(id))),
+    ),
   );
 
   if (Exit.isSuccess(exit)) return { services: exit.value, scope };
@@ -148,9 +151,12 @@ const buildPlugin = Effect.fn("buildPlugin")(function* (
   const server = yield* importServer(plugin);
   const parts = yield* importParts(plugin, options.parts);
 
-  const built = yield* buildInScope(server.layer, Context.merge(base, dependencies), options.root);
+  // Numbered first, so its registrations carry the number while the layer builds.
+  const id = yield* options.nextId;
+  const context = Context.merge(base, dependencies);
+  const built = yield* buildInScope(server.layer, context, options.root, id);
 
-  const build: PluginBuild = { id: yield* options.nextId, manifest: plugin, parts, ...built };
+  const build: PluginBuild = { id, manifest: plugin, parts, ...built };
 
   return build;
 });

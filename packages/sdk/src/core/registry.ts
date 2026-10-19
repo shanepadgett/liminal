@@ -1,6 +1,11 @@
-/** Ordered collections that plugins add to; each addition is removed when its plugin's scope closes. */
+/**
+ * Ordered collections that plugins add to; each addition is removed when its plugin's scope closes.
+ * A caller sees only the additions of the builds in the graph it holds.
+ */
 
-import { Context, Effect, Layer, type Scope, Stream, SubscriptionRef } from "effect";
+import { Context, Effect, Layer, type Option, type Scope, Stream, SubscriptionRef } from "effect";
+
+import { addRegistration, visibleIn } from "./build-scope.ts";
 
 export interface Registry<A> {
   /** Adds `item`, sorted by `order`; removed when the caller's Scope closes. */
@@ -18,6 +23,7 @@ export interface Registry<A> {
 interface Registration<A> {
   readonly item: A;
   readonly order: number;
+  readonly build: Option.Option<number>;
 }
 
 const itemsOf = <A>(registrations: ReadonlyArray<Registration<A>>): ReadonlyArray<A> =>
@@ -26,22 +32,19 @@ const itemsOf = <A>(registrations: ReadonlyArray<Registration<A>>): ReadonlyArra
 export const make = Effect.fn("Registry.make")(function* <A>() {
   const ref = yield* SubscriptionRef.make<ReadonlyArray<Registration<A>>>([]);
 
-  const register = (item: A, options: { readonly order: number }) => {
-    const registration: Registration<A> = { item, order: options.order };
-
-    return Effect.acquireRelease(
-      SubscriptionRef.update(ref, (current) =>
-        [...current, registration].toSorted((left, right) => left.order - right.order),
-      ),
-      () =>
-        SubscriptionRef.update(ref, (current) => current.filter((entry) => entry !== registration)),
+  const register = (item: A, options: { readonly order: number }) =>
+    addRegistration(
+      ref,
+      (build): Registration<A> => ({ item, order: options.order, build }),
+      (current, added) => [...current, added].toSorted((left, right) => left.order - right.order),
     );
-  };
+
+  const visible = visibleIn(ref);
 
   const registry: Registry<A> = {
     register,
-    list: Effect.map(SubscriptionRef.get(ref), itemsOf),
-    changes: SubscriptionRef.changes(ref).pipe(Stream.map(itemsOf)),
+    list: Effect.map(visible.current, itemsOf),
+    changes: Stream.map(visible.changes, itemsOf),
   };
 
   return registry;
