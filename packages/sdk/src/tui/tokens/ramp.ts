@@ -36,17 +36,28 @@ export type RampSpec = {
   readonly hue: number;
   /** Chroma at the ramp's middle; the ends fade toward gray so light and dark steps stay calm. */
   readonly chroma: number;
+  /** Added to every step's lightness, to darken (negative) or lighten a ramp as a whole. */
+  readonly shift?: number;
+  /**
+   * Added to the lightness of steps 300 and lighter, which hold a neutral ramp's text, so text can
+   * dim without moving the surfaces.
+   */
+  readonly textShift?: number;
   readonly steps: readonly Step[];
 };
 
 export type Swatch = { readonly step: Step; readonly hex: string };
+
+/** The darkest step `textShift` reaches. */
+const TEXT_STEPS_UNTIL = 300;
 
 const chromaAt = (peak: number, lightness: number) =>
   peak * Math.max(0.25, 1 - ((lightness - 0.62) / 0.55) ** 2);
 
 export const buildRamp = (spec: RampSpec): readonly Swatch[] =>
   spec.steps.map((step) => {
-    const lightness = LIGHTNESS[step];
+    const lightness =
+      LIGHTNESS[step] + (spec.shift ?? 0) + (step <= TEXT_STEPS_UNTIL ? (spec.textShift ?? 0) : 0);
 
     return {
       step,

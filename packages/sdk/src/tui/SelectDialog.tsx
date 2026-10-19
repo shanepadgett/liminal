@@ -52,6 +52,8 @@ export interface SelectDialogProps<V> extends DialogProps {
   readonly current?: V | undefined;
   /** Runs after the dialog closes. */
   readonly onSelect: (value: V) => void;
+  /** Runs when the highlight lands on an option, including the one it starts on. */
+  readonly onHighlight?: (value: V) => void;
   /** Other keys on the highlighted option, shown after the dialog's own hints. */
   readonly actions?: ReadonlyArray<SelectAction<V>>;
 }
@@ -325,6 +327,11 @@ export function SelectDialog<V>(props: SelectDialogProps<V>) {
   };
 
   const actions = () => props.actions ?? [];
+
+  createEffect(() => {
+    const row = rows()[selected()];
+    if (row !== undefined) props.onHighlight?.(row.option.value);
+  });
 
   useBindings(() =>
     selectKeys(

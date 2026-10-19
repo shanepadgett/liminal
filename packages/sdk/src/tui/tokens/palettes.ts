@@ -25,6 +25,21 @@ const hued = (hue: number, chroma: number): RampSpec => ({ hue, chroma, steps: S
 
 export const PALETTES: readonly [Palette, ...Palette[]] = [
   {
+    id: "liminal",
+    name: "Liminal",
+    mood: "The threshold hour. Violet-black glass, one pale lilac light.",
+    rationale:
+      "The accent is the lilac of the gallery title, and the base is the same violet-black, so the grays lean toward it and nothing on screen is a foreign color. Lilac is pale and soft, which keeps one accent calm on dark. Amber is the only warm note, kept for warnings, with red, green and cyan spread far enough around the wheel not to be mistaken for it.",
+    ramps: {
+      neutral: { ...neutral(290, 0.024), textShift: -0.05 },
+      accent: { ...hued(296, 0.1), shift: -0.07 },
+      danger: hued(12, 0.15),
+      warning: hued(75, 0.11),
+      success: hued(165, 0.09),
+      info: hued(225, 0.08),
+    },
+  },
+  {
     id: "afterhours",
     name: "Afterhours",
     mood: "A white-cube gallery after closing. Ink, bone, one orange box on the plinth.",
@@ -85,3 +100,12 @@ export const PALETTES: readonly [Palette, ...Palette[]] = [
     },
   },
 ];
+
+/** The palette a user who has not picked one gets. */
+export const DEFAULT_PALETTE_ID = "liminal";
+
+/** The palette named `id`; the default one when `id` is unset or names no palette. */
+export const paletteOf = (id?: string): Palette =>
+  PALETTES.find((palette) => palette.id === id)
+  ?? PALETTES.find((palette) => palette.id === DEFAULT_PALETTE_ID)
+  ?? PALETTES[0];

@@ -10,7 +10,8 @@ export {
   useSlotMeta,
 } from "./Slot.tsx";
 
-export { ColorContext, useColor } from "./theme.ts";
+export { ColorContext, makeTuiTheme, TuiTheme, type TuiThemeService, useColor } from "./theme.ts";
+
 export * from "./tokens/oklch.ts";
 export * from "./tokens/palettes.ts";
 export * from "./tokens/ramp.ts";
@@ -22,6 +23,7 @@ export * from "./ornament/fade.ts";
 export * from "./ornament/glide.ts";
 export * from "./ornament/HeaderRule.tsx";
 export * from "./ornament/Track.tsx";
+export * from "./ornament/wordmark.ts";
 export { type Bridge, makeBridge } from "./bridge.ts";
 export { type Hint, Hints } from "./Hints.tsx";
 export { READING_WIDTH, useMarkdownStyle } from "./markdown.ts";
