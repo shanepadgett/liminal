@@ -1,33 +1,85 @@
 /**
  * What the assistant says, between actions or as its answer, rendered as Markdown in the normal
- * text color so it always stands out from the work around it. It arrives a word at a time: the word
- * being written is held back until it is whole, so words never jump lines.
+ * text color so it always stands out from the work around it. The paragraph being written fades in:
+ * its newest characters surface from the background and warm up to the text color, and the rest of
+ * the word being written is laid out unseen, so words never jump lines. Once a paragraph has
+ * settled it renders as Markdown.
  */
+
+import { For, Show } from "solid-js";
 
 import { type RoleColor, useMarkdownStyle } from "@liminal/sdk/tui";
 
+import { type Faded, fadedOf } from "./fade.ts";
 import type { Streaming } from "./frame.ts";
+import { inkRunsAt } from "./ink.ts";
 
-/** The text written so far, up to the last whole word. */
-const writtenOf = (streaming: Streaming) => {
-  if (streaming.progress >= 1) return streaming.text;
+type Inked = Extract<Faded, { readonly kind: "inked" }>;
 
-  const head = Math.floor(streaming.progress * streaming.text.length);
-  const wordStart = streaming.text.slice(0, head).search(/\S+$/);
-
-  return wordStart === -1 ? streaming.text.slice(0, head) : streaming.text.slice(0, wordStart);
-};
-
-export function Said(props: { readonly color: RoleColor; readonly streaming: Streaming }) {
+function Markdown(props: {
+  readonly color: RoleColor;
+  readonly text: string;
+  readonly streaming: boolean;
+}) {
   const style = useMarkdownStyle(() => props.color);
 
   return (
     <markdown
-      content={writtenOf(props.streaming)}
+      content={props.text}
       syntaxStyle={style()}
       fg={props.color("text.base")}
-      streaming={props.streaming.progress < 1}
+      streaming={props.streaming}
       conceal
     />
+  );
+}
+
+/** The paragraph being written, inked from the background up. */
+function Live(props: { readonly color: RoleColor; readonly faded: Inked }) {
+  const runs = () =>
+    inkRunsAt(props.faded.live, props.faded.shown, {
+      text: props.color("text.base"),
+      code: props.color("text.accent"),
+      ground: props.color("surface.base"),
+    });
+
+  return (
+    <text wrapMode="word">
+      <For each={runs()}>{(run) => <span style={{ fg: run.fg }}>{run.text}</span>}</For>
+    </text>
+  );
+}
+
+export function Said(props: { readonly color: RoleColor; readonly streaming: Streaming }) {
+  const faded = () => fadedOf(props.streaming);
+
+  const inked = () => {
+    const now = faded();
+
+    return now.kind === "inked" ? now : undefined;
+  };
+
+  const markdown = () => {
+    const now = faded();
+
+    return now.kind === "markdown" ? now.text : "";
+  };
+
+  return (
+    <Show
+      when={inked()}
+      fallback={
+        <Markdown color={props.color} text={markdown()} streaming={props.streaming.progress < 1} />
+      }
+    >
+      {(now) => (
+        <box flexDirection="column" gap={1}>
+          <Show when={now().settled !== ""}>
+            <Markdown color={props.color} text={now().settled} streaming />
+          </Show>
+          <Live color={props.color} faded={now()} />
+        </box>
+      )}
+    </Show>
   );
 }
