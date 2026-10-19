@@ -32,6 +32,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | [usage](usage.md) | Context and cost of a session's model calls, in the sidebar | built |
 | [questions](questions.md) | `ask_question`, `/qna`, the form and the answers | built |
 | [commit](commit.md) | `/commit`: commit checks, a planned split into conventional commits, then the push question | built |
+| [skills](skills.md) | Agent Skills: the model's list, `/<name>` commands and `@skill:` tags | built |
 
 ## Context
 
