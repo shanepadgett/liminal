@@ -23,6 +23,8 @@ export interface SelectOption<V> {
   readonly category?: string;
   /** The keys that run it, shown at the right. */
   readonly keys?: string;
+  /** A word about the option, such as `default`, shown at the right before its keys. */
+  readonly tag?: string;
   /**
    * A row that says something instead of naming a choice, such as a failure: it reads in the
    * warning color.
@@ -35,8 +37,12 @@ export interface SelectAction<V> {
   readonly key: string;
   /** Its hint, such as "discard". */
   readonly label: string;
-  /** Runs after the dialog closes, on the option highlighted then. */
+  /**
+   * Runs on the option highlighted then, after the dialog closes. With `keepsOpen` it runs at once
+   * and the dialog stays; the highlight follows the option if the list moves it.
+   */
   readonly run: (value: V) => void;
+  readonly keepsOpen?: boolean;
 }
 
 export interface SelectDialogProps<V> extends DialogProps {
@@ -152,6 +158,13 @@ function OptionRow<V>(props: {
       <text flexGrow={1} flexShrink={1} wrapMode="none" fg={faint()}>
         {props.row.option.description ?? ""}
       </text>
+      <Show when={props.row.option.tag}>
+        {(tag) => (
+          <text flexShrink={0} fg={faint()}>
+            {tag()}
+          </text>
+        )}
+      </Show>
       <Show when={props.row.option.keys}>
         {(keys) => (
           <text flexShrink={0} fg={faint()}>
@@ -261,21 +274,16 @@ const actionName = (index: number) => `select.action-${index}`;
 const selectKeys = <V,>(
   moves: ReturnType<typeof moveKeys>,
   actions: ReadonlyArray<SelectAction<V>>,
-  onHighlighted: (run: (value: V) => void) => void,
-  onSelect: (value: V) => void,
+  onChoose: () => void,
+  onAction: (action: SelectAction<V>) => void,
 ) => ({
   commands: [
     ...moves.commands,
-    {
-      name: "select.choose",
-      run: () => {
-        onHighlighted(onSelect);
-      },
-    },
+    { name: "select.choose", run: onChoose },
     ...actions.map((action, index) => ({
       name: actionName(index),
       run: () => {
-        onHighlighted(action.run);
+        onAction(action);
       },
     })),
   ],
@@ -300,14 +308,32 @@ export function SelectDialog<V>(props: SelectDialogProps<V>) {
     run(row.option.value);
   };
 
+  /** Runs an action on the highlighted option; a `keepsOpen` one leaves the dialog open. */
+  const onAction = (action: SelectAction<V>) => {
+    if (action.keepsOpen !== true) {
+      onHighlighted(action.run);
+
+      return;
+    }
+
+    const row = rows()[selected()];
+    if (row === undefined) return;
+    action.run(row.option.value);
+
+    const moved = rows().findIndex((each) => each.option.value === row.option.value);
+    if (moved >= 0) setSelected(moved);
+  };
+
   const actions = () => props.actions ?? [];
 
   useBindings(() =>
     selectKeys(
       moveKeys("select", { count: () => rows().length, select: setSelected }),
       actions(),
-      onHighlighted,
-      props.onSelect,
+      () => {
+        onHighlighted(props.onSelect);
+      },
+      onAction,
     ),
   );
 

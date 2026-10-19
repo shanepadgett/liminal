@@ -1,5 +1,7 @@
 /** Rows shared by the picker dialogs: the filter line and a row of a name then its detail. */
 
+import { Show } from "solid-js";
+
 import type { RoleColor } from "@liminal/sdk/tui";
 
 import { ListRow } from "./ListRow.tsx";
@@ -9,6 +11,8 @@ export function NamedRow(props: {
   readonly color: RoleColor;
   readonly name: string;
   readonly detail: string;
+  /** A word at the right edge, such as `default`. */
+  readonly tag?: string | undefined;
   readonly isSelected: boolean;
 }) {
   return (
@@ -28,6 +32,17 @@ export function NamedRow(props: {
         >
           {props.detail}
         </text>
+        <Show when={props.tag}>
+          {(tag) => (
+            <text
+              flexShrink={0}
+              wrapMode="none"
+              fg={props.color(props.isSelected ? "text.muted" : "text.faint")}
+            >
+              {tag()}
+            </text>
+          )}
+        </Show>
       </box>
     </ListRow>
   );
