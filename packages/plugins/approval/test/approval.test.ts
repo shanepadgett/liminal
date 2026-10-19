@@ -231,6 +231,10 @@ effectTest(
     expect((yield* savedAnswers).map((record) => [record.by, record.approved])).toEqual([
       ["user", false],
     ]);
+
+    expect((yield* savedAnswers).map((record) => [record.summary, record.reviewed])).toEqual([
+      ["Deletes your home folder", { decision: "ask", reason: "review: ask" }],
+    ]);
   }),
   stack,
 );

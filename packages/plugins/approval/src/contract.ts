@@ -57,7 +57,16 @@ export const Answerer = Schema.Literals(["mode", "decision-model", "reviewer", "
 
 export type Answerer = typeof Answerer.Type;
 
-/** One answered ask; `model` names the decision model or reviewer that answered. */
+/** What the reviewer concluded about a call that then went to the user. */
+export const ReviewVerdict = Schema.Struct({
+  decision: Schema.Literals(["approved", "ask"]),
+  reason: Schema.String,
+});
+
+/**
+ * One answered ask; `model` names the decision model or reviewer that answered. When the user
+ * answers, `reviewed` keeps the reviewer's verdict, so a needless ask can be traced to its reason.
+ */
 export const ApprovalRecord = Schema.Struct({
   callId: Schema.String,
   tool: Schema.String,
@@ -66,6 +75,7 @@ export const ApprovalRecord = Schema.Struct({
   reason: Schema.String,
   model: Schema.optionalKey(Schema.String),
   summary: Schema.optionalKey(Schema.String),
+  reviewed: Schema.optionalKey(ReviewVerdict),
 });
 
 export type ApprovalRecord = typeof ApprovalRecord.Type;

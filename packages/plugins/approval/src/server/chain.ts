@@ -18,7 +18,7 @@ import { classify } from "./classify.ts";
 import type { Modes } from "./modes.ts";
 import type { Pending } from "./pending.ts";
 import { recentOf } from "./recent.ts";
-import { review, type ReviewDeps } from "./review.ts";
+import { review, type Review, type ReviewDeps } from "./review.ts";
 
 export interface ChainDeps {
   readonly modes: Modes;
@@ -63,7 +63,7 @@ const askUser = Effect.fn("approval.askUser")(function* (
   deps: ChainDeps,
   call: ToolCall,
   reason: string,
-  summary: Option.Option<string>,
+  reviewed: Option.Option<Review>,
 ) {
   const ask: PendingAsk = {
     id: `${call.sessionId}/${call.callId}`,
@@ -75,7 +75,10 @@ const askUser = Effect.fn("approval.askUser")(function* (
   };
 
   const answer = yield* deps.pending.ask(
-    Option.match(summary, { onNone: () => ask, onSome: (text) => ({ ...ask, summary: text }) }),
+    Option.match(reviewed, {
+      onNone: () => ask,
+      onSome: (found) => ({ ...ask, summary: found.summary }),
+    }),
   );
 
   const approved = ApprovalAnswer.$is("Allow")(answer);
@@ -87,6 +90,13 @@ const askUser = Effect.fn("approval.askUser")(function* (
     by: "user",
     approved,
     reason: said,
+    ...Option.match(reviewed, {
+      onNone: () => ({}),
+      onSome: (found) => ({
+        summary: found.summary,
+        reviewed: { decision: found.decision, reason: found.reason },
+      }),
+    }),
   });
 
   return answer;
@@ -110,7 +120,7 @@ export const makeApprover =
           return yield* allowedBy(deps, call, { by: "decision-model", reason, model: model.value });
       }
 
-      const reviewed = yield* review(deps.reviewer, call, reason, {
+      const reviewed = yield* review(deps.reviewer, call, {
         recent,
         safeCommands: settings.safeCommands,
       });
@@ -122,10 +132,5 @@ export const makeApprover =
           summary: reviewed.value.summary,
         });
 
-      return yield* askUser(
-        deps,
-        call,
-        reason,
-        Option.map(reviewed, (found) => found.summary),
-      );
+      return yield* askUser(deps, call, reason, reviewed);
     });
