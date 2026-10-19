@@ -143,6 +143,20 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/attention": {
+      "name": "@liminal/attention",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@liminal/approval": "workspace:*",
+        "@liminal/chat": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/cache-hints": {
       "name": "@liminal/cache-hints",
       "version": "0.1.0",
@@ -974,6 +988,8 @@
     "@liminal/agents-files": ["@liminal/agents-files@workspace:packages/plugins/agents-files"],
 
     "@liminal/approval": ["@liminal/approval@workspace:packages/plugins/approval"],
+
+    "@liminal/attention": ["@liminal/attention@workspace:packages/plugins/attention"],
 
     "@liminal/cache-hints": ["@liminal/cache-hints@workspace:packages/plugins/cache-hints"],
 

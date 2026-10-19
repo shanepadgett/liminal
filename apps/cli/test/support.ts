@@ -15,7 +15,8 @@ export const bootOptions = (
 ): BootOptions => ({
   composition: Effect.succeed({
     folders: [pluginsFolder(path), ...(options.extra ?? [])],
-    choices: new Map(),
+    // Tests make no sound.
+    choices: new Map([["attention", false]]),
   }),
   shared: sharedModules,
   parts: options.parts ?? [],

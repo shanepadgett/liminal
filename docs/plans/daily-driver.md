@@ -515,6 +515,25 @@ tag         @skill:name -> TagText with the same skill block
 
 - Commands come from the skills found when the TUI starts or reloads.
 
+## Step 13: notification sound
+
+A new TUI-only `attention` plugin plays Tau's `notification.wav` when the session on screen needs the user. Approval asks are not saved entries, so pending approvals come from `approval/pending`; the plugin requires `Approval`.
+
+| Where | Change |
+| --- | --- |
+| `attention` plugin | `requires: [Approval]`; no server; `assets/notification.wav` |
+| `attention` TUI | a `composerLine` part (order 60, draws nothing) follows the on-screen session and watches its pending approvals |
+| `attention` sound | the first player found at setup: `afplay` on macOS; `paplay`, `pw-play`, `aplay` on Linux; none plays nothing |
+
+```ts
+turnEnds(events: Stream<FollowEvent>): Stream<void>   // after Synced: turn-ended, end != "cancelled"
+newAsks(lists: Stream<ReadonlyArray<PendingAsk>>): Stream<void>   // an ask id not in the last list
+chime = merge(turnEnds(host.follow(session)), newAsks(approval/pending)) -> spawn(player, path)
+```
+
+- A form ends the turn, so the turn end covers pending forms.
+- Sessions not on screen make no sound.
+
 ## New dependency
 
 - `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Unpatched here: its console logs are cut only when the script ends.
