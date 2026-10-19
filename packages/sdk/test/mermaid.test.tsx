@@ -52,6 +52,12 @@ test("a diagram wider than the block shows its source", async () => {
   expect(frame).not.toContain("┌");
 });
 
+test("paragraphs keep the blank line between them", async () => {
+  const frame = await frameOf("First paragraph.\n\nSecond paragraph.", 60);
+
+  expect(frame).toMatch(/First paragraph\.\s*\n\s*\n\s*Second paragraph\./);
+});
+
 test("a fence that does not parse shows its source", async () => {
   const frame = await frameOf("```mermaid\nnotadiagram here\n```", 60);
 

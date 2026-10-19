@@ -5,6 +5,7 @@
 
 import {
   BoxRenderable,
+  createMarkdownCodeBlockRenderer,
   type MarkdownCodeBlockRenderer,
   type MarkdownOptions,
   type RenderContext,
@@ -83,19 +84,19 @@ const mermaidOf =
 
 type RenderNode = NonNullable<MarkdownOptions["renderNode"]>;
 
-/** Whether a Markdown token is a mermaid fence. */
-const isMermaid = (
-  token: Parameters<RenderNode>[0],
-): token is Parameters<MarkdownCodeBlockRenderer>[0] =>
-  token.type === "code" && "lang" in token && token.lang === "mermaid";
-
-/** The `<markdown>` `renderNode` that draws mermaid fences, in the muted text color. */
+/**
+ * The `<markdown>` `renderNode` that draws mermaid fences, in the muted text color. It is OpenTUI's
+ * code-block renderer, which marks itself as handling only fences so the rest of the Markdown keeps
+ * its block spacing; a hand-written `renderNode` loses it.
+ */
 export const useMarkdownDiagrams = (color: () => RoleColor) => {
   const renderer = useRenderer();
 
-  return createMemo((): RenderNode => {
-    const mermaid = mermaidOf(renderer, color()("text.muted"));
-
-    return (token, context) => (isMermaid(token) ? mermaid(token, context) : null);
-  });
+  return createMemo(
+    () =>
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- createMarkdownCodeBlockRenderer always returns a function; its type reuses the optional prop's
+      createMarkdownCodeBlockRenderer({
+        mermaid: mermaidOf(renderer, color()("text.muted")),
+      }) as RenderNode,
+  );
 };
