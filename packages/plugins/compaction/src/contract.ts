@@ -67,7 +67,7 @@ export const NoteEntry = defineEntry({
   kind: "compaction/note",
   data: Schema.Struct({ layer: NoteLayer, from: Seq, through: Seq, tokens: Schema.Int }),
   model: false,
-  user: "debug",
+  user: "shown",
 });
 
 /** The tool the model calls to write a checkpoint. */

@@ -72,7 +72,7 @@ export const saveCheckpoint = Effect.fn("compaction.saveCheckpoint")(function* (
 const Params = Schema.Struct({
   handoff: Schema.String.check(Schema.isNonEmpty(), Schema.isMaxLength(24_000)).annotate({
     description:
-      "What you need to continue: the task, decisions made, files involved, what is done and what comes next",
+      "What you need to continue: the user's request and limits, unfinished work, blockers, unanswered questions and the exact next action last; 500 to 1,500 characters",
   }),
 });
 
@@ -84,7 +84,7 @@ export const checkpointToolOf = (deps: CheckpointDeps) =>
     name: checkpointTool,
     description: [
       "Folds your context: from your next model call you see your notes, the recent entries and this handoff instead of the full history.",
-      "Call it at a natural break, such as after finishing a task, and on its own.",
+      "Call it on its own, when a nudge asks and a bounded unit of work is done, never only to send a final answer.",
     ].join(" "),
     parameters: Params,
     hints: {

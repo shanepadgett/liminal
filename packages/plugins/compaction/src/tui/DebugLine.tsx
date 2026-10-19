@@ -1,6 +1,6 @@
 /**
- * Compaction's lines in the debug view: the handoff the model wrote, folded to its first line until
- * clicked, and one faint line per note or memory with its range and size.
+ * Compaction's lines: the handoff the model wrote, in the debug view, folded to its first line
+ * until clicked, and one faint line per note or memory with its range and size.
  */
 
 import { Option, Schema } from "effect";

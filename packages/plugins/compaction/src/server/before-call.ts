@@ -28,15 +28,27 @@ const LABEL = "compaction";
 const NUDGES: Readonly<Record<Exclude<Stage, "none">, string>> = {
   notice: reminder(
     "context",
-    "Your context is half full. At the next natural break, such as after finishing a task, call checkpoint.",
+    [
+      "Your context is half full. This notice is informational. Continue active work.",
+      "Do not interrupt implementation, debugging or validation because of this notice. Checkpointing is not required yet.",
+      "Do not call checkpoint just to send a final answer.",
+    ].join(" "),
   ),
   warning: reminder(
     "context",
-    "Your context is three quarters full. Call checkpoint at the next natural break.",
+    [
+      "Your context is three quarters full and getting short.",
+      "Finish the current bounded unit of work, then call checkpoint before you begin another substantial one. Do not abandon an operation in progress.",
+      "If only the final answer remains, send it instead.",
+      "Call checkpoint alone, with a short handoff: the user's request and any limits on what you may do, unfinished work, blockers, unanswered questions, and the exact next action last. Aim for 500 to 1,500 characters. Skip a recap of finished work.",
+    ].join(" "),
   ),
   forced: reminder(
     "context",
-    "Your context is full. Call checkpoint now; every other tool is denied until you do.",
+    [
+      "Your context is full. Every tool except checkpoint is denied until it succeeds.",
+      "Call checkpoint alone now, with a short handoff: the user's request and any limits on what you may do, unfinished work, blockers, unanswered questions, and the exact next action last. Aim for 500 to 1,500 characters. Skip a recap of finished work.",
+    ].join(" "),
   ),
 };
 

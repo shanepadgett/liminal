@@ -1,7 +1,7 @@
 /**
- * Compaction's TUI part: the checkpoint rule, the handoff and note lines in the debug view, no row
- * for the `checkpoint` call, which the rule stands for, `Recalled entries 12–40` for `history`, and
- * the sidebar's Compaction section.
+ * Compaction's TUI part: the checkpoint rule, the handoff in the debug view and a line per note or
+ * memory, no row for the `checkpoint` call, which the rule stands for, `Recalled entries 12–40` for
+ * `history`, and the sidebar's Compaction section.
  */
 
 import { Effect, Option, Schema, Stream } from "effect";
