@@ -8,6 +8,7 @@ import { Option, Predicate, Schema } from "effect";
 
 import type { FollowEvent, LiveState, SavedEntry } from "@liminal/sdk";
 import {
+  InnerCallEntry,
   ToolCallEntry,
   ToolResultEntry,
   TurnEndedEntry,
@@ -38,6 +39,7 @@ export const emptyTranscript: Transcript = {
 
 const decodeCall = Schema.decodeUnknownOption(ToolCallEntry.data);
 const decodeResult = Schema.decodeUnknownOption(ToolResultEntry.data);
+const decodeInner = Schema.decodeUnknownOption(InnerCallEntry.data);
 
 const isDebug = (item: Item) => item.kind === "entry" && item.entry.user === "debug";
 
@@ -57,31 +59,59 @@ const withCall = (transcript: Transcript, entry: SavedEntry, call: ToolCall): Tr
   return { ...transcript, items: [...transcript.items, started] };
 };
 
-const withResult = (
+const outcomeOf = (result: {
+  readonly status: ToolOutcome["status"];
+  readonly result: Schema.Json;
+  readonly details?: Schema.Json;
+}): ToolOutcome =>
+  result.details === undefined
+    ? { status: result.status, result: result.result }
+    : { status: result.status, result: result.result, details: result.details };
+
+/** `transcript` with the call `id` in its last run changed by `change`. */
+const withChangedCall = (
   transcript: Transcript,
-  result: typeof ToolResultEntry.data.Type,
+  id: string,
+  change: (call: ToolCall) => ToolCall,
 ): Transcript => {
   const index = transcript.items.findLastIndex(
-    (item) => item.kind === "work" && item.calls.some((call) => call.id === result.callId),
+    (item) => item.kind === "work" && item.calls.some((call) => call.id === id),
   );
 
   const item = transcript.items[index];
   if (item?.kind !== "work") return transcript;
 
-  const { status, details } = result;
+  const calls = item.calls.map((call) => (call.id === id ? change(call) : call));
 
-  const outcome: ToolOutcome =
-    details === undefined
-      ? { status, result: result.result }
-      : { status, result: result.result, details };
+  return { ...transcript, items: transcript.items.with(index, { ...item, calls }) };
+};
 
-  const calls = item.calls.map((call) => (call.id === result.callId ? { ...call, outcome } : call));
-  const items = transcript.items.with(index, { ...item, calls });
+const withResult = (transcript: Transcript, result: typeof ToolResultEntry.data.Type) =>
+  withChangedCall(transcript, result.callId, (call) => ({ ...call, outcome: outcomeOf(result) }));
 
-  return { ...transcript, items };
+/** Adds an inner call, finished, under the call it ran inside. */
+const withInner = (transcript: Transcript, inner: typeof InnerCallEntry.data.Type) => {
+  const added: ToolCall = {
+    id: inner.id,
+    name: inner.name,
+    params: inner.params,
+    outcome: outcomeOf(inner),
+  };
+
+  return withChangedCall(transcript, inner.outer, (call) => ({
+    ...call,
+    inner: [...(call.inner ?? []), added],
+  }));
 };
 
 const withTool = (transcript: Transcript, entry: SavedEntry): Transcript | undefined => {
+  if (entry.kind === InnerCallEntry.kind) {
+    return Option.match(decodeInner(entry.data), {
+      onNone: () => transcript,
+      onSome: (inner) => withInner(transcript, inner),
+    });
+  }
+
   if (entry.kind === ToolCallEntry.kind) {
     return Option.match(decodeCall(entry.data), {
       onNone: () => transcript,

@@ -23,6 +23,11 @@ export interface ToolCall {
   readonly callId: string;
   readonly name: string;
   readonly params: Schema.Json;
+  /**
+   * The `run` call this call runs inside, as one of its script's functions; absent for the model's
+   * own call.
+   */
+  readonly outer?: string;
 }
 
 /** A check's answer for one call. */

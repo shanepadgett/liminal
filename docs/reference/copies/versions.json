@@ -121,6 +121,11 @@
     "fingerprint": "c3479840b364fc98",
     "commits": []
   },
+  "@opencode/codemode": {
+    "version": "2.0.32",
+    "fingerprint": "2450f2ccc32bb5f8",
+    "commits": []
+  },
   "unbash": {
     "version": "6.0.0",
     "fingerprint": "8869ac2d804c0d45",

@@ -20,6 +20,8 @@ export type Action =
     }
   | { readonly kind: "edit"; readonly path: string; readonly diff: readonly DiffLine[] }
   | { readonly kind: "checks"; readonly checks: readonly Check[] }
+  /** A script the model ran, and the tool calls it made, each its own action. */
+  | { readonly kind: "script"; readonly code: string; readonly calls: readonly Action[] }
   /** The model read back entries a checkpoint folded away. */
   | { readonly kind: "recall"; readonly from: number; readonly through: number };
 

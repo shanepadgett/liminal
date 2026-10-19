@@ -176,6 +176,25 @@ export const ToolResultEntry = defineEntry({
   user: "shown",
 });
 
+/**
+ * A call a `run` script made to another tool, inside the model's call `outer`; the model sees only
+ * the outer call's result.
+ */
+export const InnerCallEntry = defineEntry({
+  kind: "session-log/inner-call",
+  data: Schema.Struct({
+    outer: Schema.String,
+    id: Schema.String,
+    name: Schema.String,
+    params: Schema.Json,
+    status: ToolResultStatus,
+    result: Schema.Json,
+    details: Schema.optionalKey(Schema.Json),
+  }),
+  model: false,
+  user: "hidden",
+});
+
 /** What a turn's caller chooses for its model calls; `thinking` is a thinking option's id. */
 export const TurnSettings = Schema.Struct({
   model: ModelRef,
@@ -218,6 +237,7 @@ export const coreEntries: ReadonlyArray<EntryDefinition> = [
   ReasoningEntry,
   ToolCallEntry,
   ToolResultEntry,
+  InnerCallEntry,
   TurnStartedEntry,
   TurnEndedEntry,
 ];

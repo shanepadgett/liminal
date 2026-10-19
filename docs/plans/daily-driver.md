@@ -190,9 +190,44 @@ failed -> [ReportEntry]                                                         
 - The tool draws as the gallery's checks row: `Running checks`, `Ran checks (all passed)`, `Ran checks (lint failed)`; opened, each check's mark and the failures' output. The settle report draws the same row.
 - Edits to `checks.json` apply from the next model call.
 
+## Step 4: the `run` tool
+
+A new `tools-run` plugin registers `run`, which runs a script in codemode's interpreter. The script's functions are the registered tools by the same names and params, so `run` adds no second set of file or shell functions. Each function call is an inner call: it goes through `ToolPipeline` with the outer call's id, and its outcome is saved as its own entry for the transcript.
+
+What OpenCode does with codemode (`packages/core/src/codemode/tool.ts`, `instructions.ts`): it wraps every tool as a `Tool.make` with its JSON schema, runs `CodeMode.make({ tools }).execute(code)`, folds the result's value, warnings and logs into text, and keeps the changing catalog out of the tool's description so the request's cached start stays the same. Liminal's tools are already in the model's tool list, so the description only says the functions are those tools; `search` finds the tools not offered yet.
+
+| Where | Change |
+| --- | --- |
+| `tools` contract | `ToolCall.outer?: string`: the `run` call an inner call runs inside |
+| `session-log` contract | `InnerCallEntry` `session-log/inner-call`, hidden, no model view: `{ outer, id, name, params, status, result, details? }` |
+| `checks` fix wrapper | Skips inner calls; the outer `run` call is tracked once |
+| `chat` | `ToolCall.inner`; the transcript adds inner-call entries to their outer call; `WorkRows` draws a call's inner rows under its row, each worded by its own tool |
+| new `tools-run` | `RunParams { code, timeout? }`; the tool; its TUI row |
+| gallery | A `script` action whose inner actions draw as rows under it |
+| root `package.json` | `overrides.effect` pins codemode's `effect` to the workspace's 4.0.5 |
+
+```ts
+// tools-run server
+run({ code, timeout = 300 }, { sessionId, callId }) =>
+  functions = Tools.list without "run", each Tool.make({ description, input: spec.parameters, output: {} ,
+    execute: (input) => inner(sessionId, callId, name, input) })
+  CodeMode.execute({ code, tools: functions, limits: { timeoutMs, maxOutputBytes: 10 MiB } })
+  ok -> { result: logs + value + warnings }; failed -> ToolFailed(logs + diagnostic)
+
+inner(session, outer, name, input) =                                  // callId `${outer}/${n}`
+  params = decode Json(input)
+  outcome = (tool.runAlongside ? id : serial.withPermit)(ToolPipeline.run({ ..., outer }, Tools.get(name)))
+  append InnerCallEntry
+  done -> output.result; failed or denied -> toolError(message)
+```
+
+- Checks, approvals and output spill judge each inner call; the repeat guard sees only the model's calls.
+- Inner calls of tools that cannot run alongside others wait for each other.
+- The row reads `Ran <first line of the script>` with `N calls`; opened, it shows the script and its output.
+
 ## New dependency
 
-- `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Step 4's plan studies how OpenCode uses it and writes the `run` guidance from that.
+- `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Unpatched here: its console logs are cut only when the script ends.
 
 ## Guides
 

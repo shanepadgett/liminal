@@ -2,8 +2,9 @@
  * The work between two things the assistant said, one quiet row per group: a mark, the verb in
  * bold, what it worked on, and fainter detail in brackets. Everything is gray but a failure, and it
  * all dims further once the assistant speaks after it or the turn is over. A group of several
- * actions opens on a click to list them, and a thought opens to show what was thought. Rows keep
- * their place as the frame is redrawn, so an opened row stays open.
+ * actions opens on a click to list them, and a thought opens to show what was thought. A script's
+ * calls sit under its row, and it opens to show the code. Rows keep their place as the frame is
+ * redrawn, so an opened row stays open.
  */
 
 import { TextAttributes } from "@opentui/core";
@@ -12,7 +13,7 @@ import { createSignal, For, Index, Show } from "solid-js";
 import { mixHex, type RoleColor, type RoleName } from "@liminal/sdk/tui";
 
 import { actionWordingsOf, type Wording, wordingOf } from "./wording.ts";
-import type { WorkGroup } from "./workGroups.ts";
+import { innerGroupsOf, type WorkGroup } from "./workGroups.ts";
 
 /** Opened rows sit under the group's words, past its mark. */
 const OPENED_INDENT = 2;
@@ -71,7 +72,8 @@ function GroupRow(props: {
 
   const actions = () => actionWordingsOf(props.group);
   const thought = () => (props.group.kind === "thought" ? props.group : undefined);
-  const canOpen = () => actions().length > 0 || thought() !== undefined;
+  const script = () => (props.group.kind === "scripted" ? props.group.script : undefined);
+  const canOpen = () => actions().length > 0 || thought() !== undefined || script() !== undefined;
 
   return (
     <box
@@ -86,6 +88,13 @@ function GroupRow(props: {
         wording={wordingOf(props.group, "past")}
         dim={props.dim}
       />
+      <Show when={script()}>
+        {(ran) => (
+          <box paddingLeft={OPENED_INDENT}>
+            <WorkRows color={props.color} groups={innerGroupsOf(ran())} dim={props.dim} />
+          </box>
+        )}
+      </Show>
       <Show when={isOpen()}>
         <box flexDirection="column" paddingLeft={OPENED_INDENT}>
           <For each={actions()}>
@@ -93,6 +102,9 @@ function GroupRow(props: {
               <WordedRow color={props.color} mark="◆" wording={action} dim={props.dim} />
             )}
           </For>
+          <Show when={script()}>
+            {(ran) => <text fg={partColor(props.color, "thought", props.dim)}>{ran().code}</text>}
+          </Show>
           <Show when={thought()}>
             {(thinking) => (
               <text

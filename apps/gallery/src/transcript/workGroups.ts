@@ -1,8 +1,8 @@
 /**
  * The work between two things the assistant said, gathered into groups that each read as one row: a
  * thought, a run of reads and searches explored together, a run of edits, a command, a checks run,
- * or a recall of folded history. Reads and searches in a row join one group, and so do edits in a
- * row.
+ * a script and the calls it made, or a recall of folded history. Reads and searches in a row join
+ * one group, and so do edits in a row.
  */
 
 import type { Action, Check } from "./script.ts";
@@ -18,6 +18,8 @@ export type Edit = Extract<Action, { readonly kind: "edit" }>;
 
 export type Run = Extract<Action, { readonly kind: "run" }>;
 
+export type Scripted = Extract<Action, { readonly kind: "script" }>;
+
 export type Recall = Extract<Action, { readonly kind: "recall" }>;
 
 export type WorkGroup =
@@ -26,6 +28,7 @@ export type WorkGroup =
   | { readonly kind: "edited"; readonly edits: readonly Edit[] }
   | { readonly kind: "ran"; readonly run: Run }
   | { readonly kind: "checked"; readonly checks: readonly Check[] }
+  | { readonly kind: "scripted"; readonly script: Scripted }
   | { readonly kind: "recalled"; readonly recall: Recall };
 
 const groupOf = (work: Work): WorkGroup => {
@@ -39,6 +42,7 @@ const groupOf = (work: Work): WorkGroup => {
 
   if (action.kind === "edit") return { kind: "edited", edits: [action] };
   if (action.kind === "run") return { kind: "ran", run: action };
+  if (action.kind === "script") return { kind: "scripted", script: action };
   if (action.kind === "recall") return { kind: "recalled", recall: action };
 
   return { kind: "checked", checks: action.checks };
@@ -57,7 +61,11 @@ const joined = (last: WorkGroup, next: WorkGroup): WorkGroup | undefined => {
   return undefined;
 };
 
-export const groupsOf = (work: readonly Work[]): readonly WorkGroup[] => {
+/** The groups of a script's calls, as they sit under its row. */
+export const innerGroupsOf = (script: Scripted): readonly WorkGroup[] =>
+  groupsOf(script.calls.map((action) => ({ kind: "action", action })));
+
+export function groupsOf(work: readonly Work[]): readonly WorkGroup[] {
   const groups: WorkGroup[] = [];
 
   for (const each of work) {
@@ -70,7 +78,7 @@ export const groupsOf = (work: readonly Work[]): readonly WorkGroup[] => {
   }
 
   return groups;
-};
+}
 
 /**
  * The groups of the work so far, apart from the one the next piece of work is part of: the last

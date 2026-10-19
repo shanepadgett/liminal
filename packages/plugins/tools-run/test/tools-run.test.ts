@@ -1,0 +1,149 @@
+/**
+ * The run tool: a script calls the other tools through the pipeline as inner calls, each saved for
+ * the transcript; checks judge each inner call; a failing script fails the call.
+ */
+
+import { expect } from "bun:test";
+
+import { Effect, Layer, Option, Schema } from "effect";
+
+import { PromptSections, ToolSources } from "@liminal/context/contract";
+import { defineTool, KeyedRegistry, Registry, SessionId, ToolFailed } from "@liminal/sdk";
+import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
+import sessionLog from "@liminal/session-log";
+import { InnerCallEntry, SessionLog } from "@liminal/session-log/contract";
+import sessionStore from "@liminal/session-store";
+import tools from "@liminal/tools";
+import {
+  type ToolCall,
+  ToolChecks,
+  ToolDecision,
+  ToolPipeline,
+  Tools,
+} from "@liminal/tools/contract";
+
+import toolsRun from "../plugin.ts";
+
+const stack = serverOf(toolsRun).pipe(
+  Layer.provideMerge(serverOf(tools)),
+  Layer.provideMerge(serverOf(sessionLog)),
+  Layer.provideMerge(serverOf(sessionStore)),
+  Layer.provideMerge(
+    Layer.mergeAll(
+      KeyedRegistry.layer(PromptSections, (section) => section.key),
+      Registry.layer(ToolSources),
+    ),
+  ),
+  Layer.provideMerge(testBaseServices),
+);
+
+const s1 = SessionId.make("s1");
+
+const upper = defineTool({
+  name: "upper",
+  description: "Upper-cases text.",
+  parameters: Schema.Struct({ text: Schema.String }),
+  runAlongside: true,
+  safeToRerun: true,
+  run: ({ text }) =>
+    text === "boom"
+      ? Effect.fail(new ToolFailed({ message: "no booms" }))
+      : Effect.succeed({ result: text.toUpperCase() }),
+});
+
+/** Registers `upper` and creates the session. */
+const setup = Effect.gen(function* () {
+  yield* (yield* Tools).register(upper);
+  yield* (yield* SessionLog).create(s1);
+});
+
+/** Runs `code` as the model's call `c1` and returns its outcome. */
+const runScript = (code: string) =>
+  Effect.gen(function* () {
+    const registry = yield* Tools;
+
+    const call: ToolCall = { sessionId: s1, callId: "c1", name: "run", params: { code } };
+
+    return yield* (yield* ToolPipeline).run(call, yield* registry.get("run"));
+  });
+
+const innerEntries = Effect.gen(function* () {
+  const entries = yield* (yield* SessionLog).read(s1, {});
+
+  return entries.flatMap((entry) =>
+    entry.kind === InnerCallEntry.kind
+      ? [Schema.decodeUnknownSync(InnerCallEntry.data)(entry.data)]
+      : [],
+  );
+});
+
+effectTest(
+  "a script chains tool calls and returns what it printed and returned",
+  Effect.gen(function* () {
+    yield* setup;
+
+    const outcome = yield* runScript(
+      [
+        'const a = await tools.upper({ text: "one" })',
+        'const [b, c] = await Promise.all([tools.upper({ text: "two" }), tools.upper({ text: "x" })])',
+        "console.log(a)",
+        "return [b, c].join('+')",
+      ].join("\n"),
+    );
+
+    expect(outcome).toEqual({ status: "done", output: { result: "ONE\nTWO+X" } });
+
+    const inner = yield* innerEntries;
+    expect(inner.map((entry) => entry.outer)).toEqual(["c1", "c1", "c1"]);
+    expect(inner.map((entry) => entry.id).toSorted()).toEqual(["c1/1", "c1/2", "c1/3"]);
+    expect(inner[0]).toMatchObject({ name: "upper", params: { text: "one" }, status: "done" });
+  }).pipe(Effect.scoped),
+  stack,
+);
+
+effectTest(
+  "a failed inner call throws in the script, and an uncaught one fails the call",
+  Effect.gen(function* () {
+    yield* setup;
+
+    const caught = yield* runScript(
+      'try { await tools.upper({ text: "boom" }) } catch (e) { return "caught: " + e.message }',
+    );
+
+    expect(caught.status).toBe("done");
+    expect(caught.status === "done" && JSON.stringify(caught.output.result)).toContain("no booms");
+
+    const thrown = yield* runScript('await tools.upper({ text: "boom" })');
+    expect(thrown.status).toBe("failed");
+  }).pipe(Effect.scoped),
+  stack,
+);
+
+effectTest(
+  "checks judge each inner call, and it knows its outer call",
+  Effect.gen(function* () {
+    yield* setup;
+    const seen: Array<string> = [];
+
+    yield* (yield* ToolChecks).register(
+      (call) => {
+        seen.push(`${call.name}:${call.outer ?? "-"}`);
+
+        return Effect.succeed(
+          call.name === "upper" ? ToolDecision.Deny({ reason: "not today" }) : ToolDecision.Allow(),
+        );
+      },
+      { order: 0 },
+    );
+
+    const outcome = yield* runScript('return await tools.upper({ text: "a" })');
+
+    expect(seen).toEqual(["run:-", "upper:c1"]);
+    expect(outcome.status).toBe("failed");
+    expect(outcome.status === "failed" && outcome.message).toContain("not today");
+
+    const [inner] = yield* innerEntries;
+    expect(Option.fromUndefinedOr(inner?.status)).toEqual(Option.some("denied"));
+  }).pipe(Effect.scoped),
+  stack,
+);

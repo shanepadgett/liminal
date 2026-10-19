@@ -24,6 +24,8 @@ export interface ToolCall {
   readonly name: string;
   readonly params: Json;
   readonly outcome?: ToolOutcome;
+  /** Calls a `run` script made inside this call, in the order they ended. */
+  readonly inner?: ReadonlyArray<ToolCall>;
 }
 
 /**

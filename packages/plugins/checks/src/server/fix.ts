@@ -101,7 +101,8 @@ export const makeFixWrapper = Effect.gen(function* () {
   );
 
   const wrapper: Pipeline.Middleware<AllowedCall, ToolOutcome, never> = ({ call, tool }, next) =>
-    tool.hints.readOnlyHint
+    // An inner call's changes are found once, around its outer call.
+    tool.hints.readOnlyHint || call.outer !== undefined
       ? next
       : Effect.flatMap(loaded, (checks) =>
           Option.match(checks, {

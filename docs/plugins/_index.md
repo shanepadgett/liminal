@@ -82,6 +82,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | tools-read | `read`: a text file in windows of lines | built |
 | tools-edit | `edit` replaces text that appears once in a file; `write` writes a whole file, with its folders | built |
 | tools-shell | `shell` over the command runner | built |
+| [tools-run](tools-run.md) | `run`: a script whose functions are the other tools | built |
 | one plugin per tool family | Web and other tools | to plan |
 | [processes](processes.md) | Commands that keep running across turns and restarts | planned |
 

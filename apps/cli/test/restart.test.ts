@@ -69,6 +69,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "tools",
         "tools-edit",
         "tools-read",
+        "tools-run",
         "tools-shell",
         "trust",
       ]);

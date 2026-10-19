@@ -22,6 +22,19 @@ export const BOOT: Script = {
     { kind: "act", ms: 900, action: { kind: "search", pattern: "definePlugin", hits: 3 } },
     { kind: "act", ms: 700, action: { kind: "recall", from: 12, through: 40 } },
     {
+      kind: "act",
+      ms: 1200,
+      action: {
+        kind: "script",
+        code: 'const hits = await tools.search({ pattern: "activate" })\nfor (const hit of hits) await tools.read({ path: hit })',
+        calls: [
+          { kind: "search", pattern: "activate", hits: 2 },
+          { kind: "read", path: "kernel/src/activate.ts" },
+          { kind: "read", path: "kernel/src/graph.ts" },
+        ],
+      },
+    },
+    {
       kind: "say",
       ms: 2200,
       text: "The host reads manifests before any plugin code. Running the kernel tests to confirm the activation order.",

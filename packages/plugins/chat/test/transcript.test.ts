@@ -52,6 +52,13 @@ const call = (id: string, name: string, path: string) =>
 const result = (callId: string, name: string, status: string) =>
   saved("session-log/tool-result", { callId, name, status, result: "" });
 
+const innerCall = (id: string, path: string) =>
+  saved(
+    "session-log/inner-call",
+    { outer: "c1", id, name: "read", params: { path }, status: "done", result: "" },
+    "hidden",
+  );
+
 const pathOf = Schema.decodeUnknownSync(Schema.Struct({ path: Schema.String }));
 
 const read = ToolRows.Rows({
@@ -115,6 +122,24 @@ describe("transcript", () => {
 
     expect(groups.map((group) => group.words.verb)).toEqual(["Read"]);
     expect(groupsOf(calls.slice(1), () => ToolRows.Hidden())).toEqual([]);
+  });
+
+  test("a run script's inner calls sit under their outer call", () => {
+    const transcript = folded([
+      call("c1", "run", ""),
+      innerCall("c1/1", "a.ts"),
+      innerCall("c1/2", "b.ts"),
+      result("c1", "run", "done"),
+    ]);
+
+    const [work] = transcript.items;
+    if (work?.kind !== "work") throw new Error("expected work");
+    const [run] = work.calls;
+    expect(work.calls.map((each) => each.id)).toEqual(["c1"]);
+    expect(run?.outcome?.status).toBe("done");
+    const inner = run?.inner ?? [];
+    expect(inner.map((each) => each.id)).toEqual(["c1/1", "c1/2"]);
+    expect(inner[0]?.outcome?.status).toBe("done");
   });
 
   test("keeps debug entries, drops hidden ones, and joins calls past debug entries", () => {

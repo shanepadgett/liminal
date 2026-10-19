@@ -1,7 +1,8 @@
 /**
  * A run of tool calls as quiet rows: a mark, the verb in bold, what it worked on, and fainter
  * detail in brackets; a failure shows in the danger color. A click opens a row: a joined row lists
- * its calls, and a single call shows its tool's detail.
+ * its calls, and a single call shows its tool's detail. Calls a `run` script made sit under its
+ * row.
  */
 
 import { Option, Schema } from "effect";
@@ -55,10 +56,16 @@ function GroupRow(props: { readonly sessionId: SessionId; readonly group: WorkGr
   const color = useColor();
   const [isOpen, setIsOpen] = createSignal(false);
   const isJoined = () => props.group.calls.length > 1;
+  const inner = () => (isJoined() ? [] : (props.group.calls[0]?.call.inner ?? []));
 
   return (
     <box flexDirection="column" onMouseUp={() => setIsOpen((was) => !was)}>
       <Words color={color} mark={isJoined() ? "◈" : "◆"} words={props.group.words} />
+      <Show when={inner().length > 0}>
+        <box paddingLeft={OPENED_INDENT}>
+          <WorkRows sessionId={props.sessionId} calls={inner()} />
+        </box>
+      </Show>
       <Show when={isOpen()}>
         <box flexDirection="column" paddingLeft={OPENED_INDENT}>
           <Show
