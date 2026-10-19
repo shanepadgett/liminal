@@ -24,6 +24,7 @@ Status: built
 - Its settings section holds the default `model` and `thinking` for new turns; `thinking` is one of the model's option ids
 - A session's model and thinking are those of its last sent turn; a session with no turns uses the default
 - Picking a model in a session applies to that session's next turn and sets the default for new sessions
+- `ctrl+t` picks the next thinking option of the session's model, in the model's option order, wrapping from the last to the first; a model with fewer than two options shows a toast
 - A pick not yet sent with a turn is held in memory per session until a turn uses it or the app restarts; it is not saved in the session
 - A turn uses the saved thinking option when the model offers it, else the model's default, else off
 - Plugins join a turn at three named checkpoints, each with a fixed rule: before each model call, after a failed attempt, when the turn would end

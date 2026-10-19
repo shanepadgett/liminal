@@ -57,4 +57,6 @@ Status: built
 - The composer's model line shows the session's mode; `full` in the warning color
 - `shift+tab` cycles the mode; `/approvals` chooses it in a dialog
 - A session mode lives in memory over the settings' mode
-- The session's oldest waiting ask opens the approval dialog: the command or path, the reviewer's summary, the reason, approve or reject with an optional note; esc rejects
+- The session's oldest waiting ask opens the approval dialog: the reviewer's plain-words summary of what the call does, the reason, approve or reject with an optional note; esc rejects
+- The dialog shows the command or path only when the review wrote no summary
+- The reviewer's summary never quotes the command

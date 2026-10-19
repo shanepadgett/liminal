@@ -17,3 +17,4 @@ One file per piece of work being planned or built. A plan moves to `archive/` on
 | [debug-view.md](debug-view.md) | Built |
 | [compaction.md](compaction.md) | Built; awaiting review |
 | [daily-driver.md](daily-driver.md) | Architecture planned; steps to plan and build |
+| [session-polish.md](session-polish.md) | Built; awaiting review |
