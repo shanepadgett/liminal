@@ -68,14 +68,14 @@ const makeChecking = Effect.fn("commit.checking")(function* (git: Git) {
     );
   });
 
-  const dueOf = (files: ReadonlyArray<ChangedFile>) =>
+  const dueOf = (session: SessionId, files: ReadonlyArray<ChangedFile>) =>
     workspacePaths(files).pipe(
-      Effect.flatMap((paths) => checks.due(paths)),
+      Effect.flatMap((paths) => checks.due(session, paths)),
       Effect.mapError(failWith),
     );
 
   const check = Effect.fn("commit.check")(function* (session: SessionId, begun: CommitStart) {
-    const report = yield* Effect.flatMap(dueOf(begun.files), (due) => due.run);
+    const report = yield* Effect.flatMap(dueOf(session, begun.files), (due) => due.run);
     const after = yield* git.changedFiles(begun.root);
     if (statusText(after) !== statusText(begun.files)) return CHANGED;
     if (report.failed.length === 0) return PASSED;
@@ -141,12 +141,12 @@ const make = Effect.gen(function* () {
     Effect.mapError(failWith),
   );
 
-  const start = Effect.fn("commit.start")(function* () {
+  const start = Effect.fn("commit.start")(function* (session: SessionId) {
     const root = yield* git.rootOf(workspace);
     const files = yield* git.changedFiles(root);
     if (files.length === 0) return yield* new CommitError({ message: "Nothing to commit." });
 
-    const due = yield* dueOf(files);
+    const due = yield* dueOf(session, files);
     const pick = yield* planner;
 
     const found: CommitStart = {
@@ -176,7 +176,7 @@ const make = Effect.gen(function* () {
   });
 
   return CommitRpcs.of({
-    "commit/start": () => start(),
+    "commit/start": ({ session }) => start(session),
     "commit/check": ({ session, start: begun }) => check(session, begun),
     "commit/plan": ({ session, start: begun, instruction }) => plan(session, begun, instruction),
     "commit/apply": ({ root, commits }) => applyCommits(git, root, commits),

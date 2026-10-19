@@ -20,7 +20,7 @@ Status: built
 
 ### Checks
 
-- The `check` and `commit` lists due on the changed files run first; a check that changes files stops the commit
+- The `check` and `commit` lists due on the changed files run first, together, and skip a check that already passed in the session on the same files; a check that changes files stops the commit
 - Failed checks go to the session as a `[commit checks]` follow-up and nothing is committed
 
 ### Plan

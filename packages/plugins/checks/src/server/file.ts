@@ -19,6 +19,8 @@ export interface Check {
   readonly name: string;
   readonly details: Option.Option<string>;
   readonly command: string;
+  /** The entry as the file wrote it; a pass holds only while this is the same. */
+  readonly definition: string;
   readonly takesFiles: boolean;
   readonly include: ReadonlyArray<Bun.Glob>;
   readonly exclude: ReadonlyArray<Bun.Glob>;
@@ -53,6 +55,7 @@ export const makeChecksFile = Effect.gen(function* () {
     name: entry.name,
     details: Option.fromUndefinedOr(entry.details),
     command: entry.command,
+    definition: JSON.stringify(entry),
     takesFiles: entry.command.includes(FILES_PLACEHOLDER),
     include: (entry.include ?? []).map((pattern) => new Bun.Glob(pattern)),
     exclude: (entry.exclude ?? []).map((pattern) => new Bun.Glob(pattern)),

@@ -13,6 +13,7 @@ import { LongOutput } from "@liminal/tool-output/contract";
 import { type CheckReport, hasFailures, ReportEntry, reportText } from "../contract.ts";
 import { makeChecksFile } from "./file.ts";
 import { changesOfTurn, failedReports, isDue, thisTurn } from "./history.ts";
+import { makePassed } from "./passed.ts";
 import { makeRunner } from "./run.ts";
 import { withNextStep } from "./tool.ts";
 
@@ -28,7 +29,8 @@ export const makeSettle = Effect.gen(function* () {
   const log = yield* SessionLog;
   const output = yield* LongOutput;
   const { load } = yield* makeChecksFile;
-  const { dueChecks, runChecks } = yield* makeRunner;
+  const { dueChecks } = yield* makeRunner;
+  const { plan } = yield* makePassed;
 
   const reportDraft = Effect.fn("Checks.reportDraft")(function* (
     session: SessionId,
@@ -56,7 +58,10 @@ export const makeSettle = Effect.gen(function* () {
     const due = yield* dueChecks(checks.value.check, checks.value.root, changesOfTurn(turn));
     if (due.length === 0) return [];
 
-    const report = yield* runChecks(due);
+    const planned = yield* plan(session, due, checks.value.root);
+    if (planned.count === 0) return [];
+
+    const report = yield* planned.run;
     const drafted = yield* reportDraft(session, report);
     const isOutOfTries = failedReports(turn) >= MAX_SEND_BACKS;
     if (hasFailures(report) && !isOutOfTries) return [drafted];

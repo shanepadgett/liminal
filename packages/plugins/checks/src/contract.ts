@@ -6,7 +6,7 @@
 
 import { Context, type Effect, Schema } from "effect";
 
-import { defineEntry } from "@liminal/sdk";
+import { defineEntry, type SessionId } from "@liminal/sdk";
 
 /** The checks file's name in the project folder. */
 export const checksFileName = "checks.json";
@@ -44,10 +44,14 @@ export const Changes = Schema.Union([
 
 export type Changes = typeof Changes.Type;
 
-/** One run of checks: the names that passed, and each failure with its output. */
+/**
+ * One run of checks: the names that passed, each failure with its output, and the checks left out
+ * because they already passed on the same files.
+ */
 export const CheckReport = Schema.Struct({
   passed: Schema.Array(Schema.String),
   failed: Schema.Array(Schema.Struct({ name: Schema.String, output: Schema.String })),
+  skipped: Schema.optionalKey(Schema.Array(Schema.String)),
 });
 
 export type CheckReport = typeof CheckReport.Type;
@@ -56,6 +60,17 @@ export type CheckReport = typeof CheckReport.Type;
 export const ChangesEntry = defineEntry({
   kind: "checks/changes",
   data: Changes,
+  model: false,
+  user: "hidden",
+});
+
+/**
+ * A check that passed, with a key for what it covered: its definition, the repository's HEAD and
+ * the version of each file it ran on. The same key later means the check need not run again.
+ */
+export const PassedEntry = defineEntry({
+  kind: "checks/passed",
+  data: Schema.Struct({ name: Schema.String, key: Schema.String }),
   model: false,
   user: "hidden",
 });
@@ -82,10 +97,14 @@ export const checksTool = "checks";
 /** Whether a report has a failure. */
 export const hasFailures = (report: CheckReport): boolean => report.failed.length > 0;
 
-/** `Passed: name` for each pass, then `Failed: name` and its output for each failure. */
+/**
+ * `Passed: name` for each pass, `Passed earlier on these files: name` for each skipped check, then
+ * `Failed: name` and its output for each failure.
+ */
 export const reportText = (report: CheckReport): string =>
   [
     ...report.passed.map((name) => `Passed: ${name}`),
+    ...(report.skipped ?? []).map((name) => `Passed earlier on these files: ${name}`),
     ...report.failed.map(({ name, output }) => `Failed: ${name}\n${output}`.trim()),
   ].join("\n\n");
 
@@ -105,7 +124,13 @@ export interface DueChecks {
 export class CommitChecks extends Context.Service<
   CommitChecks,
   {
-    /** The checks due on `paths`, from the workspace; none without a checks file. */
-    readonly due: (paths: ReadonlyArray<string>) => Effect.Effect<DueChecks, ChecksFileInvalid>;
+    /**
+     * The checks due on `paths`, from the workspace, that have not already passed on the same files
+     * in `session`; none without a checks file.
+     */
+    readonly due: (
+      session: SessionId,
+      paths: ReadonlyArray<string>,
+    ) => Effect.Effect<DueChecks, ChecksFileInvalid>;
   }
 >()("liminal/checks/CommitChecks") {}

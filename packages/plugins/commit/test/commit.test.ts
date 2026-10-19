@@ -127,7 +127,7 @@ effectTest(
   "start, plan and apply commit the changes as the planner grouped them",
   Effect.gen(function* () {
     const client = yield* setUp;
-    const start = yield* client["commit/start"]();
+    const start = yield* client["commit/start"]({ session: s1 });
     expect(start.files.map(({ path }) => path).toSorted()).toEqual(["a.txt", "b.txt"]);
     expect(start.checks).toBe(0);
     expect(start.planner.startsWith(`${scriptedProvider}/`)).toBe(true);
@@ -184,7 +184,7 @@ effectTest(
   "a plan that repeats a file is asked again, up to three answers",
   Effect.gen(function* () {
     const client = yield* setUp;
-    const start = yield* client["commit/start"]();
+    const start = yield* client["commit/start"]({ session: s1 });
     const scripted = yield* ScriptedModel;
 
     yield* scripted.enqueue(planAnswer([1, 1, 2]));
@@ -210,7 +210,7 @@ effectTest(
     yield* (yield* ProjectTrust).trust;
     yield* (yield* ScriptedModel).enqueue(reply([], { reason: "stop" }));
 
-    const start = yield* client["commit/start"]();
+    const start = yield* client["commit/start"]({ session: s1 });
     expect(start.checks).toBe(1);
 
     const outcome = yield* client["commit/check"]({ session: s1, start });

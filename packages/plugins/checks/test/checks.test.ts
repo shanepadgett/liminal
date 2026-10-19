@@ -29,7 +29,13 @@ import toolOutput from "@liminal/tool-output";
 import { type ToolOutcome, Tools, ToolWrappers } from "@liminal/tools/contract";
 
 import checks from "../plugin.ts";
-import { ChangesEntry, checksTool, FixedEntry, ReportEntry } from "../src/contract.ts";
+import {
+  ChangesEntry,
+  checksTool,
+  CommitChecks,
+  FixedEntry,
+  ReportEntry,
+} from "../src/contract.ts";
 import { workspacePaths } from "../src/server/snapshot.ts";
 
 const stack = serverOf(checks).pipe(
@@ -59,7 +65,9 @@ const checksFile = {
       include: ["*.txt"],
     },
   ],
-  check: [{ name: "clean", command: "! grep -ri bad *.txt", details: "no bad words" }],
+  check: [
+    { name: "clean", command: "! grep -ri bad *.txt", details: "no bad words", include: ["*.txt"] },
+  ],
 };
 
 const writer: Tool = {
@@ -231,6 +239,43 @@ effectTest(
     yield* (yield* FileSystem.FileSystem).remove(`${project}/checks.json`);
     yield* beforeCall;
     expect(yield* toolNames).toEqual([]);
+  }),
+  stack,
+);
+
+const runTool = (callId: string) =>
+  Effect.gen(function* () {
+    const tool = Option.getOrThrow(yield* (yield* Tools).get(checksTool));
+    const outcome = yield* tool.run({}, { sessionId: s1, callId });
+
+    return outcome.result;
+  });
+
+effectTest(
+  "a check that passed on the same files is not run again, by the tool, the turn's end or /commit",
+  Effect.gen(function* () {
+    yield* setUp;
+    yield* beforeCall;
+    yield* writeThrough("a.txt", "good\n");
+
+    expect(yield* runTool("c1")).toContain("Passed: clean");
+
+    expect(yield* runTool("c2")).toContain("Passed earlier on these files: clean");
+
+    // The turn's end finds nothing left to run, so it saves no report.
+    expect(yield* settle).toEqual([]);
+    const log = yield* SessionLog;
+    const kindsAfter = kinds(yield* log.read(s1, {}));
+    expect(kindsAfter).not.toContain(ReportEntry.kind);
+
+    const commit = yield* CommitChecks;
+    const same = yield* commit.due(s1, ["a.txt"]);
+    expect(same.count).toBe(0);
+    expect((yield* same.run).skipped).toEqual(["clean"]);
+
+    yield* writeThrough("a.txt", "other\n");
+    expect((yield* commit.due(s1, ["a.txt"])).count).toBe(1);
+    expect(yield* runTool("c3")).toContain("Passed: clean");
   }),
   stack,
 );

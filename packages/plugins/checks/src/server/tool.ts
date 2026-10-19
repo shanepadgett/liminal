@@ -15,6 +15,7 @@ import { Tools } from "@liminal/tools/contract";
 import { checksTool, hasFailures, reportText } from "../contract.ts";
 import { makeChecksFile, type ProjectChecks } from "./file.ts";
 import { changesOfTurn, thisTurn } from "./history.ts";
+import { makePassed } from "./passed.ts";
 import { makeRunner } from "./run.ts";
 
 const NOTHING_TO_CHECK = "No checks apply to the changes in this run.";
@@ -35,7 +36,7 @@ export const withNextStep = (text: string, failed: boolean): string =>
 
 const descriptionOf = (checks: ProjectChecks) =>
   [
-    "Runs the project's checks on the files changed since the user's last message, and gives each check that passed and the output of each that failed. The checks are:",
+    "Runs the project's checks on the files changed since the user's last message, and gives each check that passed and the output of each that failed. A check that already passed on the same files is not run again and is reported as passed earlier. The checks are:",
     "",
     ...checks.check.map(({ name, details }) =>
       Option.match(details, { onNone: () => `- ${name}`, onSome: (text) => `- ${name}: ${text}` }),
@@ -49,7 +50,8 @@ export const makeChecksTool = Effect.gen(function* () {
   const output = yield* LongOutput;
   const tools = yield* Tools;
   const { load } = yield* makeChecksFile;
-  const { dueChecks, runChecks } = yield* makeRunner;
+  const { dueChecks } = yield* makeRunner;
+  const { plan } = yield* makePassed;
 
   const run = Effect.fn("Checks.tool")(function* (sessionId: SessionId, callId: string) {
     const checks = yield* load();
@@ -60,7 +62,8 @@ export const makeChecksTool = Effect.gen(function* () {
     const due = yield* dueChecks(check, root, changesOfTurn(thisTurn(entries)));
     if (due.length === 0) return { result: NOTHING_TO_CHECK };
 
-    const report = yield* runChecks(due);
+    const planned = yield* plan(sessionId, due, root);
+    const report = yield* planned.run;
     const failed = hasFailures(report);
     const text = yield* output.fit(sessionId, callId, withNextStep(reportText(report), failed));
 

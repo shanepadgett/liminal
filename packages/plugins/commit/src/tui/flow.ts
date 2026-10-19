@@ -135,7 +135,7 @@ const commitAll = Effect.fn("commit.all")(function* (
   session: SessionId,
   instruction: string,
 ) {
-  const start = yield* steps.client["commit/start"]().pipe(failed("warning"));
+  const start = yield* steps.client["commit/start"]({ session }).pipe(failed("warning"));
   yield* checked(steps, session, start);
   steps.show(CommitStep.Planning({ model: start.planner }));
 

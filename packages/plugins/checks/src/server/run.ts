@@ -13,7 +13,8 @@ export interface DueCheck {
   readonly files: ReadonlyArray<string>;
 }
 
-const matches = (check: Check, path: string) => {
+/** Whether the check's globs match a path from the workspace. */
+export const matches = (check: Check, path: string) => {
   const isIncluded = check.include.length === 0 || check.include.some((glob) => glob.match(path));
 
   return isIncluded && !check.exclude.some((glob) => glob.match(path));
@@ -80,10 +81,19 @@ export const makeRunner = Effect.gen(function* () {
         Effect.catch((error) => Effect.succeedSome(error.message)),
       );
 
-  /** Runs each check in order; a check passes when its command exits with code 0. */
-  const runChecks = Effect.fn("Checks.run")(function* (due: ReadonlyArray<DueCheck>) {
-    const outcomes = yield* Effect.forEach(due, (one) =>
-      Effect.map(failureOfRun(one), (failure) => ({ name: one.check.name, failure })),
+  /**
+   * Runs the checks, one at a time unless `concurrency` says otherwise, and reports them in the
+   * order given. Fixers run one at a time because a later one works on an earlier one's output. A
+   * check passes when its command exits with code 0.
+   */
+  const runChecks = Effect.fn("Checks.run")(function* (
+    due: ReadonlyArray<DueCheck>,
+    concurrency: "unbounded" | 1 = 1,
+  ) {
+    const outcomes = yield* Effect.forEach(
+      due,
+      (one) => Effect.map(failureOfRun(one), (failure) => ({ name: one.check.name, failure })),
+      { concurrency },
     );
 
     const report: CheckReport = {

@@ -19,10 +19,14 @@ Status: built
 - `include` and `exclude` are globs on paths from the workspace; `{files}` in a command becomes the matching changed files
 - Changed files come from git snapshots before and after each writing call; outside git the changes are unknown and every check is due
 - Fixers run silently on a call's changed files; the debug view shows a line for each run
-- `CommitChecks` gives `/commit` the `check` and `commit` lists due on the files it will commit
+- `CommitChecks` gives `/commit` the `check` and `commit` lists due on the files it will commit, minus the checks that already passed on them
+- Checks run together, not one at a time; fixers run one at a time, in order
+- A pass is saved as a hidden `checks/passed` entry whose key covers the check's definition, the repository's HEAD and the version of each file it covered: a whole-project check covers every changed file its globs match, a `{files}` check the files it was given
+- A check whose latest pass has the same key is not run again, by turn-end settling, the `checks` tool or `/commit`; the report names it as passed earlier
+- Outside git nothing is skipped
 - The `checks` tool exists only while the file has `check` commands, and follows edits to the file from the next model call
 - Call `checks` directly as the final action before the summary; it is unavailable inside `run` and draws its own tool row
-- When the model ends its turn with changes no report covers, the due checks run and save a report entry
+- When the model ends its turn with changes no report covers, the due checks that have not passed run and save a report entry
 - A failed report goes back to the model; after three failed reports in one turn, the turn ends
 - `commit` runs only in `/commit`
 

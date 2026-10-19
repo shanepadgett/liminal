@@ -109,5 +109,24 @@ export const makeSnapshots = Effect.gen(function* () {
     return Option.some(snapshot);
   });
 
-  return { take };
+  /** The commit HEAD names, `unborn` before the first commit; none outside a git repository. */
+  const headOf = Effect.fn("Checks.head")(function* () {
+    const result = yield* runner
+      .run({
+        command:
+          "git rev-parse --verify --quiet HEAD || { git rev-parse --git-dir >/dev/null && echo unborn; }",
+        cwd: workspace,
+        timeout: GIT_TIMEOUT,
+      })
+      .pipe(Effect.option);
+
+    const head = Option.filter(
+      Option.map(result, ({ stdout }) => stdout.trim()),
+      (text) => text !== "",
+    );
+
+    return head;
+  });
+
+  return { take, headOf };
 });

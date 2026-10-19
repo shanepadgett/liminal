@@ -83,7 +83,11 @@ const root = { root: Schema.String };
 /** Commit's commands for frontends. */
 export class CommitRpcs extends RpcGroup.make(
   /** The repository holding the workspace and its changed files. */
-  Rpc.make("commit/start", { success: CommitStart, error: CommitError }),
+  Rpc.make("commit/start", {
+    payload: { session: SessionId },
+    success: CommitStart,
+    error: CommitError,
+  }),
   /** Runs the due checks; failures go to the session as a follow-up. */
   Rpc.make("commit/check", {
     payload: { session: SessionId, start: CommitStart },

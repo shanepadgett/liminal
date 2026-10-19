@@ -12,6 +12,7 @@ import type { AllowedCall, ToolOutcome } from "@liminal/tools/contract";
 import { type Changes, ChangesEntry, FixedEntry } from "../contract.ts";
 import { makeChecksFile, type ProjectChecks } from "./file.ts";
 import { makeRunner } from "./run.ts";
+import { save } from "./save.ts";
 import { changedPaths, makeSnapshots, type Snapshot } from "./snapshot.ts";
 
 const unknown: Changes = { type: "unknown" };
@@ -23,20 +24,6 @@ const changesDraft = (changes: Changes) =>
   });
 
 const hasChanges = (changes: Changes) => changes.type === "unknown" || changes.paths.length > 0;
-
-const save = (
-  log: SessionLog["Service"],
-  session: SessionId,
-  drafts: ReadonlyArray<EntryDraft>,
-) => {
-  const [first, ...rest] = drafts;
-  if (first === undefined) return Effect.void;
-
-  return log.append(session, [first, ...rest]).pipe(
-    Effect.asVoid,
-    Effect.catch((error) => Effect.logWarning("checks could not save a call's changes", error)),
-  );
-};
 
 export const makeFixWrapper = Effect.gen(function* () {
   const log = yield* SessionLog;
@@ -89,6 +76,7 @@ export const makeFixWrapper = Effect.gen(function* () {
   ) {
     const before = yield* snapshots.take();
     const outcome = yield* next;
+
     yield* save(log, session, yield* changesSince(checks, before));
 
     return outcome;
