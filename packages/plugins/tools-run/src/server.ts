@@ -13,6 +13,7 @@ import { runScript } from "./server/script.ts";
 
 const description = [
   "Runs a JavaScript program whose functions are your other tools: `await tools.<name>(params)` calls the tool `<name>` with the same params and returns its result, or throws its failure.",
+  "The `run` and `checks` tools are unavailable inside scripts. Call `checks` directly as your final action before the summary.",
   'Use bracket notation for a name that is not an identifier, as in `tools["my-tool"](params)`.',
   `Tools you have not been offered yet are there too; find them with the built-in \`${searchSignature}\`, which runs without await.`,
   "Only what the program prints with console.log and the value it returns come back. Imports, timers and direct file or network access are unavailable.",

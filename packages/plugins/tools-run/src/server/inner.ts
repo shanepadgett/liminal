@@ -84,7 +84,8 @@ export const makeFunctions = Effect.fn("ToolsRun.functions")(function* (
     all.flatMap((tool) => {
       const { name, description, parameters } = tool.spec;
 
-      if (name === "run") return [];
+      // Checks must be the model's final direct call so their report has its own transcript row.
+      if (name === "run" || name === "checks") return [];
 
       const made = ScriptTool.make({
         description,

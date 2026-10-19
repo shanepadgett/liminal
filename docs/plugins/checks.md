@@ -21,6 +21,7 @@ Status: built
 - Fixers run silently on a call's changed files; the debug view shows a line for each run
 - `CommitChecks` gives `/commit` the `check` and `commit` lists due on the files it will commit
 - The `checks` tool exists only while the file has `check` commands, and follows edits to the file from the next model call
+- Call `checks` directly as the final action before the summary; it is unavailable inside `run` and draws its own tool row
 - When the model ends its turn with changes no report covers, the due checks run and save a report entry
 - A failed report goes back to the model; after three failed reports in one turn, the turn ends
 - `commit` runs only in `/commit`

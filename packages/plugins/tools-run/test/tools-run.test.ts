@@ -102,6 +102,44 @@ effectTest(
 );
 
 effectTest(
+  "checks stay directly callable but are absent from scripts and search",
+  Effect.gen(function* () {
+    yield* setup;
+    const registry = yield* Tools;
+
+    yield* registry.register(
+      defineTool({
+        runAlongside: false,
+        safeToRerun: true,
+        name: "checks",
+        description: "Checks the project.",
+        parameters: Schema.Struct({ text: Schema.String }),
+        run: ({ text }) => Effect.succeed({ result: text }),
+      }),
+    );
+
+    const searched = yield* runScript('return search({ query: "checks" })');
+    expect(searched.status).toBe("done");
+
+    expect(searched.status === "done" && JSON.stringify(searched.output.result)).not.toContain(
+      "checks",
+    );
+
+    const nested = yield* runScript('return await tools.checks({ text: "checked" })');
+    expect(nested.status).toBe("failed");
+    expect(yield* innerEntries).toEqual([]);
+
+    const direct = yield* (yield* ToolPipeline).run(
+      { sessionId: s1, callId: "c2", name: "checks", params: { text: "checked" } },
+      yield* registry.get("checks"),
+    );
+
+    expect(direct).toEqual({ status: "done", output: { result: "checked" } });
+  }).pipe(Effect.scoped),
+  stack,
+);
+
+effectTest(
   "a failed inner call throws in the script, and an uncaught one fails the call",
   Effect.gen(function* () {
     yield* setup;
