@@ -36,12 +36,14 @@ Status: built
 - `ask` mode and `askCommands` calls skip the decision model's and the reviewer's approval; the reviewer's summary still shows
 - Decision questions: does the call run code the state does not show; the widest thing it can change; is it part of what the user asked
 - The decision model approves when unseen code is at most 0.5 likely, nothing or the workspace is at least 0.8 likely, and the call either likely changes nothing or is likely on task; anything else hands off
-- Decision model and reviewer see the call, the reason it asks, and the last two user prompts and assistant texts
+- The decision model sees the call, the reason it asks, and the last two user prompts and assistant texts; the reviewer sees the same without the reason it asks
 - The reviewer is the newest turn's provider's small model, through `ModelTask`
 - The reviewer may read files and run safe-list shell commands; other commands are refused
 - The reviewer approves or writes a summary and reason for the user
-- A failed review goes to the user without a summary
-- Each answer is saved as a debug `approval/answer` entry the model never sees
+- The reviewer approves ordinary work in the workspace: edits, including by script or heredoc, builds, installs, generators, dev servers, recoverable deletions, read-only queries
+- The reviewer asks the user about paths outside the workspace, system or privileged work, remote, cloud or production changes, publishing, credential exposure, unrecoverable data loss, git actions that rewrite or lose history, and AWS changes; read-only AWS is routine unless it loads a production database
+- A failed review goes to the user without a summary; there is no fallback model
+- Each answer is saved as a debug `approval/answer` entry the model never sees; an answer by the user keeps the reviewer's summary, decision and reason
 - The transcript draws an `approval/answer` entry only in the debug view: tool, approved or rejected, who answered, the reason
 - A rejection's note goes to the model as the denial reason
 - An interrupted call withdraws its ask
