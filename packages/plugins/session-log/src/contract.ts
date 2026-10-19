@@ -3,7 +3,7 @@
  * with.
  */
 
-import { Context, type Effect, Option, Schema, type Stream } from "effect";
+import { Context, type DateTime, type Effect, Option, Schema, type Stream } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
@@ -74,6 +74,14 @@ export class SessionLog extends Context.Service<
     /** Per session, its newest entry of any of `kinds`; sessions with none are left out. */
     readonly lastOfKinds: (
       kinds: ReadonlyArray<EntryDefinition>,
+    ) => Effect.Effect<ReadonlyArray<Entry>, StoreError>;
+    /**
+     * Each session's own entries of any of `kinds`, a fork's inherited ones left out, in every
+     * folder's sessions saved to at or after `since`; by session, then seq.
+     */
+    readonly recentOfKinds: (
+      kinds: ReadonlyArray<EntryDefinition>,
+      since: DateTime.Utc,
     ) => Effect.Effect<ReadonlyArray<Entry>, StoreError>;
     /** The saved entries after `from.after`, then Synced, then each new entry as it is saved. */
     readonly subscribe: (

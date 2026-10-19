@@ -5,7 +5,7 @@
 
 import { expect } from "bun:test";
 
-import { Duration, Effect, Fiber, Layer, Option, Stream } from "effect";
+import { DateTime, Duration, Effect, Fiber, Layer, Option, Stream } from "effect";
 import { RpcTest } from "effect/rpc";
 import { TestClock } from "effect/testing";
 
@@ -28,7 +28,7 @@ import settingsPlugin from "@liminal/settings";
 import usage from "../plugin.ts";
 import { UsageRpcs } from "../src/contract.ts";
 import { usageOf } from "../src/server.ts";
-import { countCalls } from "../src/server/count.ts";
+import { callKinds, callsSince, countCalls } from "../src/server/count.ts";
 
 const stack = serverOf(sessionLog).pipe(
   Layer.provideMerge(serverOf(sessionStore)),
@@ -140,6 +140,27 @@ effectTest(
 );
 
 effectTest(
+  "today counts every session's calls since then, on the model of each one's turn",
+  Effect.gen(function* () {
+    const log = yield* SessionLog;
+    const s2 = SessionId.make("s2");
+    yield* entriesOf(turn(big), replied(spentOf(1000, 0, 100)));
+
+    yield* TestClock.adjust(Duration.days(1));
+    const since = yield* DateTime.now;
+    yield* log.append(s1, [replied(spentOf(200, 0, 20))]);
+    yield* log.create(s2);
+    yield* log.append(s2, [turn(small), replied(spentOf(50, 0, 5))]);
+
+    expect(callsSince(yield* log.recentOfKinds(callKinds, since), since)).toEqual([
+      { model: big, usage: spentOf(200, 0, 20) },
+      { model: small, usage: spentOf(50, 0, 5) },
+    ]);
+  }),
+  stack,
+);
+
+effectTest(
   "a model without details shows no window and no cost",
   Effect.gen(function* () {
     const entries = yield* entriesOf(turn(big), replied(spentOf(0, 0, 10)));
@@ -170,7 +191,9 @@ effectTest(
     yield* TestClock.adjust(Duration.seconds(1));
 
     expect(yield* Fiber.join(first)).toEqual(
-      Option.some({ context: 2100, contextWindow: 200_000, cacheHit: 0.75, unpriced: 1 }),
+      Option.some({
+        session: { context: 2100, contextWindow: 200_000, cacheHit: 0.75, unpriced: 1 },
+      }),
     );
   }),
   served,
@@ -183,6 +206,7 @@ effectTest(
     const client = yield* RpcTest.makeClient(UsageRpcs);
 
     const first = yield* client["usage/session"]({ session: s1 }).pipe(
+      Stream.filter((report) => report.session !== undefined),
       Stream.take(1),
       Stream.runHead,
       Effect.forkChild,
@@ -193,7 +217,7 @@ effectTest(
     yield* TestClock.adjust(Duration.seconds(1));
 
     expect(yield* Fiber.join(first)).toEqual(
-      Option.some({ context: 110, contextWindow: 200_000, cacheHit: 0, unpriced: 1 }),
+      Option.some({ session: { context: 110, contextWindow: 200_000, cacheHit: 0, unpriced: 1 } }),
     );
   }),
   served,

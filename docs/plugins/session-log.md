@@ -6,7 +6,7 @@ Status: built
 
 ## Provides
 
-- `SessionLog` service: create, list, append, read, subscribe, live slot, newest entry of given kinds per session
+- `SessionLog` service: create, list, append, read, subscribe, live slot, newest entry of given kinds per session, recent sessions' own entries of given kinds
 - `SessionFeed` service: saved entries and the live slot in wire form, for the kernel
 - Commands: `session-log/create`, `session-log/list`
 - Event: `session-log/sessions-changed`

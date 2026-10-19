@@ -22,6 +22,7 @@ Status: built
 - Each session records the workspace folder it was started in and a title; a fork copies both
 - A session's title is set once, from the first line of its first user message
 - Lists sessions by workspace folder, newest first
+- Reads the own entries of given kinds in every folder's sessions saved to since a given time
 
 ## Open
 

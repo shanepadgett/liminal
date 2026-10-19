@@ -12,6 +12,7 @@ import {
   StoreError,
   Synced,
 } from "@liminal/sdk";
+import type { StoredEntry, StoreError as StoredStoreError } from "@liminal/session-store/contract";
 
 import { type SeqRange, UserEntry } from "../contract.ts";
 import { fromStore, type LogDeps } from "./deps.ts";
@@ -122,20 +123,35 @@ export const makeEntries = (deps: LogDeps) => {
     return yield* Effect.forEach(stored, toSaved);
   });
 
+  /** Stored rows decoded with the registered kinds; a store failure is a `StoreError`. */
+  const restored = (rows: Effect.Effect<ReadonlyArray<StoredEntry>, StoredStoreError>) =>
+    rows.pipe(
+      Effect.mapError((error) => new StoreError({ message: error.message, cause: error.cause })),
+      Effect.flatMap((stored) =>
+        Effect.forEach(stored, (row) => restore(row, deps.entryKinds.get)),
+      ),
+    );
+
   const lastOfKinds = Effect.fn("SessionLog.lastOfKinds")(function* (
     kinds: ReadonlyArray<EntryDefinition>,
   ) {
-    const stored = yield* deps.store
-      .lastEntriesOfKinds(kinds.map((definition) => definition.kind))
-      .pipe(
-        Effect.mapError((error) => new StoreError({ message: error.message, cause: error.cause })),
-      );
+    return yield* restored(deps.store.lastEntriesOfKinds(kinds.map((each) => each.kind)));
+  });
 
-    return yield* Effect.forEach(stored, (row) => restore(row, deps.entryKinds.get));
+  const recentOfKinds = Effect.fn("SessionLog.recentOfKinds")(function* (
+    kinds: ReadonlyArray<EntryDefinition>,
+    since: DateTime.Utc,
+  ) {
+    return yield* restored(
+      deps.store.recentEntriesOfKinds(
+        kinds.map((each) => each.kind),
+        DateTime.toEpochMillis(since),
+      ),
+    );
   });
 
   const subscribe = followWith(deps, read);
   const follow = followWith(deps, readSaved);
 
-  return { read, append, lastOfKinds, subscribe, follow };
+  return { read, append, lastOfKinds, recentOfKinds, subscribe, follow };
 };

@@ -42,6 +42,8 @@ const make = Effect.gen(function* () {
     nameSession: (id, title) => run("nameSession")(Queries.nameSession(id, title)),
     listSessions: (workspace) => run("listSessions")(listSessions(workspace)),
     lastEntriesOfKinds: (kinds) => run("lastEntriesOfKinds")(Queries.lastEntriesOfKinds(kinds)),
+    recentEntriesOfKinds: (kinds, since) =>
+      run("recentEntriesOfKinds")(Queries.recentEntriesOfKinds(kinds, since)),
     readLive: (sessionId) => run("readLive")(Queries.readLive(sessionId)),
     writeLive: (sessionId, live) => run("writeLive")(Queries.writeLive(sessionId, live)),
   });

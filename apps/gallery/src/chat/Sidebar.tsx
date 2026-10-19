@@ -68,6 +68,7 @@ export function Sidebar(props: { readonly color: RoleColor }) {
       </Block>
       <Block color={props.color} title="Cost">
         <Stat color={props.color} label="session" value="$1.24" />
+        <Stat color={props.color} label="today" value="$3.87" />
       </Block>
       <Block color={props.color} title="Compaction">
         <Stat color={props.color} label="budget" value="150K · 76%" tone="feedback.warning" />

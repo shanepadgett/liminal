@@ -97,6 +97,15 @@ export class SessionStore extends Context.Service<
     readonly lastEntriesOfKinds: (
       kinds: ReadonlyArray<string>,
     ) => Effect.Effect<ReadonlyArray<StoredEntry>, StoreError>;
+    /**
+     * Each session's own entries of any of `kinds`, a fork's inherited ones left out, for every
+     * session saved to at or after `since` (milliseconds since the Unix epoch); by session, then
+     * seq.
+     */
+    readonly recentEntriesOfKinds: (
+      kinds: ReadonlyArray<string>,
+      since: number,
+    ) => Effect.Effect<ReadonlyArray<StoredEntry>, StoreError>;
     readonly readLive: (
       sessionId: string,
     ) => Effect.Effect<StoredLive | undefined, SessionNotFound | StoreError>;

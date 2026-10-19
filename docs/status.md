@@ -57,7 +57,6 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 - ACP adapter as a server plugin
 - Collab-style session sharing through an encrypted relay
 - TUI: built per [plans/archive/tui-session.md](plans/archive/tui-session.md); its `Open` list holds the choices made while building (entry kinds drawn by `chat`, tokens moved into `@liminal/sdk/tui`).
-- Sidebar Cost: also show today's cost across sessions, as Tau's footer did (`$2.43 today`)
 - Streamed reply text fades in, in a look that fits Liminal; design in the gallery first
 - A pinned answers band (`/qna` answers) folds to its title line; only user prompts pin today
 - Gallery: its own isolated app, a minimal Storybook for the TUI; built before any TUI components or screens; every element, primitives through screens, is approved there first; houses its own components, duplication accepted; keep Tau's tier, state and width rules, redesign the shell

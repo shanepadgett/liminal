@@ -1,11 +1,11 @@
 /**
  * Usage's TUI part: the sidebar's Context and Cost sections. Context is the latest call's tokens
  * out of the model's window and how much of its request the cache served; Cost adds up the
- * session's calls.
+ * session's calls and every session's calls since local midnight.
  */
 
 import type { JSX } from "@opentui/solid";
-import { Effect, Option, Stream } from "effect";
+import { Effect } from "effect";
 import { type Accessor, Show } from "solid-js";
 
 import { ChatSlots } from "@liminal/chat/contract";
@@ -21,7 +21,7 @@ import {
   TuiHost,
 } from "@liminal/sdk/tui";
 
-import { type SessionUsage, UsageRpcs } from "./contract.ts";
+import { type SessionUsage, type UsageReport, UsageRpcs } from "./contract.ts";
 
 const NO_CALL = "No model call yet";
 
@@ -48,48 +48,64 @@ function Context(props: { readonly usage: SessionUsage }) {
   );
 }
 
-function Cost(props: { readonly usage: SessionUsage }) {
+/** The session's line: its cost, or why there is none. */
+function SessionCost(props: { readonly usage: SessionUsage | undefined }) {
+  return (
+    <Show when={props.usage} fallback={<SidebarNote text={NO_CALL} />}>
+      {(usage) => (
+        <Show when={usage().cost} keyed fallback={<SidebarNote text="No price for this model" />}>
+          {(cost) => <SidebarStat label="session" value={costText(cost)} />}
+        </Show>
+      )}
+    </Show>
+  );
+}
+
+function Cost(props: { readonly report: UsageReport }) {
+  const unpriced = () =>
+    props.report.session?.cost === undefined ? 0 : props.report.session.unpriced;
+
   return (
     <SidebarSection title="Cost">
-      <Show
-        when={props.usage.cost !== undefined}
-        fallback={<SidebarNote text="No price for this model" />}
-      >
-        <SidebarStat label="session" value={costText(props.usage.cost ?? 0)} />
-      </Show>
-      <Show when={props.usage.cost !== undefined && props.usage.unpriced > 0}>
+      <SessionCost usage={props.report.session} />
+      <Show when={unpriced() > 0}>
         <SidebarStat
           label="unpriced"
-          value={`${props.usage.unpriced} ${props.usage.unpriced === 1 ? "model" : "models"}`}
+          value={`${unpriced()} ${unpriced() === 1 ? "model" : "models"}`}
         />
+      </Show>
+      <Show when={props.report.today !== undefined}>
+        <SidebarStat label="today" value={costText(props.report.today ?? 0)} />
       </Show>
     </SidebarSection>
   );
 }
 
-type Watch = (session: SessionId) => Accessor<Option.Option<SessionUsage>>;
+/** Context before the session's first reply. */
+function ContextSection(props: { readonly report: UsageReport }) {
+  return (
+    <Show
+      when={props.report.session}
+      fallback={
+        <SidebarSection title="Context">
+          <SidebarNote text={NO_CALL} />
+        </SidebarSection>
+      }
+    >
+      {(usage) => <Context usage={usage()} />}
+    </Show>
+  );
+}
 
-/** A section drawn from the session's usage, `title` over a note before its first reply. */
-const makeSection = (
-  title: string,
-  watch: Watch,
-  Shown: (props: { readonly usage: SessionUsage }) => JSX.Element,
-) =>
-  function UsageSection(props: { readonly sessionId: SessionId }) {
-    const usage = watch(props.sessionId);
+type Watch = (session: SessionId) => Accessor<UsageReport>;
 
-    return (
-      <Show
-        when={Option.getOrUndefined(usage())}
-        fallback={
-          <SidebarSection title={title}>
-            <SidebarNote text={NO_CALL} />
-          </SidebarSection>
-        }
-      >
-        {(shown) => <Shown usage={shown()} />}
-      </Show>
-    );
+/** A sidebar section drawn from the session's report. */
+const makeSection =
+  (watch: Watch, Shown: (props: { readonly report: UsageReport }) => JSX.Element) =>
+  (props: { readonly sessionId: SessionId }) => {
+    const report = watch(props.sessionId);
+
+    return <Shown report={report()} />;
   };
 
 export default defineTui({
@@ -98,22 +114,14 @@ export default defineTui({
     const bridge = yield* makeBridge;
     const client = yield* host.client(UsageRpcs);
 
-    const watch = (session: SessionId) =>
-      bridge.watch(
-        client["usage/session"]({ session }).pipe(Stream.map(Option.some)),
-        Option.none<SessionUsage>(),
-      );
+    const watch = (session: SessionId) => bridge.watch(client["usage/session"]({ session }), {});
 
     yield* host.register(
       ChatSlots.sidebar,
       { id: "context", order: 0 },
-      makeSection("Context", watch, Context),
+      makeSection(watch, ContextSection),
     );
 
-    yield* host.register(
-      ChatSlots.sidebar,
-      { id: "cost", order: 10 },
-      makeSection("Cost", watch, Cost),
-    );
+    yield* host.register(ChatSlots.sidebar, { id: "cost", order: 10 }, makeSection(watch, Cost));
   }),
 });

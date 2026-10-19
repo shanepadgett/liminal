@@ -211,6 +211,29 @@ const cases: ReadonlyArray<readonly [string, Case]> = [
         expect(yield* store.lastEntriesOfKinds([])).toEqual([]);
       }),
   ],
+  [
+    "reads the own entries of some kinds in each recently saved session",
+    (store) =>
+      Effect.gen(function* () {
+        const mark = (seq: number): NewEntry => ({ ...draft(seq), kind: "test/mark" });
+        yield* store.createSession("s1", "/work");
+        yield* store.createSession("s3", "/elsewhere");
+        yield* store.appendEntries("s1", [mark(1), draft(2), mark(3)]);
+        yield* store.forkSession("s2", "s1", 2);
+        yield* store.appendEntries("s2", [mark(5)]);
+        yield* store.appendEntries("s3", [mark(1)]);
+
+        const found = yield* store.recentEntriesOfKinds(["test/mark"], 2500);
+
+        expect(found.map((saved) => [saved.sessionId, saved.seq])).toEqual([
+          ["s1", 1],
+          ["s1", 3],
+          ["s2", 3],
+        ]);
+
+        expect(yield* store.recentEntriesOfKinds([], 0)).toEqual([]);
+      }),
+  ],
 ];
 
 const reopenCase = <E>(

@@ -128,6 +128,16 @@ const make = Effect.gen(function* () {
           session.entries.filter((entry) => kinds.includes(entry.kind)).slice(-1),
         ),
       ),
+    recentEntriesOfKinds: (kinds, since) =>
+      Effect.map(Ref.get(ref), (sessions) =>
+        [...sessions]
+          .toSorted(([left], [right]) => left.localeCompare(right))
+          .flatMap(([, session]) =>
+            (session.entries.at(-1)?.at ?? 0) >= since
+              ? session.entries.filter((entry) => kinds.includes(entry.kind))
+              : [],
+          ),
+      ),
     readLive: (id) => Effect.map(existing(id), (session) => session.live),
     writeLive: (id, live) =>
       Effect.flatMap(existing(id), (session) => put(id, { ...session, live })),

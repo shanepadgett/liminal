@@ -1,4 +1,4 @@
-/** Usage: what a session's model calls used and cost, for frontends. */
+/** Usage: what a session's model calls used and cost, and today's cost, for frontends. */
 
 import { Schema } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
@@ -21,12 +21,22 @@ export const SessionUsage = Schema.Struct({
 
 export type SessionUsage = typeof SessionUsage.Type;
 
+/** What the sidebar shows: the session's usage and what every folder's calls cost today. */
+export const UsageReport = Schema.Struct({
+  /** The session's usage; absent before its first reply. */
+  session: Schema.optionalKey(SessionUsage),
+  /** US dollars for every session's priced calls since local midnight; absent when none has. */
+  today: Schema.optionalKey(Schema.Finite),
+});
+
+export type UsageReport = typeof UsageReport.Type;
+
 /** Usage's commands for frontends. */
 export class UsageRpcs extends RpcGroup.make(
-  /** The session's usage once it has a reply, then again after each new one. */
+  /** The session's report now, then again after each burst of its new entries. */
   Rpc.make("usage/session", {
     payload: { session: SessionId },
-    success: SessionUsage,
+    success: UsageReport,
     stream: true,
   }),
 ) {}

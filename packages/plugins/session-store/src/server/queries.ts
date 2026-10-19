@@ -154,6 +154,23 @@ export const lastEntriesOfKinds = Effect.fn("lastEntriesOfKinds")(function* (
   `.pipe(Effect.flatMap(Schema.decodeUnknownEffect(Schema.Array(StoredEntry))));
 });
 
+/** Each recently saved session's own entries of any of `kinds`, by session then seq. */
+export const recentEntriesOfKinds = Effect.fn("recentEntriesOfKinds")(function* (
+  kinds: ReadonlyArray<string>,
+  since: number,
+) {
+  const sql = yield* SqlClient.SqlClient;
+  if (kinds.length === 0) return [];
+
+  return yield* sql`
+    SELECT session_id AS "sessionId", seq, kind, at, data, model, text, user
+    FROM entries
+    WHERE kind IN ${sql.in(kinds)}
+      AND session_id IN (SELECT session_id FROM session_index WHERE updated_at >= ${since})
+    ORDER BY session_id, seq
+  `.pipe(Effect.flatMap(Schema.decodeUnknownEffect(Schema.Array(StoredEntry))));
+});
+
 /** Runs inside the append's write transaction, so no other writer can take the same seq. */
 const lastSeq = Effect.fn("lastSeq")(function* (sessionId: string) {
   const sql = yield* SqlClient.SqlClient;
