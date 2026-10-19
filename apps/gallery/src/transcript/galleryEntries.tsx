@@ -8,7 +8,13 @@ import { Show } from "solid-js";
 import { withRoles } from "../entryViews.ts";
 import type { EntryState, Section } from "../shell/entries.ts";
 import { ApprovalAnswer, type ApprovalAnswerMessage } from "./ApprovalAnswer.tsx";
-import { Checkpoint, type CheckpointMessage, NoteLine } from "./Checkpoint.tsx";
+import {
+  Checkpoint,
+  type CheckpointMessage,
+  NoteLine,
+  type RestoredFiles,
+  RestoredLine,
+} from "./Checkpoint.tsx";
 import { Conversation } from "./Conversation.tsx";
 import { LiveNotice, Notice, type NoticeMessage } from "./Notice.tsx";
 import { closeMomentOf, durationOf, frameAt, momentOf, sessionDurationOf } from "./play.ts";
@@ -136,16 +142,28 @@ const CHECKPOINT: CheckpointMessage = {
     "- The user wants one helper, `bootAndRecord`, not a helper per file",
     "- `bun test packages/kernel` passes after each file; run it before moving on",
   ].join("\n"),
+  restored: 4,
+};
+
+const RESTORED: RestoredFiles = {
+  files: [
+    { path: "packages/kernel/test/boot.ts", lines: "all" },
+    { path: "packages/kernel/test/machine.test.ts", lines: "1–180" },
+    { path: "packages/kernel/src/reload/machine.ts", lines: "40–112, 260–318" },
+    { path: "packages/kernel/test/protocol.test.ts", lines: "all" },
+  ],
+  leftOut: ["packages/kernel/test/contracts.test.ts"],
 };
 
 /** The checkpoint Liminal writes once the cache is lost: no handoff. */
-const AUTOMATIC: CheckpointMessage = {};
+const AUTOMATIC: CheckpointMessage = { restored: 0 };
 
-const NOTE = "Short-term note, entries 121–160, 1,840 tokens";
+const NOTE = "Short-term memory, entries 121–160, 1,840 tokens";
 
 type CheckpointView = {
   readonly isDebug: boolean;
   readonly isFolded: boolean;
+  readonly areFilesFolded: boolean;
   readonly checkpoint: CheckpointMessage;
 };
 
@@ -167,6 +185,14 @@ const checkpointState = (name: string, view: CheckpointView): EntryState => ({
         isFolded={view.isFolded}
         onToggle={() => {}}
       />
+      <Show when={view.isDebug && view.checkpoint.restored > 0}>
+        <RestoredLine
+          color={color}
+          restored={RESTORED}
+          isFolded={view.areFilesFolded}
+          onToggle={() => {}}
+        />
+      </Show>
       <Turn color={color} prompt={FIX.prompt} frame={frameAt(FIX, momentOf(FIX, 0, 0.6))} />
     </box>
   )),
@@ -207,16 +233,34 @@ export const TRANSCRIPT_COMPONENTS: Section = {
       id: "transcript-checkpoint",
       title: "Checkpoint",
       states: [
-        checkpointState("Checkpoint", { isDebug: false, isFolded: true, checkpoint: CHECKPOINT }),
-        checkpointState("Debug view", { isDebug: true, isFolded: true, checkpoint: CHECKPOINT }),
+        checkpointState("Checkpoint", {
+          isDebug: false,
+          isFolded: true,
+          areFilesFolded: true,
+          checkpoint: CHECKPOINT,
+        }),
+        checkpointState("Debug view", {
+          isDebug: true,
+          isFolded: true,
+          areFilesFolded: true,
+          checkpoint: CHECKPOINT,
+        }),
         checkpointState("Debug view, handoff unfolded", {
           isDebug: true,
           isFolded: false,
+          areFilesFolded: true,
           checkpoint: CHECKPOINT,
         }),
-        checkpointState("Automatic, debug view", {
+        checkpointState("Debug view, files unfolded", {
           isDebug: true,
           isFolded: true,
+          areFilesFolded: false,
+          checkpoint: CHECKPOINT,
+        }),
+        checkpointState("Automatic, no files, debug view", {
+          isDebug: true,
+          isFolded: true,
+          areFilesFolded: true,
           checkpoint: AUTOMATIC,
         }),
       ],
