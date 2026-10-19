@@ -437,6 +437,44 @@ effectTest(
 );
 
 effectTest(
+  "the same call failing three times in a row ends the turn with a notice of why",
+  Effect.gen(function* () {
+    const log = yield* start("hello");
+    const bad = { text: 1 };
+
+    yield* (yield* ScriptedModel).enqueue(
+      reply([call("c1", "echo", bad)]),
+      reply([call("c2", "echo", { text: "fine" })]),
+      reply([call("c3", "echo", bad)]),
+      reply([call("c4", "echo", bad)]),
+      reply([call("c5", "echo", bad)]),
+      replyText("never sent"),
+    );
+
+    yield* (yield* AgentLoop).start(s1, settings);
+
+    yield* until(
+      Effect.map(Effect.orDie(log.read(s1, {})), (entries) => markersOf(entries).length === 2),
+    );
+
+    const entries = yield* log.read(s1, {});
+    const [notice] = entries.slice(-2);
+
+    expect(markersOf(entries)).toEqual(["started", "ended-by-plugin"]);
+    expect(resultsOf(entries)).toHaveLength(5);
+
+    expect(notice?.data).toEqual({
+      kind: "warning",
+      title: "Turn ended",
+      body: "The same echo call failed 3 times in a row.",
+    });
+
+    expect(yield* (yield* ScriptedModel).requests).toHaveLength(5);
+  }),
+  stack,
+);
+
+effectTest(
   "a turn left running resumes when agent-loop builds again",
   Effect.gen(function* () {
     const log = yield* start("hello");

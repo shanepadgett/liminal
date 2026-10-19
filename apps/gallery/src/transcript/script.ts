@@ -19,7 +19,9 @@ export type Action =
       readonly hasPassed: boolean;
     }
   | { readonly kind: "edit"; readonly path: string; readonly diff: readonly DiffLine[] }
-  | { readonly kind: "checks"; readonly checks: readonly Check[] };
+  | { readonly kind: "checks"; readonly checks: readonly Check[] }
+  /** The model read back entries a checkpoint folded away. */
+  | { readonly kind: "recall"; readonly from: number; readonly through: number };
 
 export type Beat =
   | { readonly kind: "think"; readonly text: string; readonly ms: number }

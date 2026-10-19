@@ -15,6 +15,8 @@ export class Directories extends Context.Service<
     readonly project: string;
     /** Durable state such as the session database. */
     readonly data: string;
+    /** Scratch files the system may clear, such as long tool output: `<tmpdir>/liminal`. */
+    readonly temp: string;
   }
 >()("liminal/sdk/Directories") {}
 

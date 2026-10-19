@@ -8,6 +8,8 @@
  * boots. `--model` holds for this run only; `--session` picks the session to open.
  */
 
+import { tmpdir } from "node:os";
+
 import { BunRuntime, BunServices } from "@effect/platform-bun";
 import { Console, Deferred, Effect, Layer, Option, Path } from "effect";
 
@@ -37,6 +39,7 @@ const directories = Layer.effect(
       workspace: process.cwd(),
       project: path.join(process.cwd(), ".liminal"),
       data: path.join(global, "data"),
+      temp: path.join(tmpdir(), "liminal"),
     };
   }),
 );

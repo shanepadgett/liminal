@@ -107,6 +107,11 @@ export const wordingOf = (group: WorkGroup, tense: Tense): Wording =>
         return worded("Ran", run.command, "", run.hasPassed ? "" : "failed");
       },
       checked: (checked) => checkedOf(checked.checks, tense),
+      recalled: ({ recall }) =>
+        worded(
+          tense === "past" ? "Recalled" : "Recalling",
+          `entries ${recall.from}–${recall.through}`,
+        ),
     }),
   );
 

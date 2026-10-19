@@ -5,6 +5,7 @@
 
 import { Effect, Schema } from "effect";
 
+import { notice } from "@liminal/notices/contract";
 import { draft, type Entry, type EntryDraft, type SessionId, TurnGate, Work } from "@liminal/sdk";
 import {
   EntryKinds,
@@ -24,8 +25,12 @@ const keyOf = (sessionId: SessionId) => `agent-loop/turn/${sessionId}`;
 
 const ended = (end: TurnEndReason) => draft(TurnEndedEntry, { data: { end }, text: "" });
 
-/** What a held turn saves when it ends: a notice first when an error stopped it. */
+/** What a held turn saves when it ends: a notice first when an error or a plugin stopped it. */
 type Drafts = readonly [EntryDraft, ...ReadonlyArray<EntryDraft>];
+
+/** The notice of a turn a plugin ended, with the plugin's reason. */
+const endedNotice = (reason: string) =>
+  notice({ kind: "warning", title: "Turn ended", body: reason });
 
 const isStarted = (entry: Entry) => entry.kind === TurnStartedEntry.kind;
 
@@ -43,12 +48,13 @@ export const makeTurns = Effect.fn("makeTurns")(function* (log: SessionLog["Serv
     Effect.gen(function* () {
       for (;;) {
         const outcome = yield* work.use(AgentLoop, (loop) => loop.step(sessionId, settings));
-        if (StepOutcome.$is("Answered")(outcome)) return "answered" as const;
-        if (StepOutcome.$is("EndedByPlugin")(outcome)) return "ended-by-plugin" as const;
+        if (StepOutcome.$is("Answered")(outcome)) return [ended("answered")] satisfies Drafts;
+
+        if (StepOutcome.$is("EndedByPlugin")(outcome))
+          return [endedNotice(outcome.reason), ended("ended-by-plugin")] satisfies Drafts;
       }
     }).pipe(
       Effect.tapError((error) => Effect.logError("turn stopped", error)),
-      Effect.map((end): Drafts => [ended(end)]),
       Effect.catch((error) => Effect.succeed<Drafts>([stoppedNotice(error), ended("stopped")])),
       Effect.flatMap((drafts) =>
         work.use(SessionLog, (current) => current.append(sessionId, drafts)),

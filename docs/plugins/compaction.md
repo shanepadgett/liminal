@@ -49,6 +49,11 @@ Status: built
 - When unfolded notes pass about 30,000 tokens, they are condensed into long-term memory
 - A fork reuses its parent's notes and memories up to the fork point
 
+### History
+
+- A `history` tool reads entries `from` through `through` back as a transcript, so the model can recall details a memory left out
+- Its rows read `Recalled entries 12–40`
+
 ### Transcript
 
 - The transcript keeps every entry; scrolling back shows everything before a checkpoint

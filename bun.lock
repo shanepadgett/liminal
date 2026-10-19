@@ -537,6 +537,15 @@
         "effect": "4.0.5",
       },
     },
+    "packages/plugins/tool-output": {
+      "name": "@liminal/tool-output",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@liminal/sdk": "workspace:*",
+        "@liminal/tools": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
     "packages/plugins/tools": {
       "name": "@liminal/tools",
       "version": "0.1.0",
@@ -828,6 +837,8 @@
     "@liminal/shell-safety": ["@liminal/shell-safety@workspace:packages/plugins/shell-safety"],
 
     "@liminal/system-prompt": ["@liminal/system-prompt@workspace:packages/plugins/system-prompt"],
+
+    "@liminal/tool-output": ["@liminal/tool-output@workspace:packages/plugins/tool-output"],
 
     "@liminal/tools": ["@liminal/tools@workspace:packages/plugins/tools"],
 

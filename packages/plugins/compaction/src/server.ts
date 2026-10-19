@@ -1,6 +1,6 @@
 /**
  * Compaction's server: `memories.db` in the data folder, the view step, the `checkpoint` tool, the
- * forced check and the before-call hook.
+ * `history` tool, the forced check and the before-call hook.
  */
 
 import { Effect, FiberMap, Layer } from "effect";
@@ -16,6 +16,7 @@ import { ToolChecks, Tools } from "@liminal/tools/contract";
 import { CheckpointEntry, HandoffEntry, NoteEntry } from "./contract.ts";
 import { beforeCallOf, type CompactionDeps } from "./server/before-call.ts";
 import { checkpointToolOf, forcedCheck } from "./server/checkpoint.ts";
+import { historyToolOf } from "./server/recall.ts";
 import { Memories, memoriesLayer } from "./server/store.ts";
 import { viewOf } from "./server/view.ts";
 
@@ -50,7 +51,9 @@ const register = Effect.gen(function* () {
     { order: viewOrder },
   );
 
-  yield* (yield* Tools).register(checkpointToolOf(deps));
+  const tools = yield* Tools;
+  yield* tools.register(checkpointToolOf(deps));
+  yield* tools.register(historyToolOf(deps.log));
   yield* (yield* ToolChecks).register(forcedCheck(deps), { order: checkOrder });
 
   const writers = yield* FiberMap.make<SessionId>();

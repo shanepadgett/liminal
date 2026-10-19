@@ -1,0 +1,17 @@
+{
+  "name": "@liminal/tool-output",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./plugin.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "peerDependencies": {
+    "@liminal/sdk": "workspace:*",
+    "@liminal/tools": "workspace:*",
+    "effect": "4.0.5"
+  },
+  "liminal": [
+    "./plugin.ts"
+  ]
+}

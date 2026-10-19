@@ -1,16 +1,36 @@
 /**
- * Compaction's TUI part: the checkpoint rule, the handoff and note lines in the debug view, and no
- * row for the `checkpoint` call, which the rule stands for.
+ * Compaction's TUI part: the checkpoint rule, the handoff and note lines in the debug view, no row
+ * for the `checkpoint` call, which the rule stands for, and `Recalled entries 12–40` for
+ * `history`.
  */
 
-import { Effect } from "effect";
+import { Effect, Option, Schema } from "effect";
 
 import { ChatSlots, ToolRows } from "@liminal/chat/contract";
 import { defineTui, Tail, TuiHost } from "@liminal/sdk/tui";
 
-import { CheckpointEntry, checkpointTool, HandoffEntry, NoteEntry } from "./contract.ts";
+import {
+  CheckpointEntry,
+  checkpointTool,
+  HandoffEntry,
+  HistoryParams,
+  historyTool,
+  NoteEntry,
+} from "./contract.ts";
 import { Checkpoint } from "./tui/Checkpoint.tsx";
 import { HandoffLine, NoteLine } from "./tui/DebugLine.tsx";
+
+const decodeRange = Schema.decodeUnknownOption(HistoryParams);
+
+const historyRows = ToolRows.Rows({
+  fold: (call) => ({
+    verb: call.outcome === undefined ? "Recalling" : "Recalled",
+    subject: Option.match(decodeRange(call.params), {
+      onNone: () => "entries",
+      onSome: ({ from, through }) => `entries ${from}–${through}`,
+    }),
+  }),
+});
 
 export default defineTui({
   setup: Effect.gen(function* () {
@@ -25,5 +45,7 @@ export default defineTui({
       { key: checkpointTool, meta: ToolRows.Hidden() },
       (props) => <Tail text={props.text} lines={4} />,
     );
+
+    yield* host.register(ChatSlots.tool, { key: historyTool, meta: historyRows }, Tail);
   }),
 });

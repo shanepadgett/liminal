@@ -35,7 +35,13 @@ import tools from "@liminal/tools";
 import { ToolChecks, ToolDecision, Tools } from "@liminal/tools/contract";
 
 import compaction from "../plugin.ts";
-import { CheckpointData, CheckpointEntry, HandoffEntry, NoteEntry } from "../src/contract.ts";
+import {
+  CheckpointData,
+  CheckpointEntry,
+  HandoffEntry,
+  historyTool,
+  NoteEntry,
+} from "../src/contract.ts";
 
 const stack = serverOf(compaction).pipe(
   Layer.provideMerge(serverOf(agentLoop)),
@@ -326,6 +332,22 @@ effectTest(
 
     const texts = yield* requestTexts;
     expect(texts.some((text) => text.includes("The user asked for three things."))).toBe(true);
+  }),
+  stack,
+);
+
+effectTest(
+  "history reads an entry range back as a transcript and refuses a range that runs backwards",
+  Effect.gen(function* () {
+    yield* start(userMessage("first ask"), userMessage("second ask"), userMessage("third ask"));
+    const history = yield* toolNamed(historyTool);
+    const callContext = { sessionId: s1, callId: "h1" };
+
+    const { result } = yield* history.run({ from: 2, through: 3 }, callContext);
+    expect(result).toBe("#2 user: first ask\n\n#3 user: second ask");
+
+    const failed = yield* Effect.flip(history.run({ from: 3, through: 2 }, callContext));
+    expect(failed.message).toContain("through");
   }),
   stack,
 );

@@ -89,7 +89,7 @@ const messageText = (seq: number, message: ModelContent) =>
   `#${seq} ${message.role}: ${Arr.getSomes(message.parts.map(partText)).join("\n")}`;
 
 /** The entries as plain text, one block per message. */
-const historyText = (entries: ReadonlyArray<Entry>) =>
+export const historyText = (entries: ReadonlyArray<Entry>) =>
   entries
     .flatMap((entry) => (entry.model ?? []).map((message) => messageText(entry.seq, message)))
     .join("\n\n");

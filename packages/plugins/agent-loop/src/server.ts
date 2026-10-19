@@ -31,19 +31,22 @@ import { makeCalls } from "./server/calls.ts";
 import { makeDefaults } from "./server/defaults.ts";
 import { makeHooks } from "./server/hooks.ts";
 import { makeCallModel } from "./server/model-call.ts";
+import { repeatsOf } from "./server/repeats.ts";
 import { replyCalls } from "./server/reply.ts";
 import { makeTurns } from "./server/turns.ts";
+
+/** Before other hooks, so a looping turn ends before they do any work. */
+const repeatsOrder = -10;
 
 const make = Effect.gen(function* () {
   const log = yield* SessionLog;
   const context = yield* Context;
   const tools = yield* Tools;
 
-  const { runBeforeCall, runTurnEnding } = makeHooks(
-    log,
-    yield* BeforeCallHooks,
-    yield* TurnEndingHooks,
-  );
+  const beforeCall = yield* BeforeCallHooks;
+  yield* beforeCall.register(repeatsOf(log), { order: repeatsOrder });
+
+  const { runBeforeCall, runTurnEnding } = makeHooks(log, beforeCall, yield* TurnEndingHooks);
 
   const { runCalls, answerUnanswered } = makeCalls(log, yield* ToolPipeline);
 

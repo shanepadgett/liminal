@@ -25,6 +25,8 @@ Status: built
 - A turn uses the saved thinking option when the model offers it, else the model's default, else off
 - Plugins join a turn at three named checkpoints, each with a fixed rule: before each model call, after a failed attempt, when the turn would end
 - Any plugin can end the turn before a model call; the loop has no built-in step limit
+- A turn a plugin ended saves a warning notice with the plugin's reason
+- The same call, by name and params, failing or denied 3 times in a row ends the turn
 - Steering input enters at the next step boundary, sent with the tool results; queued follow-ups enter when the turn would end
 - A failed attempt before a retry is discarded and saves nothing; the retry status shows only in live state
 - On cancel, the output so far is saved marked interrupted and the model sees it; tool calls that never ran report as cancelled

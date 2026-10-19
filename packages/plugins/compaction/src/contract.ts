@@ -71,3 +71,14 @@ export const NoteEntry = defineEntry({
 
 /** The tool the model calls to write a checkpoint. */
 export const checkpointTool = "checkpoint";
+
+const EntryNumber = Schema.Int.check(Schema.isGreaterThanOrEqualTo(1));
+
+/** The tool the model calls to read entries a checkpoint folded away. */
+export const historyTool = "history";
+
+/** The params of `history`: entries `from` through `through`, inclusive. */
+export const HistoryParams = Schema.Struct({
+  from: EntryNumber.annotate({ description: "First entry to read" }),
+  through: EntryNumber.annotate({ description: "Last entry to read" }),
+});

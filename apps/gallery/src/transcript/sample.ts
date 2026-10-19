@@ -20,6 +20,7 @@ export const BOOT: Script = {
     { kind: "act", ms: 900, action: { kind: "read", path: "kernel/src/host.ts" } },
     { kind: "act", ms: 700, action: { kind: "read", path: "kernel/src/manifest.ts" } },
     { kind: "act", ms: 900, action: { kind: "search", pattern: "definePlugin", hits: 3 } },
+    { kind: "act", ms: 700, action: { kind: "recall", from: 12, through: 40 } },
     {
       kind: "say",
       ms: 2200,

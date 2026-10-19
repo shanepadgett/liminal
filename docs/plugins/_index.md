@@ -76,7 +76,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | [shell-safety](shell-safety.md) | Tells read-only shell commands apart from ones that can change things | built |
 | permissions | Rules for what tools may do | to plan |
 | [approval](approval.md) | Decides the tool calls a check asks about: decision model, reviewer, then the user | built |
-| tool-output-spill | Moves large tool output to a file | to plan |
+| [tool-output](tool-output.md) | Cuts long tool output and saves the whole text to a file | built |
 | checks | The checks tool, and runs the checks itself, with its own entry kind, when the model ends its turn without them | to plan |
 | command-runner | Runs one command to its end, with a timeout | built |
 | tools-read | `read`: a text file in windows of lines | built |

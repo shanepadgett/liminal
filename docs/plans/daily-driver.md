@@ -100,6 +100,48 @@ main
 - An invalid command line exits 2; a printed turn that did not answer exits 1.
 - A new session's id goes to stderr in print mode, so the next run can pass `--session`.
 
+## Step 2: small tool hooks
+
+```
+packages/sdk/src/core/directories.ts          Directories.temp: scratch files the system may clear (<tmpdir>/liminal)
+packages/plugins/tool-output/                 new plugin: one ToolWrapper that spills long output
+  src/contract.ts                             outputLimits: 50,000 characters or 2,000 lines
+  src/server/spill.ts                         cut: first and last half kept; the whole text to a private file
+packages/plugins/agent-loop/src/server/
+  repeats.ts                                  before-call hook: the same call failing 3 times in a row ends the turn
+  turns.ts                                    a turn a plugin ended saves a warning notice with the reason
+packages/plugins/compaction/src/server/
+  recall.ts                                   history tool: entries from..through as a transcript
+  notes.ts                                    exports historyText, which recall shares
+packages/plugins/compaction/src/tui.tsx       history rows: Recalling / Recalled entries 12–40
+apps/gallery/src/transcript/                  a recall action and its row, in the sample
+```
+
+```ts
+// tool-output: ToolWrappers, order 0 (outermost)
+(allowed, next) => next.pipe(Effect.flatMap((outcome) =>
+  done   -> text = string result or its JSON; over the limits -> result = cut(text, path)
+  failed -> the same with message
+  denied -> unchanged))
+// path: <temp>/tool-output/<session>/<callId>.txt, folder 0o700, file 0o600
+// cut: <first 1,000 lines or 25,000 chars>\n[Output cut: N lines, M characters. Full output saved at <path>; read or search it for the rest.]\n<last half>
+// a failed write keeps the cut text and names the error instead of the path
+
+// agent-loop: BeforeCallHooks, order -10
+repeats(log): BeforeCallHook
+  entries since the latest turn-started; the last 3 tool results
+  all failed or denied, and their calls share name and params -> EndTurn("The same <name> call failed 3 times in a row.")
+  a log read failure logs a warning and proceeds
+
+// compaction: Tools
+history { from: Seq, through: Seq } -> log.read(session, { after: from - 1, through }) -> historyText
+  through < from -> ToolFailed
+```
+
+- Spill sees the final outcome of every call, so the later `run` tool's inner calls spill one by one.
+- Notes in the view already name their entry range; the `history` guidance points the model at them.
+- The ended-by-plugin notice is the only place the user sees why a turn stopped; the loop guard is its first user.
+
 ## New dependency
 
 - `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Step 4's plan studies how OpenCode uses it and writes the `run` guidance from that.

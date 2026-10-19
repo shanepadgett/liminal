@@ -31,6 +31,7 @@ const temporaryDirectories = Layer.effect(
       workspace: root,
       project: path.join(root, "project"),
       data: path.join(root, "data"),
+      temp: path.join(root, "temp"),
     };
 
     for (const directory of Object.values(directories)) {
