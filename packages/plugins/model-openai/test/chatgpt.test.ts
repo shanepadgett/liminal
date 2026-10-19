@@ -97,7 +97,7 @@ effectTest(
 
     expect((yield* Ref.get(sent))[0]).toMatchObject({
       path: "/v1/responses",
-      headers: { authorization: "Bearer at-0" },
+      headers: { authorization: "Bearer at-0", "session-id": "session-1" },
     });
   }),
   stack,

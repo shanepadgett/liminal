@@ -6,7 +6,7 @@
 import { Generated, OpenAiClient, OpenAiLanguageModel, OpenAiTool } from "@effect/ai-openai";
 import { Effect, FileSystem, Schema, Stream } from "effect";
 import { Toolkit } from "effect/ai";
-import { HttpClient } from "effect/http";
+import { HttpClient, HttpClientRequest } from "effect/http";
 
 import {
   type ModelError,
@@ -31,6 +31,25 @@ export interface ResponsesSigning {
   readonly options: Effect.Effect<OpenAiClient.Options, ModelError>;
 }
 
+/**
+ * `options` with the `session-id` header on every call when the request has a cache key: OpenAI
+ * reads a conversation's prompt cache only for requests that carry it.
+ */
+const withSession = (
+  options: OpenAiClient.Options,
+  cacheKey: string | undefined,
+): OpenAiClient.Options => {
+  if (cacheKey === undefined) return options;
+
+  const inner = options.transformClient;
+  const session = HttpClient.mapRequest(HttpClientRequest.setHeader("session-id", cacheKey));
+
+  return {
+    ...options,
+    transformClient: (client) => session(inner === undefined ? client : inner(client)),
+  };
+};
+
 /** The `effect/ai` language model for `request`; the API takes only efforts. */
 const languageModel = (
   signing: ResponsesSigning,
@@ -40,7 +59,9 @@ const languageModel = (
   Effect.gen(function* () {
     const effort = yield* effortOf(signing.name, isEffort, "none")(request.thinking);
 
-    const client = yield* OpenAiClient.make(yield* signing.options).pipe(
+    const options = withSession(yield* signing.options, request.cacheKey);
+
+    const client = yield* OpenAiClient.make(options).pipe(
       Effect.provideService(HttpClient.HttpClient, http),
     );
 

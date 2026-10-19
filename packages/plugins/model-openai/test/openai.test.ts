@@ -94,7 +94,11 @@ effectTest(
 
     expect(events.map((each) => each.type)).toContain("finish");
     expect(events.at(-1)).toMatchObject({ type: "finish", reason: "stop" });
-    expect((yield* Ref.get(headers))[0]).toMatchObject({ authorization: "Bearer sk-saved" });
+
+    expect((yield* Ref.get(headers))[0]).toMatchObject({
+      authorization: "Bearer sk-saved",
+      "session-id": "session-1",
+    });
   }).pipe(Effect.provideService(ConfigProvider.ConfigProvider, withKey)),
   stack,
 );
