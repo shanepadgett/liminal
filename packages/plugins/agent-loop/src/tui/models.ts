@@ -75,21 +75,45 @@ const failureOption = (provider: ProviderInfo, failure: string): SelectOption<st
   tone: "warning",
 });
 
+/** The section the favorite models move to, above the providers'. */
+const FAVORITES = "Favorites";
+
+/** What marks a model in the dialog: the favorites' keys, and the default model's key. */
+export interface ModelMarks {
+  readonly favorites: ReadonlySet<string>;
+  readonly defaultKey?: string | undefined;
+}
+
 /**
- * Each model as an option under its provider's name, its key the value; a provider whose list
- * failed has the failure as its one option. Providers with models come first.
+ * Each model as an option, its key the value; the default model is tagged `default`. A favorite
+ * sits in the Favorites section, with its provider's name before its id; the rest sit under their
+ * provider's name. A provider whose list failed has the failure as its one option. Providers with
+ * models come first.
  */
-export const modelOptions = (listed: ReadonlyArray<ProviderModels>) =>
-  listed.flatMap(({ provider, models, failure }) =>
-    failure === undefined
-      ? models.map((model): SelectOption<string> => ({
+export const modelOptions = (listed: ReadonlyArray<ProviderModels>, marks: ModelMarks) => {
+  const { favorites, defaultKey } = marks;
+
+  const optionsOf = (wantFavorites: boolean) =>
+    listed.flatMap(({ provider, models, failure }) => {
+      if (failure !== undefined) return wantFavorites ? [] : [failureOption(provider, failure)];
+
+      return models.flatMap((model): SelectOption<string>[] => {
+        const value = modelKey({ provider: provider.id, id: model.id });
+        if (favorites.has(value) !== wantFavorites) return [];
+
+        const option: SelectOption<string> = {
           title: model.name,
-          value: modelKey({ provider: provider.id, id: model.id }),
-          description: model.id,
-          category: provider.name,
-        }))
-      : [failureOption(provider, failure)],
-  );
+          value,
+          description: wantFavorites ? `${provider.name} · ${model.id}` : model.id,
+          category: wantFavorites ? FAVORITES : provider.name,
+        };
+
+        return [value === defaultKey ? { ...option, tag: "default" } : option];
+      });
+    });
+
+  return [...optionsOf(true), ...optionsOf(false)];
+};
 
 /** The model an option's key names. */
 export const modelOf = (listed: ReadonlyArray<ProviderModels>, key: string) =>

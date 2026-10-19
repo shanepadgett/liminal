@@ -29,6 +29,7 @@ import {
 } from "./contract.ts";
 import { makeCalls } from "./server/calls.ts";
 import { makeDefaults } from "./server/defaults.ts";
+import { makeFavorites } from "./server/favorites.ts";
 import { makeHooks } from "./server/hooks.ts";
 import { makeCallModel } from "./server/model-call.ts";
 import { repeatsOf } from "./server/repeats.ts";
@@ -105,7 +106,9 @@ const make = Effect.gen(function* () {
   const turns = yield* makeTurns(log);
   yield* turns.resume;
 
-  const { started, ...defaults } = yield* makeDefaults({ settings: yield* Settings, models, log });
+  const store = yield* Settings;
+  const { started, ...defaults } = yield* makeDefaults({ settings: store, models, log });
+  const favorites = yield* makeFavorites(store);
 
   return AgentLoop.of({
     step,
@@ -113,6 +116,7 @@ const make = Effect.gen(function* () {
     start: (sessionId, settings) =>
       turns.start(sessionId, settings).pipe(Effect.tap(() => started(sessionId))),
     ...defaults,
+    ...favorites,
     cancel: turns.cancel,
   });
 });
@@ -125,6 +129,10 @@ const rpcs = AgentLoopRpcs.toLayer(
       "agent-loop/session-defaults": ({ session }) => loop.sessionDefaults(session),
       "agent-loop/pick": ({ session, model, thinking }) => loop.pick(session, model, thinking),
       "agent-loop/cycle-thinking": ({ session }) => loop.cycleThinking(session),
+      "agent-loop/default": () => loop.savedDefault,
+      "agent-loop/set-default": ({ model, thinking }) => loop.setDefault(model, thinking),
+      "agent-loop/favorites": () => loop.favorites,
+      "agent-loop/toggle-favorite": ({ model }) => loop.toggleFavorite(model),
     });
   }),
 );

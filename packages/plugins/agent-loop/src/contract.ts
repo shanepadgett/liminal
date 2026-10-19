@@ -30,6 +30,8 @@ const ThinkingChoice = Schema.String;
 export const AgentLoopSection = Schema.Struct({
   model: Schema.optionalKey(ModelRef),
   thinking: Schema.optionalKey(ThinkingChoice),
+  /** The models `/model` lists first. */
+  favorites: Schema.optionalKey(Schema.Array(ModelRef)),
 });
 
 /** No `agent-loop.model` is set in any settings file. */
@@ -82,6 +84,18 @@ export class DefaultSetFailed extends Schema.TaggedError<
   DefaultSetFailed,
   { readonly brand: unique symbol }
 >()("DefaultSetFailed", { message: Schema.String }) {}
+
+/** The session's thinking option could not move to the next one: its model or settings failed. */
+export class CycleFailed extends Schema.TaggedError<
+  CycleFailed,
+  { readonly brand: unique symbol }
+>()("CycleFailed", { message: Schema.String }) {}
+
+/** The global settings file could not take a change to the favorite models. */
+export class FavoritesFailed extends Schema.TaggedError<
+  FavoritesFailed,
+  { readonly brand: unique symbol }
+>()("FavoritesFailed", { message: Schema.String }) {}
 
 /** The turn a hook is called for. */
 export interface Turn {
@@ -186,8 +200,21 @@ export class AgentLoop extends Context.Service<
       sessionId: SessionId,
       settings: TurnSettings,
     ) => Effect.Effect<void, SessionNotFound | InvalidEntry | StoreError>;
-    /** A new session's turn settings, from the `agent-loop` settings section; read on each call. */
-    readonly defaults: Effect.Effect<TurnSettings, DefaultsError>;
+    /**
+     * A new session's turn settings, read on each call: the default set in the `agent-loop`
+     * settings section, else the model of the newest turn in any session.
+     */
+    readonly defaults: Effect.Effect<TurnSettings, DefaultsError | StoreError>;
+    /** The default set in the settings section alone, as frontends show it. */
+    readonly savedDefault: Effect.Effect<DefaultsView>;
+    /**
+     * Sets the model, and the thinking option when given, as the default in the global settings
+     * file; without a thinking option the saved one is removed.
+     */
+    readonly setDefault: (
+      model: ModelRef,
+      thinking?: string,
+    ) => Effect.Effect<void, DefaultSetFailed>;
     /**
      * The settings of the session's next turn: the pick no turn has used yet, else its newest
      * turn's, else `defaults`.
@@ -199,18 +226,27 @@ export class AgentLoop extends Context.Service<
     readonly sessionDefaults: (sessionId: SessionId) => Stream.Stream<DefaultsView>;
     /**
      * Picks the model, and the thinking option when given, for the session's next turn, held in
-     * memory until a turn starts, and sets both as the default in the global settings file.
+     * memory until a turn starts. It leaves the default alone.
      */
     readonly pick: (
       sessionId: SessionId,
       model: ModelRef,
       thinking?: string,
-    ) => Effect.Effect<void, DefaultSetFailed>;
+    ) => Effect.Effect<void>;
     /**
      * Picks the next thinking option of the session's model for its next turn, as `pick` does,
      * wrapping from the last to the first; `NoOptions` when the model offers fewer than two.
      */
-    readonly cycleThinking: (sessionId: SessionId) => Effect.Effect<CycleResult, DefaultSetFailed>;
+    readonly cycleThinking: (sessionId: SessionId) => Effect.Effect<CycleResult, CycleFailed>;
+    /** The favorite models, in the order they were added; none when the section does not decode. */
+    readonly favorites: Effect.Effect<ReadonlyArray<ModelRef>>;
+    /**
+     * Makes `model` a favorite, or stops it being one, in the global settings file, and gives the
+     * new list. It reads the saved list first, so a change made elsewhere stays.
+     */
+    readonly toggleFavorite: (
+      model: ModelRef,
+    ) => Effect.Effect<ReadonlyArray<ModelRef>, FavoritesFailed>;
     /** Interrupts the session's running turn and saves it as cancelled; no turn running is a no-op. */
     readonly cancel: (
       sessionId: SessionId,
@@ -252,11 +288,21 @@ export class AgentLoopRpcs extends RpcGroup.make(
   }),
   Rpc.make("agent-loop/pick", {
     payload: { session: SessionId, model: ModelRef, thinking: Schema.optionalKey(ThinkingChoice) },
-    error: DefaultSetFailed,
   }),
   Rpc.make("agent-loop/cycle-thinking", {
     payload: { session: SessionId },
     success: CycleResult,
+    error: CycleFailed,
+  }),
+  Rpc.make("agent-loop/default", { success: DefaultsView }),
+  Rpc.make("agent-loop/set-default", {
+    payload: { model: ModelRef, thinking: Schema.optionalKey(ThinkingChoice) },
     error: DefaultSetFailed,
+  }),
+  Rpc.make("agent-loop/favorites", { success: Schema.Array(ModelRef) }),
+  Rpc.make("agent-loop/toggle-favorite", {
+    payload: { model: ModelRef },
+    success: Schema.Array(ModelRef),
+    error: FavoritesFailed,
   }),
 ) {}

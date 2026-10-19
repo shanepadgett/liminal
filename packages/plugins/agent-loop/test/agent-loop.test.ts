@@ -549,7 +549,7 @@ effectTest(
 );
 
 effectTest(
-  "a pick sets the default and the session's stream shows it",
+  "a pick shows in the session's stream and leaves the default alone",
   Effect.gen(function* () {
     const loop = yield* AgentLoop;
     const first = yield* Latch.make();
@@ -572,7 +572,51 @@ effectTest(
       DefaultsSet.make({ settings: turn, thinkingLabel: "high" }),
     ]);
 
-    expect(yield* loop.defaults).toEqual(turn);
+    expect(yield* Effect.flip(loop.defaults)).toBeInstanceOf(NoDefaultModel);
+  }),
+  stack,
+);
+
+effectTest(
+  "setDefault saves the model and thinking, removing a thinking option it is not given",
+  Effect.gen(function* () {
+    const loop = yield* AgentLoop;
+
+    const section = Effect.flatMap(Settings, (store) =>
+      store.section("agent-loop", AgentLoopSection),
+    );
+
+    yield* loop.setDefault(settings.model, "high");
+    expect(yield* section).toEqual({ model: settings.model, thinking: "high" });
+
+    expect(yield* loop.savedDefault).toEqual(
+      DefaultsSet.make({
+        settings: { model: settings.model, thinking: "high" },
+        thinkingLabel: "high",
+      }),
+    );
+
+    yield* loop.setDefault(settings.model);
+    expect(yield* section).toEqual({ model: settings.model });
+    expect(yield* loop.defaults).toEqual({ model: settings.model });
+  }),
+  stack,
+);
+
+effectTest(
+  "with no default set, a new session uses the model of the newest turn, and a default wins",
+  Effect.gen(function* () {
+    yield* start("hello");
+    yield* (yield* ScriptedModel).repeat(replyText("ok"));
+    const loop = yield* AgentLoop;
+    const other = { provider: scriptedProvider, id: "other" };
+
+    yield* loop.start(s1, settings);
+    expect(yield* loop.sessionSettings(SessionId.make("s2"))).toEqual(settings);
+
+    yield* loop.setDefault(other);
+    expect(yield* loop.sessionSettings(SessionId.make("s2"))).toEqual({ model: other });
+    expect(yield* loop.sessionSettings(s1)).toEqual(settings);
   }),
   stack,
 );
@@ -595,7 +639,7 @@ effectTest(
 
     yield* loop.pick(s2, settings.model, "off");
     expect(yield* loop.sessionSettings(s1)).toEqual(high);
-    expect(yield* loop.sessionSettings(SessionId.make("s3"))).toEqual(settings);
+    expect(yield* loop.sessionSettings(SessionId.make("s3"))).toEqual(high);
   }),
   stack,
 );
@@ -617,10 +661,27 @@ effectTest(
     yield* loop.cycleThinking(s1);
     expect(yield* thinkingOf).toBe("off");
 
-    expect(yield* (yield* Settings).section("agent-loop", AgentLoopSection)).toEqual({
-      model: settings.model,
-      thinking: "off",
-    });
+    expect(yield* (yield* Settings).section("agent-loop", AgentLoopSection)).toEqual({});
+  }),
+  stack,
+);
+
+effectTest(
+  "toggling a favorite adds it last, then removes it, and keeps what the settings file holds",
+  Effect.gen(function* () {
+    const loop = yield* AgentLoop;
+    const other = { provider: "scripted", id: "other" };
+
+    expect(yield* loop.favorites).toEqual([]);
+
+    expect(yield* loop.toggleFavorite(settings.model)).toEqual([settings.model]);
+    expect(yield* loop.toggleFavorite(other)).toEqual([settings.model, other]);
+    expect(yield* loop.favorites).toEqual([settings.model, other]);
+
+    yield* (yield* Settings).write("global", ["agent-loop", "favorites"], [other]);
+    expect(yield* loop.toggleFavorite(settings.model)).toEqual([other, settings.model]);
+
+    expect(yield* loop.toggleFavorite(other)).toEqual([settings.model]);
   }),
   stack,
 );

@@ -6,7 +6,7 @@ import { Effect } from "effect";
 
 import { ModelError, type ProviderInfo } from "@liminal/sdk";
 
-import { listAll } from "../src/tui/models.ts";
+import { listAll, modelOptions } from "../src/tui/models.ts";
 
 const providers: ReadonlyArray<ProviderInfo> = [
   { id: "broken", name: "Broken" },
@@ -31,4 +31,31 @@ test("a provider not signed in is left out and a failed one comes last", async (
     ["listed", undefined],
     ["broken", "Catalog is down"],
   ]);
+});
+
+const model = (id: string) => ({
+  id,
+  name: id.toUpperCase(),
+  contextWindow: 1,
+  maxOutput: 1,
+  thinking: [],
+  input: ["text" as const],
+});
+
+test("favorites come first, with their provider's name, and leave their provider's section", () => {
+  const options = modelOptions(
+    [
+      { provider: { id: "a", name: "Alpha" }, models: [model("a1"), model("a2")] },
+      { provider: { id: "b", name: "Beta" }, models: [model("b1")] },
+    ],
+    { favorites: new Set(["b/b1", "a/a2"]), defaultKey: "a/a1" },
+  );
+
+  expect(options.map((one) => [one.value, one.category, one.description])).toEqual([
+    ["a/a2", "Favorites", "Alpha · a2"],
+    ["b/b1", "Favorites", "Beta · b1"],
+    ["a/a1", "Alpha", "a1"],
+  ]);
+
+  expect(options.flatMap((one) => (one.tag === "default" ? [one.value] : []))).toEqual(["a/a1"]);
 });
