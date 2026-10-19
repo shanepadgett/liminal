@@ -7,13 +7,12 @@
 
 import { Show } from "solid-js";
 
-import type { RoleColor } from "@liminal/sdk/tui";
+import { LiveLine, type RoleColor, Vapor } from "@liminal/sdk/tui";
 
 import { CheckRow, DiffPeek, OutputTail } from "./details.tsx";
 import type { Tip as TipFrame } from "./frame.ts";
-import { LiveLine } from "./LiveLine.tsx";
+import { headOf } from "./ink.ts";
 import type { Action } from "./script.ts";
-import { Vapor } from "./Vapor.tsx";
 import { wordingOf } from "./wording.ts";
 import type { WorkGroup } from "./workGroups.ts";
 
@@ -92,7 +91,9 @@ export function Tip(props: { readonly color: RoleColor; readonly tip: TipFrame }
             <LiveLine color={props.color} label={live().label} seconds={live().seconds} />
             <box flexDirection="column" paddingLeft={DETAIL_INDENT}>
               <Show when={thinking()}>
-                {(thought) => <Vapor color={props.color} streaming={thought()} />}
+                {(thought) => (
+                  <Vapor color={props.color} text={thought().text} head={headOf(thought())} />
+                )}
               </Show>
               <ActionDetail color={props.color} action={live().action} progress={live().progress} />
             </box>

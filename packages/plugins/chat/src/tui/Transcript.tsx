@@ -14,8 +14,14 @@ import { createPin, SlotView, useColor } from "@liminal/sdk/tui";
 import { UserEntry } from "@liminal/session-log/contract";
 
 import { ChatSlots } from "../contract.ts";
+import { createDim } from "./dim.ts";
 import { OpenPromptsContext } from "./entries.tsx";
-import type { Item, Transcript as TranscriptState } from "./transcript-state.ts";
+import {
+  isLeftBehind,
+  type Item,
+  type Step,
+  type Transcript as TranscriptState,
+} from "./transcript-state.ts";
 import { WorkRows } from "./WorkRows.tsx";
 
 const PADDING_X = 2;
@@ -53,12 +59,24 @@ function PromptRow(props: {
   );
 }
 
+/** A run of work, dimming once it is left behind. */
+function WorkItem(props: {
+  readonly sessionId: SessionId;
+  readonly steps: ReadonlyArray<Step>;
+  readonly isLeft: boolean;
+}) {
+  const dim = createDim(() => props.isLeft);
+
+  return <WorkRows sessionId={props.sessionId} steps={props.steps} dim={dim()} />;
+}
+
 function ItemRow(props: {
   readonly sessionId: SessionId;
   readonly item: Item;
   readonly index: number;
   readonly prompts: Map<number, BoxRenderable>;
   readonly debug: boolean;
+  readonly isLeft: boolean;
 }) {
   const entry = () =>
     props.item.kind === "entry" && (props.debug || props.item.entry.user !== "debug")
@@ -66,7 +84,7 @@ function ItemRow(props: {
       : undefined;
 
   const prompt = () => (entry()?.kind === UserEntry.kind ? entry() : undefined);
-  const calls = () => (props.item.kind === "work" ? props.item.calls : undefined);
+  const steps = () => (props.item.kind === "work" ? props.item.steps : undefined);
 
   return (
     <Switch>
@@ -83,8 +101,8 @@ function ItemRow(props: {
       <Match when={entry()}>
         {(shown) => <EntryRow sessionId={props.sessionId} entry={shown()} />}
       </Match>
-      <Match when={calls()}>
-        {(run) => <WorkRows sessionId={props.sessionId} calls={run()} />}
+      <Match when={steps()}>
+        {(run) => <WorkItem sessionId={props.sessionId} steps={run()} isLeft={props.isLeft} />}
       </Match>
     </Switch>
   );
@@ -165,6 +183,7 @@ export function Transcript(props: {
                   index={index}
                   prompts={pin.prompts}
                   debug={props.debug()}
+                  isLeft={isLeftBehind(props.transcript(), index)}
                 />
               )}
             </Index>

@@ -14,7 +14,13 @@ import {
 } from "@liminal/sdk";
 
 import { ToolRows } from "../src/contract.ts";
-import { emptyTranscript, fold } from "../src/tui/transcript-state.ts";
+import {
+  emptyTranscript,
+  fold,
+  isLeftBehind,
+  type Step,
+  type Transcript,
+} from "../src/tui/transcript-state.ts";
 import { groupsOf } from "../src/tui/work.ts";
 
 const at = DateTime.makeUnsafe(0);
@@ -69,6 +75,21 @@ const read = ToolRows.Rows({
   }),
 });
 
+/** The tool calls of the work item at `index`. */
+const callsAt = (transcript: Transcript, index: number) => {
+  const work = transcript.items[index];
+  if (work?.kind !== "work") throw new Error("expected work");
+
+  return work.steps.flatMap((step) => (step.kind === "call" ? [step.call] : []));
+};
+
+const stepsOf = (transcript: Transcript, index: number): ReadonlyArray<Step> => {
+  const work = transcript.items[index];
+  if (work?.kind !== "work") throw new Error("expected work");
+
+  return work.steps;
+};
+
 describe("transcript", () => {
   test("gathers consecutive tool calls and pairs their results", () => {
     const events = [
@@ -88,11 +109,9 @@ describe("transcript", () => {
     expect(transcript.synced).toBe(true);
     expect(transcript.items.map((item) => item.kind)).toEqual(["entry", "work", "entry"]);
 
-    const work = transcript.items[1];
-    if (work?.kind !== "work") throw new Error("expected work");
-    expect(work.calls.map((each) => each.outcome?.status)).toEqual(["done", "failed"]);
+    expect(callsAt(transcript, 1).map((each) => each.outcome?.status)).toEqual(["done", "failed"]);
 
-    const groups = groupsOf(work.calls, (name) => (name === "read" ? read : undefined));
+    const groups = groupsOf(stepsOf(transcript, 1), (name) => (name === "read" ? read : undefined));
 
     expect(groups.map((group) => group.words)).toEqual([
       { verb: "Explored", subject: "2 files", detail: "", failure: "1 failed", oneLine: false },
@@ -107,15 +126,13 @@ describe("transcript", () => {
     ]);
 
     expect(transcript.running).toBe(false);
-    const work = transcript.items[0];
-    if (work?.kind !== "work") throw new Error("expected work");
-    expect(groupsOf(work.calls, () => {})[0]?.words.verb).toBe("shell");
+    expect(groupsOf(stepsOf(transcript, 0), () => {})[0]?.words.verb).toBe("shell");
   });
 
   test("a hidden tool's calls draw no row", () => {
-    const calls = [
-      { id: "c1", name: "read", params: { path: "a.ts" } },
-      { id: "c2", name: "checkpoint", params: { handoff: "next" } },
+    const calls: ReadonlyArray<Step> = [
+      { kind: "call", call: { id: "c1", name: "read", params: { path: "a.ts" } } },
+      { kind: "call", call: { id: "c2", name: "checkpoint", params: { handoff: "next" } } },
     ];
 
     const groups = groupsOf(calls, (name) => (name === "read" ? read : ToolRows.Hidden({})));
@@ -132,10 +149,9 @@ describe("transcript", () => {
       result("c1", "run", "done"),
     ]);
 
-    const [work] = transcript.items;
-    if (work?.kind !== "work") throw new Error("expected work");
-    const [run] = work.calls;
-    expect(work.calls.map((each) => each.id)).toEqual(["c1"]);
+    const calls = callsAt(transcript, 0);
+    const [run] = calls;
+    expect(calls.map((each) => each.id)).toEqual(["c1"]);
     expect(run?.outcome?.status).toBe("done");
     const inner = run?.inner ?? [];
     expect(inner.map((each) => each.id)).toEqual(["c1/1", "c1/2"]);
@@ -152,10 +168,50 @@ describe("transcript", () => {
     ]);
 
     expect(transcript.items.map((item) => item.kind)).toEqual(["work", "entry"]);
-    const [work, answer] = transcript.items;
-    if (work?.kind !== "work") throw new Error("expected work");
-    expect(work.calls.map((each) => each.id)).toEqual(["c1", "c2"]);
-    expect(work.calls[1]?.outcome?.status).toBe("done");
+    const [, answer] = transcript.items;
+    const calls = callsAt(transcript, 0);
+    expect(calls.map((each) => each.id)).toEqual(["c1", "c2"]);
+    expect(calls[1]?.outcome?.status).toBe("done");
     expect(answer?.kind === "entry" ? answer.entry.user : undefined).toBe("debug");
+  });
+
+  test("thoughts join the run of work, end a joined row, and show their title", () => {
+    const thought = (text: string) => saved("session-log/reasoning", { text, interrupted: false });
+
+    const transcript = folded([
+      saved("session-log/turn-started", {}, "hidden"),
+      thought("**Reading the host**\n\nI should read it."),
+      call("c1", "read", "a.ts"),
+      thought(""),
+      call("c2", "read", "b.ts"),
+      thought("**Checking tests**\n\nNext."),
+      call("c3", "read", "c.ts"),
+    ]);
+
+    expect(transcript.items.map((item) => item.kind)).toEqual(["work"]);
+
+    const groups = groupsOf(stepsOf(transcript, 0), (name) => (name === "read" ? read : undefined));
+
+    expect(groups.map((group) => `${group.words.verb} ${group.words.subject}`)).toEqual([
+      "Thought Reading the host",
+      "Explored 2 files",
+      "Thought Checking tests",
+      "Read c.ts",
+    ]);
+  });
+
+  test("work is left behind once someone speaks after it or the turn ends", () => {
+    const working = folded([
+      saved("session-log/turn-started", {}, "hidden"),
+      call("c1", "read", "a.ts"),
+    ]);
+
+    expect(isLeftBehind(working, 0)).toBe(false);
+
+    const spoken = fold(working, saved("session-log/text", { text: "ok", interrupted: false }));
+    expect(isLeftBehind(spoken, 0)).toBe(true);
+
+    const ended = fold(working, saved("session-log/turn-ended", { end: "answered" }, "hidden"));
+    expect(isLeftBehind(ended, 0)).toBe(true);
   });
 });

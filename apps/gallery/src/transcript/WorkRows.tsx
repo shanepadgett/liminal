@@ -7,12 +7,12 @@
  * redrawn, so an opened row stays open.
  */
 
-import { type BoxRenderable, TextAttributes } from "@opentui/core";
+import { TextAttributes } from "@opentui/core";
 import { createSignal, For, Index, Show } from "solid-js";
 
-import { cutLine, mixHex, type RoleColor, type RoleName } from "@liminal/sdk/tui";
+import { type RoleColor, workColor, WorkWords } from "@liminal/sdk/tui";
 
-import { actionWordingsOf, type Wording, wordingOf } from "./wording.ts";
+import { actionWordingsOf, wordingOf } from "./wording.ts";
 import { innerGroupsOf, type WorkGroup } from "./workGroups.ts";
 
 /** Opened rows sit under the group's words, past its mark. */
@@ -20,72 +20,6 @@ const OPENED_INDENT = 2;
 
 /** A group of several actions is marked apart from a single one. */
 const markOf = (group: WorkGroup) => (actionWordingsOf(group).length > 0 ? "◈" : "◆");
-
-type Part = "mark" | "verb" | "subject" | "detail" | "failure" | "thought";
-
-/** Each part's role while the work is current, and once it has dimmed. */
-const PART_ROLES: Readonly<Record<Part, readonly [RoleName, RoleName]>> = {
-  mark: ["text.ghost", "text.ghost"],
-  verb: ["text.muted", "text.ghost"],
-  subject: ["text.faint", "text.ghost"],
-  detail: ["text.ghost", "text.ghost"],
-  failure: ["feedback.danger", "feedback.danger.subtle"],
-  thought: ["text.faint", "text.ghost"],
-};
-
-/** A part's color, `dim` of the way from current to dimmed. */
-const partColor = (color: RoleColor, part: Part, dim: number) => {
-  const [current, dimmed] = PART_ROLES[part];
-
-  return mixHex(color(current), color(dimmed), dim);
-};
-
-const after = (text: string) => (text === "" ? "" : ` ${text}`);
-
-const aside = (text: string) => (text === "" ? "" : ` (${text})`);
-
-export function WordedRow(props: {
-  readonly color: RoleColor;
-  readonly mark: string;
-  readonly wording: Wording;
-  readonly dim: number;
-}) {
-  const fg = (part: Part) => partColor(props.color, part, props.dim);
-  const [body, setBody] = createSignal<BoxRenderable>();
-  const [columns, setColumns] = createSignal(0);
-
-  const detail = () => aside(props.wording.detail);
-  const failure = () => aside(props.wording.failure);
-  const isOneLine = () => props.wording.oneLine === true;
-
-  const subject = () => {
-    const { verb, subject: whole } = props.wording;
-    if (!isOneLine()) return whole;
-
-    return cutLine(whole, columns() - verb.length - 1 - detail().length - failure().length);
-  };
-
-  // The mark stands in its own column, so wrapped words line up under the verb. A one-line row cuts
-  // its subject to fit beside the verb and asides.
-  return (
-    <box flexDirection="row">
-      <text fg={fg("mark")} flexShrink={0}>{`${props.mark} `}</text>
-      <box
-        ref={setBody}
-        flexGrow={1}
-        flexShrink={1}
-        onSizeChange={() => setColumns(body()?.width ?? 0)}
-      >
-        <text wrapMode={isOneLine() ? "none" : "word"}>
-          <b style={{ fg: fg("verb") }}>{props.wording.verb}</b>
-          <span style={{ fg: fg("subject") }}>{after(subject())}</span>
-          <span style={{ fg: fg("detail") }}>{detail()}</span>
-          <span style={{ fg: fg("failure") }}>{failure()}</span>
-        </text>
-      </box>
-    </box>
-  );
-}
 
 function GroupRow(props: {
   readonly color: RoleColor;
@@ -106,10 +40,10 @@ function GroupRow(props: {
         if (canOpen()) setIsOpen((was) => !was);
       }}
     >
-      <WordedRow
+      <WorkWords
         color={props.color}
         mark={markOf(props.group)}
-        wording={wordingOf(props.group, "past")}
+        words={wordingOf(props.group, "past")}
         dim={props.dim}
       />
       <Show when={script()}>
@@ -122,17 +56,15 @@ function GroupRow(props: {
       <Show when={isOpen()}>
         <box flexDirection="column" paddingLeft={OPENED_INDENT}>
           <For each={actions()}>
-            {(action) => (
-              <WordedRow color={props.color} mark="◆" wording={action} dim={props.dim} />
-            )}
+            {(action) => <WorkWords color={props.color} mark="◆" words={action} dim={props.dim} />}
           </For>
           <Show when={script()}>
-            {(ran) => <text fg={partColor(props.color, "thought", props.dim)}>{ran().code}</text>}
+            {(ran) => <text fg={workColor(props.color, "thought", props.dim)}>{ran().code}</text>}
           </Show>
           <Show when={thought()}>
             {(thinking) => (
               <text
-                fg={partColor(props.color, "thought", props.dim)}
+                fg={workColor(props.color, "thought", props.dim)}
                 attributes={TextAttributes.ITALIC}
               >
                 {thinking().text}

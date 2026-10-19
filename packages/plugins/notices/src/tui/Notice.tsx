@@ -1,7 +1,7 @@
 /**
- * A notice entry: the kind's mark and bold title in the kind's color, a copy button on the right,
- * the muted body indented beneath. The button copies the title and body as plain text, then reads
- * "copied" for a moment.
+ * A notice entry: the kind's mark and bold title in the kind's subtle color, a copy button on the
+ * right, the faint body indented beneath, all dimmer than the assistant's words. The button copies
+ * the title and body as plain text, then reads "copied" for a moment.
  */
 
 import { Option, Schema } from "effect";
@@ -14,10 +14,10 @@ import { Notice, type NoticeKind, noticeText } from "../contract.ts";
 
 /** Each kind's color and the mark that leads its title. */
 const STYLES: Readonly<Record<NoticeKind, { readonly role: RoleName; readonly mark: string }>> = {
-  info: { role: "feedback.info", mark: "●" },
-  success: { role: "feedback.success", mark: "✓" },
-  warning: { role: "feedback.warning", mark: "▲" },
-  error: { role: "feedback.danger", mark: "✕" },
+  info: { role: "feedback.info.subtle", mark: "●" },
+  success: { role: "feedback.success.subtle", mark: "✓" },
+  warning: { role: "feedback.warning.subtle", mark: "▲" },
+  error: { role: "feedback.danger.subtle", mark: "✕" },
 };
 
 function NoticeBlock(props: { readonly notice: Notice }) {
@@ -36,14 +36,14 @@ function NoticeBlock(props: { readonly notice: Notice }) {
           onMouseUp={() => {
             copy(noticeText(props.notice));
           }}
-          fg={color(isCopied() ? "feedback.success" : "text.faint")}
+          fg={color(isCopied() ? "feedback.success.subtle" : "text.ghost")}
         >
           {isCopied() ? "copied" : "copy"}
         </text>
       </box>
       <Show when={props.notice.body}>
         {(body) => (
-          <text paddingLeft={2} fg={color("text.muted")}>
+          <text paddingLeft={2} fg={color("text.faint")}>
             {body()}
           </text>
         )}

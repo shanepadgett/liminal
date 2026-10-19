@@ -3,9 +3,8 @@
  * in as the turn settles, as dim as the work above it.
  */
 
-import { mixHex, type RoleColor, type RoleName } from "@liminal/sdk/tui";
+import { formatDuration, mixHex, type RoleColor, type RoleName } from "@liminal/sdk/tui";
 
-import { formatDuration } from "./duration.ts";
 import type { Ending } from "./frame.ts";
 
 export function WorkedFor(props: { readonly color: RoleColor; readonly ending: Ending }) {

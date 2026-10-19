@@ -1,11 +1,13 @@
 /**
- * A run of tool calls as rows: each call worded by its tool's `fold`, and consecutive calls whose
- * rows join on the same verb gathered into one row (`Explored 3 files`).
+ * A run of thoughts and tool calls as rows: each call worded by its tool's `fold`, consecutive
+ * calls whose rows join on the same verb gathered into one row (`Explored 3 files`), and each
+ * thought a row of its own.
  */
 
 import { Predicate } from "effect";
 
 import type { ToolCall, ToolRows, WorkRow } from "../contract.ts";
+import type { Step } from "./transcript-state.ts";
 
 /** A row's words as drawn: `failure` is set once a call ended any way but `done`. */
 export interface Worded {
@@ -17,11 +19,22 @@ export interface Worded {
   readonly oneLine: boolean;
 }
 
-/** One drawn row; a joined row lists the calls it gathered. */
-export interface WorkGroup {
+/** A row of calls; a joined row lists the calls it gathered. */
+export interface CallsGroup {
+  readonly kind: "calls";
   readonly words: Worded;
   readonly calls: ReadonlyArray<{ readonly call: ToolCall; readonly words: Worded }>;
 }
+
+/** A thought's row: its title, opening to the whole thought. */
+export interface ThoughtGroup {
+  readonly kind: "thought";
+  readonly words: Worded;
+  readonly text: string;
+}
+
+/** One drawn row. */
+export type WorkGroup = CallsGroup | ThoughtGroup;
 
 const failureOf = (call: ToolCall) =>
   call.outcome === undefined || call.outcome.status === "done" ? "" : call.outcome.status;
@@ -41,7 +54,7 @@ const wordedOf = (call: ToolCall, row: WorkRow): Worded => ({
   oneLine: row.oneLine === true,
 });
 
-const joinedWords = (joins: NonNullable<WorkRow["joins"]>, calls: WorkGroup["calls"]): Worded => {
+const joinedWords = (joins: NonNullable<WorkRow["joins"]>, calls: CallsGroup["calls"]): Worded => {
   const failed = calls.filter(({ words }) => words.failure !== "").length;
 
   return {
@@ -53,7 +66,7 @@ const joinedWords = (joins: NonNullable<WorkRow["joins"]>, calls: WorkGroup["cal
   };
 };
 
-type Called = WorkGroup["calls"][number];
+type Called = CallsGroup["calls"][number];
 
 /** Consecutive calls that join; `joins` is absent for a call that joins nothing. */
 interface Run {
@@ -62,37 +75,60 @@ interface Run {
   readonly rest: Array<Called>;
 }
 
-const groupOf = (run: Run): WorkGroup => {
+const groupOf = (run: Run): CallsGroup => {
   const calls = [run.first, ...run.rest];
 
   return run.joins === undefined || run.rest.length === 0
-    ? { words: run.first.words, calls }
-    : { words: joinedWords(run.joins, calls), calls };
+    ? { kind: "calls", words: run.first.words, calls }
+    : { kind: "calls", words: joinedWords(run.joins, calls), calls };
+};
+
+/** A thought's title: its first line, without the bold a summary heading carries. */
+const titleOf = (text: string) => (text.trim().split("\n")[0] ?? "").replaceAll("**", "").trim();
+
+const thoughtOf = (text: string): ThoughtGroup => ({
+  kind: "thought",
+  words: { verb: "Thought", subject: titleOf(text), detail: "", failure: "", oneLine: true },
+  text,
+});
+
+/** Adds a call to the last run when both join on the same verb, else starts a run. */
+const addCall = (groups: Array<WorkGroup | Run>, called: Called, row: WorkRow) => {
+  const last = groups.at(-1);
+
+  if (
+    last !== undefined
+    && "first" in last
+    && last.joins !== undefined
+    && last.joins.verb === row.joins?.verb
+  ) {
+    last.rest.push(called);
+  } else {
+    groups.push({ joins: row.joins, first: called, rest: [] });
+  }
 };
 
 /**
- * The calls' rows, leaving out calls whose tool is `Hidden`; `rowsOf` finds a tool's registration
- * by name.
+ * The steps' rows, leaving out calls whose tool is `Hidden`; `rowsOf` finds a tool's registration
+ * by name. A thought ends a run of joined calls.
  */
 export const groupsOf = (
-  calls: ReadonlyArray<ToolCall>,
+  steps: ReadonlyArray<Step>,
   rowsOf: (name: string) => ToolRows | undefined,
 ): ReadonlyArray<WorkGroup> => {
-  const runs: Array<Run> = [];
+  const groups: Array<WorkGroup | Run> = [];
 
-  for (const call of calls) {
-    const row = rowOf(call, rowsOf(call.name));
-    if (row === undefined) continue;
-
-    const last = runs.at(-1);
-    const words = wordedOf(call, row);
-
-    if (last?.joins !== undefined && last.joins.verb === row.joins?.verb) {
-      last.rest.push({ call, words });
-    } else {
-      runs.push({ joins: row.joins, first: { call, words }, rest: [] });
+  for (const step of steps) {
+    if (step.kind === "thought") {
+      groups.push(thoughtOf(step.text));
+      continue;
     }
+
+    const row = rowOf(step.call, rowsOf(step.call.name));
+
+    if (row !== undefined)
+      addCall(groups, { call: step.call, words: wordedOf(step.call, row) }, row);
   }
 
-  return runs.map(groupOf);
+  return groups.map((each) => ("first" in each ? groupOf(each) : each));
 };

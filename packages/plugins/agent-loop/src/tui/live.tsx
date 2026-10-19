@@ -1,18 +1,22 @@
 /**
  * The agent loop's live states at the transcript's end. A streaming reply shows its text as it
- * arrives, the paragraph being written fading in, and what it is thinking or calling as quiet rows;
- * a waiting retry says why.
+ * arrives, the paragraph being written fading in; what it is thinking or calling is a live line, a
+ * thought's summary rising under it. A waiting retry says why.
  */
 
 import { Option, Predicate, Schema } from "effect";
-import { Index, Show } from "solid-js";
+import { createSignal, Index, onCleanup, Show } from "solid-js";
 
 import { ChatSlots, type ToolRows } from "@liminal/chat/contract";
 import type { LiveState } from "@liminal/sdk";
-import { useColor, useSlotMeta } from "@liminal/sdk/tui";
+import { LiveLine, useColor, useSlotMeta, Vapor } from "@liminal/sdk/tui";
 
 import { type LivePart, LiveReply, LiveRetry } from "../contract.ts";
+import { createHead } from "./head.ts";
 import { Said } from "./Said.tsx";
+
+/** The summary sits under the live line's words, past the arc. */
+const DETAIL_INDENT = 2;
 
 interface LiveProps {
   readonly live: LiveState;
@@ -34,8 +38,43 @@ const callingOf = (name: string | undefined, rows: ToolRows | undefined) => {
     : (rows.live ?? fallback);
 };
 
-function Part(props: { readonly part: LivePart }) {
+/** Whole seconds since the caller was created, ticking once a second. */
+const createSeconds = () => {
+  const start = Date.now();
+  const [seconds, setSeconds] = createSignal(0);
+  const timer = setInterval(() => setSeconds(Math.floor((Date.now() - start) / 1000)), 1000);
+
+  onCleanup(() => {
+    clearInterval(timer);
+  });
+
+  return seconds;
+};
+
+/** A thought summary as plain words one space apart: no bold marks, no line breaks. */
+export const plainOf = (text: string) =>
+  text.replaceAll("*", "").replaceAll(/\s+/g, " ").trimStart();
+
+/** What the model is thinking or calling: the live line, and a thought's summary rising under it. */
+function Doing(props: { readonly part: LivePart; readonly label: string }) {
   const color = useColor();
+  const seconds = createSeconds();
+  const plain = () => plainOf(props.part.text ?? "");
+  const head = createHead(plain);
+
+  return (
+    <box flexDirection="column">
+      <LiveLine color={color} label={props.label} seconds={seconds()} />
+      <Show when={props.part.type === "reasoning"}>
+        <box paddingLeft={DETAIL_INDENT}>
+          <Vapor color={color} text={plain()} head={head()} />
+        </box>
+      </Show>
+    </box>
+  );
+}
+
+function Part(props: { readonly part: LivePart }) {
   const rowsOf = useSlotMeta(ChatSlots.tool);
 
   const doing = () =>
@@ -47,15 +86,7 @@ function Part(props: { readonly part: LivePart }) {
         );
 
   return (
-    <Show
-      when={props.part.type === "text"}
-      fallback={
-        <text>
-          <span style={{ fg: color("text.ghost") }}>◇ </span>
-          <span style={{ fg: color("text.muted") }}>{doing()}</span>
-        </text>
-      }
-    >
+    <Show when={props.part.type === "text"} fallback={<Doing part={props.part} label={doing()} />}>
       <Said text={props.part.text ?? ""} />
     </Show>
   );

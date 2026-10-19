@@ -18,7 +18,7 @@ export function Checkpoint() {
   return (
     <box flexDirection="row">
       <Rule color={color} />
-      <text fg={color("text.faint")}> Checkpoint </text>
+      <text fg={color("text.ghost")}> Checkpoint </text>
       <Rule color={color} />
     </box>
   );

@@ -38,6 +38,14 @@ const NOTICE_MARKS: Readonly<Record<NoticeKind, string>> = {
 /** The body sits under the title's words, past the mark and its space. */
 const BODY_INDENT = 2;
 
+/** Each kind's color in the transcript, dimmer than the assistant's words. */
+const NOTICE_DIM_ROLES: Readonly<Record<NoticeKind, RoleName>> = {
+  info: "feedback.info.subtle",
+  success: "feedback.success.subtle",
+  warning: "feedback.warning.subtle",
+  error: "feedback.danger.subtle",
+};
+
 /** The plain text the copy button puts on the clipboard: the title, a blank line, the body. */
 export const noticeText = (notice: NoticeMessage): string =>
   notice.body === undefined ? notice.title : `${notice.title}\n\n${notice.body}`;
@@ -49,7 +57,7 @@ export function Notice(props: {
   readonly isCopied: boolean;
   readonly onCopy: () => void;
 }) {
-  const accent = () => props.color(NOTICE_ROLES[props.notice.kind]);
+  const accent = () => props.color(NOTICE_DIM_ROLES[props.notice.kind]);
 
   return (
     <box flexDirection="column">
@@ -60,7 +68,7 @@ export function Notice(props: {
         </text>
         <text
           flexShrink={0}
-          fg={props.color(props.isCopied ? "feedback.success" : "text.faint")}
+          fg={props.color(props.isCopied ? "feedback.success.subtle" : "text.ghost")}
           onMouseUp={props.onCopy}
         >
           {props.isCopied ? "copied" : "copy"}
@@ -69,7 +77,7 @@ export function Notice(props: {
       <Show when={props.notice.body}>
         {(body) => (
           <box paddingLeft={BODY_INDENT}>
-            <text fg={props.color("text.muted")}>{body()}</text>
+            <text fg={props.color("text.faint")}>{body()}</text>
           </box>
         )}
       </Show>

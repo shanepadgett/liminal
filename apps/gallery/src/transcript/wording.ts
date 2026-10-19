@@ -6,7 +6,8 @@
 
 import { Match } from "effect";
 
-import { formatDuration } from "./duration.ts";
+import { formatDuration } from "@liminal/sdk/tui";
+
 import type { Check } from "./script.ts";
 import type { Edit, Looked, Web, WorkGroup } from "./workGroups.ts";
 

@@ -19,11 +19,11 @@ import {
   TuiHost,
   TuiToasts,
 } from "@liminal/sdk/tui";
-import { ReasoningEntry, TextEntry, UserEntry } from "@liminal/session-log/contract";
+import { TextEntry, UserEntry } from "@liminal/session-log/contract";
 
 import { ChatRpcs, ChatSlots } from "./contract.ts";
 import { ChatScreen } from "./tui/ChatScreen.tsx";
-import { Prompt, Said, Thought } from "./tui/entries.tsx";
+import { Prompt, Said } from "./tui/entries.tsx";
 import { sessionsCommand } from "./tui/sessions.tsx";
 import { makeSidebar, SidebarChoice } from "./tui/Sidebar.tsx";
 import { emptyTranscript, fold } from "./tui/transcript-state.ts";
@@ -164,6 +164,5 @@ export default defineTui({
 
     yield* host.register(ChatSlots.entry, { key: UserEntry.kind, meta: {} }, Prompt);
     yield* host.register(ChatSlots.entry, { key: TextEntry.kind, meta: {} }, Said);
-    yield* host.register(ChatSlots.entry, { key: ReasoningEntry.kind, meta: {} }, Thought);
   }),
 });

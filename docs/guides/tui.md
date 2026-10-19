@@ -230,9 +230,15 @@ Other helpers from `@liminal/sdk/tui`:
 | `wrapText`, `wrapWords`, `clampLines` | Text cut into lines of a width, and the first lines ending in `…` |
 | `createPin()` | Which prompt of a scrolled column stays pinned at its top, and how far the next pushes it |
 | `inkRunsAt`, `wordEndAt`, `FRESH_CHARS` | Streaming text as colored runs, the newest `FRESH_CHARS` characters warming up from the background and the rest of the word laid out unseen |
+| `shimmerColors(length, phase, dim, bright)`, `SHIMMER_PERIOD_MS` | Each character's color as a band of light sweeps across a live line |
+| `useClock(periodMs)` | Milliseconds into a loop, updated as frames draw, for motion that is a function of time |
+| `formatDuration(seconds)` | `12s`, `2m 5s` |
+| `LiveLine` | What the assistant is doing now: a turning arc, a shimmering `label`, and `seconds` once past 3 |
+| `Vapor` | A thought's newest three lines in faint italic, inked up to `head`, older lines paler |
+| `WorkWords`, `workColor(color, part, dim)` | One work row (mark, bold verb, subject, bracketed detail, failure) and each part's color, `dim` of the way to dimmed |
 | `fadeAt(text, head)`, `inkedOf`, `markdownOf` | A streaming answer split into settled Markdown and the inked paragraph being written; all Markdown while a code fence is open |
 
-Examples: `packages/plugins/notices/src/tui/Notice.tsx` (colors, `useCopy`), `packages/plugins/agent-loop/src/tui/live.tsx` (markdown).
+Examples: `packages/plugins/notices/src/tui/Notice.tsx` (colors, `useCopy`), `packages/plugins/agent-loop/src/tui/live.tsx` (markdown, `LiveLine`, `Vapor`), `packages/plugins/chat/src/tui/WorkRows.tsx` (`WorkWords`).
 
 ## Design in the gallery
 

@@ -1,10 +1,10 @@
 /**
- * The core entries in the transcript: the user's prompt as a raised band with an accent bar, the
- * reply's text as Markdown, and its reasoning as a quiet `Thought` row that opens on a click.
+ * The core entries in the transcript: the user's prompt as a raised band with an accent bar, and
+ * the reply's text as Markdown. Its reasoning shows among the work rows.
  */
 
-import { type BoxRenderable, TextAttributes } from "@opentui/core";
-import { createContext, createSignal, Index, Show, useContext } from "solid-js";
+import type { BoxRenderable } from "@opentui/core";
+import { createContext, createSignal, Index, useContext } from "solid-js";
 
 import type { SavedEntry } from "@liminal/sdk";
 import {
@@ -88,27 +88,5 @@ export function Said(props: EntryProps) {
       fg={color("text.base")}
       conceal
     />
-  );
-}
-
-/** What the assistant thought: a row that opens to the thought itself. */
-export function Thought(props: EntryProps) {
-  const color = useColor();
-  const [isOpen, setIsOpen] = createSignal(false);
-
-  return (
-    <box flexDirection="column" onMouseUp={() => setIsOpen((was) => !was)}>
-      <text>
-        <span style={{ fg: color("text.ghost") }}>◆ </span>
-        <b style={{ fg: color("text.muted") }}>Thought</b>
-      </text>
-      <Show when={isOpen()}>
-        <box paddingLeft={2}>
-          <text fg={color("text.faint")} attributes={TextAttributes.ITALIC}>
-            {props.entry.text}
-          </text>
-        </box>
-      </Show>
-    </box>
   );
 }

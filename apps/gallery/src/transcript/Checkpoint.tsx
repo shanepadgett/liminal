@@ -59,7 +59,7 @@ export function Checkpoint(props: {
     <box flexDirection="column">
       <box flexDirection="row" paddingY={1}>
         <Rule color={props.color} />
-        <text fg={props.color("text.faint")}> Checkpoint </text>
+        <text fg={props.color("text.ghost")}> Checkpoint </text>
         <Rule color={props.color} />
       </box>
       <Show when={props.isDebug ? props.checkpoint.handoff : undefined}>

@@ -1,7 +1,8 @@
 /**
- * A followed session as the chat screen draws it: shown and debug entries in order, runs of tool
- * calls gathered into work items, the live state, and whether a turn runs. Each event makes a new
- * value; items it does not touch keep their identity, so their rows stay mounted.
+ * A followed session as the chat screen draws it: shown and debug entries in order, runs of
+ * thoughts and tool calls gathered into work items, the live state, and whether a turn runs. Each
+ * event makes a new value; items it does not touch keep their identity, so their rows stay
+ * mounted.
  */
 
 import { Option, Predicate, Schema } from "effect";
@@ -9,18 +10,29 @@ import { Option, Predicate, Schema } from "effect";
 import type { FollowEvent, LiveState, SavedEntry } from "@liminal/sdk";
 import {
   InnerCallEntry,
+  ReasoningEntry,
+  TextEntry,
   ToolCallEntry,
   ToolResultEntry,
   TurnEndedEntry,
   TurnStartedEntry,
+  UserEntry,
 } from "@liminal/session-log/contract";
 
 import type { ToolCall, ToolOutcome } from "../contract.ts";
 
-/** One thing in the transcript: an entry its kind's registration draws, or a run of tool calls. */
+/** One step of the assistant's work: a tool call, or what it thought. */
+export type Step =
+  | { readonly kind: "call"; readonly call: ToolCall }
+  | { readonly kind: "thought"; readonly text: string };
+
+/**
+ * One thing in the transcript: an entry its kind's registration draws, or a run of thoughts and
+ * tool calls.
+ */
 export type Item =
   | { readonly kind: "entry"; readonly entry: SavedEntry }
-  | { readonly kind: "work"; readonly seq: number; readonly calls: ReadonlyArray<ToolCall> };
+  | { readonly kind: "work"; readonly seq: number; readonly steps: ReadonlyArray<Step> };
 
 export interface Transcript {
   readonly items: ReadonlyArray<Item>;
@@ -40,21 +52,22 @@ export const emptyTranscript: Transcript = {
 const decodeCall = Schema.decodeUnknownOption(ToolCallEntry.data);
 const decodeResult = Schema.decodeUnknownOption(ToolResultEntry.data);
 const decodeInner = Schema.decodeUnknownOption(InnerCallEntry.data);
+const decodeThought = Schema.decodeUnknownOption(ReasoningEntry.data);
 
 const isDebug = (item: Item) => item.kind === "entry" && item.entry.user === "debug";
 
-/** A call joins the last run even past debug items, so a debug entry never splits a run. */
-const withCall = (transcript: Transcript, entry: SavedEntry, call: ToolCall): Transcript => {
+/** A step joins the last run even past debug items, so a debug entry never splits a run. */
+const withStep = (transcript: Transcript, entry: SavedEntry, step: Step): Transcript => {
   const index = transcript.items.findLastIndex((item) => !isDebug(item));
   const last = transcript.items[index];
 
   if (last?.kind === "work") {
-    const joined: Item = { ...last, calls: [...last.calls, call] };
+    const joined: Item = { ...last, steps: [...last.steps, step] };
 
     return { ...transcript, items: transcript.items.with(index, joined) };
   }
 
-  const started: Item = { kind: "work", seq: entry.seq, calls: [call] };
+  const started: Item = { kind: "work", seq: entry.seq, steps: [step] };
 
   return { ...transcript, items: [...transcript.items, started] };
 };
@@ -74,16 +87,20 @@ const withChangedCall = (
   id: string,
   change: (call: ToolCall) => ToolCall,
 ): Transcript => {
+  const isCalled = (step: Step) => step.kind === "call" && step.call.id === id;
+
   const index = transcript.items.findLastIndex(
-    (item) => item.kind === "work" && item.calls.some((call) => call.id === id),
+    (item) => item.kind === "work" && item.steps.some(isCalled),
   );
 
   const item = transcript.items[index];
   if (item?.kind !== "work") return transcript;
 
-  const calls = item.calls.map((call) => (call.id === id ? change(call) : call));
+  const steps = item.steps.map((step): Step =>
+    step.kind === "call" && isCalled(step) ? { ...step, call: change(step.call) } : step,
+  );
 
-  return { ...transcript, items: transcript.items.with(index, { ...item, calls }) };
+  return { ...transcript, items: transcript.items.with(index, { ...item, steps }) };
 };
 
 const withResult = (transcript: Transcript, result: typeof ToolResultEntry.data.Type) =>
@@ -115,7 +132,16 @@ const withTool = (transcript: Transcript, entry: SavedEntry): Transcript | undef
   if (entry.kind === ToolCallEntry.kind) {
     return Option.match(decodeCall(entry.data), {
       onNone: () => transcript,
-      onSome: ({ id, name, params }) => withCall(transcript, entry, { id, name, params }),
+      onSome: ({ id, name, params }) =>
+        withStep(transcript, entry, { kind: "call", call: { id, name, params } }),
+    });
+  }
+
+  if (entry.kind === ReasoningEntry.kind) {
+    return Option.match(decodeThought(entry.data), {
+      onNone: () => transcript,
+      onSome: ({ text }) =>
+        text.trim() === "" ? transcript : withStep(transcript, entry, { kind: "thought", text }),
     });
   }
 
@@ -139,6 +165,17 @@ const withEntry = (transcript: Transcript, entry: SavedEntry): Transcript => {
 
   return { ...transcript, items: [...transcript.items, { kind: "entry", entry }] };
 };
+
+const isSpoken = (item: Item) =>
+  item.kind === "entry"
+  && (item.entry.kind === TextEntry.kind || item.entry.kind === UserEntry.kind);
+
+/**
+ * Whether the item at `index` is left behind: the turn is over, or the assistant or the user has
+ * spoken since.
+ */
+export const isLeftBehind = (transcript: Transcript, index: number) =>
+  !transcript.running || transcript.items.slice(index + 1).some(isSpoken);
 
 /** The transcript after one followed event. */
 export const fold = (transcript: Transcript, event: FollowEvent): Transcript => {

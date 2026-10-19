@@ -1,69 +1,28 @@
 /**
- * A run of tool calls as quiet rows: a mark, the verb in bold, what it worked on, and fainter
- * detail in brackets; a failure shows in the danger color. A click opens a row: a joined row lists
- * its calls, and a single call shows its tool's detail. Calls a `run` script made sit under its
- * row.
+ * A run of thoughts and tool calls as quiet rows: a mark, the verb in bold, what it worked on, and
+ * fainter detail in brackets; a failure shows in the danger color. A click opens a row: a joined
+ * row lists its calls, a single call shows its tool's detail, and a thought shows its text. Calls a
+ * `run` script made sit under its row. Rows fade from their current colors to dim ones once the
+ * work is left behind.
  */
 
-import type { BoxRenderable } from "@opentui/core";
+import { TextAttributes } from "@opentui/core";
 import { Option, Schema } from "effect";
 import { createSignal, For, Index, Show } from "solid-js";
 
 import type { SessionId } from "@liminal/sdk";
-import { cutLine, type RoleColor, SlotView, useColor, useSlotMeta } from "@liminal/sdk/tui";
+import { SlotView, useColor, useSlotMeta, workColor, WorkWords } from "@liminal/sdk/tui";
 
 import { ChatSlots, type ToolCall } from "../contract.ts";
-import { groupsOf, type WorkGroup, type Worded } from "./work.ts";
+import type { Step } from "./transcript-state.ts";
+import { groupsOf, type WorkGroup } from "./work.ts";
 
 const OPENED_INDENT = 2;
 
+const stepsOf = (calls: ReadonlyArray<ToolCall>): ReadonlyArray<Step> =>
+  calls.map((call) => ({ kind: "call", call }));
+
 const decodeText = Schema.decodeUnknownOption(Schema.String);
-
-const after = (text: string) => (text === "" ? "" : ` ${text}`);
-
-const aside = (text: string) => (text === "" ? "" : ` (${text})`);
-
-/**
- * The mark stands in its own column, so wrapped words line up under the verb. A one-line row cuts
- * its subject to fit beside the verb and asides.
- */
-function Words(props: {
-  readonly color: RoleColor;
-  readonly mark: string;
-  readonly words: Worded;
-}) {
-  const [body, setBody] = createSignal<BoxRenderable>();
-  const [columns, setColumns] = createSignal(0);
-
-  const detail = () => aside(props.words.detail);
-  const failure = () => aside(props.words.failure);
-
-  const subject = () => {
-    const { verb, subject: whole, oneLine } = props.words;
-    if (!oneLine) return whole;
-
-    return cutLine(whole, columns() - verb.length - 1 - detail().length - failure().length);
-  };
-
-  return (
-    <box flexDirection="row">
-      <text fg={props.color("text.ghost")} flexShrink={0}>{`${props.mark} `}</text>
-      <box
-        ref={setBody}
-        flexGrow={1}
-        flexShrink={1}
-        onSizeChange={() => setColumns(body()?.width ?? 0)}
-      >
-        <text wrapMode={props.words.oneLine ? "none" : "word"}>
-          <b style={{ fg: props.color("text.muted") }}>{props.words.verb}</b>
-          <span style={{ fg: props.color("text.faint") }}>{after(subject())}</span>
-          <span style={{ fg: props.color("text.ghost") }}>{detail()}</span>
-          <span style={{ fg: props.color("feedback.danger") }}>{failure()}</span>
-        </text>
-      </box>
-    </box>
-  );
-}
 
 function Detail(props: { readonly sessionId: SessionId; readonly call: ToolCall }) {
   return (
@@ -79,35 +38,74 @@ function Detail(props: { readonly sessionId: SessionId; readonly call: ToolCall 
   );
 }
 
-function GroupRow(props: { readonly sessionId: SessionId; readonly group: WorkGroup }) {
+/** What a row shows once opened: its calls' rows, its call's detail, or its whole thought. */
+function Opened(props: {
+  readonly sessionId: SessionId;
+  readonly group: WorkGroup;
+  readonly dim: number;
+}) {
+  const color = useColor();
+  const calls = () => (props.group.kind === "calls" ? props.group.calls : []);
+  const thought = () => (props.group.kind === "thought" ? props.group.text : undefined);
+
+  return (
+    <box flexDirection="column" paddingLeft={OPENED_INDENT}>
+      <Show when={thought()}>
+        {(text) => (
+          <text fg={workColor(color, "thought", props.dim)} attributes={TextAttributes.ITALIC}>
+            {text()}
+          </text>
+        )}
+      </Show>
+      <Show
+        when={calls().length > 1}
+        fallback={
+          <For each={calls()}>
+            {({ call }) => <Detail sessionId={props.sessionId} call={call} />}
+          </For>
+        }
+      >
+        <For each={calls()}>
+          {({ words }) => <WorkWords color={color} mark="◆" words={words} dim={props.dim} />}
+        </For>
+      </Show>
+    </box>
+  );
+}
+
+/** Calls a single call ran inside it, such as a `run` script's. */
+const innerOf = (group: WorkGroup): ReadonlyArray<ToolCall> =>
+  group.kind === "calls" && group.calls.length === 1 ? (group.calls[0]?.call.inner ?? []) : [];
+
+const markOf = (group: WorkGroup) => (group.kind === "calls" && group.calls.length > 1 ? "◈" : "◆");
+
+function GroupRow(props: {
+  readonly sessionId: SessionId;
+  readonly group: WorkGroup;
+  readonly dim: number;
+}) {
   const color = useColor();
   const [isOpen, setIsOpen] = createSignal(false);
-  const isJoined = () => props.group.calls.length > 1;
-  const inner = () => (isJoined() ? [] : (props.group.calls[0]?.call.inner ?? []));
 
   return (
     <box flexDirection="column" onMouseUp={() => setIsOpen((was) => !was)}>
-      <Words color={color} mark={isJoined() ? "◈" : "◆"} words={props.group.words} />
-      <Show when={inner().length > 0}>
+      <WorkWords
+        color={color}
+        mark={markOf(props.group)}
+        words={props.group.words}
+        dim={props.dim}
+      />
+      <Show when={innerOf(props.group).length > 0}>
         <box paddingLeft={OPENED_INDENT}>
-          <WorkRows sessionId={props.sessionId} calls={inner()} />
+          <WorkRows
+            sessionId={props.sessionId}
+            steps={stepsOf(innerOf(props.group))}
+            dim={props.dim}
+          />
         </box>
       </Show>
       <Show when={isOpen()}>
-        <box flexDirection="column" paddingLeft={OPENED_INDENT}>
-          <Show
-            when={isJoined()}
-            fallback={
-              <For each={props.group.calls}>
-                {({ call }) => <Detail sessionId={props.sessionId} call={call} />}
-              </For>
-            }
-          >
-            <For each={props.group.calls}>
-              {({ words }) => <Words color={color} mark="◆" words={words} />}
-            </For>
-          </Show>
-        </box>
+        <Opened sessionId={props.sessionId} group={props.group} dim={props.dim} />
       </Show>
     </box>
   );
@@ -115,17 +113,19 @@ function GroupRow(props: { readonly sessionId: SessionId; readonly group: WorkGr
 
 export function WorkRows(props: {
   readonly sessionId: SessionId;
-  readonly calls: ReadonlyArray<ToolCall>;
+  readonly steps: ReadonlyArray<Step>;
+  /** How far the work has dimmed, from 0 to 1. */
+  readonly dim: number;
 }) {
   const rowsOf = useSlotMeta(ChatSlots.tool);
-  const groups = () => groupsOf(props.calls, rowsOf);
+  const groups = () => groupsOf(props.steps, rowsOf);
 
   // A run of only hidden calls draws nothing, so it leaves no gap in the transcript.
   return (
     <Show when={groups().length > 0}>
       <box flexDirection="column">
         <Index each={groups()}>
-          {(group) => <GroupRow sessionId={props.sessionId} group={group()} />}
+          {(group) => <GroupRow sessionId={props.sessionId} group={group()} dim={props.dim} />}
         </Index>
       </box>
     </Show>

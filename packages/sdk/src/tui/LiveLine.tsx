@@ -5,11 +5,10 @@
 
 import { Index, Show } from "solid-js";
 
-import type { RoleColor } from "@liminal/sdk/tui";
-
+import { useClock } from "./clock.ts";
 import { formatDuration } from "./duration.ts";
 import { SHIMMER_PERIOD_MS, shimmerColors } from "./shimmer.ts";
-import { useClock } from "./useClock.ts";
+import type { RoleColor } from "./tokens/roles.ts";
 
 const ARC = ["◜", "◝", "◞", "◟"] as const;
 
