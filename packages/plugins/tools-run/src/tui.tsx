@@ -8,9 +8,9 @@ import { Effect, Option, Schema } from "effect";
 import { ChatSlots, type ToolCall, ToolRows, type ToolView } from "@liminal/chat/contract";
 import { defineTui, Tail, TuiHost, useColor } from "@liminal/sdk/tui";
 
-import { RunParams } from "./contract.ts";
+import { RunScript } from "./contract.ts";
 
-const decodeParams = Schema.decodeUnknownOption(RunParams);
+const decodeParams = Schema.decodeUnknownOption(RunScript);
 
 const codeOf = (call: ToolCall) =>
   Option.match(decodeParams(call.params), { onNone: () => "", onSome: ({ code }) => code });

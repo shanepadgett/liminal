@@ -7,7 +7,7 @@ import { defineTool, ToolFailed } from "@liminal/sdk";
 import { SessionLog } from "@liminal/session-log/contract";
 import { ToolPipeline, Tools } from "@liminal/tools/contract";
 
-import { defaultTimeout, RunParams } from "./contract.ts";
+import { RunParams } from "./contract.ts";
 import { makeFunctions } from "./server/inner.ts";
 import { runScript } from "./server/script.ts";
 
@@ -36,7 +36,7 @@ const make = Effect.gen(function* () {
       guidance,
       runAlongside: false,
       safeToRerun: false,
-      run: ({ code, timeout = defaultTimeout }, { sessionId, callId }) =>
+      run: ({ code, timeout }, { sessionId, callId }) =>
         Effect.gen(function* () {
           const functions = yield* makeFunctions(deps, sessionId, callId);
           const ran = yield* runScript(code, functions, Duration.seconds(timeout));

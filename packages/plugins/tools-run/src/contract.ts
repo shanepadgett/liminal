@@ -2,18 +2,22 @@
 
 import { Schema } from "effect";
 
-/** Seconds a script runs when the model sets no timeout. */
-export const defaultTimeout = 300;
-
-export const RunParams = Schema.Struct({
+/**
+ * The part of a call that holds the script; calls saved before `timeout` was required have it
+ * alone.
+ */
+export const RunScript = Schema.Struct({
   code: Schema.String.annotate({
     description: "JavaScript to run; call tools as `await tools.<name>(params)`",
   }),
-  timeout: Schema.optionalKey(
-    Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 3600 })).annotate({
-      description: `Seconds before the whole script is stopped; ${defaultTimeout} when left out`,
-    }),
-  ),
+});
+
+export const RunParams = Schema.Struct({
+  ...RunScript.fields,
+  timeout: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 3600 })).annotate({
+    description:
+      "Seconds before the whole script is stopped; about 60 for a quick script, 300 when it runs builds or tests",
+  }),
 });
 
 export type RunParams = typeof RunParams.Type;

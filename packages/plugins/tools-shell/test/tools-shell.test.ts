@@ -22,7 +22,10 @@ const shell = (command: string) =>
     const tools = yield* Tools;
     const tool = Option.getOrThrow(yield* tools.get("shell"));
 
-    return yield* tool.run({ command }, { sessionId: SessionId.make("s1"), callId: "c1" });
+    return yield* tool.run(
+      { command, timeout: 60 },
+      { sessionId: SessionId.make("s1"), callId: "c1" },
+    );
   });
 
 effectTest(

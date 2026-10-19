@@ -62,7 +62,12 @@ const runScript = (code: string) =>
   Effect.gen(function* () {
     const registry = yield* Tools;
 
-    const call: ToolCall = { sessionId: s1, callId: "c1", name: "run", params: { code } };
+    const call: ToolCall = {
+      sessionId: s1,
+      callId: "c1",
+      name: "run",
+      params: { code, timeout: 60 },
+    };
 
     return yield* (yield* ToolPipeline).run(call, yield* registry.get("run"));
   });

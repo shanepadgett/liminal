@@ -8,9 +8,9 @@ import { Effect, Option, Schema } from "effect";
 import { ChatSlots, type ToolCall, ToolRows, type ToolView } from "@liminal/chat/contract";
 import { defineTui, Tail, TuiHost } from "@liminal/sdk/tui";
 
-import { ShellParams } from "./contract.ts";
+import { ShellCommand } from "./contract.ts";
 
-const decodeParams = Schema.decodeUnknownOption(ShellParams);
+const decodeParams = Schema.decodeUnknownOption(ShellCommand);
 
 /** The command's first line; the rest shows when the row opens. */
 const commandOf = (call: ToolCall) =>

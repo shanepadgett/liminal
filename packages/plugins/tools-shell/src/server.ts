@@ -8,9 +8,6 @@ import { Tools } from "@liminal/tools/contract";
 
 import { ShellParams } from "./contract.ts";
 
-/** Seconds a command runs when the model sets no timeout. */
-const defaultTimeout = 120;
-
 /** What the model reads: stdout, then stderr, then how the command ended. */
 const report = (result: CommandResult, timeout: number) => {
   const ending =
@@ -42,7 +39,7 @@ const make = Effect.gen(function* () {
       ],
       runAlongside: false,
       safeToRerun: false,
-      run: ({ command, timeout = defaultTimeout }) =>
+      run: ({ command, timeout }) =>
         runner.run({ command, cwd: workspace, timeout: Duration.seconds(timeout) }).pipe(
           Effect.mapError((error) => new ToolFailed({ message: error.message })),
           Effect.map((result) => ({ result: report(result, timeout), details: result.end })),

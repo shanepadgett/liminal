@@ -2,11 +2,15 @@
 
 import { Schema } from "effect";
 
-export const ShellParams = Schema.Struct({
+/** The part of a call that names what ran; calls saved before `timeout` was required have it alone. */
+export const ShellCommand = Schema.Struct({
   command: Schema.String.annotate({ description: "Command line run by /bin/sh in the workspace" }),
-  timeout: Schema.optionalKey(
-    Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 3600 })).annotate({
-      description: "Seconds before the command is stopped; 120 when left out",
-    }),
-  ),
+});
+
+export const ShellParams = Schema.Struct({
+  ...ShellCommand.fields,
+  timeout: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 3600 })).annotate({
+    description:
+      "Seconds before the command is stopped; about 30 for a quick command, 300 for a build or a test run",
+  }),
 });
