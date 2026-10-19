@@ -101,15 +101,20 @@ function ModelLine(props: { readonly line: Accessor<ModelLine> }) {
 
 function QueuedLines(props: { readonly queued: Queued }) {
   const color = useColor();
+  const lines = () => [...props.queued.steers, ...props.queued.followUps];
 
   return (
-    <For each={[...props.queued.steers, ...props.queued.followUps]}>
-      {(text) => (
-        <text wrapMode="none" fg={color("text.faint")}>
-          {`↳ ${text}`}
-        </text>
-      )}
-    </For>
+    <Show when={lines().length > 0}>
+      <box flexDirection="column" marginBottom={1}>
+        <For each={lines()}>
+          {(text) => (
+            <text wrapMode="none" fg={color("text.faint")}>
+              {`↳ ${text}`}
+            </text>
+          )}
+        </For>
+      </box>
+    </Show>
   );
 }
 
