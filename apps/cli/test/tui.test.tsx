@@ -368,7 +368,7 @@ effectTest(
     yield* awaitRebuild(kernel.graph, "cancel", reload);
 
     const after = yield* frameWhere(setup, (frame) => !frame.includes("ctrl+r reload"));
-    expect(after).toContain("liminal");
+    expect(after).toContain("l i m i n a l");
   }),
   trustedServices,
 );

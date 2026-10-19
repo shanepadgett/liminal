@@ -19,6 +19,7 @@ import {
   makeTuiInputWaits,
   TuiInputWaits,
   type TuiInputWaitsService,
+  makeTuiTheme,
   makeTuiToasts,
   type SolidKind,
   TuiCommands,
@@ -26,6 +27,8 @@ import {
   TuiDialogs,
   type TuiDialogsService,
   TuiHost,
+  TuiTheme,
+  type TuiThemeService,
   TuiToasts,
   type TuiToastsService,
   type TuiKeymap,
@@ -41,6 +44,7 @@ export interface Terminal {
   readonly dialogs: TuiDialogsService;
   readonly toasts: TuiToastsService;
   readonly inputWaits: TuiInputWaitsService;
+  readonly theme: TuiThemeService;
 }
 
 /** The terminal's renderer, destroyed when the caller's Scope closes. */
@@ -95,18 +99,20 @@ export const makeTerminal = Effect.fn("makeTerminal")(function* (renderer: CliRe
     dialogs: makeTuiDialogs(),
     toasts,
     inputWaits,
+    theme: makeTuiTheme(),
   };
 
   return terminal;
 });
 
-/** Every part shares the terminal's commands, dialogs, toasts and input waits. */
+/** Every part shares the terminal's commands, dialogs, toasts, input waits and theme. */
 export const tuiServices = (terminal: Terminal) => (host: FrontendHost<SolidKind>) =>
   Context.make(TuiHost, host).pipe(
     Context.add(TuiCommands, terminal.commands),
     Context.add(TuiDialogs, terminal.dialogs),
     Context.add(TuiToasts, terminal.toasts),
     Context.add(TuiInputWaits, terminal.inputWaits),
+    Context.add(TuiTheme, terminal.theme),
   );
 
 /**
@@ -146,7 +152,7 @@ export const mount = Effect.fn("mount")(function* (
     render(
       () => (
         <KeymapProvider keymap={terminal.keymap}>
-          <App tree={tree} dialogs={terminal.dialogs} />
+          <App tree={tree} dialogs={terminal.dialogs} theme={terminal.theme} />
         </KeymapProvider>
       ),
       terminal.renderer,
