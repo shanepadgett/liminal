@@ -108,13 +108,18 @@ test("status records read renames and untracked files", () => {
 });
 
 const plan = (files: ReadonlyArray<number>, message = "feat: add b") => ({
-  commits: [{ message, files }],
+  commits: [{ message, allFiles: false, files }],
 });
 
 test("a plan must hold every file once under conventional subjects", () => {
   expect(planProblem(plan([1, 2]), 2)).toBeUndefined();
   expect(planProblem(plan([1]), 2)).toBe("It leaves out files 2.");
-  expect(planProblem(plan([1, 1, 2]), 2)).toBe("It puts a file in more than one commit.");
+  expect(planProblem(plan([1, 1, 2]), 2)).toContain("files 1 in more than one commit");
+
+  expect(
+    planProblem({ commits: [{ message: "feat: add b", allFiles: true, files: [] }] }, 2),
+  ).toBeUndefined();
+
   expect(planProblem(plan([1, 2], "Add b"), 2)).toContain("not a conventional");
 });
 
@@ -136,7 +141,9 @@ effectTest(
             type: "tool-call",
             id: "p1",
             name: "submit_plan",
-            params: { commits: [{ message: "feat: add b and change a", files: numbers }] },
+            params: {
+              commits: [{ message: "feat: add b and change a", allFiles: false, files: numbers }],
+            },
             providerData: {},
           },
         ],
@@ -155,6 +162,37 @@ effectTest(
 
     const target = yield* client["commit/push-target"]({ root: start.root });
     expect(target).toEqual({ name: "origin/main", branch: "main", isNew: true });
+  }),
+  stack,
+);
+
+const planAnswer = (files: ReadonlyArray<number>) =>
+  reply(
+    [
+      {
+        type: "tool-call",
+        id: "p",
+        name: "submit_plan",
+        params: { commits: [{ message: "feat: add b", allFiles: false, files }] },
+        providerData: {},
+      },
+    ],
+    { reason: "tool-calls" },
+  );
+
+effectTest(
+  "a plan that repeats a file is asked again, up to three answers",
+  Effect.gen(function* () {
+    const client = yield* setUp;
+    const start = yield* client["commit/start"]();
+    const scripted = yield* ScriptedModel;
+
+    yield* scripted.enqueue(planAnswer([1, 1, 2]));
+    yield* scripted.enqueue(planAnswer([1, 2, 2]));
+    yield* scripted.enqueue(planAnswer([1, 2]));
+
+    const commits = yield* client["commit/plan"]({ session: s1, start, instruction: "" });
+    expect(commits.map(({ files }) => files.length)).toEqual([2]);
   }),
   stack,
 );

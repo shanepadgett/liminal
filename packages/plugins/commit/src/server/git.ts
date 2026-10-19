@@ -12,6 +12,9 @@ import { type ChangedFile, CommitError, type PushTarget } from "../contract.ts";
 /** Reads that stay on this machine. */
 const LOCAL_TIMEOUT = Duration.seconds(30);
 
+/** Files diffed at once. */
+const DIFF_CONCURRENCY = 8;
+
 /** Commits and pushes run hooks, which can run a project's checks. */
 const WRITE_TIMEOUT = Duration.minutes(10);
 
@@ -130,19 +133,27 @@ const makeReads = ({ exec, ok, base }: Run) => ({
       Effect.map(parseStatus),
     ),
 
-  /** The diff of every changed file, untracked ones shown as new files. */
-  diffText: Effect.fn("commit.diff")(function* (root: string, files: ReadonlyArray<ChangedFile>) {
-    const tracked = yield* ok(root, ["diff", "--no-color", "--no-ext-diff", yield* base(root)]);
+  /** Each changed file's diff in the order of `files`, untracked ones shown as new files. */
+  fileDiffs: Effect.fn("commit.diffs")(function* (root: string, files: ReadonlyArray<ChangedFile>) {
+    const from = yield* base(root);
 
-    const untracked = yield* Effect.forEach(
-      files.filter(({ status }) => status === "untracked"),
-      ({ path }) =>
-        exec(root, ["diff", "--no-color", "--no-index", "--", "/dev/null", path]).pipe(
-          Effect.map(({ stdout }) => stdout),
-        ),
+    return yield* Effect.forEach(
+      files,
+      ({ path, previousPath, status }) =>
+        status === "untracked"
+          ? exec(root, ["diff", "--no-color", "--no-index", "--", "/dev/null", path]).pipe(
+              Effect.map(({ stdout }) => stdout),
+            )
+          : ok(root, [
+              "diff",
+              "--no-color",
+              "--no-ext-diff",
+              from,
+              "--",
+              ...(previousPath === undefined ? [path] : [previousPath, path]),
+            ]),
+      { concurrency: DIFF_CONCURRENCY },
     );
-
-    return [tracked, ...untracked].join("");
   }),
 
   /** The latest `count` subjects, the latest first; none before the first commit. */

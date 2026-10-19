@@ -166,7 +166,7 @@ const make = Effect.gen(function* () {
   ) {
     const evidence = {
       files: begun.files,
-      diff: yield* git.diffText(begun.root, begun.files),
+      diffs: yield* git.fileDiffs(begun.root, begun.files),
       subjects: yield* git.recentSubjects(begun.root, RECENT_SUBJECTS),
       prompts: yield* promptsSince(session, begun.root),
       instruction: instruction.trim(),
