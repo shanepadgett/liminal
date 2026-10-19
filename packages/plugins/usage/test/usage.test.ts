@@ -175,3 +175,26 @@ effectTest(
   }),
   served,
 );
+
+effectTest(
+  "a session followed before its first prompt counts once it replies",
+  Effect.gen(function* () {
+    const scripted: ModelRef = { provider: scriptedProvider, id: "scripted" };
+    const client = yield* RpcTest.makeClient(UsageRpcs);
+
+    const first = yield* client["usage/session"]({ session: s1 }).pipe(
+      Stream.take(1),
+      Stream.runHead,
+      Effect.forkChild,
+    );
+
+    yield* TestClock.adjust(Duration.seconds(1));
+    yield* entriesOf(turn(scripted), replied(spentOf(100, 0, 10)));
+    yield* TestClock.adjust(Duration.seconds(1));
+
+    expect(yield* Fiber.join(first)).toEqual(
+      Option.some({ context: 110, contextWindow: 200_000, cacheHit: 0, unpriced: 1 }),
+    );
+  }),
+  served,
+);

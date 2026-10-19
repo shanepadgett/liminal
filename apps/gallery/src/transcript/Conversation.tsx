@@ -9,9 +9,8 @@
 import type { BoxRenderable } from "@opentui/core";
 import { createSignal, Index, onCleanup, Show } from "solid-js";
 
-import type { RoleColor } from "@liminal/sdk/tui";
+import { createPin, type RoleColor } from "@liminal/sdk/tui";
 
-import { createPin } from "./pin.ts";
 import { durationOf, frameAt, turnsAt } from "./play.ts";
 import { Reply } from "./Reply.tsx";
 import type { Prompt, Script } from "./script.ts";
@@ -106,7 +105,7 @@ export function Conversation(props: {
   const pin = createPin();
 
   const turns = () => turnsOf(props.finished, props.playing, props.ms);
-  const pinned = () => turns()[pin.pinnedIndex() ?? -1]?.script.prompt;
+  const pinned = () => turns()[pin.pinned() ?? -1]?.script.prompt;
 
   const toggle = (index: number | undefined) => {
     if (index !== undefined) setOpenPrompts((indexes) => toggled(indexes, index));
@@ -150,9 +149,9 @@ export function Conversation(props: {
         color={props.color}
         prompt={pinned()}
         push={pin.push()}
-        isOpen={openPrompts().has(pin.pinnedIndex() ?? -1)}
+        isOpen={openPrompts().has(pin.pinned() ?? -1)}
         onToggle={() => {
-          toggle(pin.pinnedIndex());
+          toggle(pin.pinned());
         }}
       />
     </box>

@@ -17,7 +17,10 @@ const SETTLE = Duration.millis(100);
 
 /** The session's status; none before its first turn, which names the model to measure against. */
 const statusOf = Effect.fn("compaction.statusOf")(function* (deps: StatusDeps, session: SessionId) {
-  const entries = yield* deps.log.read(session, {});
+  const entries = yield* deps.log
+    .read(session, {})
+    .pipe(Effect.catchTag("SessionNotFound", () => Effect.succeed([])));
+
   const start = Arr.last(turnStartsOf(entries));
   if (Option.isNone(start)) return [];
 

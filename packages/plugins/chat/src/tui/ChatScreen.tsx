@@ -6,7 +6,7 @@
  */
 
 import { useTerminalDimensions } from "@opentui/solid";
-import { type Accessor, createEffect, Show } from "solid-js";
+import { type Accessor, createEffect, createMemo, Show } from "solid-js";
 
 import type { SessionId } from "@liminal/sdk";
 import { HeaderRule, SlotView, type TuiToastsService, useColor } from "@liminal/sdk/tui";
@@ -65,7 +65,9 @@ export function ChatScreen(
 ) {
   const color = useColor();
   const terminal = useTerminalDimensions();
-  const running = () => props.transcript().running;
+  // A memo, so the parts that take `running` see a change only when a turn starts or ends, not on
+  // every streamed delta.
+  const running = createMemo(() => props.transcript().running);
 
   createEffect(() => {
     props.sidebar.setColumns(terminal().width);

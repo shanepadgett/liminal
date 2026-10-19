@@ -4,7 +4,15 @@
  */
 
 import { Dynamic } from "@opentui/solid";
-import { type Component, createContext, For, type JSX, Show, useContext } from "solid-js";
+import {
+  type Component,
+  createContext,
+  createMemo,
+  For,
+  type JSX,
+  Show,
+  useContext,
+} from "solid-js";
 
 import type { AnySlot, ErasedMatcher, ExtraOf, PropsOf } from "../core/slot.ts";
 
@@ -55,29 +63,34 @@ const firstMatch = <S extends AnySlot>(entries: ReadonlyArray<SlotEntry>, owner:
     return matched === undefined ? [] : [{ entry, matched }];
   })[0];
 
+/**
+ * A chain slot's first match. The component stays mounted while the same registration matches; new
+ * owner props or a new `matched` reach it as prop changes.
+ */
+function ChainView<S extends AnySlot>(props: SlotElementProps<S>) {
+  const source = useSource();
+  const match = createMemo(() => firstMatch(source.chained(props.of.name), props.props));
+
+  return (
+    <Show when={match()?.entry} keyed fallback={props.fallback}>
+      {(entry) => (
+        <Dynamic component={entry.component} {...props.props} matched={match()?.matched} />
+      )}
+    </Show>
+  );
+}
+
 /** Shows the registrations of `of`; nothing registered shows `fallback`. */
 export function SlotView<S extends AnySlot>(props: SlotElementProps<S>) {
   const source = useSource();
+
+  if (props.of.kind === "chain") return <ChainView {...props} />;
 
   if (props.of.kind === "list") {
     return (
       <For each={source.listed(props.of.name)} fallback={props.fallback}>
         {(entry) => <Dynamic component={entry.component} {...props.props} />}
       </For>
-    );
-  }
-
-  if (props.of.kind === "chain") {
-    return (
-      <Show
-        when={firstMatch(source.chained(props.of.name), props.props)}
-        keyed
-        fallback={props.fallback}
-      >
-        {({ entry, matched }) => (
-          <Dynamic component={entry.component} {...props.props} matched={matched} />
-        )}
-      </Show>
     );
   }
 

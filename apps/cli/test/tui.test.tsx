@@ -189,6 +189,34 @@ effectTest(
 );
 
 effectTest(
+  "a prompt scrolled past the top stays pinned there over its reply",
+  Effect.gen(function* () {
+    const lines = Array.from({ length: 40 }, (_, line) => `line ${line}`).join("\n\n");
+    const { setup } = yield* bootScripted(replyText(lines));
+
+    yield* send(setup, "pin me");
+
+    const frame = yield* frameWith(setup, "line 39");
+    expect(frame).not.toContain("line 0\n");
+    expect(frame).toContain("pin me");
+  }),
+  trustedServices,
+);
+
+effectTest(
+  "a long prompt shows its first two lines until a click opens it",
+  Effect.gen(function* () {
+    const { setup } = yield* bootScripted(replyText("ok"));
+
+    yield* send(setup, "first second third fourth ".repeat(12));
+
+    const frame = yield* frameWith(setup, "ok");
+    expect(frame).toContain("\u2026");
+  }),
+  trustedServices,
+);
+
+effectTest(
   "a tool call the model makes shows as a work row worded by the tool's plugin",
   Effect.gen(function* () {
     const read: ModelPart = {

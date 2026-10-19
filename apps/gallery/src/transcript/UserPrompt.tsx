@@ -6,9 +6,7 @@
 import type { BoxRenderable } from "@opentui/core";
 import { createSignal, For } from "solid-js";
 
-import { EDGE_BAR, type RoleColor } from "@liminal/sdk/tui";
-
-import { clampLines, wrapWords } from "./wrapWords.ts";
+import { clampLines, EDGE_BAR, type RoleColor, wrapText } from "@liminal/sdk/tui";
 
 const COLLAPSED_LINES = 2;
 
@@ -22,7 +20,7 @@ export function UserPrompt(props: {
   const [columns, setColumns] = createSignal(0);
 
   // Nothing draws until the body knows its width, so the first frame does not wrap at one column.
-  const lines = () => (columns() === 0 ? [] : wrapWords(props.text, columns()));
+  const lines = () => (columns() === 0 ? [] : wrapText(props.text, columns()));
   const isLong = () => lines().length > COLLAPSED_LINES;
 
   const shownLines = () =>

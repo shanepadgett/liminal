@@ -1,7 +1,6 @@
 /**
  * Text broken into lines of at most `columns`, at spaces where it can and mid-word where a word is
- * wider than a line. Counts one column per character, which holds for the prompts the gallery
- * shows.
+ * wider than a line. Counts one column per character.
  */
 
 /** A word wider than a line, cut into line-sized pieces. */
@@ -32,6 +31,19 @@ export const wrapWords = (text: string, columns: number): readonly string[] => {
 
   return line === "" ? lines : [...lines, line];
 };
+
+/** Text of several lines wrapped line by line, its blank lines kept as empty lines. */
+export const wrapText = (text: string, columns: number): readonly string[] =>
+  text.trim() === ""
+    ? []
+    : text
+        .trim()
+        .split("\n")
+        .flatMap((line) => {
+          const wrapped = wrapWords(line, columns);
+
+          return wrapped.length === 0 ? [""] : wrapped;
+        });
 
 /** The first `count` lines, the last ending in `…` when lines were left out. */
 export const clampLines = (lines: readonly string[], count: number, columns: number) => {

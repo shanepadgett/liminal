@@ -68,7 +68,11 @@ export const usageOf = (counted: Counted, described: ReadonlyArray<Described>): 
 
 /** The session's usage now; none before its first reply. */
 const usageNow = Effect.fn("usage.now")(function* (deps: Deps, session: SessionId) {
-  const counted = countCalls(yield* deps.log.read(session, {}));
+  const entries = yield* deps.log
+    .read(session, {})
+    .pipe(Effect.catchTag("SessionNotFound", () => Effect.succeed([])));
+
+  const counted = countCalls(entries);
   if (Option.isNone(counted)) return [];
 
   const described = yield* Effect.forEach(counted.value.byModel, (calls) =>
@@ -81,11 +85,20 @@ const usageNow = Effect.fn("usage.now")(function* (deps: Deps, session: SessionI
   return [usageOf(counted.value, described)];
 });
 
-/** The session's usage now, then after each burst of new entries. */
+/**
+ * The session's usage now, then after each burst of new entries; a failed count is skipped. A
+ * session followed before its first prompt reads as empty until it exists.
+ */
 const watchUsage = (deps: Deps, session: SessionId) =>
   deps.log.subscribe(session, {}).pipe(
     Stream.debounce(SETTLE),
-    Stream.mapEffect(() => usageNow(deps, session)),
+    Stream.mapEffect(() =>
+      usageNow(deps, session).pipe(
+        Effect.catch((error) =>
+          Effect.as(Effect.logWarning(`usage count skipped: ${error.message}`), []),
+        ),
+      ),
+    ),
     Stream.flattenIterable,
     Stream.catch((error) =>
       Stream.fromEffect(Effect.logWarning(`usage ended: ${error.message}`)).pipe(Stream.drain),

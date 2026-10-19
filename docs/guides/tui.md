@@ -60,6 +60,8 @@ The chat screen's slots, from `@liminal/chat/contract`:
 
 - Take `ChatSlots.composer` and `ChatSlots.composerHints` with the same `select` and a priority below 0, so your keys replace the composer's.
 
+- A chain's component stays mounted while the same registration matches; new owner props and `matched` arrive as prop changes.
+
 - A sidebar section is a `ChatSlots.sidebar` registration drawn with `SidebarSection`, `SidebarStat` and `SidebarNote` from `@liminal/sdk/tui`; the sidebar is 42 columns wide, its border and padding included. Example: `packages/plugins/usage/src/tui.tsx`.
 
 - To declare your own slot, export `Slot.single|list|keyed|chain("<plugin>/<place>", { scope })` from your contract and pass it as `declares` when you register the component that draws it. `scope` is `"root"` or `"session"`; session slots get `sessionId`.
@@ -224,6 +226,8 @@ Other helpers from `@liminal/sdk/tui`:
 | `Tail` | The last `lines` lines of `text` |
 | `Hints` | Key hints, `[key, action]` pairs |
 | `useCopy()` | `copy(text)` to the terminal clipboard and `isCopied()` for feedback |
+| `wrapText`, `wrapWords`, `clampLines` | Text cut into lines of a width, and the first lines ending in `…` |
+| `createPin()` | Which prompt of a scrolled column stays pinned at its top, and how far the next pushes it |
 
 Examples: `packages/plugins/notices/src/tui/Notice.tsx` (colors, `useCopy`), `packages/plugins/agent-loop/src/tui/live.tsx` (markdown).
 
