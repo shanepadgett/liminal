@@ -62,8 +62,19 @@ const make = Effect.gen(function* () {
     return onPlan(models, plan);
   });
 
+  /** A provider's models as last listed: a plan's kept list, read only when none is kept. */
+  const lastListed = (id: string, source: ModelSource) =>
+    ModelSource.$is("PlanCatalog")(source)
+      ? Effect.map(
+          Effect.all([catalogInfos(source.catalogId), plans.keptOf(id, source.plan)], {
+            concurrency: 2,
+          }),
+          ([models, plan]) => onPlan(models, plan),
+        )
+      : listed(source);
+
   const describe = Effect.fn("Models.describe")(function* (model: ModelRef) {
-    const models = yield* listed((yield* provider(model.provider)).source);
+    const models = yield* lastListed(model.provider, (yield* provider(model.provider)).source);
     const found = models.find((info) => info.id === model.id);
 
     if (found !== undefined) return found;

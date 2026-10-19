@@ -76,7 +76,10 @@ export class Models extends Context.Service<
       ReadonlyArray<ModelInfo>,
       ModelError | ProviderNotFound | CatalogUnavailable
     >;
-    /** One model's details, without reading a plan. */
+    /**
+     * One model's details; on a plan, with the plan's context window from its kept list, read only
+     * when none is kept.
+     */
     readonly describe: (
       model: ModelRef,
     ) => Effect.Effect<ModelInfo, ModelError | ProviderNotFound | CatalogUnavailable>;

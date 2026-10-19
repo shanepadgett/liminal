@@ -26,7 +26,13 @@ import { codexStack, fakeAccessToken, firstMessages, noteText, oauth } from "./s
 
 const sent = Ref.makeUnsafe<ReadonlyArray<SentRequest>>([]);
 
-const http = replay({ responses: [{ fixture: "tool-call.sse" }, { fixture: "reply.sse" }] }, sent);
+const http = replay(
+  {
+    models: [{ fixture: "models.json" }],
+    responses: [{ fixture: "tool-call.sse" }, { fixture: "reply.sse" }],
+  },
+  sent,
+);
 
 const stack = serverOf(agentLoop).pipe(
   Layer.provideMerge(serverOf(toolsRead)),
@@ -78,7 +84,8 @@ effectTest(
     expect(JSON.stringify(dataOf(entries, ToolResultEntry.kind))).toContain(noteText);
     expect(JSON.stringify(dataOf(entries, TextEntry.kind).at(-1))).toContain("Thursday");
 
-    const second = yield* sentBody(sent, 1);
+    // The plan's model list is read first, for the model's context window.
+    const second = yield* sentBody(sent, 2);
     expect(JSON.stringify(second.input)).toContain(noteText);
   }),
   stack,

@@ -76,6 +76,16 @@ export const makePlans = Effect.gen(function* () {
       FiberMap.run(reading, provider, { onlyIfMissing: true }),
     );
 
+  /** The kept list for `provider`, not read again; with none kept, waits for the read. */
+  const keptOf = Effect.fn("Models.keptOf")(function* (
+    provider: string,
+    plan: Effect.Effect<ReadonlyArray<PlanModel>, ModelError>,
+  ) {
+    const found = (yield* Ref.get(kept))[provider];
+
+    return found ?? (yield* readAndKeep(provider, plan));
+  });
+
   /** The kept list for `provider`, refreshed behind it; with none kept, waits for the read. */
   const planOf = Effect.fn("Models.planOf")(function* (
     provider: string,
@@ -89,5 +99,5 @@ export const makePlans = Effect.gen(function* () {
     return found;
   });
 
-  return { planOf };
+  return { keptOf, planOf };
 });

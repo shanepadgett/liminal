@@ -2,7 +2,7 @@
 
 import { expect } from "bun:test";
 
-import { Effect, Option, Predicate, Queue } from "effect";
+import { Effect, Option, Predicate, Queue, Ref } from "effect";
 
 import { ModelError, type ModelInfo, type PlanModel } from "@liminal/sdk";
 import { effectTest } from "@liminal/sdk/testing";
@@ -42,18 +42,29 @@ effectTest(
 );
 
 effectTest(
-  "describe finds one model without the plan, and fails for one not listed or an unavailable catalog",
+  "describe gives a plan's model with the plan's window, reads the plan once, and fails for one not listed or an unavailable catalog",
   Effect.gen(function* () {
+    const reads = yield* Ref.make(0);
+
+    const plan = Effect.as(
+      Ref.update(reads, (count) => count + 1),
+      [{ id: "gpt-b", contextWindow: Option.some(500_000) }],
+    );
+
     yield* register(
-      provider("plan", ModelSource.PlanCatalog({ catalogId: "openai", plan: Effect.die("read") })),
+      provider("plan", ModelSource.PlanCatalog({ catalogId: "openai", plan })),
       provider("gone", ModelSource.Catalog({ catalogId: "elsewhere" })),
     );
 
     const service = yield* Models;
-    expect((yield* service.describe({ provider: "plan", id: "gpt-b" })).name).toBe("GPT-B");
+    const described = yield* service.describe({ provider: "plan", id: "gpt-b" });
+    expect([described.name, described.contextWindow]).toEqual(["GPT-B", 500_000]);
 
-    const missing = yield* Effect.flip(service.describe({ provider: "plan", id: "gpt-z" }));
-    expect(missing.message).toBe("plan lists no model gpt-z");
+    yield* service.describe({ provider: "plan", id: "gpt-b" });
+    expect(yield* Ref.get(reads)).toBe(1);
+
+    const missing = yield* Effect.flip(service.describe({ provider: "plan", id: "gpt-a" }));
+    expect(missing.message).toBe("plan lists no model gpt-a");
 
     const offline = yield* Effect.flip(service.listModels("gone"));
     expect(Predicate.isTagged(offline, "CatalogUnavailable")).toBe(true);

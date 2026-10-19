@@ -32,7 +32,7 @@ Status: built
 - A provider's models come from a fixed list, the `models.dev` catalog (`model-catalog`), or the catalog filtered by its plan's list
 - Plan lists are kept in `plans.json` in the data folder; a listing returns the kept list at once and reads the plan again in the background; only a provider with no kept list waits
 - A background read failing with `auth` forgets the kept list
-- `describe` finds one model without reading the plan list
+- `describe` gives a plan's model with the plan's context window from the kept plan list, reading the plan only when none is kept
 - A provider with a login can give a check; listing its models fails with that check's `auth` error while it has no usable login
 - Each model lists its own thinking options as the provider names them: effort names as given, labelled token budgets, or off and on; none when it cannot reason
 - `stream` accepts model ids a provider does not list
