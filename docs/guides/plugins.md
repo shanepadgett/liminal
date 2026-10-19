@@ -152,7 +152,7 @@ Declare one when other plugins should add to your feature.
    export const layer = KeyedRegistry.layer(Tools, (tool) => tool.spec.name);
    ```
 
-4. Read it where you run: `list` for the current items, `changes` for a stream of them.
+4. Read it where you run: `list` for the current items, `changes` for a stream of them. A caller sees only the registrations of the builds in the graph it holds, so a reloaded plugin's items appear once the reload applies.
 
 Rules:
 
@@ -232,6 +232,8 @@ Example: `packages/plugins/inbox/src/server.ts`.
 
 For work that should not hold up a turn, such as summarizing history with a small model, keep a `FiberMap` keyed by session in the server's scope and start the work with `FiberMap.run(map, sessionId, work, { onlyIfMissing: true })`. A session then runs one at a time, and a reload interrupts it with the server's scope.
 
+- Start the work from a request, a turn or a hook, so it keeps that graph's registrations.
+- A fiber forked while your layer builds holds no graph and sees every build's registrations. To read another plugin's registry from it, call `Work.use(tag, f)`, which holds the current graph while `f` runs.
 - Catch the work's failures and log them with `Effect.logWarning`; the next start tries again.
 - Save each result in one write, so an interrupted run leaves nothing half-written.
 
