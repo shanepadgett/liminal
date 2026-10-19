@@ -1,8 +1,9 @@
 /**
  * The session sidebar. It runs the full height on the right, set off from the chat column by one
  * vertical line, and holds what is true of the whole session rather than one message: the folder
- * and git branch Liminal runs in, the context the latest call used, what the session cost, how
- * close compaction is, the commands left running and the attached references.
+ * and git branch Liminal runs in, the context the latest call used with how close the next
+ * checkpoint is and the memories written, what the session cost, the commands left running and the
+ * attached references.
  */
 
 import type { JSX } from "@opentui/solid";
@@ -66,18 +67,17 @@ export function Sidebar(props: { readonly color: RoleColor }) {
         <Stat color={props.color} label="branch" value="main" />
       </Block>
       <Block color={props.color} title="Context">
-        <Stat color={props.color} label="used" value="84K · 42%" />
-        <Stat color={props.color} label="window" value="200K" />
+        <Stat color={props.color} label="used" value="152K · 58%" />
+        <Stat color={props.color} label="window" value="262K" />
         <Stat color={props.color} label="cache hit" value="91%" />
+        <Stat color={props.color} label="budget" value="152K · 76%" tone="feedback.warning" />
+        <Stat color={props.color} label="short-term" value="4" />
+        <Stat color={props.color} label="long-term" value="1" />
+        <Stat color={props.color} label="checkpoints" value="2" />
       </Block>
       <Block color={props.color} title="Cost">
         <Stat color={props.color} label="session" value="$1.24" />
         <Stat color={props.color} label="today" value="$3.87" />
-      </Block>
-      <Block color={props.color} title="Compaction">
-        <Stat color={props.color} label="budget" value="150K · 76%" tone="feedback.warning" />
-        <Stat color={props.color} label="notes" value="through 212" />
-        <Stat color={props.color} label="checkpoints" value="2" />
       </Block>
       <Block color={props.color} title="Processes">
         <Stat color={props.color} label="p1 bun run dev" value="running" tone="feedback.success" />
