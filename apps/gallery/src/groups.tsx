@@ -17,6 +17,7 @@ import {
 } from "./chat/formSamples.ts";
 import type { FormState } from "./chat/formState.ts";
 import { ModelPicker, ThinkingPicker } from "./chat/ModelPicker.tsx";
+import { NO_CLONES, ReferencesPicker } from "./chat/ReferencesPicker.tsx";
 import type { ReloadShown } from "./chat/ReloadStatus.tsx";
 import { SessionPicker } from "./chat/SessionPicker.tsx";
 import { Sidebar } from "./chat/Sidebar.tsx";
@@ -198,6 +199,23 @@ const stashesState = (name: string, selected: number): EntryState => ({
   view: withRoles((color) => <StashPicker color={color} selected={selected} />),
 });
 
+const REFERENCES_STATES: readonly [EntryState, ...EntryState[]] = [
+  {
+    name: "Attached and cloning",
+    fill: "screen",
+    view: withRoles((color) => (
+      <ReferencesPicker color={color} marked={["effect", "lipgloss"]} selected="opencode" />
+    )),
+  },
+  {
+    name: "No references",
+    fill: "screen",
+    view: withRoles((color) => (
+      <ReferencesPicker color={color} marked={[]} selected="" clones={NO_CLONES} />
+    )),
+  },
+];
+
 const thinkingState = (name: string, selected: string): EntryState => ({
   name,
   fill: "screen",
@@ -331,6 +349,7 @@ export const GROUPS: Groups = [
             title: "Stashes",
             states: [stashesState("Newest stash", 3), stashesState("An older stash", 1)],
           },
+          { id: "references", title: "References", states: REFERENCES_STATES },
           { id: "connect", title: "Connect", states: CONNECT_STATES },
           {
             id: "approval",

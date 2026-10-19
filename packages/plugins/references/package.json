@@ -1,0 +1,27 @@
+{
+  "name": "@liminal/references",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./plugin.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "devDependencies": {
+    "@liminal/session-store": "workspace:*"
+  },
+  "peerDependencies": {
+    "@liminal/chat": "workspace:*",
+    "@liminal/context": "workspace:*",
+    "@liminal/inbox": "workspace:*",
+    "@liminal/sdk": "workspace:*",
+    "@liminal/session-log": "workspace:*",
+    "@opentui/core": "0.6.6",
+    "@opentui/keymap": "0.6.6",
+    "@opentui/solid": "0.6.6",
+    "effect": "4.0.5",
+    "solid-js": "1.9.12"
+  },
+  "liminal": [
+    "./plugin.ts"
+  ]
+}

@@ -520,6 +520,25 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/references": {
+      "name": "@liminal/references",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/chat": "workspace:*",
+        "@liminal/context": "workspace:*",
+        "@liminal/inbox": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/keymap": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/reload": {
       "name": "@liminal/reload",
       "version": "0.1.0",
@@ -933,6 +952,8 @@
     "@liminal/palette": ["@liminal/palette@workspace:packages/plugins/palette"],
 
     "@liminal/processes": ["@liminal/processes@workspace:packages/plugins/processes"],
+
+    "@liminal/references": ["@liminal/references@workspace:packages/plugins/references"],
 
     "@liminal/reload": ["@liminal/reload@workspace:packages/plugins/reload"],
 

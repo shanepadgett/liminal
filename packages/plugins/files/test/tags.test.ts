@@ -5,10 +5,11 @@ import { expect, test } from "bun:test";
 import { Effect, FileSystem, Option, Path, Predicate } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
+import { ranked } from "@liminal/inbox/contract";
 import { Directories } from "@liminal/sdk";
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 
-import { makeFileTags, ranked } from "../src/server/tags.ts";
+import { makeFileTags } from "../src/server/tags.ts";
 
 test("closer matches come first, then shorter paths", () => {
   expect(ranked(["src/server/tags.ts", "tags.ts", "test/a.ts"], "tags")).toEqual([

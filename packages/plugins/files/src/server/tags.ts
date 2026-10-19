@@ -7,11 +7,15 @@
 import { ByteSize, Effect, FileSystem, Option, Path } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
-import { type TagAttachment, TagImage, type TagRow, TagText } from "@liminal/inbox/contract";
+import {
+  ranked,
+  type TagAttachment,
+  TagImage,
+  type TagRow,
+  TagText,
+  withFolders,
+} from "@liminal/inbox/contract";
 import { Directories, type ImageMediaType } from "@liminal/sdk";
-
-/** The most rows one query gives. */
-const ROWS = 12;
 
 /** Past this many names, a listing says how many more there are. */
 const MAX_NAMES = 200;
@@ -26,50 +30,6 @@ const pictureTypes: Readonly<Record<string, ImageMediaType>> = {
 /** The picture type of `file` by its extension; none for any other file. */
 export const pictureType = (path: Path.Path, file: string) =>
   Option.fromUndefinedOr(pictureTypes[path.extname(file).toLowerCase()]);
-
-/** Each path and every folder above it, folders ending in `/`. */
-const withFolders = (files: ReadonlyArray<string>) => {
-  const folders = new Set<string>();
-
-  for (const file of files) {
-    for (let slash = file.indexOf("/"); slash !== -1; slash = file.indexOf("/", slash + 1))
-      folders.add(file.slice(0, slash + 1));
-  }
-
-  return [...folders, ...files];
-};
-
-/**
- * How many separate stretches of `text` hold `query`'s characters in order, ignoring case; fewer
- * reads as a closer match. None when `text` does not hold them all.
- */
-const runsOf = (query: string, text: string) => {
-  const lower = text.toLowerCase();
-  let from = 0;
-  let runs = 0;
-
-  for (const char of query.toLowerCase()) {
-    const found = lower.indexOf(char, from);
-    if (found === -1) return Option.none<number>();
-    if (found !== from || from === 0) runs += 1;
-    from = found + 1;
-  }
-
-  return Option.some(runs);
-};
-
-/** The paths matching `query`, closest first, then shortest. */
-export const ranked = (paths: ReadonlyArray<string>, query: string) =>
-  paths
-    .flatMap((candidate) =>
-      Option.match(runsOf(query, candidate), {
-        onNone: () => [],
-        onSome: (runs) => [{ candidate, runs }],
-      }),
-    )
-    .toSorted((a, b) => a.runs - b.runs || a.candidate.length - b.candidate.length)
-    .slice(0, ROWS)
-    .map((found) => found.candidate);
 
 /** Runs git in `cwd`, giving what it wrote; nothing when it cannot run. */
 const git = (cwd: string, args: ReadonlyArray<string>) =>

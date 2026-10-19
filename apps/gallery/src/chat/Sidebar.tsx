@@ -1,8 +1,8 @@
 /**
  * The session sidebar. It runs the full height on the right, set off from the chat column by one
  * vertical line, and holds what is true of the whole session rather than one message: the context
- * the latest call used, what the session cost, how close compaction is, and the commands left
- * running.
+ * the latest call used, what the session cost, how close compaction is, the commands left running
+ * and the attached references.
  */
 
 import type { JSX } from "@opentui/solid";
@@ -82,6 +82,14 @@ export function Sidebar(props: { readonly color: RoleColor }) {
           value="exited 1"
           tone="feedback.danger"
         />
+      </Block>
+      <Block color={props.color} title="References">
+        <text wrapMode="none" fg={props.color("text.muted")}>
+          effect
+        </text>
+        <text wrapMode="none" fg={props.color("text.muted")}>
+          lipgloss
+        </text>
       </Block>
     </box>
   );

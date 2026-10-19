@@ -378,6 +378,43 @@ send(session, { text, pictures }, mode) =
 - Tags outside a git repository find no files or folders; other sources still answer.
 - Pictures go to the model whatever input it accepts.
 
+## Step 9: references
+
+A new `references` plugin keeps reference repositories as git clones in `<data>/references/<name>`, as Tau's `~/.tau/references`. A session attaches some of them; the model is told their folder in a prompt section, and `@` tags reach them and their files.
+
+```mermaid
+flowchart LR
+  dialog["/references dialog"] -- "references/list, clone, pull, branches, switch, remove, open, attach" --> server["references server"]
+  section["References sidebar section"] -- "references/attached stream" --> server
+  server --> library["Library: git in <data>/references"]
+  server --> log["references/attached entries"]
+  server --> prompt["PromptSections: references/attached"]
+  server --> tags["TagSources: references at order 10"]
+```
+
+| Where | Change |
+| --- | --- |
+| `references` contract | `Reference { name, branch?, description? }`; `CloneEvent`: `CloneProgress { phase, percent }` or `Cloned { reference }`; `ReferenceFailed { reference, message }`; `AttachedEntry` `references/attached` (names, hidden, not for the model); `ReferencesRpcs`: `references/list`, `references/attached` (stream), `references/attach`, `references/clone` (stream), `references/pull`, `references/branches`, `references/switch`, `references/remove`, `references/open` |
+| `references` server | `git.ts`: run git with a timeout, its error line; `clone.ts`: `git clone --progress --single-branch` into `.clone-<name>-<time>`, renamed when done, progress parsed from stderr, stopped after 3 silent minutes; `description.ts`: GitHub's description saved as `.git/liminal-description` at clone time and filled in the background at start, else the README's first prose line; `library.ts`: list from folders and `.git/HEAD`, pull `--ff-only`, branches local and remote, switch (fetches a remote branch), remove, open in `$VISUAL`, `$EDITOR` or `code`; `attached.ts`: the session's names from its newest `references/attached` entry, kept in a `SubscriptionRef` map; the prompt section at order 230; `tags.ts` |
+| `inbox` | `ranked` and `withFolders` move from `files` into the contract for every source; tab opens a `reference` row as it opens a folder |
+| `references` TUI | `/references`: the library with attached rows marked; up and down move, space marks, enter attaches the marked and closes; ctrl+n asks for a git URL and clones, the row noting progress; ctrl+u pulls every clone; ctrl+r picks a branch; ctrl+o opens; ctrl+x deletes after a confirm; a failure notes `! <git's line>` on its row. References sidebar section at order 40, only while some are attached. The session on screen comes from a composer-line item that draws nothing |
+| gallery | References dialog: marked rows, a clone in progress, a failed pull; References section in `Sidebar` |
+
+```ts
+prompt section "references/attached", order 230, value: attached names that still have a folder
+  initial: "Reference repositories are read-only git clones in <folder>/<name>. When the user names one, read it there. Never change them.\nAttached:\n- a\n- b"
+  changed: the same, "Attached now:"; removed: "No reference repositories are attached any more."
+
+tag source, order 10, find(query):
+  query "<short folder>/<name>/<rest>" -> git ls-files in the clone, ranked by <rest>; rows path "<name>/<found>", tag "<short folder>/<name>/<found>"
+  otherwise -> clones whose name matches: kind reference, path "<name>/", tag "<short folder>/<name>/"
+  attach -> none; files attaches a folder's listing or a picture by its `~/` path
+```
+
+- `<short folder>` is the folder with the home folder written `~`.
+- Attaching to a session that has no entries yet creates it.
+- A clone deleted from disk drops out of the prompt section.
+
 ## New dependency
 
 - `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Unpatched here: its console logs are cut only when the script ends.

@@ -93,12 +93,12 @@ export const useTags = (deps: TagsDeps) => {
     () => at() !== undefined && closedAt() === undefined && rows().length > 0,
   );
 
-  /** Tags the highlighted row, or opens it when it is a folder and `openFolder` holds. */
+  /** Tags the highlighted row, or opens it when it is a folder or reference and `openFolder` holds. */
   const choose = (openFolder: boolean) => {
     const row = rows()[selected()];
     const tag = at();
     if (row === undefined || tag === undefined) return;
-    const isOpening = openFolder && row.kind === "folder";
+    const isOpening = openFolder && (row.kind === "folder" || row.kind === "reference");
     replaceTag(deps.input, tag, isOpening ? openText(row.tag) : `${tagText(row.tag)} `);
   };
 
