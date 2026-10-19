@@ -86,11 +86,20 @@ const withDraft = (state: FormState, draft: Draft): FormState => ({
   drafts: state.drafts.map((each, index) => (index === state.tab ? draft : each)),
 });
 
-/** Moves `by` tabs, wrapping, to the new tab's first row. */
+/** The row a tab opens on: its picked option or own answer, else the first row. */
+const openingRow = (question: Question | undefined, draft: Draft | undefined) => {
+  if (question === undefined || draft?.kind !== "choice" || draft.picked === undefined) return 0;
+
+  return draft.picked === "own" ? optionsOf(question).length : draft.picked;
+};
+
+/** Moves `by` tabs, wrapping, to the new tab's picked row, else its first. */
 export const moveTab = (state: FormState, by: number): FormState => {
   const tabs = state.form.questions.length + 1;
+  const tab = (state.tab + by + tabs) % tabs;
+  const row = openingRow(state.form.questions.at(tab), state.drafts.at(tab));
 
-  return { ...state, tab: (state.tab + by + tabs) % tabs, row: 0, noting: undefined };
+  return { ...state, tab, row, noting: undefined };
 };
 
 /** Moves `by` rows within a choice tab's options and own row. */
@@ -216,7 +225,7 @@ const enterHint = (state: FormState): Hint => {
   return isWriting(state) ? ["enter", "accept"] : ["enter", "pick"];
 };
 
-/** What the keys do on the tab in view: ↑↓ wherever rows move, `n` on an option. */
+/** What the keys do on the tab in view: ↑↓ wherever rows move, `n` and ←→ on an option. */
 export const hintsOf = (state: FormState): ReadonlyArray<Hint> => {
   if (state.noting !== undefined) return NOTING;
 
@@ -228,7 +237,9 @@ export const hintsOf = (state: FormState): ReadonlyArray<Hint> => {
     ...(hasRows ? [["↑↓", "choose"] satisfies Hint] : []),
     enterHint(state),
     ...(onOption ? [["n", "note"] satisfies Hint] : []),
-    question === undefined ? ["shift+tab", "back"] : ["tab", "next"],
+    ...(onOption ? [["←→", "tabs"] satisfies Hint] : []),
+    ["tab", "next"],
+    ["shift+tab", "back"],
     ["esc", "cancel"],
   ];
 };

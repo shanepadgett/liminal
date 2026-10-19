@@ -1,8 +1,9 @@
 /**
  * The composer's draft area taken over by the assistant's questions: the form's title, its tabs,
  * and the tab in view, a question to choose or write an answer for, or additional context. Tab and
- * shift+tab move between tabs, enter picks or accepts, `n` notes an option, esc cancels the form.
- * Any question left open is sent as skipped.
+ * shift+tab, or the arrows beside options, move between tabs, back to answers already given, enter
+ * picks or accepts, `n` notes an option, esc cancels the form. Any question left open is sent as
+ * skipped.
  */
 
 import {
@@ -64,6 +65,14 @@ const rowKeys = (state: FormState) =>
         { key: "down", cmd: "questions.down" },
       ];
 
+const tabKeys = (state: FormState) =>
+  isWriting(state)
+    ? []
+    : [
+        { key: "left", cmd: "questions.back" },
+        { key: "right", cmd: "questions.next" },
+      ];
+
 const formKeys = (state: FormState, dialogOpen: boolean) =>
   dialogOpen
     ? []
@@ -72,6 +81,7 @@ const formKeys = (state: FormState, dialogOpen: boolean) =>
         { key: "shift+tab", cmd: "questions.back" },
         { key: "escape", cmd: "questions.escape" },
         ...rowKeys(state),
+        ...tabKeys(state),
         ...choosingKeys(state),
       ];
 

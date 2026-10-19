@@ -266,4 +266,14 @@ describe("form state", () => {
       { kind: "skipped" },
     ]);
   });
+
+  test("going back opens a tab on the option already picked", () => {
+    let state = formState(form);
+    state = pick(moveRow(state, 1));
+    expect(state.tab).toBe(1);
+
+    state = moveTab(state, -1);
+    expect(state.tab).toBe(0);
+    expect(state.row).toBe(1);
+  });
 });

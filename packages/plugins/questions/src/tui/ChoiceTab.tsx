@@ -207,7 +207,7 @@ export function ChoiceTab(props: {
       </box>
       <Show when={props.question.recommendation}>
         {(recommendation) => (
-          <box marginTop={1}>
+          <box marginTop={1} marginBottom={1}>
             <Suggested recommendation={recommendation()} />
           </box>
         )}
