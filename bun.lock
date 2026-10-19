@@ -220,6 +220,34 @@
         "effect": "4.0.5",
       },
     },
+    "packages/plugins/commit": {
+      "name": "@liminal/commit",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/context": "workspace:*",
+        "@liminal/model-catalog": "workspace:*",
+        "@liminal/model-scripted": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+        "@liminal/settings": "workspace:*",
+        "@liminal/tool-output": "workspace:*",
+        "@liminal/tools": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/agent-loop": "workspace:*",
+        "@liminal/chat": "workspace:*",
+        "@liminal/checks": "workspace:*",
+        "@liminal/command-runner": "workspace:*",
+        "@liminal/inbox": "workspace:*",
+        "@liminal/models": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/keymap": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/compaction": {
       "name": "@liminal/compaction",
       "version": "0.1.0",
@@ -932,6 +960,8 @@
     "@liminal/cli": ["@liminal/cli@workspace:apps/cli"],
 
     "@liminal/command-runner": ["@liminal/command-runner@workspace:packages/plugins/command-runner"],
+
+    "@liminal/commit": ["@liminal/commit@workspace:packages/plugins/commit"],
 
     "@liminal/compaction": ["@liminal/compaction@workspace:packages/plugins/compaction"],
 

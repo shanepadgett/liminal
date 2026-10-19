@@ -7,7 +7,7 @@ import { Duration, Effect, FileSystem, Option, Path, Result, Schema } from "effe
 
 import { Directories, parseJsonObject, ProjectTrust } from "@liminal/sdk";
 
-import { type CheckEntry, ChecksFile, checksFileName } from "../contract.ts";
+import { type CheckEntry, ChecksFile, checksFileName, ChecksFileInvalid } from "../contract.ts";
 
 const DEFAULT_TIMEOUT_SECONDS = 120;
 
@@ -34,12 +34,6 @@ export interface ProjectChecks {
   readonly check: ReadonlyArray<Check>;
   readonly commit: ReadonlyArray<Check>;
 }
-
-/** The checks file cannot be read or holds a wrong value. */
-export class ChecksFileInvalid extends Schema.TaggedError<
-  ChecksFileInvalid,
-  { readonly brand: unique symbol }
->()("ChecksFileInvalid", { message: Schema.String }) {}
 
 const decodeFile = Schema.decodeUnknownEffect(ChecksFile);
 

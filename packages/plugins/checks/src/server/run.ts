@@ -98,10 +98,3 @@ export const makeRunner = Effect.gen(function* () {
 
   return { dueChecks, runChecks };
 });
-
-/** `Passed: name` for each pass, then `Failed: name` and its output for each failure. */
-export const reportText = (report: CheckReport): string =>
-  [
-    ...report.passed.map((name) => `Passed: ${name}`),
-    ...report.failed.map(({ name, output }) => `Failed: ${name}\n${output}`.trim()),
-  ].join("\n\n");

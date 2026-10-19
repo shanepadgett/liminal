@@ -450,6 +450,47 @@ form keys: tab/shift+tab tabs; up/down rows; enter picks or accepts, sends on th
 - A question left open is sent as `skipped`.
 - A session whose first system entry predates the plugin learns the tool only from the offer.
 
+## Step 11: `/commit`
+
+A new `commit` plugin. Its server has no state: each RPC is one step on the repository holding the workspace. The TUI runs the steps in order in a dialog and asks twice: commit the plan, then push.
+
+```mermaid
+flowchart LR
+  slash["/commit [instruction]"] --> start["commit/start"] --> check["commit/check"] --> plan["commit/plan"]
+  plan --> review{"review"} -- enter --> apply["commit/apply"] --> target["commit/push-target"] --> push{"push?"} -- yes --> pushed["commit/push"]
+  check -- failed --> inbox["Inbox.send follow-up"]
+```
+
+| Where | Change |
+| --- | --- |
+| `checks` contract | `CommitChecks` service: `due(paths)` gives the `check` and `commit` checks due on workspace paths, as `{ count, run }`; `ChecksFileInvalid` and `reportText` move here |
+| `checks` server | provides `CommitChecks` from its file reader and runner |
+| `sdk` TUI, gallery `Dialog` | `DialogFrame` and `Dialog` take `isWorking`, so the title rule glides while a dialog waits on work |
+| `commit` contract | `ChangedFile`, `CommitStart { root, files, checks, planner }`, `PlannedCommit`, `CheckOutcome` (`Passed`, `Failed { names }`, `Changed`), `CommitProgress` (`Committing { index }`, `Committed { hashes }`), `PushTarget`; `CommitError`, `CommitFailed { hashes }`; `CommitRpcs` |
+| `commit` server | git through `CommandRunner`; the plan from `ModelTask` on the cheap model of `AgentLoop.defaults`' provider, retried once when it breaks a rule; failed checks go to the session as a follow-up |
+| `commit` TUI | `/commit [instruction]`; `CommitDialog` over the steps; the result as a toast |
+| gallery | `CommitDialog`: planning, the plan, the push question |
+
+```ts
+start(session)        root = git rev-parse --show-toplevel (workspace); files = status --porcelain=v2 -z --untracked-files=all
+                      no repository or no files -> CommitError; checks = CommitChecks.due(workspace paths).count
+check(session, start) report = due.run; status changed -> Changed; failed -> Inbox.send(prompt), Failed
+plan(session, start, instruction)
+                      evidence: numbered files, diff vs HEAD (empty tree before the first commit) + untracked, cut at 48,000;
+                      12 recent subjects; user prompts since HEAD's time; instruction
+                      submit_plan { commits: [{ message, files: [n] }] }: every file once, conventional subjects
+apply(root, commits)  each: reset --mixed, add -A -- paths (+ previous path), commit -m -> Committing, then Committed hashes
+push-target(root)     @{u}, else origin/<branch> as new, else null
+push(root, target)    push, or push --set-upstream origin <branch>
+
+CommitStep = Checking { count } | Planning { model } | Review { commits } | Committing { index, count }
+           | Push { target, count } | Pushing { target, count }
+esc: Review or Push answers no; Checking or Planning stops the run; Committing and Pushing wait
+```
+
+- Commits run the repository's hooks; a commit or push may take 10 minutes.
+- Push is always asked, No first.
+
 ## New dependency
 
 - `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Unpatched here: its console logs are cut only when the script ends.

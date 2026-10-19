@@ -9,7 +9,8 @@ import { BeforeCallHooks, TurnEndingHooks } from "@liminal/agent-loop/contract";
 import { EntryKinds } from "@liminal/session-log/contract";
 import { ToolWrappers } from "@liminal/tools/contract";
 
-import { ChangesEntry, FixedEntry, ReportEntry } from "./contract.ts";
+import { ChangesEntry, CommitChecks, FixedEntry, ReportEntry } from "./contract.ts";
+import { makeCommitChecks } from "./server/commit.ts";
 import { makeFixWrapper } from "./server/fix.ts";
 import { makeSettle } from "./server/settle.ts";
 import { makeChecksTool } from "./server/tool.ts";
@@ -34,4 +35,4 @@ export const layer = Layer.effectDiscard(
 
     yield* (yield* TurnEndingHooks).register(yield* makeSettle, { order: settleOrder });
   }),
-);
+).pipe(Layer.provideMerge(Layer.effect(CommitChecks, makeCommitChecks)));

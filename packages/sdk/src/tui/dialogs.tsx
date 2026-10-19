@@ -63,12 +63,20 @@ const DIALOG_COLUMNS = 60;
 /** Above the sidebar drawer, which is at 1. */
 const Z_INDEX = 10;
 
+/** Esc and ctrl+c close a dialog. */
+const CLOSE_KEYS = [
+  { key: "escape", cmd: "dialog.close" },
+  { key: "ctrl+c", cmd: "dialog.close" },
+];
+
 /**
  * A panel centered over the whole window on the raised surface: the title in the accent, the rule,
- * then `esc`, which closes it, as ctrl+c does; key hints sit at the bottom.
+ * gliding while `isWorking`, then `esc`, which closes it, as ctrl+c does; key hints sit at the
+ * bottom.
  */
 export function DialogFrame(props: {
   readonly title: string;
+  readonly isWorking?: boolean;
   readonly hints: readonly Hint[];
   readonly close: () => void;
   readonly children: JSX.Element;
@@ -84,10 +92,7 @@ export function DialogFrame(props: {
         },
       },
     ],
-    bindings: [
-      { key: "escape", cmd: "dialog.close" },
-      { key: "ctrl+c", cmd: "dialog.close" },
-    ],
+    bindings: CLOSE_KEYS,
   }));
 
   return (
@@ -116,7 +121,7 @@ export function DialogFrame(props: {
           <text flexShrink={0} wrapMode="none" fg={color("text.accent")}>
             {`${props.title} `}
           </text>
-          <HeaderRule color={color} surface="surface.raised" isWorking={false} />
+          <HeaderRule color={color} surface="surface.raised" isWorking={props.isWorking ?? false} />
           <text flexShrink={0} fg={color("text.faint")}>
             {" esc"}
           </text>

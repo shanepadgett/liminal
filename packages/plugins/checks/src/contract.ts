@@ -4,7 +4,7 @@
  * with unchecked changes; commit checks run only in `/commit`.
  */
 
-import { Schema } from "effect";
+import { Context, type Effect, Schema } from "effect";
 
 import { defineEntry } from "@liminal/sdk";
 
@@ -81,3 +81,31 @@ export const checksTool = "checks";
 
 /** Whether a report has a failure. */
 export const hasFailures = (report: CheckReport): boolean => report.failed.length > 0;
+
+/** `Passed: name` for each pass, then `Failed: name` and its output for each failure. */
+export const reportText = (report: CheckReport): string =>
+  [
+    ...report.passed.map((name) => `Passed: ${name}`),
+    ...report.failed.map(({ name, output }) => `Failed: ${name}\n${output}`.trim()),
+  ].join("\n\n");
+
+/** The checks file cannot be read or holds a wrong value. */
+export class ChecksFileInvalid extends Schema.TaggedError<
+  ChecksFileInvalid,
+  { readonly brand: unique symbol }
+>()("ChecksFileInvalid", { message: Schema.String }) {}
+
+/** Checks due on some changes: how many, and the run that gives their report. */
+export interface DueChecks {
+  readonly count: number;
+  readonly run: Effect.Effect<CheckReport>;
+}
+
+/** The checks `/commit` runs before it plans: the `check` list, then the `commit` list. */
+export class CommitChecks extends Context.Service<
+  CommitChecks,
+  {
+    /** The checks due on `paths`, from the workspace; none without a checks file. */
+    readonly due: (paths: ReadonlyArray<string>) => Effect.Effect<DueChecks, ChecksFileInvalid>;
+  }
+>()("liminal/checks/CommitChecks") {}

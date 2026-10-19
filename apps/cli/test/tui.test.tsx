@@ -769,3 +769,21 @@ effectTest(
   }),
   trustedServices,
 );
+
+effectTest(
+  "/commit outside a git repository ends with a toast saying so",
+  Effect.gen(function* () {
+    const { setup } = yield* bootScripted(replyText("hi there"));
+
+    yield* send(setup, "hello there");
+    yield* frameWith(setup, "hi there");
+    // The menu fills `/commit ` for its arguments; the second enter runs it.
+    yield* slash(setup, "/commit", "Check, plan and commit");
+    yield* frameWhere(setup, (frame) => !frame.includes("Check, plan and commit"));
+    setup.mockInput.pressEnter();
+
+    const after = yield* frameWith(setup, "Not in a git repository.");
+    expect(after).toContain("Commit");
+  }),
+  trustedServices,
+);

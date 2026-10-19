@@ -12,10 +12,10 @@ import { SessionLog } from "@liminal/session-log/contract";
 import { LongOutput } from "@liminal/tool-output/contract";
 import { Tools } from "@liminal/tools/contract";
 
-import { checksTool, hasFailures } from "../contract.ts";
+import { checksTool, hasFailures, reportText } from "../contract.ts";
 import { makeChecksFile, type ProjectChecks } from "./file.ts";
 import { changesOfTurn, thisTurn } from "./history.ts";
-import { makeRunner, reportText } from "./run.ts";
+import { makeRunner } from "./run.ts";
 
 const NOTHING_TO_CHECK = "No checks apply to the changes in this run.";
 

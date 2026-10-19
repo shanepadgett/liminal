@@ -4,6 +4,7 @@ import { type ApprovalAsk, ApprovalDialog } from "./chat/ApprovalDialog.tsx";
 import { ChatHeader } from "./chat/ChatHeader.tsx";
 import { ChatScreen, type GlideAt } from "./chat/ChatScreen.tsx";
 import { CommandPalette } from "./chat/CommandPalette.tsx";
+import { COMMIT_STATES } from "./chat/CommitDialog.tsx";
 import { type ApprovalMode, Composer } from "./chat/Composer.tsx";
 import { CONNECT_STATES } from "./chat/connectStates.tsx";
 import {
@@ -351,6 +352,7 @@ export const GROUPS: Groups = [
           },
           { id: "references", title: "References", states: REFERENCES_STATES },
           { id: "connect", title: "Connect", states: CONNECT_STATES },
+          { id: "commit", title: "Commit", states: COMMIT_STATES },
           {
             id: "approval",
             title: "Approval",

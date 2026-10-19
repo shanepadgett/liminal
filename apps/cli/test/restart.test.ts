@@ -41,6 +41,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "chat",
         "checks",
         "command-runner",
+        "commit",
         "compaction",
         "context",
         "credential-store",

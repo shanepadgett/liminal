@@ -10,10 +10,10 @@ import { draft, type EntryDraft, type SessionId } from "@liminal/sdk";
 import { SessionLog } from "@liminal/session-log/contract";
 import { LongOutput } from "@liminal/tool-output/contract";
 
-import { type CheckReport, hasFailures, ReportEntry } from "../contract.ts";
+import { type CheckReport, hasFailures, ReportEntry, reportText } from "../contract.ts";
 import { makeChecksFile } from "./file.ts";
 import { changesOfTurn, failedReports, isDue, thisTurn } from "./history.ts";
-import { makeRunner, reportText } from "./run.ts";
+import { makeRunner } from "./run.ts";
 import { withNextStep } from "./tool.ts";
 
 /** How many failed reports go back to the model before the turn ends. */

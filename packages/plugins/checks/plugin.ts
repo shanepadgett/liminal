@@ -10,9 +10,11 @@ import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
 import { LongOutput } from "@liminal/tool-output/contract";
 import { Tools, ToolWrappers } from "@liminal/tools/contract";
 
+import { CommitChecks } from "./src/contract.ts";
+
 export default definePlugin({
   name: "checks",
-  provides: [],
+  provides: [CommitChecks],
   requires: [
     BeforeCallHooks,
     TurnEndingHooks,
