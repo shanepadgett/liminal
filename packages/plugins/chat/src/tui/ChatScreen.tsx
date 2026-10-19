@@ -1,37 +1,23 @@
 /**
- * The chat screen: the header (wordmark, hairlines that glide while a turn runs, then the header
- * items), the transcript, the composer and the key hints, in a column filling the terminal, with
- * the current toast in its top right, and the session sidebar on the right. Switching sessions
- * draws the session's parts afresh.
+ * The chat screen: the header (wordmark, hairlines that glide while a turn runs, then the session's
+ * title), the transcript, the composer and the key hints with the footer items at their right end,
+ * in a column filling the terminal, with the current toast in its top right, and the session
+ * sidebar on the right. Switching sessions draws the session's parts afresh.
  */
 
 import { useTerminalDimensions } from "@opentui/solid";
 import { type Accessor, createEffect, createMemo, Show } from "solid-js";
 
 import type { SessionId } from "@liminal/sdk";
-import { HeaderRule, SlotView, type TuiToastsService, useColor, WORDMARK } from "@liminal/sdk/tui";
+import { ChatHeader, SlotView, type TuiToastsService, useColor } from "@liminal/sdk/tui";
 
 import { ChatSlots } from "../contract.ts";
 import { Sidebar, type SidebarState } from "./Sidebar.tsx";
 import { ToastCorner } from "./Toast.tsx";
-import type { Transcript as TranscriptState } from "./transcript-state.ts";
+import { titleOf, type Transcript as TranscriptState } from "./transcript-state.ts";
 import { Transcript } from "./Transcript.tsx";
 
 const PADDING_X = 2;
-
-function Header(props: { readonly running: boolean }) {
-  const color = useColor();
-
-  return (
-    <box flexDirection="row" flexShrink={0} paddingX={PADDING_X} paddingTop={1}>
-      <text fg={color("text.accent")} flexShrink={0}>
-        {`${WORDMARK} `}
-      </text>
-      <HeaderRule color={color} surface="surface.base" isWorking={props.running} />
-      <SlotView of={ChatSlots.header} props={{}} />
-    </box>
-  );
-}
 
 interface ScreenProps {
   readonly sessionId: SessionId;
@@ -53,6 +39,8 @@ function SessionView(props: ScreenProps & { readonly running: boolean }) {
       <box flexDirection="row" flexShrink={0} paddingX={PADDING_X} gap={3}>
         <SlotView of={ChatSlots.composerHints} props={turn()} />
         <SlotView of={ChatSlots.hints} props={turn()} />
+        <box flexGrow={1} />
+        <SlotView of={ChatSlots.footer} props={{}} />
       </box>
     </>
   );
@@ -66,6 +54,7 @@ export function ChatScreen(
   // A memo, so the parts that take `running` see a change only when a turn starts or ends, not on
   // every streamed delta.
   const running = createMemo(() => props.transcript().running);
+  const title = createMemo(() => titleOf(props.transcript()));
 
   createEffect(() => {
     props.sidebar.setColumns(terminal().width);
@@ -74,7 +63,7 @@ export function ChatScreen(
   return (
     <box flexDirection="row" width="100%" height="100%" backgroundColor={color("surface.base")}>
       <box flexDirection="column" flexGrow={1} minWidth={0}>
-        <Header running={running()} />
+        <ChatHeader color={color} isWorking={running()} title={title()} />
         <Show when={props.sessionId} keyed>
           {(sessionId) => (
             <SessionView

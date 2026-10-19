@@ -1,6 +1,6 @@
 # TUI parts
 
-A plugin's TUI part adds to the terminal screen: a view for an entry in the transcript, a slash command, a dialog, a key, a header item. It runs in the frontend process and talks to the server only through RPCs. Write one when your plugin has something to show or a command to offer; the server part is in [plugins.md](plugins.md).
+A plugin's TUI part adds to the terminal screen: a view for an entry in the transcript, a slash command, a dialog, a key, a footer item. It runs in the frontend process and talks to the server only through RPCs. Write one when your plugin has something to show or a command to offer; the server part is in [plugins.md](plugins.md).
 
 ## Create a TUI part
 
@@ -51,7 +51,7 @@ The chat screen's slots, from `@liminal/chat/contract`:
 
 | Slot | Kind | Key | Component props |
 | --- | --- | --- | --- |
-| `ChatSlots.header` | list | | none |
+| `ChatSlots.footer` | list | | none |
 | `ChatSlots.entry` | keyed | entry kind, `meta: EntryLook` | `{ entry: SavedEntry, sessionId }` |
 | `ChatSlots.tool` | keyed | tool name, `meta: ToolRows` | `{ call: ToolCall, sessionId }` |
 | `ChatSlots.live` | keyed | live kind | `{ live: LiveState, sessionId }` |

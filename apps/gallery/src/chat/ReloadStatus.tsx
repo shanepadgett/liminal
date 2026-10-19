@@ -1,16 +1,16 @@
 /**
- * The header's reload item: `ctrl+r reload` (or `restart`) once a checked change waits, or `reload
- * failed` and the first line of the reason.
+ * The reload item at the right end of the hints row under the composer: `ctrl+r reload` (or
+ * `restart`) once a checked change waits, or `reload failed` and the first line of the reason.
  */
 
 import type { RoleColor } from "@liminal/sdk/tui";
 
-/** A reload the header shows: ready to apply, or failed its check. */
+/** A reload the hints row shows: ready to apply, or failed its check. */
 export type ReloadShown =
   | { readonly kind: "ready"; readonly restart: boolean }
   | { readonly kind: "failed"; readonly reason: string };
 
-/** The longest part of a failure reason the header shows. */
+/** The longest part of a failure reason the hints row shows. */
 const REASON_COLUMNS = 48;
 
 /** The words after the lead: the action when ready, the reason's first line, cut, when failed. */

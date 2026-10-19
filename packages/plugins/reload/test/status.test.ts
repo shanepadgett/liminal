@@ -1,4 +1,4 @@
-/** The header item's failure reason: its first line, cut to fit the header. */
+/** The footer item's failure reason: its first line, cut to fit the footer. */
 
 import { expect, test } from "bun:test";
 
@@ -10,7 +10,7 @@ test("a failure reason shows its first line", () => {
   );
 });
 
-test("a long failure reason is cut to fit the header", () => {
+test("a long failure reason is cut to fit the footer", () => {
   const shown = shortReason("x".repeat(100));
 
   expect(shown).toHaveLength(48);

@@ -10,6 +10,7 @@ import { Option, Predicate, Schema } from "effect";
 import type { FollowEvent, LiveState, SavedEntry } from "@liminal/sdk";
 import {
   InnerCallEntry,
+  NamedEntry,
   ReasoningEntry,
   TextEntry,
   ToolCallEntry,
@@ -40,6 +41,10 @@ export interface Transcript {
   readonly running: boolean;
   /** Whether every saved entry has arrived. */
   readonly synced: boolean;
+  /** The first line of the first user message; empty before one. */
+  readonly prompt: string;
+  /** The newest name the model gave the session; empty before one. */
+  readonly name: string;
 }
 
 export const emptyTranscript: Transcript = {
@@ -47,12 +52,20 @@ export const emptyTranscript: Transcript = {
   live: undefined,
   running: false,
   synced: false,
+  prompt: "",
+  name: "",
 };
+
+/** The session's title: its name, else its first message's first line; empty for a new session. */
+export const titleOf = (transcript: Transcript) =>
+  transcript.name === "" ? transcript.prompt : transcript.name;
 
 const decodeCall = Schema.decodeUnknownOption(ToolCallEntry.data);
 const decodeResult = Schema.decodeUnknownOption(ToolResultEntry.data);
 const decodeInner = Schema.decodeUnknownOption(InnerCallEntry.data);
 const decodeThought = Schema.decodeUnknownOption(ReasoningEntry.data);
+const decodeUser = Schema.decodeUnknownOption(UserEntry.data);
+const decodeNamed = Schema.decodeUnknownOption(NamedEntry.data);
 
 const isDebug = (item: Item) => item.kind === "entry" && item.entry.user === "debug";
 
@@ -155,6 +168,28 @@ const withTool = (transcript: Transcript, entry: SavedEntry): Transcript | undef
   return undefined;
 };
 
+/** `transcript` with the title the entry sets: a name, or the session's first user message. */
+const withTitle = (transcript: Transcript, entry: SavedEntry): Transcript => {
+  if (entry.kind === NamedEntry.kind) {
+    return Option.match(decodeNamed(entry.data), {
+      onNone: () => transcript,
+      onSome: ({ name }) => ({ ...transcript, name }),
+    });
+  }
+
+  if (entry.kind === UserEntry.kind && transcript.prompt === "") {
+    return Option.match(decodeUser(entry.data), {
+      onNone: () => transcript,
+      onSome: ({ text }) => ({
+        ...transcript,
+        prompt: text.trim().split("\n", 1)[0]?.trim() ?? "",
+      }),
+    });
+  }
+
+  return transcript;
+};
+
 const withEntry = (transcript: Transcript, entry: SavedEntry): Transcript => {
   if (entry.kind === TurnStartedEntry.kind) return { ...transcript, running: true };
   if (entry.kind === TurnEndedEntry.kind) return { ...transcript, running: false };
@@ -179,7 +214,10 @@ export const isLeftBehind = (transcript: Transcript, index: number) =>
 
 /** The transcript after one followed event. */
 export const fold = (transcript: Transcript, event: FollowEvent): Transcript => {
-  if (Predicate.isTagged(event, "Saved")) return withEntry(transcript, event.entry);
+  if (Predicate.isTagged(event, "Saved")) {
+    return withEntry(withTitle(transcript, event.entry), event.entry);
+  }
+
   if (Predicate.isTagged(event, "Synced")) return { ...transcript, synced: true };
 
   return { ...transcript, live: event.live };

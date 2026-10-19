@@ -1,7 +1,8 @@
 /** Everything the gallery shows, in review order: tokens first, scenarios last. */
 
+import { ChatHeader } from "@liminal/sdk/tui";
+
 import { type ApprovalAsk, ApprovalDialog } from "./chat/ApprovalDialog.tsx";
-import { ChatHeader } from "./chat/ChatHeader.tsx";
 import { ChatScreen, type GlideAt } from "./chat/ChatScreen.tsx";
 import { CommandPalette } from "./chat/CommandPalette.tsx";
 import { COMMIT_STATES } from "./chat/CommitDialog.tsx";
@@ -49,7 +50,7 @@ const composerState = (
   name: string,
   isWorking: boolean,
   draft: string,
-  approval: ApprovalMode = "auto",
+  { approval = "auto", reload }: { approval?: ApprovalMode; reload?: ReloadShown } = {},
 ): EntryState => ({
   name,
   fill: "width",
@@ -63,6 +64,7 @@ const composerState = (
       isWorking={isWorking}
       isGliding={isWorking}
       form={undefined}
+      {...(reload === undefined ? {} : { reload })}
     />
   )),
 });
@@ -94,17 +96,14 @@ const trustState = (name: string, problem: string): EntryState => ({
   )),
 });
 
-const headerState = (name: string, isWorking: boolean, reload?: ReloadShown): EntryState => ({
+const headerState = (
+  name: string,
+  isWorking: boolean,
+  title = "Explain how the plugin host boots",
+): EntryState => ({
   name,
   fill: "width",
-  view: withRoles((color) => (
-    <ChatHeader
-      color={color}
-      title="Explain how the plugin host boots"
-      isWorking={isWorking}
-      {...(reload === undefined ? {} : { reload })}
-    />
-  )),
+  view: withRoles((color) => <ChatHeader color={color} title={title} isWorking={isWorking} />),
 });
 
 /** A failed check's reason, as the typecheck reports it. */
@@ -253,9 +252,7 @@ export const GROUPS: Groups = [
             states: [
               headerState("Idle", false),
               headerState("Working", true),
-              headerState("Reload ready", false, { kind: "ready", restart: false }),
-              headerState("Restart ready", false, { kind: "ready", restart: true }),
-              headerState("Reload failed", false, { kind: "failed", reason: TYPECHECK_FAILED }),
+              headerState("New session, no title", false, ""),
             ],
           },
           {
@@ -267,8 +264,17 @@ export const GROUPS: Groups = [
               composerState("Idle, several lines", false, LINES),
               composerState("Working", true, ""),
               composerState("Working, with text", true, DRAFT),
-              composerState("Approval ask", false, "", "ask"),
-              composerState("Approval full", false, "", "full"),
+              composerState("Approval ask", false, "", { approval: "ask" }),
+              composerState("Approval full", false, "", { approval: "full" }),
+              composerState("Reload ready", false, "", {
+                reload: { kind: "ready", restart: false },
+              }),
+              composerState("Restart ready", false, "", {
+                reload: { kind: "ready", restart: true },
+              }),
+              composerState("Reload failed", false, "", {
+                reload: { kind: "failed", reason: TYPECHECK_FAILED },
+              }),
               composerState("Slash commands", false, "/"),
               composerState("Slash commands, filtered", false, "/co"),
               composerState("File tags", false, "explain how @"),

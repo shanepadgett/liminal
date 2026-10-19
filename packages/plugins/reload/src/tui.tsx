@@ -1,5 +1,5 @@
 /**
- * Reload's TUI part: a chat header item showing a reload that waits for ctrl+r, or why the last
+ * Reload's TUI part: a chat footer item showing a reload that waits for ctrl+r, or why the last
  * check failed; ctrl+r applies a ready reload.
  */
 
@@ -42,6 +42,6 @@ export default defineTui({
       return <ReloadStatus color={color} state={state()} />;
     }
 
-    yield* host.register(ChatSlots.header, { id: "reload", order: 10 }, Reload);
+    yield* host.register(ChatSlots.footer, { id: "reload", order: 10 }, Reload);
   }),
 });

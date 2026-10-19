@@ -2,9 +2,9 @@
  * Where the user writes. A full-width surface of its own holding the input and, right under it, the
  * model in the accent color with its thinking option, then the session's approval mode, `full` in
  * the warning color. Its top row can glide while the agent works. The key hints sit directly below
- * the surface. A draft that is a `/` command, or that ends in an `@` tag, opens a list of
- * suggestions above the input. When the assistant asks the user questions, its form takes the
- * input's place until the answers are sent.
+ * the surface, with a pending reload at the right end of that row. A draft that is a `/` command,
+ * or that ends in an `@` tag, opens a list of suggestions above the input. When the assistant asks
+ * the user questions, its form takes the input's place until the answers are sent.
  */
 
 import { useTerminalDimensions } from "@opentui/solid";
@@ -16,6 +16,7 @@ import { CommandSuggestions } from "./CommandSuggestions.tsx";
 import { FileSuggestions } from "./FileSuggestions.tsx";
 import { type FormState, formHintsOf } from "./formState.ts";
 import { QuestionForm } from "./QuestionForm.tsx";
+import { type ReloadShown, ReloadStatus } from "./ReloadStatus.tsx";
 import { ScanLine } from "./ScanLine.tsx";
 
 /** How the session's tool calls are approved. */
@@ -106,6 +107,8 @@ export function Composer(props: {
   readonly isGliding: boolean;
   /** The assistant's questions, in place of the input while the user answers them. */
   readonly form: FormState | undefined;
+  /** A pending reload, shown at the right end of the hints row. */
+  readonly reload?: ReloadShown;
 }) {
   const surface = () => props.color("surface.raised");
   const suggesting = () => suggestingFor(props.draft);
@@ -134,27 +137,48 @@ export function Composer(props: {
           >
             {(form) => <QuestionForm color={props.color} form={form()} />}
           </Show>
-          <box flexDirection="row" gap={2} marginTop={props.form === undefined ? 0 : 1}>
-            <text wrapMode="none">
-              <span style={{ fg: props.color("text.accent") }}>{props.model}</span>
-              <span style={{ fg: props.color("text.muted") }}>{` (${props.thinking})`}</span>
-            </text>
-            <text wrapMode="none">
-              <span style={{ fg: props.color("text.faint") }}>{"approval "}</span>
-              <span
-                style={{
-                  fg: props.color(props.approval === "full" ? "feedback.warning" : "text.muted"),
-                }}
-              >
-                {props.approval}
-              </span>
-            </text>
-          </box>
+          <ModelLine
+            color={props.color}
+            model={props.model}
+            thinking={props.thinking}
+            approval={props.approval}
+            hasForm={props.form !== undefined}
+          />
         </box>
       </box>
-      <box paddingX={2}>
+      <box flexDirection="row" paddingX={2}>
         <Hints color={props.color} hints={hints()} />
+        <box flexGrow={1} />
+        <Show when={props.reload}>
+          {(reload) => <ReloadStatus color={props.color} reload={reload()} />}
+        </Show>
       </box>
+    </box>
+  );
+}
+
+/** The model with its thinking option, then the session's approval mode. */
+function ModelLine(props: {
+  readonly color: RoleColor;
+  readonly model: string;
+  readonly thinking: string;
+  readonly approval: ApprovalMode;
+  readonly hasForm: boolean;
+}) {
+  return (
+    <box flexDirection="row" gap={2} marginTop={props.hasForm ? 1 : 0}>
+      <text wrapMode="none">
+        <span style={{ fg: props.color("text.accent") }}>{props.model}</span>
+        <span style={{ fg: props.color("text.muted") }}>{` (${props.thinking})`}</span>
+      </text>
+      <text wrapMode="none">
+        <span style={{ fg: props.color("text.faint") }}>{"approval "}</span>
+        <span
+          style={{ fg: props.color(props.approval === "full" ? "feedback.warning" : "text.muted") }}
+        >
+          {props.approval}
+        </span>
+      </text>
     </box>
   );
 }

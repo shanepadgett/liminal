@@ -1,5 +1,5 @@
 /**
- * The header item: `ctrl+r reload` (or `restart`) once a checked change waits, or `reload failed`
+ * The footer item: `ctrl+r reload` (or `restart`) once a checked change waits, or `reload failed`
  * and the first line of the reason. Shows nothing otherwise.
  */
 
@@ -9,7 +9,7 @@ import { Match, Switch } from "solid-js";
 import type { ReloadState } from "@liminal/sdk";
 import { Hints, type RoleColor } from "@liminal/sdk/tui";
 
-/** The longest part of a failure reason the header shows. */
+/** The longest part of a failure reason the footer shows. */
 const REASON_COLUMNS = 48;
 
 /** The reason's first line, cut to `REASON_COLUMNS`. */

@@ -1,16 +1,18 @@
 /**
  * The chat column's header: the wordmark, hairlines that fill the width and thicken into the fade,
- * then the session title. While the agent works, the fade glides along the hairlines and back. When
- * the title would squeeze the hairlines too short, it drops, and the wordmark and hairlines take
- * the whole row.
+ * then the session name, or the first line of its first message while it has none. While the agent
+ * works, the fade glides along the hairlines and back. A new session has no title yet. When the
+ * title would squeeze the hairlines too short, it drops, and the wordmark and hairlines take the
+ * whole row.
  */
 
 import type { BoxRenderable } from "@opentui/core";
 import { createSignal, Show } from "solid-js";
 
-import { FADE, HeaderRule, type RoleColor, WORDMARK } from "@liminal/sdk/tui";
-
-import { type ReloadShown, ReloadStatus } from "./ReloadStatus.tsx";
+import { FADE } from "./ornament/fade.ts";
+import { HeaderRule } from "./ornament/HeaderRule.tsx";
+import { WORDMARK } from "./ornament/wordmark.ts";
+import type { RoleColor } from "./tokens/roles.ts";
 
 /** The wordmark and the space before the hairlines. */
 const SHOWN_WORDMARK = `${WORDMARK} `;
@@ -26,10 +28,9 @@ const MIN_TRACK_COLUMNS = FADE.length * 3;
 
 export function ChatHeader(props: {
   readonly color: RoleColor;
+  /** The session's name, else its first message's first line; empty for a new session. */
   readonly title: string;
   readonly isWorking: boolean;
-  /** A pending reload, shown at the right end. */
-  readonly reload?: ReloadShown;
 }) {
   const [row, setRow] = createSignal<BoxRenderable>();
   const [columns, setColumns] = createSignal(0);
@@ -37,8 +38,9 @@ export function ChatHeader(props: {
   const shownTitle = () => ` ${props.title}`;
 
   const hasTitle = () =>
-    columns() - PADDING_COLUMNS * 2 - SHOWN_WORDMARK.length - shownTitle().length
-    >= MIN_TRACK_COLUMNS;
+    props.title !== ""
+    && columns() - PADDING_COLUMNS * 2 - SHOWN_WORDMARK.length - shownTitle().length
+      >= MIN_TRACK_COLUMNS;
 
   return (
     <box
@@ -57,9 +59,6 @@ export function ChatHeader(props: {
         <text wrapMode="none" flexShrink={0} fg={props.color("text.base")}>
           {shownTitle()}
         </text>
-      </Show>
-      <Show when={props.reload}>
-        {(reload) => <ReloadStatus color={props.color} reload={reload()} />}
       </Show>
     </box>
   );

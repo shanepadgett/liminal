@@ -96,8 +96,8 @@ export interface EntryLook {
 
 /** The slots chat declares under the root slot. */
 export const ChatSlots = {
-  /** Items at the header's right end. */
-  header: Slot.list<NoProps, "root">("chat/header", { scope: "root" }),
+  /** Items at the right end of the key hints row under the composer, such as a pending reload. */
+  footer: Slot.list<NoProps, "root">("chat/footer", { scope: "root" }),
   /** A transcript entry, keyed by entry kind; its metadata says how it sits. */
   entry: Slot.keyed<{ readonly entry: SavedEntry }, EntryLook, "session">("chat/entry", {
     scope: "session",

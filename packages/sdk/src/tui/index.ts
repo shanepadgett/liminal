@@ -42,6 +42,7 @@ export {
   type WorkWording,
 } from "./WorkWords.tsx";
 
+export { ChatHeader, HEADER_ROWS } from "./ChatHeader.tsx";
 export { Tail } from "./Tail.tsx";
 export { createPin } from "./pin.ts";
 export { clampLines, cutLine, wrapText, wrapWords } from "./wrap.ts";

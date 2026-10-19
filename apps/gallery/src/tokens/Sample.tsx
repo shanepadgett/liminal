@@ -1,8 +1,7 @@
 /** A narrow chat column drawn with one palette's roles, to judge the palette in use. */
 
-import type { RoleColor } from "@liminal/sdk/tui";
+import { ChatHeader, type RoleColor } from "@liminal/sdk/tui";
 
-import { ChatHeader } from "../chat/ChatHeader.tsx";
 import { Composer } from "../chat/Composer.tsx";
 import { Conversation } from "../transcript/Conversation.tsx";
 import { BOOT } from "../transcript/sample.ts";

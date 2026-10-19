@@ -12,6 +12,8 @@ How the TUI and the gallery look and move, and how the transcript shows a sessio
 - Liminal has its own signature ornament, used consistently in titles and headers
 - The ornament is the eighth-block fade `▏▎▍▌▋▊▉█` in the palette gradient
 - The chat header names the product as the spaced wordmark `l i m i n a l` in the accent
+- The chat header shows the session's name at its right end, else the first line of its first message; a new session shows nothing, and the title drops when it would leave the hairlines too short
+- The pending reload (`ctrl+r reload`, `ctrl+r restart` or `reload failed` with its reason) shows at the right end of the key hints row under the composer
 - Ornament placement is the edge: hairlines across the width that thicken into the fade, shared by headers and dialog titles
 - A small set of single-cell glyphs; no Nerd Font icons
 - Emoji only for file-tag kinds: 📄 file, 📁 folder, 📚 reference, 🌄 image

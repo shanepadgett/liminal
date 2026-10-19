@@ -10,12 +10,11 @@
 import type { BoxRenderable } from "@opentui/core";
 import { createSignal, Match, Show, Switch } from "solid-js";
 
-import type { RoleColor } from "@liminal/sdk/tui";
+import { ChatHeader, type RoleColor } from "@liminal/sdk/tui";
 
 import { Conversation } from "../transcript/Conversation.tsx";
 import { momentOf } from "../transcript/play.ts";
 import { ASK, BOOT, FIX } from "../transcript/sample.ts";
-import { ChatHeader } from "./ChatHeader.tsx";
 import { CommandPalette } from "./CommandPalette.tsx";
 import { Composer } from "./Composer.tsx";
 import { Sidebar, SIDEBAR_COLUMNS } from "./Sidebar.tsx";
