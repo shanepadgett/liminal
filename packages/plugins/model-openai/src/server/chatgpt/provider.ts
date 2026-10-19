@@ -1,6 +1,6 @@
 /** Provider `chatgpt`: the OpenAI API on the user's ChatGPT plan, signed by Sign in with ChatGPT. */
 
-import { Effect, FileSystem, Layer, Redacted } from "effect";
+import { Duration, Effect, FileSystem, Layer, Redacted } from "effect";
 import { HttpClient, HttpClientRequest } from "effect/http";
 
 import { CredentialStore } from "@liminal/credential-store/contract";
@@ -44,6 +44,7 @@ export const chatgptLayer = Layer.effectDiscard(
       }),
       nativeToolChanges: false,
       cheap: { id: "gpt-6-luna", thinking: ThinkingOff.make({}) },
+      cacheLifetime: Duration.minutes(5),
     });
   }),
 );

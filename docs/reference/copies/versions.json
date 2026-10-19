@@ -35,7 +35,7 @@
     "version": "1.88.0",
     "fingerprint": "737b4e99a6c52be8",
     "commits": [
-      "ac03bf93227aba93a9d0a22b1d842f76218f9f45"
+      "d59e8f15204d54e108693fa721ac5b5d5efc8a21"
     ]
   },
   "@oxlint/plugins": {
@@ -52,7 +52,7 @@
     "version": "0.73.0",
     "fingerprint": "2ffd0fc9b0a5ee96",
     "commits": [
-      "ac03bf93227aba93a9d0a22b1d842f76218f9f45"
+      "d59e8f15204d54e108693fa721ac5b5d5efc8a21"
     ]
   },
   "fallow": {

@@ -3,7 +3,7 @@
  * Claude subscription or an API key.
  */
 
-import { Effect, FileSystem, Layer } from "effect";
+import { Duration, Effect, FileSystem, Layer } from "effect";
 import { HttpClient } from "effect/http";
 
 import { apiKeyOf, CredentialStore } from "@liminal/credential-store/contract";
@@ -77,6 +77,7 @@ export const anthropicLayer = Layer.effectDiscard(
       stream: messagesStream(http, fs, claudeSigning(store, http, claudeCode)),
       nativeToolChanges: false,
       cheap: { id: "claude-haiku-5-5", thinking: ThinkingOff.make({}) },
+      cacheLifetime: Duration.minutes(5),
     });
 
     yield* providers.register({
@@ -87,6 +88,7 @@ export const anthropicLayer = Layer.effectDiscard(
       stream: messagesStream(http, fs, keySigning(store)),
       nativeToolChanges: false,
       cheap: { id: "claude-haiku-5-5", thinking: ThinkingOff.make({}) },
+      cacheLifetime: Duration.minutes(5),
     });
   }),
 );

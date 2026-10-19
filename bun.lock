@@ -197,6 +197,32 @@
         "effect": "4.0.5",
       },
     },
+    "packages/plugins/compaction": {
+      "name": "@liminal/compaction",
+      "version": "0.1.0",
+      "dependencies": {
+        "@effect/sql-sqlite-bun": "4.0.5",
+      },
+      "devDependencies": {
+        "@liminal/model-catalog": "workspace:*",
+        "@liminal/model-scripted": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/agent-loop": "workspace:*",
+        "@liminal/chat": "workspace:*",
+        "@liminal/context": "workspace:*",
+        "@liminal/models": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@liminal/settings": "workspace:*",
+        "@liminal/tools": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/context": {
       "name": "@liminal/context",
       "version": "0.1.0",
@@ -742,6 +768,8 @@
     "@liminal/cli": ["@liminal/cli@workspace:apps/cli"],
 
     "@liminal/command-runner": ["@liminal/command-runner@workspace:packages/plugins/command-runner"],
+
+    "@liminal/compaction": ["@liminal/compaction@workspace:packages/plugins/compaction"],
 
     "@liminal/context": ["@liminal/context@workspace:packages/plugins/context"],
 

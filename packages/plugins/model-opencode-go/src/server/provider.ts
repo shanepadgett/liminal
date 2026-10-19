@@ -4,7 +4,7 @@
  * packages.
  */
 
-import { Effect, FileSystem, Layer, Match, Option, type Redacted, Stream } from "effect";
+import { Duration, Effect, FileSystem, Layer, Match, Option, type Redacted, Stream } from "effect";
 import { HttpClient, HttpClientRequest } from "effect/http";
 
 import { apiKeyOf, CredentialStore } from "@liminal/credential-store/contract";
@@ -160,6 +160,7 @@ export const openCodeGoLayer = Layer.effectDiscard(
         ),
       nativeToolChanges: false,
       cheap: { id: "deepseek-v4.1-flash", thinking: ThinkingOff.make({}) },
+      cacheLifetime: Duration.minutes(5),
     });
   }),
 );

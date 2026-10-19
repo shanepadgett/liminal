@@ -3,6 +3,8 @@
  * rows join on the same verb gathered into one row (`Explored 3 files`).
  */
 
+import { Predicate } from "effect";
+
 import type { ToolCall, ToolRows, WorkRow } from "../contract.ts";
 
 /** A row's words as drawn: `failure` is set once a call ended any way but `done`. */
@@ -22,9 +24,12 @@ export interface WorkGroup {
 const failureOf = (call: ToolCall) =>
   call.outcome === undefined || call.outcome.status === "done" ? "" : call.outcome.status;
 
-/** A call no tool words reads as its tool's name. */
-const rowOf = (call: ToolCall, rows: ToolRows | undefined): WorkRow =>
-  rows?.fold(call) ?? { verb: call.name, subject: "" };
+/** A call no tool words reads as its tool's name; a call whose tool is `Hidden` has no row. */
+const rowOf = (call: ToolCall, rows: ToolRows | undefined): WorkRow | undefined => {
+  if (rows === undefined) return { verb: call.name, subject: "" };
+
+  return Predicate.isTagged(rows, "Rows") ? rows.fold(call) : undefined;
+};
 
 const wordedOf = (call: ToolCall, row: WorkRow): Worded => ({
   verb: row.verb,
@@ -61,7 +66,10 @@ const groupOf = (run: Run): WorkGroup => {
     : { words: joinedWords(run.joins, calls), calls };
 };
 
-/** The calls' rows; `rowsOf` finds a tool's registration by name. */
+/**
+ * The calls' rows, leaving out calls whose tool is `Hidden`; `rowsOf` finds a tool's registration
+ * by name.
+ */
 export const groupsOf = (
   calls: ReadonlyArray<ToolCall>,
   rowsOf: (name: string) => ToolRows | undefined,
@@ -70,6 +78,8 @@ export const groupsOf = (
 
   for (const call of calls) {
     const row = rowOf(call, rowsOf(call.name));
+    if (row === undefined) continue;
+
     const last = runs.at(-1);
     const words = wordedOf(call, row);
 

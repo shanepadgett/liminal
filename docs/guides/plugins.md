@@ -228,6 +228,15 @@ Rules:
 
 Example: `packages/plugins/inbox/src/server.ts`.
 
+## Run work in the background
+
+For work that should not hold up a turn, such as summarizing history with a small model, keep a `FiberMap` keyed by session in the server's scope and start the work with `FiberMap.run(map, sessionId, work, { onlyIfMissing: true })`. A session then runs one at a time, and a reload interrupts it with the server's scope.
+
+- Catch the work's failures and log them with `Effect.logWarning`; the next start tries again.
+- Save each result in one write, so an interrupted run leaves nothing half-written.
+
+Example: `packages/plugins/compaction/src/server/before-call.ts`.
+
 ## Register a tool
 
 1. Define the parameters as a Schema in your contract. Annotate each field with a description; the model reads it.

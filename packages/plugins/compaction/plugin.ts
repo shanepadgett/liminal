@@ -1,0 +1,33 @@
+/**
+ * Compaction: keeps a session within the model's context window. The model writes checkpoints, a
+ * cheap model writes notes and memories in the background, and the view step folds the history at
+ * the latest checkpoint.
+ */
+
+import { BeforeCallHooks } from "@liminal/agent-loop/contract";
+import { ViewSteps } from "@liminal/context/contract";
+import { Models, ModelTask } from "@liminal/models/contract";
+import { definePlugin } from "@liminal/sdk";
+import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
+import { Settings } from "@liminal/settings/contract";
+import { ToolChecks, Tools } from "@liminal/tools/contract";
+
+export default definePlugin({
+  name: "compaction",
+  provides: [],
+  requires: [
+    ViewSteps,
+    SessionLog,
+    EntryKinds,
+    Tools,
+    ToolChecks,
+    BeforeCallHooks,
+    Models,
+    ModelTask,
+    Settings,
+  ],
+  uses: [],
+  enabledByDefault: true,
+  server: () => import("./src/server.ts"),
+  tui: () => import("./src/tui.tsx"),
+});

@@ -2,6 +2,7 @@
 
 import { Generated, OpenRouterClient, OpenRouterLanguageModel } from "@effect/ai-openrouter";
 import {
+  Duration,
   Effect,
   FileSystem,
   Layer,
@@ -158,6 +159,7 @@ export const openRouterLayer = Layer.effectDiscard(
         ),
       nativeToolChanges: false,
       cheap: { id: "~deepseek/deepseek-flash-latest", thinking: ThinkingOff.make({}) },
+      cacheLifetime: Duration.minutes(5),
     });
 
     yield* registerDecisions(http, key);

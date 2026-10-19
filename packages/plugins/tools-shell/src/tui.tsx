@@ -5,7 +5,7 @@
 
 import { Effect, Option, Schema } from "effect";
 
-import { ChatSlots, type ToolCall, type ToolView } from "@liminal/chat/contract";
+import { ChatSlots, type ToolCall, ToolRows, type ToolView } from "@liminal/chat/contract";
 import { defineTui, Tail, TuiHost } from "@liminal/sdk/tui";
 
 import { ShellParams } from "./contract.ts";
@@ -32,6 +32,6 @@ export default defineTui({
   setup: Effect.gen(function* () {
     const host = yield* TuiHost;
 
-    yield* host.register(ChatSlots.tool, { key: "shell", meta: { fold } }, Output);
+    yield* host.register(ChatSlots.tool, { key: "shell", meta: ToolRows.Rows({ fold }) }, Output);
   }),
 });

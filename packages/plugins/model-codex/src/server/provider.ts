@@ -1,7 +1,7 @@
 /** Provider `codex`: one streamed Responses call per request on the ChatGPT plan's Codex backend. */
 
 import { Generated, OpenAiClient, OpenAiLanguageModel } from "@effect/ai-openai";
-import { Effect, FileSystem, Layer, Schema, Stream } from "effect";
+import { Duration, Effect, FileSystem, Layer, Schema, Stream } from "effect";
 import { HttpClient, HttpClientRequest } from "effect/http";
 
 import { CredentialStore } from "@liminal/credential-store/contract";
@@ -86,6 +86,7 @@ export const codexLayer = Layer.effectDiscard(
       stream: makeStream(http, sign, fs),
       nativeToolChanges: false,
       cheap: { id: "gpt-6-luna", thinking: ThinkingOff.make({}) },
+      cacheLifetime: Duration.minutes(5),
     });
   }),
 );

@@ -1,6 +1,6 @@
 /** The scripted provider's server: registers provider `scripted` and serves ScriptedModel. */
 
-import { Effect, Layer, Ref, Stream } from "effect";
+import { Duration, Effect, Layer, Ref, Stream } from "effect";
 
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
 import {
@@ -73,6 +73,7 @@ const make = Effect.gen(function* () {
     stream,
     nativeToolChanges: true,
     cheap: { id: "scripted", thinking: ThinkingOff.make({}) },
+    cacheLifetime: Duration.minutes(5),
   });
 
   return ScriptedModel.of({

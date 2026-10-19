@@ -85,6 +85,7 @@ const make = Effect.gen(function* () {
         model: { provider: id, id: cheap.id },
         thinking: cheap.thinking,
       })),
+    cacheLifetime: (id) => Effect.map(provider(id), ({ cacheLifetime }) => cacheLifetime),
   });
 });
 

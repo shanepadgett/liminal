@@ -1,6 +1,6 @@
 /** Provider `openai`: one streamed Responses call per request, signed with the API key. */
 
-import { Effect, FileSystem, Layer, Option } from "effect";
+import { Duration, Effect, FileSystem, Layer, Option } from "effect";
 import { HttpClient } from "effect/http";
 
 import { apiKeyOf, CredentialStore } from "@liminal/credential-store/contract";
@@ -47,6 +47,7 @@ export const openAiLayer = Layer.effectDiscard(
       }),
       nativeToolChanges: false,
       cheap: { id: "gpt-6-luna", thinking: ThinkingOff.make({}) },
+      cacheLifetime: Duration.minutes(5),
     });
 
     const decisionModels = yield* Effect.serviceOption(DecisionModels);

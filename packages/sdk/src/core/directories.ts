@@ -1,6 +1,6 @@
 /** The folders Liminal reads and writes, supplied by the host to every plugin. */
 
-import { Context } from "effect";
+import { Context, Effect, FileSystem, Path } from "effect";
 
 export class Directories extends Context.Service<
   Directories,
@@ -17,3 +17,12 @@ export class Directories extends Context.Service<
     readonly data: string;
   }
 >()("liminal/sdk/Directories") {}
+
+/** The path of `name` in the data folder, which is created when missing. */
+export const dataFile = Effect.fn("dataFile")(function* (name: string) {
+  const directories = yield* Directories;
+  const fs = yield* FileSystem.FileSystem;
+  yield* fs.makeDirectory(directories.data, { recursive: true });
+
+  return (yield* Path.Path).join(directories.data, name);
+});

@@ -10,7 +10,7 @@ export const unifiedDiff = (before: string, after: string): string =>
   ).trimEnd();
 
 /** What a reminder carries. */
-export type ReminderKind = "instructions" | "tools";
+export type ReminderKind = "instructions" | "tools" | "memory" | "context";
 
 /** Text the harness wrote, not the user, in a user message. */
 export const reminder = (kind: ReminderKind, text: string): string =>

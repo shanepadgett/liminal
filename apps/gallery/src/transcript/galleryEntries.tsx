@@ -3,9 +3,12 @@
  * turn held at each of their moments.
  */
 
+import { Show } from "solid-js";
+
 import { withRoles } from "../entryViews.ts";
 import type { EntryState, Section } from "../shell/entries.ts";
 import { ApprovalAnswer, type ApprovalAnswerMessage } from "./ApprovalAnswer.tsx";
+import { Checkpoint, type CheckpointMessage, NoteLine } from "./Checkpoint.tsx";
 import { Conversation } from "./Conversation.tsx";
 import { LiveNotice, Notice, type NoticeMessage } from "./Notice.tsx";
 import { closeMomentOf, durationOf, frameAt, momentOf, sessionDurationOf } from "./play.ts";
@@ -124,6 +127,51 @@ const answerState = (entry: AnswerSample): EntryState => ({
   )),
 });
 
+const CHECKPOINT: CheckpointMessage = {
+  handoff: [
+    "Moving the reload tests onto the shared boot helper; two of five files are done.",
+    "",
+    "- Done: packages/kernel/test/reload.test.ts, packages/kernel/test/graphs.test.ts",
+    "- Next: machine.test.ts, then protocol.test.ts and contracts.test.ts",
+    "- The user wants one helper, `bootAndRecord`, not a helper per file",
+    "- `bun test packages/kernel` passes after each file; run it before moving on",
+  ].join("\n"),
+};
+
+/** The checkpoint Liminal writes once the cache is lost: no handoff. */
+const AUTOMATIC: CheckpointMessage = {};
+
+const NOTE = "Short-term note, entries 121–160, 1,840 tokens";
+
+type CheckpointView = {
+  readonly isDebug: boolean;
+  readonly isFolded: boolean;
+  readonly checkpoint: CheckpointMessage;
+};
+
+const checkpointState = (name: string, view: CheckpointView): EntryState => ({
+  name,
+  fill: "width",
+  view: withRoles((color) => (
+    <box paddingX={2} flexDirection="column">
+      <Turn color={color} prompt={BOOT.prompt} frame={frameAt(BOOT, durationOf(BOOT))} />
+      <Show when={view.isDebug}>
+        <box paddingTop={1}>
+          <NoteLine color={color} text={NOTE} />
+        </box>
+      </Show>
+      <Checkpoint
+        color={color}
+        checkpoint={view.checkpoint}
+        isDebug={view.isDebug}
+        isFolded={view.isFolded}
+        onToggle={() => {}}
+      />
+      <Turn color={color} prompt={FIX.prompt} frame={frameAt(FIX, momentOf(FIX, 0, 0.6))} />
+    </box>
+  )),
+});
+
 export const TRANSCRIPT_COMPONENTS: Section = {
   title: "Transcript",
   entries: [
@@ -154,6 +202,24 @@ export const TRANSCRIPT_COMPONENTS: Section = {
       id: "transcript-notice",
       title: "Notice",
       states: [noticeState(MODEL_ERROR), ...NOTICES.map(noticeState), copiedNoticeState],
+    },
+    {
+      id: "transcript-checkpoint",
+      title: "Checkpoint",
+      states: [
+        checkpointState("Checkpoint", { isDebug: false, isFolded: true, checkpoint: CHECKPOINT }),
+        checkpointState("Debug view", { isDebug: true, isFolded: true, checkpoint: CHECKPOINT }),
+        checkpointState("Debug view, handoff unfolded", {
+          isDebug: true,
+          isFolded: false,
+          checkpoint: CHECKPOINT,
+        }),
+        checkpointState("Automatic, debug view", {
+          isDebug: true,
+          isFolded: true,
+          checkpoint: AUTOMATIC,
+        }),
+      ],
     },
     {
       id: "transcript-approval-answer",

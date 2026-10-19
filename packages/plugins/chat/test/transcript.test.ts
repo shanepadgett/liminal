@@ -13,7 +13,7 @@ import {
   Synced,
 } from "@liminal/sdk";
 
-import type { ToolRows } from "../src/contract.ts";
+import { ToolRows } from "../src/contract.ts";
 import { emptyTranscript, fold } from "../src/tui/transcript-state.ts";
 import { groupsOf } from "../src/tui/work.ts";
 
@@ -54,13 +54,13 @@ const result = (callId: string, name: string, status: string) =>
 
 const pathOf = Schema.decodeUnknownSync(Schema.Struct({ path: Schema.String }));
 
-const read: ToolRows = {
+const read = ToolRows.Rows({
   fold: (each) => ({
     verb: "Read",
     subject: pathOf(each.params).path,
     joins: { verb: "Explored", noun: "files" },
   }),
-};
+});
 
 describe("transcript", () => {
   test("gathers consecutive tool calls and pairs their results", () => {
@@ -103,6 +103,18 @@ describe("transcript", () => {
     const work = transcript.items[0];
     if (work?.kind !== "work") throw new Error("expected work");
     expect(groupsOf(work.calls, () => {})[0]?.words.verb).toBe("shell");
+  });
+
+  test("a hidden tool's calls draw no row", () => {
+    const calls = [
+      { id: "c1", name: "read", params: { path: "a.ts" } },
+      { id: "c2", name: "checkpoint", params: { handoff: "next" } },
+    ];
+
+    const groups = groupsOf(calls, (name) => (name === "read" ? read : ToolRows.Hidden()));
+
+    expect(groups.map((group) => group.words.verb)).toEqual(["Read"]);
+    expect(groupsOf(calls.slice(1), () => ToolRows.Hidden())).toEqual([]);
   });
 
   test("keeps debug entries, drops hidden ones, and joins calls past debug entries", () => {

@@ -84,12 +84,16 @@ export function WorkRows(props: {
   readonly calls: ReadonlyArray<ToolCall>;
 }) {
   const rowsOf = useSlotMeta(ChatSlots.tool);
+  const groups = () => groupsOf(props.calls, rowsOf);
 
+  // A run of only hidden calls draws nothing, so it leaves no gap in the transcript.
   return (
-    <box flexDirection="column">
-      <Index each={groupsOf(props.calls, rowsOf)}>
-        {(group) => <GroupRow sessionId={props.sessionId} group={group()} />}
-      </Index>
-    </box>
+    <Show when={groups().length > 0}>
+      <box flexDirection="column">
+        <Index each={groups()}>
+          {(group) => <GroupRow sessionId={props.sessionId} group={group()} />}
+        </Index>
+      </box>
+    </Show>
   );
 }

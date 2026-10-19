@@ -1,6 +1,6 @@
 /** A fake catalog and provider helpers for the models tests. */
 
-import { Effect, Layer, Option, Stream } from "effect";
+import { Duration, Effect, Layer, Option, Stream } from "effect";
 
 import { ModelCatalog } from "@liminal/model-catalog/contract";
 import { CatalogUnavailable, type ModelInfo, ThinkingOff } from "@liminal/sdk";
@@ -45,6 +45,7 @@ export const provider = (
   stream,
   nativeToolChanges: false,
   cheap: { id: "small", thinking: ThinkingOff.make({}) },
+  cacheLifetime: Duration.minutes(5),
 });
 
 export const register = Effect.fn("register")(function* (...added: ReadonlyArray<ModelProvider>) {

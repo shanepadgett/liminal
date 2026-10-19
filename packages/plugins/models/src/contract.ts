@@ -1,6 +1,6 @@
 /** Models: the registry providers join and the service that routes each call to one. */
 
-import { Context, Data, type Effect, Schema, type Stream } from "effect";
+import { Context, Data, type Duration, type Effect, Schema, type Stream } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
@@ -52,6 +52,8 @@ export interface ModelProvider {
   readonly nativeToolChanges: boolean;
   /** The model and thinking for short side calls, such as reviews. */
   readonly cheap: { readonly id: string; readonly thinking: ThinkingValue };
+  /** How long the provider keeps a prompt's cached prefix after its last use. */
+  readonly cacheLifetime: Duration.Duration;
 }
 
 /** The active providers by id; each provider plugin registers one in its server's scope. */
@@ -80,6 +82,10 @@ export class Models extends Context.Service<
     ) => Effect.Effect<ModelInfo, ModelError | ProviderNotFound | CatalogUnavailable>;
     /** The provider's preferred small model, a default for side calls. */
     readonly cheap: (provider: string) => Effect.Effect<ModelPick, ProviderNotFound>;
+    /** How long the provider keeps a cached prompt prefix after its last use. */
+    readonly cacheLifetime: (
+      provider: string,
+    ) => Effect.Effect<Duration.Duration, ProviderNotFound>;
   }
 >()("liminal/models/Models") {}
 

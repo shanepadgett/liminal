@@ -4,7 +4,7 @@
  * only while the debug view is on.
  */
 
-import { Effect, Option, Schema } from "effect";
+import { Data, Effect, Option, Schema } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import { type LiveState, type NoProps, type SavedEntry, Slot } from "@liminal/sdk";
@@ -37,10 +37,16 @@ export interface WorkRow {
   readonly joins?: { readonly verb: string; readonly noun: string };
 }
 
-/** A tool's registration in `chat/tool`: how its calls read as work rows. */
-export interface ToolRows {
-  readonly fold: (call: ToolCall) => WorkRow;
-}
+/**
+ * A tool's registration in `chat/tool`: how its calls read as work rows, or `Hidden` when its calls
+ * draw no row, such as a call the transcript shows as its own entry.
+ */
+export type ToolRows = Data.TaggedEnum<{
+  Rows: { readonly fold: (call: ToolCall) => WorkRow };
+  Hidden: {};
+}>;
+
+export const ToolRows = Data.taggedEnum<ToolRows>();
 
 /** What a tool's opened row gets: the call, and its result as text, empty when it is not text. */
 export interface ToolView {
@@ -58,16 +64,17 @@ export const pathRows = (words: {
   readonly running: string;
   readonly done: string;
   readonly joins: NonNullable<WorkRow["joins"]>;
-}): ToolRows => ({
-  fold: (call) => ({
-    verb: call.outcome === undefined ? words.running : words.done,
-    subject: Option.match(decodePath(call.params), {
-      onNone: () => "",
-      onSome: ({ path }) => path,
+}): ToolRows =>
+  ToolRows.Rows({
+    fold: (call) => ({
+      verb: call.outcome === undefined ? words.running : words.done,
+      subject: Option.match(decodePath(call.params), {
+        onNone: () => "",
+        onSome: ({ path }) => path,
+      }),
+      joins: words.joins,
     }),
-    joins: words.joins,
-  }),
-});
+  });
 
 /** The props of the composer and the hints: whether a turn is running. */
 export interface TurnProps {
