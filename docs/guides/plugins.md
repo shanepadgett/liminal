@@ -272,6 +272,7 @@ Example: `packages/plugins/compaction/src/server/before-call.ts`.
 
 Rules:
 
+- `parameters` is a `Schema.Struct`; a tool that takes no params uses `Schema.Struct({})`, sent as an object with no properties.
 - `result` is what the model reads. `details` is JSON for the TUI only.
 - Fail with `ToolFailed({ message })` for anything the model should see and react to. Never let a tool die.
 - To word the call in the transcript, register a tool row in the TUI part; see [tui.md](tui.md#show-a-tool-call).

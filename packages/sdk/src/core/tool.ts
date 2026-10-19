@@ -1,6 +1,6 @@
 /** Tools the model can call: what each declares and how a call runs. */
 
-import { Effect, Schema } from "effect";
+import { Effect, Schema, SchemaAST } from "effect";
 
 import type { ToolSpec } from "./model.ts";
 import type { SessionId } from "./session.ts";
@@ -76,8 +76,20 @@ export interface ToolDefinition<S extends Schema.Top> {
   ) => Effect.Effect<ToolOutput, ToolFailed>;
 }
 
-/** The JSON Schema of `schema`, with its definitions inline under `$defs`. */
+/** A struct with no fields, such as the params of a tool that takes none. */
+const isEmptyStruct = (ast: SchemaAST.AST) =>
+  SchemaAST.isObjects(ast)
+  && ast.propertySignatures.length === 0
+  && ast.indexSignatures.length === 0;
+
+/**
+ * The JSON Schema of `schema`, with its definitions inline under `$defs`. A struct with no fields
+ * is an object with no properties, since providers take only object schemas for tool params; Effect
+ * writes it as any value but null.
+ */
 export const jsonSchemaOf = (schema: Schema.Top): Schema.Json => {
+  if (isEmptyStruct(schema.ast)) return { type: "object", properties: {} };
+
   const document = Schema.toJsonSchemaDocument(schema);
   const definitions = document.definitions;
 
