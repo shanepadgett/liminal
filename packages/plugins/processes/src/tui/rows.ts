@@ -28,8 +28,8 @@ const rowOf = (call: ToolCall, words: readonly [string, string], subject: string
   const verb = call.outcome === undefined ? words[0] : words[1];
 
   return Option.match(summaryOf(call), {
-    onNone: () => ({ verb, subject }),
-    onSome: (process) => ({ verb, subject, detail: stateWord(process) }),
+    onNone: () => ({ verb, subject, oneLine: true }),
+    onSome: (process) => ({ verb, subject, detail: stateWord(process), oneLine: true }),
   });
 };
 

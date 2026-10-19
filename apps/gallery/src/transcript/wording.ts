@@ -48,6 +48,9 @@ const worded = (verb: string, subject: string, detail = "", failure = ""): Wordi
   failure,
 });
 
+/** A command's wording, cut to one line. */
+const cut = (wording: Wording): Wording => ({ ...wording, oneLine: true });
+
 /** One read or search, said on its own. */
 const lookedOf = (action: Looked, tense: Tense): Wording => {
   const isPast = tense === "past";
@@ -112,25 +115,28 @@ export const wordingOf = (group: WorkGroup, tense: Tense): Wording =>
           : worded("Thinking", ""),
       explored: (explored) => exploredOf(explored.actions, tense),
       edited: (edited) => editedOf(edited.edits, tense),
-      ran: ({ run }) => {
-        if (tense === "present") return worded("Running", run.command);
-
-        return worded("Ran", run.command, "", run.hasPassed ? "" : "failed");
-      },
-      checked: (checked) => checkedOf(checked.checks, tense),
-      scripted: ({ script }) => ({
-        ...worded(
-          tense === "past" ? "Ran" : "Running",
-          script.code.split("\n")[0] ?? "",
-          counted(script.calls.length, "call", "calls"),
+      ran: ({ run }) =>
+        cut(
+          tense === "present"
+            ? worded("Running", run.command)
+            : worded("Ran", run.command, "", run.hasPassed ? "" : "failed"),
         ),
-        oneLine: true,
-      }),
+      checked: (checked) => checkedOf(checked.checks, tense),
+      scripted: ({ script }) =>
+        cut(
+          worded(
+            tense === "past" ? "Ran" : "Running",
+            script.code.split("\n")[0] ?? "",
+            counted(script.calls.length, "call", "calls"),
+          ),
+        ),
       browsed: ({ web }) => webOf(web, tense),
       managed: ({ process }) =>
-        tense === "past"
-          ? worded(process.done, process.subject, process.state)
-          : worded(process.doing, process.subject),
+        cut(
+          tense === "past"
+            ? worded(process.done, process.subject, process.state)
+            : worded(process.doing, process.subject),
+        ),
       recalled: ({ recall }) =>
         worded(
           tense === "past" ? "Recalled" : "Recalling",
