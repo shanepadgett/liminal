@@ -9,15 +9,13 @@ import { useTerminalDimensions } from "@opentui/solid";
 import { type Accessor, createEffect, createMemo, Show } from "solid-js";
 
 import type { SessionId } from "@liminal/sdk";
-import { HeaderRule, SlotView, type TuiToastsService, useColor } from "@liminal/sdk/tui";
+import { HeaderRule, SlotView, type TuiToastsService, useColor, WORDMARK } from "@liminal/sdk/tui";
 
 import { ChatSlots } from "../contract.ts";
 import { Sidebar, type SidebarState } from "./Sidebar.tsx";
 import { ToastCorner } from "./Toast.tsx";
 import type { Transcript as TranscriptState } from "./transcript-state.ts";
 import { Transcript } from "./Transcript.tsx";
-
-const WORDMARK = "liminal ";
 
 const PADDING_X = 2;
 
@@ -27,7 +25,7 @@ function Header(props: { readonly running: boolean }) {
   return (
     <box flexDirection="row" flexShrink={0} paddingX={PADDING_X} paddingTop={1}>
       <text fg={color("text.accent")} flexShrink={0}>
-        {WORDMARK}
+        {`${WORDMARK} `}
       </text>
       <HeaderRule color={color} surface="surface.base" isWorking={props.running} />
       <SlotView of={ChatSlots.header} props={{}} />

@@ -8,11 +8,12 @@
 import type { BoxRenderable } from "@opentui/core";
 import { createSignal, Show } from "solid-js";
 
-import { FADE, HeaderRule, type RoleColor } from "@liminal/sdk/tui";
+import { FADE, HeaderRule, type RoleColor, WORDMARK } from "@liminal/sdk/tui";
 
 import { type ReloadShown, ReloadStatus } from "./ReloadStatus.tsx";
 
-const WORDMARK = "liminal ";
+/** The wordmark and the space before the hairlines. */
+const SHOWN_WORDMARK = `${WORDMARK} `;
 
 /** The header's padding on each side. */
 const PADDING_COLUMNS = 2;
@@ -36,7 +37,8 @@ export function ChatHeader(props: {
   const shownTitle = () => ` ${props.title}`;
 
   const hasTitle = () =>
-    columns() - PADDING_COLUMNS * 2 - WORDMARK.length - shownTitle().length >= MIN_TRACK_COLUMNS;
+    columns() - PADDING_COLUMNS * 2 - SHOWN_WORDMARK.length - shownTitle().length
+    >= MIN_TRACK_COLUMNS;
 
   return (
     <box
@@ -48,7 +50,7 @@ export function ChatHeader(props: {
       onSizeChange={() => setColumns(row()?.width ?? 0)}
     >
       <text fg={props.color("text.accent")} flexShrink={0}>
-        {WORDMARK}
+        {SHOWN_WORDMARK}
       </text>
       <HeaderRule color={props.color} surface="surface.base" isWorking={props.isWorking} />
       <Show when={hasTitle()}>

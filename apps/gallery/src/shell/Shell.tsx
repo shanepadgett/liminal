@@ -7,7 +7,7 @@ import { type BoxRenderable, type ScrollBoxRenderable, TextAttributes } from "@o
 import { useRenderer } from "@opentui/solid";
 import { createEffect, createSignal, For, on, Show } from "solid-js";
 
-import type { Palette } from "@liminal/sdk/tui";
+import { type Palette, WORDMARK } from "@liminal/sdk/tui";
 
 import type { Bookmark } from "./bookmark.ts";
 import { CHROME } from "./chrome.ts";
@@ -28,8 +28,6 @@ import {
 import { type Area, describeFrame, FIT, type FrameSize, frameArea, SIZES } from "./sizes.ts";
 
 const NAV_COLUMNS = 28;
-
-const WORDMARK = "l i m i n a l";
 
 function GroupLine(props: { readonly group: Group; readonly position: string }) {
   return (
