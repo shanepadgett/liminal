@@ -30,7 +30,8 @@ export const Review = Schema.Struct({
     description: "approved runs the call; ask shows the user your summary and reason",
   }),
   summary: Schema.String.check(Schema.isMaxLength(600)).annotate({
-    description: "What the call will do, in everyday words for the user",
+    description:
+      "What the call will do, in one or two everyday sentences; do not quote the command, its flags or full paths",
   }),
   reason: Schema.String.check(Schema.isMaxLength(300)).annotate({
     description: "Why you approved it, or why the user should decide",
@@ -44,6 +45,7 @@ const system = [
   "Approve a call that fits what the user asked for, unless it is both destructive and impossible to undo.",
   "Ask the user when the call changes things the user did not ask for: deleting or overwriting work that cannot be restored, changing files outside the workspace, changing the system, sending data to other machines, or running code you cannot see and could not check.",
   "You may read files and run read-only shell commands to check what the call would do.",
+  "Write the summary for someone who will not read the command: say what it does and what it changes in plain words, never the command itself.",
   "Then call submit_review once.",
 ].join("\n");
 

@@ -1,7 +1,7 @@
 /**
- * Asks the user about one call: what it is, the reviewer's summary when there is one, and why it
- * was flagged. Up and down choose approve or reject; a rejection can carry a note for the model.
- * Esc rejects.
+ * Asks the user about one call: the reviewer's plain-words summary of what it will do, and why it
+ * was flagged. The command or path shows only when the review wrote no summary. Up and down choose
+ * approve or reject; a rejection can carry a note for the model. Esc rejects.
  */
 
 import { Option, Schema } from "effect";
@@ -30,7 +30,7 @@ const decodeSubject = Schema.decodeUnknownOption(
 );
 
 /** The command or path the call is about, else its params as JSON. */
-export const subjectOf = (ask: PendingAsk) =>
+const subjectOf = (ask: PendingAsk) =>
   Option.match(decodeSubject(ask.params), {
     onNone: () => JSON.stringify(ask.params),
     onSome: (found) => ("command" in found ? found.command : found.path),
@@ -130,10 +130,7 @@ export function ApprovalDialog(props: ApprovalDialogProps) {
         answer(false);
       }}
     >
-      <text fg={color("text.heading")}>{subjectOf(props.ask)}</text>
-      <Show when={props.ask.summary}>
-        {(summary) => <text fg={color("text.base")}>{summary()}</text>}
-      </Show>
+      <text fg={color("text.heading")}>{props.ask.summary ?? subjectOf(props.ask)}</text>
       <text fg={color("text.muted")}>{`Asked because ${props.ask.reason}`}</text>
       <Choices chosen={chosen()} />
       <Show when={rejecting()}>
