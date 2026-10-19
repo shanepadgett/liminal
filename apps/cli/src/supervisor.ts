@@ -36,21 +36,33 @@ export const supervise = Effect.fn("supervise")(function* (command: ChildProcess
   return code;
 });
 
+/**
+ * Runs `program` on the supervisor's terminal. The child stays in the terminal's foreground process
+ * group: a detached child never gets SIGWINCH, so the TUI would keep drawing at its starting size.
+ */
+export const onThisTerminal = (
+  program: string,
+  args: ReadonlyArray<string>,
+  env: Record<string, string> = {},
+) =>
+  ChildProcess.make(program, args, {
+    stdin: "inherit",
+    stdout: "inherit",
+    stderr: "inherit",
+    detached: false,
+    env,
+    extendEnv: true,
+  });
+
 const main = Effect.gen(function* () {
   const path = yield* Path.Path;
   const folder = yield* (yield* FileSystem.FileSystem).makeTempDirectoryScoped();
 
   return yield* supervise(
-    ChildProcess.make(
+    onThisTerminal(
       process.execPath,
       [path.join(import.meta.dir, "main.ts"), ...process.argv.slice(2)],
-      {
-        stdin: "inherit",
-        stdout: "inherit",
-        stderr: "inherit",
-        env: { [handoffVariable]: path.join(folder, "handoff.json") },
-        extendEnv: true,
-      },
+      { [handoffVariable]: path.join(folder, "handoff.json") },
     ),
   );
 }).pipe(Effect.scoped);
