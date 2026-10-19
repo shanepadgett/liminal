@@ -46,7 +46,7 @@ Status: built
 
 ### Memories
 
-- A cheap model (`Models.cheap`) writes short-term notes in the background, about one per 16,000 tokens of history
+- A cheap model (`Models.cheap`) writes short-term notes in the background, about one per 16,000 tokens of history, starting with the first 16,000
 - When unfolded notes pass about 30,000 tokens, they are condensed into long-term memory
 - A fork reuses its parent's notes and memories up to the fork point
 

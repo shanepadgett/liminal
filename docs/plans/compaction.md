@@ -184,8 +184,7 @@ Memory, note and handoff messages are entries built in the step and never saved:
 ```
 catchUp(session):
   entries = view entries after the newest note's `through`
-  start = min(50,000, budget / 4); range = min(16,000, budget / 8)
-  until the session first reaches start tokens: stop
+  range = min(16,000, budget / 8)
   while unnoted entries >= range tokens:
     range = entries up to range tokens, ending after a tool result, never between a call and its result
     text  = ModelTask.run(Models.cheap(provider), "summarize these entries", submit { note }, maxSteps 1)
