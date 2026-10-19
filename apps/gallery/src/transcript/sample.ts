@@ -23,6 +23,19 @@ export const BOOT: Script = {
     { kind: "act", ms: 700, action: { kind: "recall", from: 12, through: 40 } },
     {
       kind: "act",
+      ms: 1100,
+      action: { kind: "websearch", query: "effect layer build order", sources: 4 },
+    },
+    {
+      kind: "act",
+      ms: 800,
+      action: {
+        kind: "webfetch",
+        url: "https://effect.website/docs/requirements-management/layers",
+      },
+    },
+    {
+      kind: "act",
       ms: 1200,
       action: {
         kind: "script",

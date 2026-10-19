@@ -9,7 +9,8 @@ import { LoginMethod, LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
 import { ThinkingOff } from "@liminal/sdk";
 import { openAiDecisions } from "@liminal/sdk/ai/decisions";
-import { responsesStream } from "@liminal/sdk/ai/responses";
+import { type ResponsesSigning, responsesSearch, responsesStream } from "@liminal/sdk/ai/responses";
+import { offerSearchers, providerSearcher } from "@liminal/tools-web/contract";
 
 import { openAiKeyVariable, openAiLogin, openAiProvider } from "../contract.ts";
 
@@ -26,6 +27,12 @@ export const openAiLayer = Layer.effectDiscard(
     const fs = yield* FileSystem.FileSystem;
     const key = apiKeyOf(store, { login: openAiLogin, env: openAiKeyVariable, name: "OpenAI" });
 
+    const signing: ResponsesSigning = {
+      provider: openAiProvider,
+      name: "OpenAI",
+      options: Effect.map(key, (apiKey) => ({ apiKey })),
+    };
+
     yield* logins.register(
       LoginMethod.ApiKey({
         id: openAiLogin,
@@ -40,15 +47,15 @@ export const openAiLayer = Layer.effectDiscard(
       name: "OpenAI",
       source: ModelSource.Catalog({ catalogId: "openai" }),
       checkLogin: Effect.asVoid(key),
-      stream: responsesStream(http, fs, {
-        provider: openAiProvider,
-        name: "OpenAI",
-        options: Effect.map(key, (apiKey) => ({ apiKey })),
-      }),
+      stream: responsesStream(http, fs, signing),
       nativeToolChanges: false,
       cheap: { id: "gpt-6-luna", thinking: ThinkingOff.make({}) },
       cacheLifetime: Duration.minutes(5),
     });
+
+    yield* offerSearchers([
+      providerSearcher("OpenAI", responsesSearch(http, fs, signing, "gpt-6-luna")),
+    ]);
 
     const decisionModels = yield* Effect.serviceOption(DecisionModels);
 

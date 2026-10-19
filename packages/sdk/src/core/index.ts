@@ -31,4 +31,5 @@ export * as Registry from "./registry.ts";
 export { whileLocked } from "./sqlite.ts";
 export * from "./tool.ts";
 export * from "./turn-gate.ts";
+export type * from "./web.ts";
 export * from "./work.ts";

@@ -8,7 +8,7 @@ import { Match } from "effect";
 
 import { formatDuration } from "./duration.ts";
 import type { Check } from "./script.ts";
-import type { Edit, WorkGroup, Looked } from "./workGroups.ts";
+import type { Edit, Looked, Web, WorkGroup } from "./workGroups.ts";
 
 export type Tense = "past" | "present";
 
@@ -92,6 +92,15 @@ const checkedOf = (checks: readonly Check[], tense: Tense): Wording => {
     : worded("Ran", "checks", "", `${failed.join(", ")} failed`);
 };
 
+const webOf = (web: Web, tense: Tense): Wording =>
+  web.kind === "websearch"
+    ? worded(
+        tense === "past" ? "Searched the web" : "Searching the web",
+        web.query,
+        tense === "past" ? counted(web.sources, "source", "sources") : "",
+      )
+    : worded(tense === "past" ? "Fetched" : "Fetching", web.url);
+
 export const wordingOf = (group: WorkGroup, tense: Tense): Wording =>
   Match.value(group).pipe(
     Match.discriminatorsExhaustive("kind")({
@@ -113,6 +122,7 @@ export const wordingOf = (group: WorkGroup, tense: Tense): Wording =>
           script.code.split("\n")[0] ?? "",
           counted(script.calls.length, "call", "calls"),
         ),
+      browsed: ({ web }) => webOf(web, tense),
       recalled: ({ recall }) =>
         worded(
           tense === "past" ? "Recalled" : "Recalling",

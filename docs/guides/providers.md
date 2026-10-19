@@ -195,6 +195,20 @@ if (Option.isSome(decisionModels))
 
 Examples: `packages/plugins/model-openrouter/src/server/provider.ts`, `packages/plugins/model-openai/src/server/provider.ts`.
 
+## Register a web searcher
+
+A provider whose API has its own search tool can answer `websearch`. Add `WebSearchers` from `@liminal/tools-web/contract` to the manifest's `uses`, then offer searchers; `offerSearchers` registers them only when `tools-web` is loaded:
+
+```ts
+yield* offerSearchers([
+  providerSearcher("OpenAI", responsesSearch(http, fs, signing, "gpt-6-luna")),
+]);
+```
+
+`messagesSearch` and `responsesSearch` from `@liminal/sdk/ai/messages` and `@liminal/sdk/ai/responses` run one search call signed as the provider's model calls are. A searcher without a login fails at once, and `websearch` moves to the next.
+
+Examples: `packages/plugins/model-anthropic/src/server/provider.ts`, `packages/plugins/model-openai/src/server/provider.ts`.
+
 ## See also
 
 - [plugins.md](plugins.md): plugin layout and manifests.

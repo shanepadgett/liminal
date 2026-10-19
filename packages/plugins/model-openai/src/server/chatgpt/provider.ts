@@ -8,7 +8,8 @@ import { LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
 import { ThinkingOff } from "@liminal/sdk";
 import { planModels } from "@liminal/sdk/ai";
-import { responsesStream } from "@liminal/sdk/ai/responses";
+import { type ResponsesSigning, responsesSearch, responsesStream } from "@liminal/sdk/ai/responses";
+import { offerSearchers, providerSearcher } from "@liminal/tools-web/contract";
 
 import { chatgptProvider } from "../../contract.ts";
 import { accessOf, checkLogin, resource } from "./auth.ts";
@@ -30,6 +31,12 @@ export const chatgptLayer = Layer.effectDiscard(
       Effect.map(token, (access) => HttpClientRequest.bearerToken(Redacted.value(access))),
     );
 
+    const signing: ResponsesSigning = {
+      provider: chatgptProvider,
+      name: "ChatGPT",
+      options: Effect.map(token, (apiKey) => ({ apiKey })),
+    };
+
     yield* (yield* LoginMethods).register(yield* makeChatgptMethod);
 
     yield* providers.register({
@@ -37,14 +44,14 @@ export const chatgptLayer = Layer.effectDiscard(
       name: "ChatGPT",
       source: ModelSource.PlanCatalog({ catalogId: "openai", plan }),
       checkLogin: checkLogin(store),
-      stream: responsesStream(http, fs, {
-        provider: chatgptProvider,
-        name: "ChatGPT",
-        options: Effect.map(token, (apiKey) => ({ apiKey })),
-      }),
+      stream: responsesStream(http, fs, signing),
       nativeToolChanges: false,
       cheap: { id: "gpt-6-luna", thinking: ThinkingOff.make({}) },
       cacheLifetime: Duration.minutes(5),
     });
+
+    yield* offerSearchers([
+      providerSearcher("ChatGPT", responsesSearch(http, fs, signing, "gpt-6-luna")),
+    ]);
   }),
 );

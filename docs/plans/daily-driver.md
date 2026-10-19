@@ -225,6 +225,47 @@ inner(session, outer, name, input) =                                  // callId 
 - Inner calls of tools that cannot run alongside others wait for each other.
 - The row reads `Ran <first line of the script>` with `N calls`; opened, it shows the script and its output.
 
+## Step 5: web
+
+A new `tools-web` plugin registers `websearch` and `webfetch` and owns `WebSearchers`, an ordered registry of searchers. Providers with a search tool on their side register one searcher per provider: `model-anthropic` for `anthropic` and `anthropic-api`, `model-openai` for `openai` and `chatgpt`, each on its cheap model. `tools-web` registers Exa last. `websearch` tries the searchers in order and answers with the first that works; a searcher without a login fails at once and the next one runs.
+
+The names are `websearch` and `webfetch` because a `run` script already has a built-in `search`.
+
+| Where | Change |
+| --- | --- |
+| `sdk` core | `WebQuery { query, maxSources }`, `WebSource { url, title }`, `WebAnswer { text, sources }` |
+| `sdk/ai` | `hostedSearch`: one `generateText` call with the provider's search tool required; sources from cited parts, then tool results |
+| `sdk/ai/messages`, `sdk/ai/responses` | `messagesSearch`, `responsesSearch`: `hostedSearch` signed as the provider's calls are |
+| new `tools-web` contract | `SearchFailed`; `WebSearcher { name, search }`; `WebSearchers` registry; `SearchParams`; `FetchParams` |
+| new `tools-web` server | The two tools; the Exa searcher; the page fetch and HTML to text |
+| `model-anthropic`, `model-openai` | Register their searchers when `WebSearchers` is loaded, as `model-openai` registers Luna |
+| new `tools-web` TUI | `Searched the web <query>` with the source count; `Fetched <url>` |
+| gallery | `websearch` and `webfetch` actions, each its own row |
+
+```ts
+// tools-web server
+websearch({ query, maxSources = 8, timeout = 25 }) =>
+  attempt(WebSearchers.list, failures = [], deadline)
+attempt([searcher, ...rest], failures, left) =
+  limit = rest is empty ? left : left * 0.7
+  searcher.search({ query, maxSources }) within limit
+    ok -> text + "Sources:" list + "Searched with <name>"
+    fails -> attempt(rest, failures + "<name>: <message>", left - spent)
+attempt([], failures) -> ToolFailed(failures joined)
+
+webfetch({ url, timeout = 30 }) =>
+  GET url as a browser; text types only; at most 5 MB
+  HTML -> text with each link's address after its words (Bun's HTMLRewriter)
+  -> "URL, status, type" header + text; long pages spill through tool-output
+
+// model-anthropic, as model-openai
+searchers = Effect.serviceOption(WebSearchers)
+Some -> register({ name: "Claude", search: messagesSearch(http, fs, claudeSigning, cheap.id) }, { order: 0 })
+```
+
+- Exa runs on its free endpoint, or with `EXA_API_KEY`; its searches start at least 2 seconds apart.
+- Both tools run alongside others and approval allows them.
+
 ## New dependency
 
 - `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Unpatched here: its console logs are cut only when the script ends.

@@ -15,6 +15,7 @@
     "@liminal/logins": "workspace:*",
     "@liminal/models": "workspace:*",
     "@liminal/sdk": "workspace:*",
+    "@liminal/tools-web": "workspace:*",
     "effect": "4.0.5"
   },
   "liminal": [

@@ -10,12 +10,16 @@ import { apiKeyOf, CredentialStore } from "@liminal/credential-store/contract";
 import { LoginMethod, LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
 import { ThinkingOff } from "@liminal/sdk";
-import { type MessagesSigning, messagesStream } from "@liminal/sdk/ai/messages";
+import { type MessagesSigning, messagesSearch, messagesStream } from "@liminal/sdk/ai/messages";
+import { offerSearchers, providerSearcher } from "@liminal/tools-web/contract";
 
 import { anthropicApiProvider, anthropicKeyVariable, claudeProvider } from "../contract.ts";
 import { checkClaudeLogin, claudeCodeIdentity, freshAccess, signAsClaudeCode } from "./auth.ts";
 import { claudeMethod } from "./login.ts";
 import { type ClaudeCode, makeClaudeCode } from "./version.ts";
+
+/** The small model for side calls and web searches. */
+const cheapModel = "claude-haiku-5-5";
 
 /** The saved key, else the one in `ANTHROPIC_API_KEY`. */
 const keyOf = (store: CredentialStore["Service"]) =>
@@ -57,6 +61,8 @@ export const anthropicLayer = Layer.effectDiscard(
     const http = yield* HttpClient.HttpClient;
     const fs = yield* FileSystem.FileSystem;
     const claudeCode = yield* makeClaudeCode(http);
+    const claude = claudeSigning(store, http, claudeCode);
+    const key = keySigning(store);
 
     yield* logins.register(claudeMethod(http));
 
@@ -74,9 +80,9 @@ export const anthropicLayer = Layer.effectDiscard(
       name: "Claude",
       source: ModelSource.Catalog({ catalogId: "anthropic" }),
       checkLogin: checkClaudeLogin(store),
-      stream: messagesStream(http, fs, claudeSigning(store, http, claudeCode)),
+      stream: messagesStream(http, fs, claude),
       nativeToolChanges: false,
-      cheap: { id: "claude-haiku-5-5", thinking: ThinkingOff.make({}) },
+      cheap: { id: cheapModel, thinking: ThinkingOff.make({}) },
       cacheLifetime: Duration.minutes(5),
     });
 
@@ -85,10 +91,15 @@ export const anthropicLayer = Layer.effectDiscard(
       name: "Anthropic",
       source: ModelSource.Catalog({ catalogId: "anthropic" }),
       checkLogin: Effect.asVoid(keyOf(store)),
-      stream: messagesStream(http, fs, keySigning(store)),
+      stream: messagesStream(http, fs, key),
       nativeToolChanges: false,
-      cheap: { id: "claude-haiku-5-5", thinking: ThinkingOff.make({}) },
+      cheap: { id: cheapModel, thinking: ThinkingOff.make({}) },
       cacheLifetime: Duration.minutes(5),
     });
+
+    yield* offerSearchers([
+      providerSearcher("Claude", messagesSearch(http, fs, claude, cheapModel)),
+      providerSearcher("Anthropic", messagesSearch(http, fs, key, cheapModel)),
+    ]);
   }),
 );

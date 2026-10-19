@@ -359,6 +359,7 @@
         "@liminal/logins": "workspace:*",
         "@liminal/models": "workspace:*",
         "@liminal/sdk": "workspace:*",
+        "@liminal/tools-web": "workspace:*",
         "effect": "4.0.5",
       },
     },
@@ -408,6 +409,7 @@
         "@liminal/logins": "workspace:*",
         "@liminal/models": "workspace:*",
         "@liminal/sdk": "workspace:*",
+        "@liminal/tools-web": "workspace:*",
         "effect": "4.0.5",
       },
     },
@@ -634,6 +636,22 @@
       "peerDependencies": {
         "@liminal/chat": "workspace:*",
         "@liminal/command-runner": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/tools": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
+    "packages/plugins/tools-web": {
+      "name": "@liminal/tools-web",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/context": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/chat": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "@liminal/tools": "workspace:*",
         "@opentui/core": "0.6.6",
@@ -895,6 +913,8 @@
     "@liminal/tools-run": ["@liminal/tools-run@workspace:packages/plugins/tools-run"],
 
     "@liminal/tools-shell": ["@liminal/tools-shell@workspace:packages/plugins/tools-shell"],
+
+    "@liminal/tools-web": ["@liminal/tools-web@workspace:packages/plugins/tools-web"],
 
     "@liminal/trust": ["@liminal/trust@workspace:packages/plugins/trust"],
 

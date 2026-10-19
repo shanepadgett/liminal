@@ -1,8 +1,8 @@
 /**
  * The work between two things the assistant said, gathered into groups that each read as one row: a
  * thought, a run of reads and searches explored together, a run of edits, a command, a checks run,
- * a script and the calls it made, or a recall of folded history. Reads and searches in a row join
- * one group, and so do edits in a row.
+ * a script and the calls it made, a web search or fetch, or a recall of folded history. Reads and
+ * searches in a row join one group, and so do edits in a row.
  */
 
 import type { Action, Check } from "./script.ts";
@@ -22,6 +22,8 @@ export type Scripted = Extract<Action, { readonly kind: "script" }>;
 
 export type Recall = Extract<Action, { readonly kind: "recall" }>;
 
+export type Web = Extract<Action, { readonly kind: "websearch" | "webfetch" }>;
+
 export type WorkGroup =
   | { readonly kind: "thought"; readonly text: string; readonly seconds: number }
   | { readonly kind: "explored"; readonly actions: readonly Looked[] }
@@ -29,7 +31,8 @@ export type WorkGroup =
   | { readonly kind: "ran"; readonly run: Run }
   | { readonly kind: "checked"; readonly checks: readonly Check[] }
   | { readonly kind: "scripted"; readonly script: Scripted }
-  | { readonly kind: "recalled"; readonly recall: Recall };
+  | { readonly kind: "recalled"; readonly recall: Recall }
+  | { readonly kind: "browsed"; readonly web: Web };
 
 const groupOf = (work: Work): WorkGroup => {
   if (work.kind === "thought") return work;
@@ -44,6 +47,9 @@ const groupOf = (work: Work): WorkGroup => {
   if (action.kind === "run") return { kind: "ran", run: action };
   if (action.kind === "script") return { kind: "scripted", script: action };
   if (action.kind === "recall") return { kind: "recalled", recall: action };
+
+  if (action.kind === "websearch" || action.kind === "webfetch")
+    return { kind: "browsed", web: action };
 
   return { kind: "checked", checks: action.checks };
 };

@@ -3,14 +3,21 @@
  * call per request. Needs `@effect/ai-openai`, an optional peer of the SDK.
  */
 
-import { Generated, OpenAiClient, OpenAiLanguageModel } from "@effect/ai-openai";
+import { Generated, OpenAiClient, OpenAiLanguageModel, OpenAiTool } from "@effect/ai-openai";
 import { Effect, FileSystem, Schema, Stream } from "effect";
+import { Toolkit } from "effect/ai";
 import { HttpClient } from "effect/http";
 
-import type { ModelError, ModelRequest } from "../core/index.ts";
+import {
+  type ModelError,
+  type ModelRequest,
+  ThinkingEffort,
+  type WebQuery,
+} from "../core/index.ts";
 import { effortOf } from "./effort.ts";
 import { OpenAiPrompt } from "./provider-prompt.ts";
 import { replyOf } from "./reply.ts";
+import { hostedSearch } from "./search.ts";
 
 const isEffort = Schema.is(Generated.ReasoningEffort);
 
@@ -59,3 +66,27 @@ export const responsesStream =
     replyOf(signing.name, OpenAiPrompt, languageModel(signing, http, request), request).pipe(
       Stream.provideService(FileSystem.FileSystem, fs),
     );
+
+/**
+ * Searches the web with OpenAI's search tool on model `model`, signed by `signing`. The search tool
+ * needs some reasoning, so it runs at low effort.
+ */
+export const responsesSearch =
+  (
+    http: HttpClient.HttpClient,
+    fs: FileSystem.FileSystem,
+    signing: ResponsesSigning,
+    model: string,
+  ) =>
+  (query: WebQuery) =>
+    hostedSearch(
+      OpenAiPrompt,
+      languageModel(signing, http, {
+        model: { provider: signing.provider, id: model },
+        messages: [],
+        tools: [],
+        thinking: ThinkingEffort.make({ effort: "low" }),
+      }),
+      Toolkit.make(OpenAiTool.WebSearch({})),
+      { preamble: [], query },
+    ).pipe(Effect.provideService(FileSystem.FileSystem, fs));

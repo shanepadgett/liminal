@@ -3,13 +3,21 @@
  * call per request. Needs `@effect/ai-anthropic`, an optional peer of the SDK.
  */
 
-import { AnthropicClient, AnthropicLanguageModel } from "@effect/ai-anthropic";
+import { AnthropicClient, AnthropicLanguageModel, AnthropicTool } from "@effect/ai-anthropic";
 import { Effect, FileSystem, Match, Option, Schema, Stream } from "effect";
+import { Toolkit } from "effect/ai";
 import { HttpClient } from "effect/http";
 
-import type { ModelError, ModelRequest, ThinkingValue } from "../core/index.ts";
+import {
+  type ModelError,
+  type ModelRequest,
+  ThinkingOff,
+  type ThinkingValue,
+  type WebQuery,
+} from "../core/index.ts";
 import type { ProviderPrompt } from "./provider-prompt.ts";
 import { replyOf } from "./reply.ts";
+import { hostedSearch } from "./search.ts";
 
 /** What `@effect/ai-anthropic` puts on reasoning parts: the signature, or the redacted thinking. */
 const AnthropicData = Schema.Struct({
@@ -92,3 +100,27 @@ export const messagesStream =
       ...request,
       messages: [...signing.preamble, ...request.messages],
     }).pipe(Stream.provideService(FileSystem.FileSystem, fs));
+
+/** At most this many searches per question; each costs the account. */
+const searchUses = 3;
+
+/** Searches the web with Anthropic's search tool on model `model`, signed by `signing`. */
+export const messagesSearch =
+  (
+    http: HttpClient.HttpClient,
+    fs: FileSystem.FileSystem,
+    signing: MessagesSigning,
+    model: string,
+  ) =>
+  (query: WebQuery) =>
+    hostedSearch(
+      AnthropicPrompt,
+      languageModel(signing, http, {
+        model: { provider: signing.provider, id: model },
+        messages: [],
+        tools: [],
+        thinking: ThinkingOff.make({}),
+      }),
+      Toolkit.make(AnthropicTool.WebSearch_20250305({ maxUses: searchUses })),
+      { preamble: signing.preamble, query },
+    ).pipe(Effect.provideService(FileSystem.FileSystem, fs));

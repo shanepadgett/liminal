@@ -22,6 +22,10 @@ export type Action =
   | { readonly kind: "checks"; readonly checks: readonly Check[] }
   /** A script the model ran, and the tool calls it made, each its own action. */
   | { readonly kind: "script"; readonly code: string; readonly calls: readonly Action[] }
+  /** A web search and how many sources it gave. */
+  | { readonly kind: "websearch"; readonly query: string; readonly sources: number }
+  /** A web page read as text. */
+  | { readonly kind: "webfetch"; readonly url: string }
   /** The model read back entries a checkpoint folded away. */
   | { readonly kind: "recall"; readonly from: number; readonly through: number };
 
