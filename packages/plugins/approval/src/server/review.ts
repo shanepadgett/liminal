@@ -1,6 +1,6 @@
 /**
  * The reviewer's step: the session provider's small model looks at the call, may read files and run
- * safe commands, and approves it or explains it to the user.
+ * safe commands, and names the risk it sees, or none.
  */
 
 import { Duration, Effect, Option, Schema } from "effect";
@@ -25,20 +25,43 @@ export interface ReviewDeps {
   readonly workspace: string;
 }
 
+/**
+ * The reviewer names the out-of-bounds risk, or `none`; `none` approves. Picking a category makes a
+ * small model say what is wrong before it asks, which a free approve-or-ask choice did not. Length
+ * is not limited in the schema: a long answer failed the whole review and sent a bare command to
+ * the user.
+ */
 export const Review = Schema.Struct({
-  decision: Schema.Literals(["approved", "ask"]).annotate({
-    description: "approved runs the call; ask shows the user your summary and reason",
+  risk: Schema.Literals([
+    "none",
+    "cloud_or_remote_change",
+    "git_history_loss",
+    "damage_outside_workspace",
+    "reaches_past_task",
+    "exposes_secrets_or_money",
+  ]).annotate({
+    description:
+      "none unless the call steps out of bounds. none covers reading anything, and writing, deleting, installing or running things in the workspace. Otherwise the one category that fits",
   }),
-  summary: Schema.String.check(Schema.isMaxLength(600)).annotate({
+  summary: Schema.String.annotate({
     description:
       "What the call will do, in one or two everyday sentences; do not quote the command, its flags or full paths",
   }),
-  reason: Schema.String.check(Schema.isMaxLength(300)).annotate({
-    description: "Why you approved it, or why the user should decide",
+  reason: Schema.String.annotate({
+    description: "One sentence: why you approved it, or what could be lost if you did not",
   }),
 });
 
 export type Review = typeof Review.Type;
+
+/** The call runs without asking when the reviewer found no risk. */
+export const isApproved = (found: Review) => found.risk === "none";
+
+/** How the review ended: it answered, it failed (and why), or the session has no provider. */
+export type ReviewOutcome =
+  | { readonly type: "reviewed"; readonly review: Review }
+  | { readonly type: "failed"; readonly message: string }
+  | { readonly type: "skipped" };
 
 /**
  * The reviewer's rules: approve by default, and ask only for damage to things that matter beyond
@@ -55,7 +78,7 @@ const system = [
   "Judge from what you can see: the command, its arguments and its evident purpose. Code you cannot see is not a risk finding. Ask when the call hides its purpose, such as running downloaded, remote or encoded code. Do not invent a danger. A service is not destructive because it is remote, and a local file is not precious because it exists.",
   "You may look before you decide: read_file reads a file and run_readonly runs a command that only reads. Use them only when what they show would change your decision, and skip them when the answer is already clear.",
   "Write the summary for someone who will not read the command: say what it does and what it changes in plain words, never the command itself. When you ask, the reason says what could be lost or interrupted and how hard recovery would be, without repeating the summary.",
-  "Then call submit_review once.",
+  "Then call submit_review once. Set risk to none for anything that is not out of bounds; an unsure feeling is not a risk, and a read of any file or database on this machine is none.",
 ].join("\n");
 
 /** Most characters of a file the reviewer reads. */
@@ -106,13 +129,12 @@ const promptOf = (call: ToolCall, recent: Recent) =>
     2,
   );
 
-/** The review, or none when the session has no provider or the review fails. */
 export const review = Effect.fn("approval.review")(function* (
   deps: ReviewDeps,
   call: ToolCall,
   context: { readonly recent: Recent; readonly safeCommands: ReadonlyArray<string> },
 ) {
-  if (Option.isNone(context.recent.provider)) return Option.none<Review>();
+  if (Option.isNone(context.recent.provider)) return { type: "skipped" } satisfies ReviewOutcome;
 
   const run = Effect.flatMap(deps.models.cheap(context.recent.provider.value), (model) =>
     deps.task.run({
@@ -137,6 +159,9 @@ export const review = Effect.fn("approval.review")(function* (
 
   return yield* run.pipe(
     Effect.tapError((error) => Effect.logWarning(`approval review failed: ${error.message}`)),
-    Effect.option,
+    Effect.match({
+      onSuccess: (found): ReviewOutcome => ({ type: "reviewed", review: found }),
+      onFailure: (error): ReviewOutcome => ({ type: "failed", message: error.message }),
+    }),
   );
 });

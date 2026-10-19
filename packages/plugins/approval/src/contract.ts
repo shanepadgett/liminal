@@ -58,10 +58,7 @@ export const Answerer = Schema.Literals(["mode", "decision-model", "reviewer", "
 export type Answerer = typeof Answerer.Type;
 
 /** What the reviewer concluded about a call that then went to the user. */
-export const ReviewVerdict = Schema.Struct({
-  decision: Schema.Literals(["approved", "ask"]),
-  reason: Schema.String,
-});
+export const ReviewVerdict = Schema.Struct({ risk: Schema.String, reason: Schema.String });
 
 /**
  * One answered ask; `model` names the decision model or reviewer that answered. When the user
@@ -76,6 +73,8 @@ export const ApprovalRecord = Schema.Struct({
   model: Schema.optionalKey(Schema.String),
   summary: Schema.optionalKey(Schema.String),
   reviewed: Schema.optionalKey(ReviewVerdict),
+  /** Why the review gave no verdict, when it failed. */
+  reviewFailed: Schema.optionalKey(Schema.String),
 });
 
 export type ApprovalRecord = typeof ApprovalRecord.Type;

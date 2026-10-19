@@ -18,7 +18,7 @@ import { classify } from "./classify.ts";
 import type { Modes } from "./modes.ts";
 import type { Pending } from "./pending.ts";
 import { recentOf } from "./recent.ts";
-import { review, type Review, type ReviewDeps } from "./review.ts";
+import { isApproved, review, type ReviewDeps, type ReviewOutcome } from "./review.ts";
 
 export interface ChainDeps {
   readonly modes: Modes;
@@ -59,11 +59,22 @@ const forced = Effect.fn("approval.forced")(function* (deps: ChainDeps, call: To
   return Option.exists(commandOf(call), (command) => deps.safety.matchesAny(command, askCommands));
 });
 
+/** What the reviewer said, or why it said nothing, to keep on the user's answer. */
+const reviewFields = (outcome: ReviewOutcome): Partial<ApprovalRecord> => {
+  if (outcome.type === "failed") return { reviewFailed: outcome.message };
+  if (outcome.type === "skipped") return {};
+
+  return {
+    summary: outcome.review.summary,
+    reviewed: { risk: outcome.review.risk, reason: outcome.review.reason },
+  };
+};
+
 const askUser = Effect.fn("approval.askUser")(function* (
   deps: ChainDeps,
   call: ToolCall,
   reason: string,
-  reviewed: Option.Option<Review>,
+  outcome: ReviewOutcome,
 ) {
   const ask: PendingAsk = {
     id: `${call.sessionId}/${call.callId}`,
@@ -75,10 +86,7 @@ const askUser = Effect.fn("approval.askUser")(function* (
   };
 
   const answer = yield* deps.pending.ask(
-    Option.match(reviewed, {
-      onNone: () => ask,
-      onSome: (found) => ({ ...ask, summary: found.summary }),
-    }),
+    outcome.type === "reviewed" ? { ...ask, summary: outcome.review.summary } : ask,
   );
 
   const approved = ApprovalAnswer.$is("Allow")(answer);
@@ -90,13 +98,7 @@ const askUser = Effect.fn("approval.askUser")(function* (
     by: "user",
     approved,
     reason: said,
-    ...Option.match(reviewed, {
-      onNone: () => ({}),
-      onSome: (found) => ({
-        summary: found.summary,
-        reviewed: { decision: found.decision, reason: found.reason },
-      }),
-    }),
+    ...reviewFields(outcome),
   });
 
   return answer;
@@ -120,17 +122,17 @@ export const makeApprover =
           return yield* allowedBy(deps, call, { by: "decision-model", reason, model: model.value });
       }
 
-      const reviewed = yield* review(deps.reviewer, call, {
+      const outcome = yield* review(deps.reviewer, call, {
         recent,
         safeCommands: settings.safeCommands,
       });
 
-      if (!toUser && Option.isSome(reviewed) && reviewed.value.decision === "approved")
+      if (!toUser && outcome.type === "reviewed" && isApproved(outcome.review))
         return yield* allowedBy(deps, call, {
           by: "reviewer",
-          reason: reviewed.value.reason,
-          summary: reviewed.value.summary,
+          reason: outcome.review.reason,
+          summary: outcome.review.summary,
         });
 
-      return yield* askUser(deps, call, reason, reviewed);
+      return yield* askUser(deps, call, reason, outcome);
     });

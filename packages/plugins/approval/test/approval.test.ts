@@ -125,7 +125,11 @@ const enqueueReview = (decision: "approved" | "ask", summary: string) =>
             type: "tool-call",
             id: "r1",
             name: "submit_review",
-            params: { decision, summary, reason: `review: ${decision}` },
+            params: {
+              risk: decision === "approved" ? "none" : "reaches_past_task",
+              summary,
+              reason: `review: ${decision}`,
+            },
             providerData: {},
           },
         ],
@@ -233,7 +237,7 @@ effectTest(
     ]);
 
     expect((yield* savedAnswers).map((record) => [record.summary, record.reviewed])).toEqual([
-      ["Deletes your home folder", { decision: "ask", reason: "review: ask" }],
+      ["Deletes your home folder", { risk: "reaches_past_task", reason: "review: ask" }],
     ]);
   }),
   stack,
