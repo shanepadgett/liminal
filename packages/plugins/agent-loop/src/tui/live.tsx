@@ -62,8 +62,14 @@ function Part(props: { readonly part: LivePart }) {
 }
 
 /**
- * The reply streaming in; finished parts leave it once they are saved as entries. Each part keeps
- * its place, so a part's fade carries on as the parts before it finish.
+ * Whether a part still shows: text until the reply is saved, since its entry only arrives then; a
+ * finished thought or call has nothing left to say.
+ */
+const isShown = (part: LivePart) => part.type === "text" || part.done !== true;
+
+/**
+ * The reply streaming in, until it is saved as entries. Each part keeps its place, so a part's fade
+ * carries on as the parts after it stream.
  */
 export function Reply(props: LiveProps) {
   const parts = () =>
@@ -76,7 +82,7 @@ export function Reply(props: LiveProps) {
     <box flexDirection="column" gap={1}>
       <Index each={parts()}>
         {(part) => (
-          <Show when={part().done !== true}>
+          <Show when={isShown(part())}>
             <Part part={part()} />
           </Show>
         )}

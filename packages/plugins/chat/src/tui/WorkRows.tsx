@@ -27,14 +27,17 @@ function Words(props: {
   readonly mark: string;
   readonly words: Worded;
 }) {
+  // The mark stands in its own column, so wrapped words line up under the verb.
   return (
-    <text>
-      <span style={{ fg: props.color("text.ghost") }}>{`${props.mark} `}</span>
-      <b style={{ fg: props.color("text.muted") }}>{props.words.verb}</b>
-      <span style={{ fg: props.color("text.faint") }}>{after(props.words.subject)}</span>
-      <span style={{ fg: props.color("text.ghost") }}>{aside(props.words.detail)}</span>
-      <span style={{ fg: props.color("feedback.danger") }}>{aside(props.words.failure)}</span>
-    </text>
+    <box flexDirection="row">
+      <text fg={props.color("text.ghost")} flexShrink={0}>{`${props.mark} `}</text>
+      <text flexGrow={1} flexShrink={1}>
+        <b style={{ fg: props.color("text.muted") }}>{props.words.verb}</b>
+        <span style={{ fg: props.color("text.faint") }}>{after(props.words.subject)}</span>
+        <span style={{ fg: props.color("text.ghost") }}>{aside(props.words.detail)}</span>
+        <span style={{ fg: props.color("feedback.danger") }}>{aside(props.words.failure)}</span>
+      </text>
+    </box>
   );
 }
 

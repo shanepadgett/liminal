@@ -238,6 +238,31 @@ effectTest(
 );
 
 effectTest(
+  "a work row too long for one line wraps under its verb, not its mark",
+  Effect.gen(function* () {
+    const read: ModelPart = {
+      type: "tool-call",
+      id: "c1",
+      name: "read",
+      params: { path: `${"far/".repeat(40)}away.ts` },
+      providerData: {},
+    };
+
+    const { setup } = yield* bootScripted(reply([read]), replyText("read it"));
+
+    yield* send(setup, "look far away");
+
+    const lines = (yield* frameWith(setup, "read it")).split("\n");
+    const row = lines.findIndex((line) => line.includes("◆ Read"));
+    const column = lines[row]?.indexOf("Read") ?? -1;
+
+    expect(lines[row + 1]?.slice(0, column).trim()).toBe("");
+    expect(lines[row + 1]?.slice(column)).toContain("far/");
+  }),
+  trustedServices,
+);
+
+effectTest(
   "esc interrupts the running turn",
   Effect.gen(function* () {
     const gate = yield* Latch.make();

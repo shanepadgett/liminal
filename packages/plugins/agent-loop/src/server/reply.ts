@@ -64,11 +64,15 @@ export const applyEvent = (state: ReplyState, event: ModelEvent): ReplyState => 
   return state;
 };
 
-/** A reply's parts as a JSON live state value. */
+/**
+ * A reply's parts as a JSON live state value. A finished text part keeps its text, since it is
+ * saved only with the whole reply and must stay on screen until then.
+ */
 export const liveData = (state: ReplyState): Schema.Json => ({
   parts: state.parts.flatMap((part): Array<Schema.Json> => {
     if (part === undefined) return [];
     if (part.type === "streaming") return [{ ...part.kind, text: part.text }];
+    if (part.part.type === "text") return [{ type: "text", text: part.part.text, done: true }];
 
     return [{ type: part.part.type, done: true }];
   }),

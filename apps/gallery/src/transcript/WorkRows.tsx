@@ -52,14 +52,17 @@ export function WordedRow(props: {
 }) {
   const fg = (part: Part) => partColor(props.color, part, props.dim);
 
+  // The mark stands in its own column, so wrapped words line up under the verb.
   return (
-    <text>
-      <span style={{ fg: fg("mark") }}>{`${props.mark} `}</span>
-      <b style={{ fg: fg("verb") }}>{props.wording.verb}</b>
-      <span style={{ fg: fg("subject") }}>{after(props.wording.subject)}</span>
-      <span style={{ fg: fg("detail") }}>{aside(props.wording.detail)}</span>
-      <span style={{ fg: fg("failure") }}>{aside(props.wording.failure)}</span>
-    </text>
+    <box flexDirection="row">
+      <text fg={fg("mark")} flexShrink={0}>{`${props.mark} `}</text>
+      <text flexGrow={1} flexShrink={1}>
+        <b style={{ fg: fg("verb") }}>{props.wording.verb}</b>
+        <span style={{ fg: fg("subject") }}>{after(props.wording.subject)}</span>
+        <span style={{ fg: fg("detail") }}>{aside(props.wording.detail)}</span>
+        <span style={{ fg: fg("failure") }}>{aside(props.wording.failure)}</span>
+      </text>
+    </box>
   );
 }
 
