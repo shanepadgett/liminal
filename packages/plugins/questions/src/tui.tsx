@@ -90,7 +90,7 @@ export default defineTui({
         title: "Ask me questions",
         desc: "Have the assistant put its open questions to you as a form",
         category: "Session",
-        slash: { name: "qna", arguments: true },
+        slash: { name: "qna", arguments: "optional" },
         palette: true,
         run: (context) => {
           const session = state.onScreen();

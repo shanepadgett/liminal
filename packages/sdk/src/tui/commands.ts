@@ -17,8 +17,12 @@ export type TuiKeymap = Keymap<Renderable, KeyEvent>;
 export interface Slash {
   readonly name: string;
   readonly aliases?: ReadonlyArray<string>;
-  /** The text after the name goes to the command instead of the model. */
-  readonly arguments?: true;
+  /**
+   * The text after the name goes to the command instead of the model. With `true`, picking the
+   * command in the slash menu fills `/name ` for the arguments; with `"optional"` it runs the
+   * command at once, and `tab` still fills the name for arguments.
+   */
+  readonly arguments?: true | "optional";
 }
 
 export interface Command {

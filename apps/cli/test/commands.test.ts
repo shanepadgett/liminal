@@ -51,6 +51,24 @@ effectTest(
 );
 
 effectTest(
+  "a command with optional arguments is found by name and runs with the text after it",
+  Effect.gen(function* () {
+    const { commands } = yield* terminal;
+    const got: Array<string> = [];
+
+    yield* commands.register([
+      { ...greet(got), name: "test.ask", slash: { name: "ask", arguments: "optional" } },
+    ]);
+
+    expect(slashCommand(commands.listed(), "ask")?.slash?.arguments).toBe("optional");
+    commands.run("test.ask", "");
+    commands.run("test.ask", "more");
+    expect(got).toEqual(["", "more"]);
+  }),
+  Layer.empty,
+);
+
+effectTest(
   "a command found by its alias runs with the typed arguments",
   Effect.gen(function* () {
     const { commands } = yield* terminal;

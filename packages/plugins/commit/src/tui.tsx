@@ -66,7 +66,7 @@ export default defineTui({
         title: "Commit",
         desc: "Check, plan and commit every change, then ask before pushing",
         category: "Session",
-        slash: { name: "commit", arguments: true },
+        slash: { name: "commit", arguments: "optional" },
         palette: true,
         run: (instruction) => {
           const session = onScreen();

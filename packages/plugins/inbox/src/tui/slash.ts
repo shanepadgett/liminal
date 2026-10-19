@@ -110,7 +110,7 @@ export const useSlash = (deps: SlashDeps) => {
     const [, word = "", rest = ""] = typedCommand(text) ?? [];
     const command = slashCommand(deps.commands.listed(), word);
     if (command === undefined) return false;
-    deps.commands.run(command.name, command.slash?.arguments === true ? rest : "");
+    deps.commands.run(command.name, command.slash?.arguments === undefined ? "" : rest);
 
     return true;
   };

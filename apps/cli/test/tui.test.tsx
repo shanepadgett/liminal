@@ -804,6 +804,26 @@ effectTest(
 );
 
 effectTest(
+  "ctrl+t moves the composer's thinking label to the model's next option, wrapping after the last",
+  Effect.gen(function* () {
+    const { setup } = yield* bootScripted(replyText("hi there"));
+
+    yield* send(setup, "hello there");
+    yield* frameWith(setup, "scripted (low)");
+
+    setup.mockInput.pressKey("t", { ctrl: true });
+    yield* frameWith(setup, "scripted (high)");
+
+    setup.mockInput.pressKey("t", { ctrl: true });
+    yield* frameWith(setup, "scripted (off)");
+
+    setup.mockInput.pressKey("t", { ctrl: true });
+    yield* frameWith(setup, "scripted (low)");
+  }),
+  trustedServices,
+);
+
+effectTest(
   "/connect saves an OpenAI API key, closes, and then lists OpenAI as signed in",
   Effect.gen(function* () {
     const { setup } = yield* boot(() => Effect.void);
@@ -936,10 +956,8 @@ effectTest(
 
     yield* send(setup, "hello there");
     yield* frameWith(setup, "hi there");
-    // The menu fills `/qna ` for its arguments; the second enter sends it.
+    // The menu runs `/qna` on the first enter, with no arguments.
     yield* slash(setup, "/qna", "Have the assistant put");
-    yield* frameWhere(setup, (frame) => !frame.includes("Have the assistant put"));
-    setup.mockInput.pressEnter();
 
     // The question and its count can arrive in separate frames.
     const form = yield* frameWhere(
@@ -968,10 +986,8 @@ effectTest(
 
     yield* send(setup, "hello there");
     yield* frameWith(setup, "hi there");
-    // The menu fills `/commit ` for its arguments; the second enter runs it.
+    // The menu runs `/commit` on the first enter, with no arguments.
     yield* slash(setup, "/commit", "Check, plan and commit");
-    yield* frameWhere(setup, (frame) => !frame.includes("Check, plan and commit"));
-    setup.mockInput.pressEnter();
 
     const after = yield* frameWith(setup, "Not in a git repository.");
     expect(after).toContain("Commit");
