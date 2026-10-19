@@ -7,10 +7,9 @@
 
 import { Index, Show } from "solid-js";
 
+import { type AnswerOption, optionsOf, type Question } from "@liminal/questions/contract";
 import type { RoleColor } from "@liminal/sdk/tui";
 
-import { optionsOf } from "../transcript/questions.ts";
-import type { AnswerOption, Question } from "../transcript/script.ts";
 import type { Draft } from "./formState.ts";
 import { ListRow } from "./ListRow.tsx";
 import { Suggested } from "./Suggested.tsx";

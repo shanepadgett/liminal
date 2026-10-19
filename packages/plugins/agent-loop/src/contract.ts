@@ -85,6 +85,11 @@ export type BeforeCall = Data.TaggedEnum<{
   Proceed: { readonly input: ReadonlyArray<EntryDraft> };
   /** Ends the turn before the call; later hooks do not run. */
   EndTurn: { readonly reason: string };
+  /**
+   * Saves `input`, with earlier hooks' input, and ends the turn as answered, waiting on the user,
+   * such as for a form of questions; no notice is saved and later hooks do not run.
+   */
+  Await: { readonly input: ReadonlyArray<EntryDraft> };
 }>;
 
 export const BeforeCall = Data.taggedEnum<BeforeCall>();

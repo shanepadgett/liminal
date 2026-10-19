@@ -11,7 +11,7 @@ import { ChatSlots } from "@liminal/chat/contract";
 import { SessionId } from "@liminal/sdk";
 import { defineTui, makeBridge, TuiCommands, TuiDialogs, TuiHost } from "@liminal/sdk/tui";
 
-import { InboxRpcs, type Queued } from "./contract.ts";
+import { InboxRpcs, InboxSlots, type Queued } from "./contract.ts";
 import { type ComposerDeps, makeComposer, makeHints, type ModelLine } from "./tui/Composer.tsx";
 import { makeEditor, stashes } from "./tui/stash.tsx";
 
@@ -85,6 +85,7 @@ export default defineTui({
       ChatSlots.composer,
       { select: () => true, priority: 0 },
       makeComposer(deps),
+      [InboxSlots.input],
     );
 
     yield* host.register(

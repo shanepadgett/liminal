@@ -1,0 +1,33 @@
+{
+  "name": "@liminal/questions",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./plugin.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "devDependencies": {
+    "@liminal/context": "workspace:*",
+    "@liminal/model-catalog": "workspace:*",
+    "@liminal/model-scripted": "workspace:*",
+    "@liminal/models": "workspace:*",
+    "@liminal/session-store": "workspace:*",
+    "@liminal/settings": "workspace:*"
+  },
+  "peerDependencies": {
+    "@liminal/agent-loop": "workspace:*",
+    "@liminal/chat": "workspace:*",
+    "@liminal/inbox": "workspace:*",
+    "@liminal/sdk": "workspace:*",
+    "@liminal/session-log": "workspace:*",
+    "@liminal/tools": "workspace:*",
+    "@opentui/core": "0.6.6",
+    "@opentui/keymap": "0.6.6",
+    "@opentui/solid": "0.6.6",
+    "effect": "4.0.5",
+    "solid-js": "1.9.12"
+  },
+  "liminal": [
+    "./plugin.ts"
+  ]
+}

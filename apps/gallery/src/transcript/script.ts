@@ -5,6 +5,8 @@
  * what plays is what it says.
  */
 
+import type { Answered, Question } from "@liminal/questions/contract";
+
 export type DiffLine = { readonly change: "added" | "removed" | "kept"; readonly text: string };
 
 export type Check = { readonly name: string; readonly hasPassed: boolean };
@@ -44,37 +46,6 @@ export type Beat =
   | { readonly kind: "think"; readonly text: string; readonly ms: number }
   | { readonly kind: "say"; readonly text: string; readonly ms: number }
   | { readonly kind: "act"; readonly action: Action; readonly ms: number };
-
-export type AnswerOption = { readonly label: string; readonly description?: string };
-
-/** The answer the assistant suggests and why. */
-export type Recommendation = { readonly answer: string; readonly reason: string };
-
-/** A question the assistant puts to the user: pick an option, say yes or no, or write an answer. */
-export type Question =
-  | {
-      readonly kind: "select";
-      readonly prompt: string;
-      readonly options: readonly AnswerOption[];
-      readonly recommendation?: Recommendation;
-    }
-  | { readonly kind: "confirm"; readonly prompt: string; readonly recommendation?: Recommendation }
-  | { readonly kind: "input"; readonly prompt: string; readonly recommendation?: Recommendation };
-
-/** A note the user left on one of a question's options, picked or not. */
-export type Note = { readonly option: string; readonly text: string };
-
-/**
- * How the user answered: picked an option, typed their own in place of the options, wrote one, or
- * skipped the question.
- */
-export type Answer =
-  | { readonly kind: "picked"; readonly option: string; readonly notes: readonly Note[] }
-  | { readonly kind: "own"; readonly text: string; readonly notes: readonly Note[] }
-  | { readonly kind: "written"; readonly text: string }
-  | { readonly kind: "skipped" };
-
-export type Answered = { readonly question: Question; readonly answer: Answer };
 
 /** What the user sent: words of their own, or their answers to the assistant's questions. */
 export type Prompt =

@@ -18,7 +18,9 @@ export function Asked(props: {
     <text>
       <span style={{ fg: inked("text.accent") }}>{"? "}</span>
       <span style={{ fg: inked("text.base") }}>{props.title}</span>
-      <span style={{ fg: inked("text.ghost") }}>{`  ${props.count} questions for you`}</span>
+      <span
+        style={{ fg: inked("text.ghost") }}
+      >{`  ${props.count} ${props.count === 1 ? "question" : "questions"} for you`}</span>
     </text>
   );
 }

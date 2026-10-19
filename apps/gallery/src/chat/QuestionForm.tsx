@@ -6,9 +6,9 @@
 
 import { Show } from "solid-js";
 
+import type { Question } from "@liminal/questions/contract";
 import type { RoleColor } from "@liminal/sdk/tui";
 
-import type { Question } from "../transcript/script.ts";
 import { ChoiceTab } from "./ChoiceTab.tsx";
 import type { Draft, FormState } from "./formState.ts";
 import { FormTabs } from "./FormTabs.tsx";

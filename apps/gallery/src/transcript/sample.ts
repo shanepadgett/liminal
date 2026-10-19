@@ -7,7 +7,9 @@
  * reads, edits, runs the tests, fails and fixes a checks run, and answers.
  */
 
-import type { Question, Script } from "./script.ts";
+import type { Question } from "@liminal/questions/contract";
+
+import type { Script } from "./script.ts";
 
 export const BOOT: Script = {
   prompt: { kind: "text", text: "explain how the plugin host boots" },
@@ -100,6 +102,7 @@ export const BOOT: Script = {
 export const FORM_TITLE = "Before I rewrite the concurrency test";
 
 const OVERLAP: Question = {
+  id: "overlap",
   kind: "select",
   prompt: "How should the test tell that two plugins started together?",
   options: [
@@ -114,12 +117,14 @@ const OVERLAP: Question = {
 };
 
 const FINISH_TIMES: Question = {
+  id: "finish-times",
   kind: "confirm",
   prompt: "Can bootAndRecord return when each plugin finished, as well as when it started?",
   recommendation: { answer: "Yes", reason: "The overlap check needs both ends of each span." },
 };
 
 const TEST_NAME: Question = {
+  id: "test-name",
   kind: "input",
   prompt: "What should the test be called?",
   recommendation: {
@@ -129,6 +134,7 @@ const TEST_NAME: Question = {
 };
 
 const HELPER: Question = {
+  id: "helper",
   kind: "select",
   prompt: "Where should the overlap check live?",
   options: [

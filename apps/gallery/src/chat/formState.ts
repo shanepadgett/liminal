@@ -4,9 +4,8 @@
  * far. Questions left open are sent as skipped.
  */
 
+import type { Question } from "@liminal/questions/contract";
 import type { Hint } from "@liminal/sdk/tui";
-
-import type { Question } from "../transcript/script.ts";
 
 /** What the user has given a question so far. */
 export type Draft =
@@ -55,6 +54,13 @@ const NOTING: readonly Hint[] = [
   ["esc", "drop note"],
 ];
 
+const OWN: readonly Hint[] = [
+  ["↑↓", "choose"],
+  ["enter", "accept"],
+  ["tab", "next"],
+  ["esc", "cancel"],
+];
+
 const WRITING: readonly Hint[] = [
   ["enter", "accept"],
   ["tab", "next"],
@@ -73,7 +79,8 @@ export const formHintsOf = (form: FormState): readonly Hint[] => {
 
   if (question === undefined) return CONTEXT;
   if (form.noting !== undefined) return NOTING;
-  if (question.kind === "input" || form.row === ownRowOf(question)) return WRITING;
+  if (question.kind === "input") return WRITING;
+  if (form.row === ownRowOf(question)) return OWN;
 
   return CHOOSING;
 };

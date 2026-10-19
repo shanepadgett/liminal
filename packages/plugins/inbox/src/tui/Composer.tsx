@@ -21,7 +21,7 @@ import {
   useColor,
 } from "@liminal/sdk/tui";
 
-import type { Queued, SendMode, UserInput } from "../contract.ts";
+import { InboxSlots, type Queued, type SendMode, type UserInput } from "../contract.ts";
 import { type ReadPicture, usePictures } from "./paste.ts";
 import { useSlash } from "./slash.ts";
 import { SlashMenu } from "./SlashMenu.tsx";
@@ -119,6 +119,8 @@ function QueuedLines(props: { readonly queued: Queued }) {
  */
 function Input(props: {
   readonly ref: (made: TextareaRenderable) => void;
+  /** The textarea is gone, such as when a form takes its place. */
+  readonly onGone: () => void;
   readonly initial: string;
   readonly focused: boolean;
   readonly onSubmit: () => void;
@@ -133,6 +135,7 @@ function Input(props: {
 
   // A kept draft goes on where it stopped.
   onMount(() => made?.gotoBufferEnd());
+  onCleanup(props.onGone);
 
   return (
     <textarea
@@ -276,12 +279,17 @@ const useDraft = (deps: ComposerDeps, props: TurnProps) => {
     deps.editor.use(made);
   };
 
+  const drop = () => {
+    deps.editor.release(input);
+    input = undefined;
+  };
+
   const follow = () => {
     setDraft(input?.plainText ?? "");
     setCursor(input?.cursorOffset ?? 0);
   };
 
-  return { draft, current, use, follow, slash, tags, pictures };
+  return { draft, current, use, drop, follow, slash, tags, pictures };
 };
 
 export const makeComposer = (deps: ComposerDeps) =>
@@ -321,17 +329,26 @@ export const makeComposer = (deps: ComposerDeps) =>
         paddingY={1}
       >
         <QueuedLines queued={queued()} />
-        <Lists slash={draft.slash} tags={draft.tags} />
-        <Input
-          ref={draft.use}
-          initial={untrack(draft.draft)}
-          focused={!deps.dialogOpen()}
-          onSubmit={() => {
-            send("steer");
-          }}
-          onChange={draft.follow}
-          onCursor={draft.follow}
-          onPaste={draft.pictures.onPaste}
+        <SlotView
+          of={InboxSlots.input}
+          props={{ running: props.running, sessionId: props.sessionId }}
+          fallback={
+            <>
+              <Lists slash={draft.slash} tags={draft.tags} />
+              <Input
+                ref={draft.use}
+                onGone={draft.drop}
+                initial={untrack(draft.draft)}
+                focused={!deps.dialogOpen()}
+                onSubmit={() => {
+                  send("steer");
+                }}
+                onChange={draft.follow}
+                onCursor={draft.follow}
+                onPaste={draft.pictures.onPaste}
+              />
+            </>
+          }
         />
         <StatusLines deps={deps} turn={props} />
       </box>

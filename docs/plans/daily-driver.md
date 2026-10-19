@@ -415,6 +415,41 @@ tag source, order 10, find(query):
 - Attaching to a session that has no entries yet creates it.
 - A clone deleted from disk drops out of the prompt section.
 
+## Step 10: `/qna`
+
+A new `questions` plugin. `/qna` sends a request that offers `ask_question`; the call ends the turn with a form entry; the form takes the composer's input area until the user answers or cancels, and either withdraws the tool.
+
+```mermaid
+flowchart LR
+  slash["/qna context"] -- "questions/ask" --> server["questions server"]
+  server -- "Inbox.sendDraft: user entry + offer ask_question" --> inbox
+  tool["ask_question"] --> hook["BeforeCall: Await with questions/form"]
+  form["form in InboxSlots.input"] -- "questions/pending stream" --> server
+  form -- "questions/answer, questions/cancel" --> server
+  server -- "questions/answers + withdraw" --> inbox
+```
+
+| Where | Change |
+| --- | --- |
+| `agent-loop` contract | `BeforeCall.Await { input }`: saves `input` and ends the turn as answered, with no notice |
+| `inbox` | `Inbox.sendDraft(session, { text, draft }, mode)`, as `send` for a draft another plugin made; `InboxSlots.input`, a session chain slot: what the composer shows in place of its draft, above the model line |
+| `chat`, `compaction` | `ToolRows.Hidden({ live? })`: a hidden tool's words while it streams |
+| `agent-loop` TUI | a streaming tool call reads as its tool's running verb, or `Hidden`'s `live`, else `Calling <name>` |
+| `questions` contract | `Question` (`select`, `confirm`, `input`; prompt, options, recommendation), `Form { title, questions }`; `Answer` (`picked`, `own`, `written`, `skipped`), `Answers { title, answered, context }`; entries `questions/form` (shown, not for the model), `questions/answers` (shown, model reads text and the withdraw), `questions/cancelled` (hidden, model reads it and the withdraw); `Pending`: `NoForm` or `Asked { seq, form }`; RPCs `questions/ask`, `questions/pending` (stream), `questions/answer`, `questions/cancel` |
+| `questions` server | `ask_question`, not offered at start: checks ids are unique and each recommendation is one of the options, its details the form; a before-call hook ends the turn with `Await` and the form entry when the latest reply's calls include a done `ask_question`; pending from the session's entries |
+| `questions` TUI | `/qna [context]`; the form in `InboxSlots.input` and its hints in `ChatSlots.composerHints`, both at priority -1 while the on-screen session has a pending form; `? <title>  N questions for you`; the answers band, folded by a click |
+| gallery | none: its form, `Asked` and `Answers` are the design |
+
+```ts
+/qna ctx -> user entry text "/qna ctx", model: "[qna] Ask me, with the ask_question tool, ...\n\nctx" + tool-change offer
+before call: tail after the latest non-tool entry has a done ask_question -> Await([form entry])
+pending = newest of form | answers | cancelled | user is form ? Asked : NoForm
+form keys: tab/shift+tab tabs; up/down rows; enter picks or accepts, sends on the context tab; n notes; esc drops a note, else cancels
+```
+
+- A question left open is sent as `skipped`.
+- A session whose first system entry predates the plugin learns the tool only from the offer.
+
 ## New dependency
 
 - `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Unpatched here: its console logs are cut only when the script ends.

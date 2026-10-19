@@ -7,11 +7,13 @@ import { Context, Effect, Option, Schema, type Stream } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import {
+  type EntryDraft,
   ImageMediaType,
   InvalidEntry,
   Registry,
   SessionId,
   SessionNotFound,
+  Slot,
   StoreError,
 } from "@liminal/sdk";
 
@@ -241,6 +243,15 @@ export class Inbox extends Context.Service<
       input: UserInput,
       mode: SendMode,
     ) => Effect.Effect<void, SendError>;
+    /**
+     * As `send`, for a message another plugin drafted, such as `/qna`'s request; `text` is what the
+     * queue shows while it waits.
+     */
+    readonly sendDraft: (
+      session: SessionId,
+      message: { readonly text: string; readonly draft: EntryDraft },
+      mode: SendMode,
+    ) => Effect.Effect<void, SendError>;
     /** The session's queue now, then after each change. */
     readonly queue: (session: SessionId) => Stream.Stream<Queued>;
   }
@@ -261,3 +272,17 @@ export class InboxRpcs extends RpcGroup.make(
   Rpc.make("inbox/stashes", { success: Schema.Array(Stash), error: StashesError }),
   Rpc.make("inbox/unstash", { payload: { id: Schema.Int }, error: StashesError }),
 ) {}
+
+/** The props of what the composer shows in place of its draft. */
+export interface InputProps {
+  readonly running: boolean;
+}
+
+/** The slots inbox's composer draws. */
+export const InboxSlots = {
+  /**
+   * What the composer shows in place of its draft, above the model line, such as a form of
+   * questions; the first registration whose `select` matches takes it, else the draft shows.
+   */
+  input: Slot.chain<InputProps, true, "session">("inbox/input", { scope: "session" }),
+};

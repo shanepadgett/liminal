@@ -53,6 +53,7 @@ const beforeCall = Effect.gen(function* () {
     BeforeCall.$match(answer, {
       Proceed: ({ input }) => input.map(({ text }) => text),
       EndTurn: () => [],
+      Await: ({ input }) => input.map(({ text }) => text),
     }),
   );
 });

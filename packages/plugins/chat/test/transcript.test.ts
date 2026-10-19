@@ -118,10 +118,10 @@ describe("transcript", () => {
       { id: "c2", name: "checkpoint", params: { handoff: "next" } },
     ];
 
-    const groups = groupsOf(calls, (name) => (name === "read" ? read : ToolRows.Hidden()));
+    const groups = groupsOf(calls, (name) => (name === "read" ? read : ToolRows.Hidden({})));
 
     expect(groups.map((group) => group.words.verb)).toEqual(["Read"]);
-    expect(groupsOf(calls.slice(1), () => ToolRows.Hidden())).toEqual([]);
+    expect(groupsOf(calls.slice(1), () => ToolRows.Hidden({}))).toEqual([]);
   });
 
   test("a run script's inner calls sit under their outer call", () => {

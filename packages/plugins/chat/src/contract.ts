@@ -41,11 +41,12 @@ export interface WorkRow {
 
 /**
  * A tool's registration in `chat/tool`: how its calls read as work rows, or `Hidden` when its calls
- * draw no row, such as a call the transcript shows as its own entry.
+ * draw no row, such as a call the transcript shows as its own entry; `live` is what a hidden call
+ * reads as while the model writes it, else `Calling <name>`.
  */
 export type ToolRows = Data.TaggedEnum<{
   Rows: { readonly fold: (call: ToolCall) => WorkRow };
-  Hidden: {};
+  Hidden: { readonly live?: string };
 }>;
 
 export const ToolRows = Data.taggedEnum<ToolRows>();

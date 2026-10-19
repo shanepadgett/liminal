@@ -720,3 +720,52 @@ effectTest(
   }),
   trustedServices,
 );
+
+effectTest(
+  "/qna puts the model's questions in the composer; enter picks and esc cancels the form",
+  Effect.gen(function* () {
+    const ask: ModelPart = {
+      type: "tool-call",
+      id: "c1",
+      name: "ask_question",
+      params: {
+        title: "Storage",
+        questions: [
+          {
+            kind: "select",
+            id: "store",
+            prompt: "Where should sessions live?",
+            options: [{ label: "SQLite" }, { label: "Files" }],
+          },
+        ],
+      },
+      providerData: {},
+    };
+
+    const { setup } = yield* bootScripted(
+      replyText("hi there"),
+      reply([ask], { reason: "tool-calls" }),
+    );
+
+    yield* send(setup, "hello there");
+    yield* frameWith(setup, "hi there");
+    // The menu fills `/qna ` for its arguments; the second enter sends it.
+    yield* slash(setup, "/qna", "Have the assistant put");
+    yield* frameWhere(setup, (frame) => !frame.includes("Have the assistant put"));
+    setup.mockInput.pressEnter();
+
+    const form = yield* frameWith(setup, "Where should sessions live?");
+
+    expect(form).toContain("1 question for you");
+    expect(form).toContain("enter pick");
+
+    setup.mockInput.pressEnter();
+    yield* frameWith(setup, "Anything else the assistant should know?");
+
+    setup.mockInput.pressEscape();
+    const after = yield* frameWith(setup, "Ask anything");
+    expect(after).toContain("? Storage  1 question for you");
+    expect(after).not.toContain("Anything else");
+  }),
+  trustedServices,
+);

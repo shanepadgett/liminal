@@ -3,11 +3,12 @@
  * arrives, and what it is thinking or calling as quiet rows; a waiting retry says why.
  */
 
-import { Option, Schema } from "effect";
+import { Option, Predicate, Schema } from "effect";
 import { Index, Show } from "solid-js";
 
+import { ChatSlots, type ToolRows } from "@liminal/chat/contract";
 import type { LiveState } from "@liminal/sdk";
-import { useColor, useMarkdownStyle } from "@liminal/sdk/tui";
+import { useColor, useMarkdownStyle, useSlotMeta } from "@liminal/sdk/tui";
 
 import { type LivePart, LiveReply, LiveRetry } from "../contract.ts";
 
@@ -18,12 +19,31 @@ interface LiveProps {
 const decodeReply = Schema.decodeUnknownOption(LiveReply.data);
 const decodeRetry = Schema.decodeUnknownOption(LiveRetry.data);
 
-const doingOf = (part: LivePart) =>
-  part.type === "reasoning" ? "Thinking" : `Calling ${part.name ?? "a tool"}`;
+/**
+ * What a call the model is writing reads as: its tool's running verb, a hidden tool's `live`, else
+ * `Calling <name>`.
+ */
+const callingOf = (name: string | undefined, rows: ToolRows | undefined) => {
+  const fallback = `Calling ${name ?? "a tool"}`;
+  if (name === undefined || rows === undefined) return fallback;
+
+  return Predicate.isTagged(rows, "Rows")
+    ? rows.fold({ id: "", name, params: null }).verb
+    : (rows.live ?? fallback);
+};
 
 function Part(props: { readonly part: LivePart }) {
   const color = useColor();
   const style = useMarkdownStyle(() => color);
+  const rowsOf = useSlotMeta(ChatSlots.tool);
+
+  const doing = () =>
+    props.part.type === "reasoning"
+      ? "Thinking"
+      : callingOf(
+          props.part.name,
+          props.part.name === undefined ? undefined : rowsOf(props.part.name),
+        );
 
   return (
     <Show
@@ -31,7 +51,7 @@ function Part(props: { readonly part: LivePart }) {
       fallback={
         <text>
           <span style={{ fg: color("text.ghost") }}>◇ </span>
-          <span style={{ fg: color("text.muted") }}>{doingOf(props.part)}</span>
+          <span style={{ fg: color("text.muted") }}>{doing()}</span>
         </text>
       }
     >

@@ -197,6 +197,7 @@ const make = Effect.gen(function* () {
           lock.withPermit(send(state, session, { text: input.text, draft }, mode)),
         ),
       ),
+    sendDraft: (session, message, mode) => lock.withPermit(send(state, session, message, mode)),
     queue: (session) =>
       SubscriptionRef.changes(state.queues).pipe(
         Stream.map((map) => map.get(session) ?? empty),

@@ -46,7 +46,7 @@ export default defineTui({
 
     yield* host.register(
       ChatSlots.tool,
-      { key: checkpointTool, meta: ToolRows.Hidden() },
+      { key: checkpointTool, meta: ToolRows.Hidden({}) },
       (props) => <Tail text={props.text} lines={4} />,
     );
 

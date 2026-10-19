@@ -19,7 +19,10 @@ export const makeHooks = (
   beforeCall: BeforeCallHooks["Service"],
   turnEnding: TurnEndingHooks["Service"],
 ) => {
-  /** The before-call hooks in order: the first `EndTurn` ends the turn; inputs are saved. */
+  /**
+   * The before-call hooks in order: the first `EndTurn` ends the turn; the first `Await` saves the
+   * input so far with its own and ends the turn as answered; otherwise inputs are saved.
+   */
   const runBeforeCall = Effect.fn("AgentLoop.beforeCall")(function* (turn: Turn) {
     const input: Array<EntryDraft> = [];
 
@@ -30,6 +33,12 @@ export const makeHooks = (
         return StepOutcome.EndedByPlugin({ reason: decision.reason });
 
       input.push(...decision.input);
+
+      if (BeforeCall.$is("Await")(decision)) {
+        yield* saveDrafts(log, turn.sessionId, input);
+
+        return StepOutcome.Answered();
+      }
     }
 
     yield* saveDrafts(log, turn.sessionId, input);

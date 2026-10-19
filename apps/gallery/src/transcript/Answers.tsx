@@ -10,10 +10,14 @@
 
 import { Index, Show } from "solid-js";
 
+import {
+  type Answered,
+  answerTextOf,
+  notesOf,
+  passedOverOf,
+  tagsOf,
+} from "@liminal/questions/contract";
 import { EDGE_BAR, type RoleColor } from "@liminal/sdk/tui";
-
-import { answerTextOf, notesOf, passedOverOf, tagsOf } from "./questions.ts";
-import type { Answered } from "./script.ts";
 
 /** The question numbers' column, so prompts that wrap stay clear of them. */
 const NUMBER_WIDTH = 3;
