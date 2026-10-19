@@ -3,7 +3,7 @@
  * matches, and its key hints, which take the composer hints slot the same way.
  */
 
-import { Effect, Predicate, Record, Schema, Stream } from "effect";
+import { Effect, Option, Predicate, Record, Schema, Stream } from "effect";
 import { createSignal } from "solid-js";
 
 import { AgentLoopRpcs, type DefaultsView } from "@liminal/agent-loop/contract";
@@ -13,6 +13,7 @@ import { defineTui, makeBridge, TuiCommands, TuiDialogs, TuiHost } from "@limina
 
 import { InboxRpcs, type Queued } from "./contract.ts";
 import { type ComposerDeps, makeComposer, makeHints, type ModelLine } from "./tui/Composer.tsx";
+import { makeEditor, stashes } from "./tui/stash.tsx";
 
 /** Each session's draft, kept across restarts. */
 const Drafts = Schema.Record(SessionId, Schema.String);
@@ -49,13 +50,15 @@ export default defineTui({
     const commands = yield* TuiCommands;
     const dialogs = yield* TuiDialogs;
 
+    const editor = makeEditor();
+    const stash = yield* stashes(bridge, editor);
     const model = bridge.watch(loop["agent-loop/defaults"]().pipe(Stream.map(modelLine)), loading);
 
     const deps: ComposerDeps = {
       draft: (session) => drafts.of(session),
-      send: (session, text, mode) => {
+      send: (session, input, mode) => {
         bridge.run(
-          inbox["inbox/send"]({ session, text, mode }).pipe(
+          inbox["inbox/send"]({ session, input, mode }).pipe(
             Effect.match({
               onFailure: (error) => setProblem(error.message),
               onSuccess: () => setProblem(""),
@@ -63,6 +66,14 @@ export default defineTui({
           ),
         );
       },
+      findTags: (query, found) => {
+        bridge.run(Effect.map(inbox["inbox/tags"]({ query }), found));
+      },
+      readPicture: (read, added) => {
+        bridge.run(Effect.map(read, Option.map(added)));
+      },
+      stash,
+      editor,
       queue: (session) => bridge.watch(inbox["inbox/queue"]({ session }), noQueue),
       model,
       problem,

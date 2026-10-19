@@ -45,6 +45,7 @@ Status: built
 - Live state is a separate feed that delivers only the newest value, and becomes an entry when saved
 - Creating a session stamps the `Directories` workspace; listing shows only that workspace's sessions
 - The first user message names its session
+- A user message keeps its pictures' paths and media types; what its tags attach follows its text for the model
 
 ## Open
 

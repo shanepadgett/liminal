@@ -12,17 +12,41 @@ import {
   type Turn,
   TurnEndingHooks,
 } from "@liminal/agent-loop/contract";
-import type { Entry, SessionId, Synced } from "@liminal/sdk";
 import {
-  SessionLog,
-  TurnEndedEntry,
-  TurnStartedEntry,
-  userMessage,
-} from "@liminal/session-log/contract";
+  dataFile,
+  Directories,
+  type Entry,
+  type EntryDraft,
+  Registry,
+  type SessionId,
+  type Synced,
+} from "@liminal/sdk";
+import { SessionLog, TurnEndedEntry, TurnStartedEntry } from "@liminal/session-log/contract";
 
-import { Inbox, InboxRpcs, NoTurnSettings, type Queued, type SendMode } from "./contract.ts";
+import {
+  Inbox,
+  InboxRpcs,
+  NoTurnSettings,
+  type Queued,
+  type SendMode,
+  TagSources,
+} from "./contract.ts";
+import { makeCompose } from "./server/compose.ts";
+import { Stashes, stashesLayer } from "./server/stashes.ts";
 
-const empty: Queued = { steers: [], followUps: [] };
+/** A message waiting for the running turn: its text to show and the draft to append. */
+interface Pending {
+  readonly text: string;
+  readonly draft: EntryDraft;
+}
+
+/** A session's waiting messages, oldest first. */
+interface Waiting {
+  readonly steers: ReadonlyArray<Pending>;
+  readonly followUps: ReadonlyArray<Pending>;
+}
+
+const empty: Waiting = { steers: [], followUps: [] };
 
 /** Inbox's hooks run after any registered before them. */
 const hookOrder = 100;
@@ -30,29 +54,36 @@ const hookOrder = 100;
 const isEnded = (event: Entry | Synced) =>
   !Predicate.isTagged(event, "Synced") && event.kind === TurnEndedEntry.kind;
 
-const queuedWith = (queued: Queued, text: string, mode: SendMode): Queued =>
+const queuedWith = (waiting: Waiting, pending: Pending, mode: SendMode): Waiting =>
   mode === "steer"
-    ? { ...queued, steers: [...queued.steers, text] }
-    : { ...queued, followUps: [...queued.followUps, text] };
+    ? { ...waiting, steers: [...waiting.steers, pending] }
+    : { ...waiting, followUps: [...waiting.followUps, pending] };
+
+const textsOf = (waiting: Waiting): Queued => ({
+  steers: waiting.steers.map((pending) => pending.text),
+  followUps: waiting.followUps.map((pending) => pending.text),
+});
+
+const draftsOf = (pending: ReadonlyArray<Pending>) => pending.map((each) => each.draft);
 
 /** Each session's queued input. */
-type Queues = SubscriptionRef.SubscriptionRef<ReadonlyMap<SessionId, Queued>>;
+type Queues = SubscriptionRef.SubscriptionRef<ReadonlyMap<SessionId, Waiting>>;
 
 /** Empties the session's queue, returning what it held. */
 const take = (queues: Queues, session: SessionId) =>
-  SubscriptionRef.modify(queues, (map): [Queued, ReadonlyMap<SessionId, Queued>] => [
+  SubscriptionRef.modify(queues, (map): [Waiting, ReadonlyMap<SessionId, Waiting>] => [
     map.get(session) ?? empty,
     new Map(map).set(session, empty),
   ]);
 
-const put = (queues: Queues, session: SessionId, text: string, mode: SendMode) =>
+const put = (queues: Queues, session: SessionId, pending: Pending, mode: SendMode) =>
   SubscriptionRef.update(queues, (map) =>
-    new Map(map).set(session, queuedWith(map.get(session) ?? empty, text, mode)),
+    new Map(map).set(session, queuedWith(map.get(session) ?? empty, pending, mode)),
   );
 
 /** Takes the session's steers, leaving its follow-ups queued. */
 const takeSteers = (queues: Queues, session: SessionId) =>
-  SubscriptionRef.modify(queues, (map): [Queued, ReadonlyMap<SessionId, Queued>] => {
+  SubscriptionRef.modify(queues, (map): [Waiting, ReadonlyMap<SessionId, Waiting>] => {
     const queued = map.get(session) ?? empty;
 
     return [queued, new Map(map).set(session, { ...queued, steers: [] })];
@@ -82,21 +113,21 @@ const awaitEnd = (state: State, session: SessionId, seen: Entry | undefined) =>
     .pipe(Stream.filter(isEnded), Stream.runHead);
 
 /**
- * Saves the queued input, then `text`, as user messages, and starts a turn on them. The first
+ * Saves the queued input, then `pending`, as user messages, and starts a turn on them. The first
  * prompt creates the session.
  */
 const startTurn = Effect.fn("Inbox.startTurn")(function* (
   state: State,
   session: SessionId,
-  text: string,
+  pending: Pending,
 ) {
   const settings = yield* state.loop.defaults.pipe(
     Effect.mapError((error) => new NoTurnSettings({ message: error.message })),
   );
 
   const queued = yield* take(state.queues, session);
-  const earlier = [...queued.steers, ...queued.followUps].map(userMessage);
-  const append = state.log.append(session, Arr.append(earlier, userMessage(text)));
+  const drafts = Arr.append(draftsOf([...queued.steers, ...queued.followUps]), pending.draft);
+  const append = state.log.append(session, drafts);
 
   yield* append.pipe(
     Effect.catchTag("SessionNotFound", () => Effect.andThen(state.log.create(session), append)),
@@ -108,40 +139,43 @@ const startTurn = Effect.fn("Inbox.startTurn")(function* (
 const send = Effect.fn("Inbox.send")(function* (
   state: State,
   session: SessionId,
-  text: string,
+  pending: Pending,
   mode: SendMode,
 ) {
   if (state.ending.has(session)) {
     yield* awaitEnd(state, session, state.ending.get(session));
     state.ending.delete(session);
   } else if ((yield* marker(state, session))?.kind === TurnStartedEntry.kind) {
-    return yield* put(state.queues, session, text, mode);
+    return yield* put(state.queues, session, pending, mode);
   }
 
-  return yield* startTurn(state, session, text);
+  return yield* startTurn(state, session, pending);
 });
 
 const beforeCall = (state: State, turn: Turn) =>
   Effect.map(takeSteers(state.queues, turn.sessionId), (queued) =>
-    BeforeCall.Proceed({ input: queued.steers.map(userMessage) }),
+    BeforeCall.Proceed({ input: draftsOf(queued.steers) }),
   );
 
 /** Steers left after the last call join the follow-ups; with none, the turn is ending. */
 const turnEnding = Effect.fn("Inbox.turnEnding")(function* (state: State, turn: Turn) {
   const queued = yield* take(state.queues, turn.sessionId);
-  const texts = [...queued.steers, ...queued.followUps];
+  const pending = [...queued.steers, ...queued.followUps];
 
-  if (texts.length === 0)
+  if (pending.length === 0)
     state.ending.set(turn.sessionId, yield* Effect.orDie(marker(state, turn.sessionId)));
 
-  return texts.map(userMessage);
+  return draftsOf(pending);
 });
 
 const make = Effect.gen(function* () {
+  const sources = yield* TagSources;
+  const compose = yield* makeCompose(sources.list, yield* dataFile("pictures"));
+
   const state: State = {
     log: yield* SessionLog,
     loop: yield* AgentLoop,
-    queues: yield* SubscriptionRef.make<ReadonlyMap<SessionId, Queued>>(new Map()),
+    queues: yield* SubscriptionRef.make<ReadonlyMap<SessionId, Waiting>>(new Map()),
     ending: new Map(),
   };
 
@@ -157,24 +191,52 @@ const make = Effect.gen(function* () {
   });
 
   return Inbox.of({
-    send: (session, text, mode) => lock.withPermit(send(state, session, text, mode)),
+    send: (session, input, mode) =>
+      compose(input).pipe(
+        Effect.flatMap((draft) =>
+          lock.withPermit(send(state, session, { text: input.text, draft }, mode)),
+        ),
+      ),
     queue: (session) =>
       SubscriptionRef.changes(state.queues).pipe(
         Stream.map((map) => map.get(session) ?? empty),
         Stream.changesWith((a, b) => a === b),
+        Stream.map(textsOf),
       ),
   });
 });
 
+/** Every source's rows for `query`, in the sources' order. */
+const findTags = (sources: TagSources["Service"], query: string) =>
+  Effect.flatMap(sources.list, (list) =>
+    Effect.map(
+      Effect.forEach(list, (source) => source.find(query), { concurrency: "unbounded" }),
+      (found) => found.flat(),
+    ),
+  );
+
 const rpcs = InboxRpcs.toLayer(
   Effect.gen(function* () {
     const inbox = yield* Inbox;
+    const sources = yield* TagSources;
+    const stashes = yield* Stashes;
+    const folder = (yield* Directories).workspace;
 
     return InboxRpcs.of({
-      "inbox/send": ({ session, text, mode }) => inbox.send(session, text, mode),
+      "inbox/send": ({ session, input, mode }) => inbox.send(session, input, mode),
       "inbox/queue": ({ session }) => inbox.queue(session),
+      "inbox/tags": ({ query }) => findTags(sources, query),
+      "inbox/stash": ({ text }) => stashes.add(folder, text),
+      "inbox/stashes": () => stashes.list(folder),
+      "inbox/unstash": ({ id }) => stashes.remove(id),
     });
   }),
 );
 
-export const layer = rpcs.pipe(Layer.provideMerge(Layer.effect(Inbox, make)));
+const stashes = Layer.unwrap(Effect.map(dataFile("stashes.db"), stashesLayer));
+
+export const layer = rpcs.pipe(
+  Layer.provideMerge(Layer.effect(Inbox, make)),
+  Layer.provide(stashes),
+  Layer.provideMerge(Registry.layer(TagSources)),
+);

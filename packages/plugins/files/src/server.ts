@@ -3,9 +3,11 @@
 import { Effect, FileSystem, Layer, Path } from "effect";
 import type { PlatformError } from "effect/PlatformError";
 
+import { offerTagSource } from "@liminal/inbox/contract";
 import { Directories } from "@liminal/sdk";
 
 import { FileFailed, WorkspaceFiles } from "./contract.ts";
+import { makeFileTags } from "./server/tags.ts";
 
 /** A platform failure as `FileFailed`, naming the file as the caller gave it. */
 const failed = (file: string) => (error: PlatformError) =>
@@ -30,4 +32,7 @@ const make = Effect.gen(function* () {
   });
 });
 
-export const layer = Layer.effect(WorkspaceFiles, make);
+/** Offers the workspace's files and folders as `@` tags. */
+const tags = Effect.flatMap(makeFileTags, (source) => offerTagSource(source, 0));
+
+export const layer = Layer.merge(Layer.effect(WorkspaceFiles, make), Layer.effectDiscard(tags));

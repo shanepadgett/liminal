@@ -32,7 +32,14 @@ import {
   ScriptedModel,
   scriptedProvider,
 } from "@liminal/model-scripted/contract";
-import { draft, ModelError, type ModelPart, ProjectTrust, SessionId } from "@liminal/sdk";
+import {
+  Directories,
+  draft,
+  ModelError,
+  type ModelPart,
+  ProjectTrust,
+  SessionId,
+} from "@liminal/sdk";
 import { effectTest, testBaseServices } from "@liminal/sdk/testing";
 import { SessionLog, userMessage } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
@@ -674,4 +681,42 @@ effectTest(
     expect(yield* (yield* ProjectTrust).trusted).toBe(true);
   }),
   testBaseServices,
+);
+
+effectTest(
+  "ctrl+s stashes the draft and /pop brings it back",
+  Effect.gen(function* () {
+    const { setup } = yield* boot(() => Effect.void);
+
+    yield* frameWith(setup, "Ask anything");
+    yield* Effect.promise(() => setup.mockInput.typeText("park me"));
+    setup.mockInput.pressKey("s", { ctrl: true });
+    expect(yield* frameWith(setup, "Stashed")).toContain("Ask anything");
+
+    yield* Effect.promise(() => setup.mockInput.typeText("/pop"));
+    setup.mockInput.pressEnter();
+    yield* frameWith(setup, "ctrl+d discard");
+    setup.mockInput.pressEnter();
+
+    expect(yield* frameWhere(setup, (frame) => !frame.includes("discard"))).toContain("park me");
+  }),
+  trustedServices,
+);
+
+effectTest(
+  "an @ lists the workspace's files and enter tags the highlighted one",
+  Effect.gen(function* () {
+    const root = (yield* Directories).workspace;
+    yield* Effect.promise(() => Bun.write(`${root}/notes.md`, "hi"));
+    yield* Effect.promise(() => Bun.spawn(["git", "init", "-q"], { cwd: root }).exited);
+    const { setup } = yield* boot(() => Effect.void);
+
+    yield* frameWith(setup, "Ask anything");
+    yield* Effect.promise(() => setup.mockInput.typeText("see @note"));
+    yield* frameWith(setup, "📄 notes.md");
+    setup.mockInput.pressEnter();
+
+    expect(yield* frameWhere(setup, (frame) => !frame.includes("📄"))).toContain("see @notes.md");
+  }),
+  trustedServices,
 );

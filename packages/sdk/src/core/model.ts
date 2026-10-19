@@ -18,6 +18,20 @@ export const ToolSpec = Schema.Struct({
 
 export type ToolSpec = typeof ToolSpec.Type;
 
+/** The picture formats every provider takes. */
+export const ImageMediaType = Schema.Literals(["image/png", "image/jpeg", "image/webp"]);
+
+export type ImageMediaType = typeof ImageMediaType.Type;
+
+/** A picture the model sees, read from `path` when a request is made. */
+export const ImagePart = Schema.Struct({
+  type: Schema.Literal("image"),
+  path: Schema.String,
+  mediaType: ImageMediaType,
+});
+
+export type ImagePart = typeof ImagePart.Type;
+
 /** What the model sees, in Liminal's own types, so an Effect upgrade cannot break saved sessions. */
 export const ModelPart = Schema.Union([
   Schema.Struct({ type: Schema.Literal("text"), text: Schema.String, providerData: ProviderData }),
@@ -40,11 +54,7 @@ export const ModelPart = Schema.Union([
     result: Schema.Json,
     isFailure: Schema.Boolean,
   }),
-  Schema.Struct({
-    type: Schema.Literal("image"),
-    path: Schema.String,
-    mediaType: Schema.Literals(["image/png", "image/jpeg", "image/webp"]),
-  }),
+  ImagePart,
   /** In user messages only: offers or withdraws a tool from this point on. */
   Schema.Struct({
     type: Schema.Literal("tool-change"),

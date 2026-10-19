@@ -21,7 +21,8 @@ const COMMAND_SECTIONS: readonly CommandSection[] = [
     title: "Session",
     commands: [
       { id: "session.new", label: "New session", key: "ctrl+n" },
-      { id: "session.switch", label: "Switch session", key: "ctrl+s" },
+      { id: "session.switch", label: "Switch session" },
+      { id: "inbox.pop", label: "Stashes" },
       { id: "session.rename", label: "Rename session" },
       { id: "session.compact", label: "Compact context" },
     ],

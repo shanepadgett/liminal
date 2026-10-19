@@ -48,6 +48,44 @@ export const enterKeys = (cmd: string): ReadonlyArray<CommandKey> => [
   { key: "kpenter", cmd },
 ];
 
+/** A list whose highlight moves: how many rows it has, and a setter for the highlighted index. */
+export interface MovingList {
+  readonly count: () => number;
+  readonly select: (next: (index: number) => number) => void;
+}
+
+/**
+ * Up and down moving a list's highlight by one, wrapping at the ends, as `<prefix>.up` and
+ * `<prefix>.down` commands and their keys.
+ */
+export const moveKeys = (prefix: string, list: MovingList) => {
+  const move = (by: number) => {
+    const count = list.count();
+    if (count > 0) list.select((index) => (index + by + count) % count);
+  };
+
+  return {
+    commands: [
+      {
+        name: `${prefix}.up`,
+        run: () => {
+          move(-1);
+        },
+      },
+      {
+        name: `${prefix}.down`,
+        run: () => {
+          move(1);
+        },
+      },
+    ],
+    bindings: [
+      { key: "up", cmd: `${prefix}.up` },
+      { key: "down", cmd: `${prefix}.down` },
+    ],
+  };
+};
+
 /** A reachable command and the keys that run it, joined for display. */
 export interface ListedCommand {
   readonly command: Command;

@@ -38,6 +38,9 @@ const stack = serverOf(inbox).pipe(
 
 const s1 = SessionId.make("s1");
 
+/** Input of `text` alone. */
+const said = (text: string) => ({ text, pictures: [] });
+
 /** Creates the session and sets the scripted model as the default. */
 const setUp = Effect.gen(function* () {
   yield* (yield* SessionLog).create(s1);
@@ -78,7 +81,7 @@ effectTest(
   "sending with no model set fails before saving anything",
   Effect.gen(function* () {
     yield* (yield* SessionLog).create(s1);
-    const error = yield* Effect.flip((yield* Inbox).send(s1, "hi", "steer"));
+    const error = yield* Effect.flip((yield* Inbox).send(s1, said("hi"), "steer"));
     expect(error).toBeInstanceOf(NoTurnSettings);
     expect(yield* story).toEqual([]);
   }),
@@ -95,11 +98,11 @@ effectTest(
 
     yield* scripted.enqueue([{ type: "gate", gate: first }, ...replyText("one")], replyText("two"));
 
-    yield* box.send(s1, "go", "steer");
+    yield* box.send(s1, said("go"), "steer");
     // Lets the turn reach its first model call, held at the gate.
     yield* TestClock.adjust("50 millis");
-    yield* box.send(s1, "later", "follow-up");
-    yield* box.send(s1, "now", "steer");
+    yield* box.send(s1, said("later"), "follow-up");
+    yield* box.send(s1, said("now"), "steer");
 
     const queued = yield* box.queue(s1).pipe(Stream.runHead);
     expect(queued).toMatchObject({ value: { steers: ["now"], followUps: ["later"] } });
@@ -127,9 +130,9 @@ effectTest(
     const box = yield* Inbox;
 
     yield* scripted.enqueue(replyText("one"), replyText("two"));
-    yield* box.send(s1, "a", "steer");
+    yield* box.send(s1, said("a"), "steer");
     yield* until(endedTimes(1));
-    yield* box.send(s1, "b", "follow-up");
+    yield* box.send(s1, said("b"), "follow-up");
     yield* until(endedTimes(2));
 
     expect(yield* story).toEqual([

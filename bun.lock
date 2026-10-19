@@ -294,6 +294,7 @@
       "name": "@liminal/files",
       "version": "0.1.0",
       "peerDependencies": {
+        "@liminal/inbox": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "effect": "4.0.5",
       },
@@ -301,6 +302,9 @@
     "packages/plugins/inbox": {
       "name": "@liminal/inbox",
       "version": "0.1.0",
+      "dependencies": {
+        "@effect/sql-sqlite-bun": "4.0.5",
+      },
       "devDependencies": {
         "@liminal/context": "workspace:*",
         "@liminal/model-catalog": "workspace:*",

@@ -86,7 +86,7 @@ export const runTurn = Effect.fn("runTurn")(function* (
   );
 
   const after = Option.flatMap(synced, (event) => Option.fromUndefinedOr(event.seq));
-  yield* inbox["inbox/send"]({ session, text: prompt, mode: "follow-up" });
+  yield* inbox["inbox/send"]({ session, input: { text: prompt, pictures: [] }, mode: "follow-up" });
 
   const followed = Option.match(after, {
     onNone: () => kernel["kernel/follow"]({ session }),

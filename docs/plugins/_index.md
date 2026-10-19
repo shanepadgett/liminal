@@ -26,7 +26,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | Plugin | Does | Status |
 | --- | --- | --- |
 | [agent-loop](agent-loop.md) | Runs one turn | built |
-| inbox | The composer and all sending: starts a turn when idle, queues steers and follow-ups while one runs | planned |
+| [inbox](inbox.md) | The composer and all sending: starts a turn when idle, queues steers and follow-ups while one runs; `@` tags, pictures and stashes | built |
 | retry | Retries failed model calls | to plan |
 | cancel | Stops a running turn | to plan |
 | [usage](usage.md) | Context and cost of a session's model calls, in the sidebar | built |
@@ -72,7 +72,7 @@ Status: **to plan** (listed only), **planned** (has requirements), **built**.
 | Plugin | Does | Status |
 | --- | --- | --- |
 | [tools](tools.md) | The tools the model can call, how each call runs, and their guidance in the system prompt | built |
-| [files](files.md) | Reads and writes workspace files for the file tools | built |
+| [files](files.md) | Reads and writes workspace files for the file tools; the workspace `@` tag source | built |
 | [shell-safety](shell-safety.md) | Tells read-only shell commands apart from ones that can change things | built |
 | permissions | Rules for what tools may do | to plan |
 | [approval](approval.md) | Decides the tool calls a check asks about: decision model, reviewer, then the user | built |

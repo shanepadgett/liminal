@@ -6,6 +6,9 @@
     ".": "./plugin.ts",
     "./contract": "./src/contract.ts"
   },
+  "dependencies": {
+    "@effect/sql-sqlite-bun": "4.0.5"
+  },
   "devDependencies": {
     "@liminal/context": "workspace:*",
     "@liminal/model-catalog": "workspace:*",

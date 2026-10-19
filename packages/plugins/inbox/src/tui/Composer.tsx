@@ -2,13 +2,13 @@
  * Where the user writes: a raised surface with the input and, under it, the model in the accent
  * color with its thinking option. Enter sends; while a turn runs it steers the turn and Tab queues
  * a follow-up instead. Queued input shows above the input until the turn takes it. Ctrl+c clears
- * the draft.
+ * the draft, ctrl+s stashes it, ctrl+v adds the clipboard's picture, and `@` opens the tag list.
  */
 
-import type { TextareaRenderable } from "@opentui/core";
+import type { PasteEvent, TextareaRenderable } from "@opentui/core";
 import { useTerminalDimensions } from "@opentui/solid";
 import type { Accessor } from "solid-js";
-import { For, onMount, Show, untrack } from "solid-js";
+import { createSignal, For, onCleanup, onMount, Show, untrack } from "solid-js";
 
 import { ChatSlots } from "@liminal/chat/contract";
 import type { SessionId } from "@liminal/sdk";
@@ -21,9 +21,13 @@ import {
   useColor,
 } from "@liminal/sdk/tui";
 
-import type { Queued, SendMode } from "../contract.ts";
+import type { Queued, SendMode, UserInput } from "../contract.ts";
+import { type ReadPicture, usePictures } from "./paste.ts";
 import { useSlash } from "./slash.ts";
 import { SlashMenu } from "./SlashMenu.tsx";
+import type { Editor } from "./stash.tsx";
+import { TagMenu } from "./TagMenu.tsx";
+import { type TagsDeps, useTags } from "./tags.ts";
 
 /**
  * The most rows the input grows to before it scrolls: a third of the terminal, at least six. A
@@ -43,7 +47,13 @@ export type ModelLine =
 export interface ComposerDeps {
   /** The session's draft, shared with its hints. */
   readonly draft: (session: SessionId) => readonly [Accessor<string>, (text: string) => void];
-  readonly send: (session: SessionId, text: string, mode: SendMode) => void;
+  readonly send: (session: SessionId, input: UserInput, mode: SendMode) => void;
+  readonly findTags: TagsDeps["find"];
+  readonly readPicture: ReadPicture;
+  /** Stashes `text`, calling `done` once it is safe. */
+  readonly stash: (text: string, done: () => void) => void;
+  /** Where `/pop` writes. */
+  readonly editor: Editor;
   readonly queue: (session: SessionId) => Accessor<Queued>;
   /** The model line, or why no turn can start. */
   readonly model: Accessor<ModelLine>;
@@ -113,6 +123,8 @@ function Input(props: {
   readonly focused: boolean;
   readonly onSubmit: () => void;
   readonly onChange: () => void;
+  readonly onCursor: () => void;
+  readonly onPaste: (event: PasteEvent) => void;
 }) {
   const color = useColor();
   const surface = () => color("surface.raised");
@@ -141,6 +153,8 @@ function Input(props: {
       ]}
       onSubmit={props.onSubmit}
       onContentChange={props.onChange}
+      onCursorChange={props.onCursor}
+      onPaste={props.onPaste}
       backgroundColor={surface()}
       focusedBackgroundColor={surface()}
       textColor={color("text.base")}
@@ -165,6 +179,18 @@ const clearDraft = (input: TextareaRenderable | undefined, underDialog: boolean)
 /** While a turn runs, tab queues the draft as a follow-up. */
 const queueKeys = (running: boolean) => (running ? [{ key: "tab", cmd: "inbox.queue" }] : []);
 
+/** The keys of the list open above the input, if any; else tab's. */
+const listKeys = <B,>(
+  lists: ReadonlyArray<{ readonly open: () => boolean; readonly bindings: ReadonlyArray<B> }>,
+  running: boolean,
+) => lists.find((list) => list.open())?.bindings ?? queueKeys(running);
+
+const editKeys = [
+  { key: "ctrl+c", cmd: "inbox.clear" },
+  { key: "ctrl+s", cmd: "inbox.stash" },
+  { key: "ctrl+v", cmd: "inbox.paste-picture" },
+];
+
 /** The model line with the plugins' items after it, then the last send's failure. */
 function StatusLines(props: { readonly deps: ComposerDeps; readonly turn: TurnProps }) {
   const color = useColor();
@@ -182,61 +208,130 @@ function StatusLines(props: { readonly deps: ComposerDeps; readonly turn: TurnPr
   );
 }
 
+/** The draft's own keys: clear, stash and paste a picture; each declines under a dialog. */
+const editCommands = (
+  deps: ComposerDeps,
+  input: () => TextareaRenderable | undefined,
+  fromClipboard: () => void,
+) => [
+  { name: "inbox.clear", run: () => clearDraft(input(), deps.dialogOpen()) },
+  {
+    name: "inbox.stash",
+    run: () => {
+      const text = input()?.plainText ?? "";
+      if (deps.dialogOpen() || text.trim() === "") return false;
+      deps.stash(text, () => input()?.clear());
+
+      return true;
+    },
+  },
+  {
+    name: "inbox.paste-picture",
+    run: () => {
+      if (deps.dialogOpen()) return false;
+      fromClipboard();
+
+      return true;
+    },
+  },
+];
+
+/** The lists above the input: commands for a lone `/word`, tags for an `@` at the cursor. */
+function Lists(props: {
+  readonly slash: ReturnType<typeof useSlash>;
+  readonly tags: ReturnType<typeof useTags>;
+}) {
+  return (
+    <>
+      <Show when={props.slash.open()}>
+        <SlashMenu matches={props.slash.matches()} selected={props.slash.selected()} />
+      </Show>
+      <Show when={!props.slash.open() && props.tags.open()}>
+        <TagMenu
+          rows={props.tags.rows()}
+          query={props.tags.query()}
+          selected={props.tags.selected()}
+        />
+      </Show>
+    </>
+  );
+}
+
+/** The composer's input and lists, wired to the session's draft. */
+const useDraft = (deps: ComposerDeps, props: TurnProps) => {
+  const [draft, setDraft] = deps.draft(props.sessionId);
+  const [cursor, setCursor] = createSignal(0);
+  let input: TextareaRenderable | undefined;
+  const current = () => input;
+  const slash = useSlash({ commands: deps.commands, draft, input: current });
+  const tags = useTags({ draft, cursor, input: current, find: deps.findTags });
+  const pictures = usePictures(deps.readPicture, current);
+
+  onCleanup(() => {
+    deps.editor.release(input);
+  });
+
+  const use = (made: TextareaRenderable) => {
+    input = made;
+    deps.editor.use(made);
+  };
+
+  const follow = () => {
+    setDraft(input?.plainText ?? "");
+    setCursor(input?.cursorOffset ?? 0);
+  };
+
+  return { draft, current, use, follow, slash, tags, pictures };
+};
+
 export const makeComposer = (deps: ComposerDeps) =>
   function Composer(props: TurnProps) {
     const color = useColor();
-    const surface = () => color("surface.raised");
-    const [draft, setDraft] = deps.draft(props.sessionId);
     const queued = deps.queue(props.sessionId);
-    let input: TextareaRenderable | undefined;
-    const slash = useSlash({ commands: deps.commands, draft, input: () => input });
+    const draft = useDraft(deps, props);
 
     const send = (mode: SendMode) => {
-      const text = input?.plainText.trim() ?? "";
+      const text = draft.current()?.plainText.trim() ?? "";
       if (text === "") return;
-      input?.clear();
-      if (!slash.submit(text)) deps.send(props.sessionId, text, mode);
+      draft.current()?.clear();
+      if (!draft.slash.submit(text)) deps.send(props.sessionId, draft.pictures.take(text), mode);
     };
 
     useBindings(() => ({
       commands: [
-        ...slash.commands,
+        ...draft.slash.commands,
+        ...draft.tags.commands,
         {
           name: "inbox.queue",
           run: () => {
             send("follow-up");
           },
         },
-        { name: "inbox.clear", run: () => clearDraft(input, deps.dialogOpen()) },
+        ...editCommands(deps, draft.current, draft.pictures.fromClipboard),
       ],
-      bindings: [
-        { key: "ctrl+c", cmd: "inbox.clear" },
-        ...(slash.open() ? slash.bindings : queueKeys(props.running)),
-      ],
+      bindings: [...editKeys, ...listKeys([draft.slash, draft.tags], props.running)],
     }));
 
     return (
       <box
         flexDirection="column"
         flexShrink={0}
-        backgroundColor={surface()}
+        backgroundColor={color("surface.raised")}
         paddingX={2}
         paddingY={1}
       >
         <QueuedLines queued={queued()} />
-        <Show when={slash.open()}>
-          <SlashMenu matches={slash.matches()} selected={slash.selected()} />
-        </Show>
+        <Lists slash={draft.slash} tags={draft.tags} />
         <Input
-          ref={(made) => (input = made)}
-          initial={untrack(draft)}
+          ref={draft.use}
+          initial={untrack(draft.draft)}
           focused={!deps.dialogOpen()}
           onSubmit={() => {
             send("steer");
           }}
-          onChange={() => {
-            setDraft(input?.plainText ?? "");
-          }}
+          onChange={draft.follow}
+          onCursor={draft.follow}
+          onPaste={draft.pictures.onPaste}
         />
         <StatusLines deps={deps} turn={props} />
       </box>
@@ -250,10 +345,12 @@ const hintsFor = (running: boolean, hasDraft: boolean): readonly Hint[] => {
     ? [
         ["enter", "steer"],
         ["tab", "queue"],
+        ["ctrl+s", "stash"],
       ]
     : [
         ["enter", "send"],
         ["shift+enter", "newline"],
+        ["ctrl+s", "stash"],
       ];
 };
 

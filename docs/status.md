@@ -45,7 +45,7 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 
 ## Next
 
-- Daily driver ([plans/daily-driver.md](plans/daily-driver.md)): steps 1 to 7 built (sessions and the command line; tool output spill, the loop guard and `history`; checks; the `run` tool; web search and fetch; the sidebar with usage, cost and compaction; processes); plan and build step 8, the composer's `@` tags, pictures and stash
+- Daily driver ([plans/daily-driver.md](plans/daily-driver.md)): steps 1 to 8 built (sessions and the command line; tool output spill, the loop guard and `history`; checks; the `run` tool; web search and fetch; the sidebar with usage, cost and compaction; processes; the composer's `@` tags, pictures and stashes); plan and build step 9, references
 - Check compaction live ([plans/compaction.md](plans/compaction.md)): the checkpoint rule, and the handoff and note lines in the debug view.
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [compaction](plugins/compaction.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).

@@ -8,7 +8,7 @@ import { type ScrollBoxRenderable, TextAttributes } from "@opentui/core";
 import { useBindings } from "@opentui/keymap/solid";
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 
-import { enterKeys } from "./commands.ts";
+import { enterKeys, moveKeys } from "./commands.ts";
 import { DialogFrame, type DialogProps } from "./dialogs.tsx";
 import type { Hint } from "./Hints.tsx";
 import { matchIndices, matchRuns } from "./match.ts";
@@ -30,6 +30,15 @@ export interface SelectOption<V> {
   readonly tone?: "warning";
 }
 
+/** A key that acts on the highlighted option instead of picking it, such as ctrl+d to discard. */
+export interface SelectAction<V> {
+  readonly key: string;
+  /** Its hint, such as "discard". */
+  readonly label: string;
+  /** Runs after the dialog closes, on the option highlighted then. */
+  readonly run: (value: V) => void;
+}
+
 export interface SelectDialogProps<V> extends DialogProps {
   readonly title: string;
   readonly options: ReadonlyArray<SelectOption<V>>;
@@ -37,6 +46,8 @@ export interface SelectDialogProps<V> extends DialogProps {
   readonly current?: V | undefined;
   /** Runs after the dialog closes. */
   readonly onSelect: (value: V) => void;
+  /** Other keys on the highlighted option, shown after the dialog's own hints. */
+  readonly actions?: ReadonlyArray<SelectAction<V>>;
 }
 
 interface Row<V> {
@@ -244,49 +255,69 @@ const startOf = <V,>(options: ReadonlyArray<SelectOption<V>>, current: V | undef
   return rows.find((row) => row.option.value === current)?.index ?? 0;
 };
 
+const actionName = (index: number) => `select.action-${index}`;
+
+/** The list's moves, enter choosing the highlighted option, and each action's key. */
+const selectKeys = <V,>(
+  moves: ReturnType<typeof moveKeys>,
+  actions: ReadonlyArray<SelectAction<V>>,
+  onHighlighted: (run: (value: V) => void) => void,
+  onSelect: (value: V) => void,
+) => ({
+  commands: [
+    ...moves.commands,
+    {
+      name: "select.choose",
+      run: () => {
+        onHighlighted(onSelect);
+      },
+    },
+    ...actions.map((action, index) => ({
+      name: actionName(index),
+      run: () => {
+        onHighlighted(action.run);
+      },
+    })),
+  ],
+  bindings: [
+    ...moves.bindings,
+    ...enterKeys("select.choose"),
+    ...actions.map((action, index) => ({ key: action.key, cmd: actionName(index) })),
+  ],
+});
+
 export function SelectDialog<V>(props: SelectDialogProps<V>) {
   const [query, setQuery] = createSignal("");
   const groups = createMemo(() => groupsOf(props.options, query()));
   const rows = () => groups().flatMap((group) => group.rows);
   const [selected, setSelected] = createSignal(startOf(props.options, props.current));
 
-  const move = (by: number) => {
-    const count = rows().length;
-    if (count > 0) setSelected((index) => (index + by + count) % count);
-  };
-
-  const choose = () => {
+  /** Closes the dialog and runs `run` on the highlighted option, if any. */
+  const onHighlighted = (run: (value: V) => void) => {
     const row = rows()[selected()];
     if (row === undefined) return;
     props.close();
-    props.onSelect(row.option.value);
+    run(row.option.value);
   };
 
-  useBindings(() => ({
-    commands: [
-      {
-        name: "select.up",
-        run: () => {
-          move(-1);
-        },
-      },
-      {
-        name: "select.down",
-        run: () => {
-          move(1);
-        },
-      },
-      { name: "select.choose", run: choose },
-    ],
-    bindings: [
-      { key: "up", cmd: "select.up" },
-      { key: "down", cmd: "select.down" },
-      ...enterKeys("select.choose"),
-    ],
-  }));
+  const actions = () => props.actions ?? [];
+
+  useBindings(() =>
+    selectKeys(
+      moveKeys("select", { count: () => rows().length, select: setSelected }),
+      actions(),
+      onHighlighted,
+      props.onSelect,
+    ),
+  );
+
+  const hints = (): readonly Hint[] => [
+    ...HINTS,
+    ...actions().map((action): Hint => [action.key, action.label]),
+  ];
 
   return (
-    <DialogFrame title={props.title} hints={HINTS} close={props.close}>
+    <DialogFrame title={props.title} hints={hints()} close={props.close}>
       <FilterLine
         onInput={(value) => {
           setQuery(value);

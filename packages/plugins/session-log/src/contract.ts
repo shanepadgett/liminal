@@ -14,9 +14,11 @@ import {
   type EntryDefinition,
   type EntryDraft,
   FinishReason,
+  ImagePart,
   type InvalidEntry,
   KeyedRegistry,
   type LiveState,
+  type ModelPart,
   ModelRef,
   type Seq,
   SessionId,
@@ -108,10 +110,10 @@ export class SessionLogRpcs extends RpcGroup.make(
 export const Finish = Schema.Struct({ reason: FinishReason, usage: Usage });
 export type Finish = typeof Finish.Type;
 
-/** What the user typed. */
+/** What the user typed, and the pictures sent with it. */
 export const UserEntry = defineEntry({
   kind: "session-log/user",
-  data: Schema.Struct({ text: Schema.String }),
+  data: Schema.Struct({ text: Schema.String, images: Schema.optionalKey(Schema.Array(ImagePart)) }),
   model: true,
   user: "shown",
 });
@@ -242,13 +244,22 @@ export const coreEntries: ReadonlyArray<EntryDefinition> = [
   TurnEndedEntry,
 ];
 
-/** A user message, sent to the model as user text. */
-export const userMessage = (text: string): EntryDraft<typeof UserEntry.data.Type> =>
-  draft(UserEntry, {
-    data: { text },
-    model: [{ role: "user", parts: [{ type: "text", text, providerData: {} }] }],
+/**
+ * A user message, sent to the model as user text, then `attached`: text the message's tags add,
+ * such as folder listings, and pictures.
+ */
+export const userMessage = (
+  text: string,
+  attached: ReadonlyArray<ModelPart> = [],
+): EntryDraft<typeof UserEntry.data.Type> => {
+  const images = attached.filter((part): part is ImagePart => part.type === "image");
+
+  return draft(UserEntry, {
+    data: images.length === 0 ? { text } : { text, images },
+    model: [{ role: "user", parts: [{ type: "text", text, providerData: {} }, ...attached] }],
     text,
   });
+};
 
 const decodeFinish = Schema.decodeUnknownOption(Schema.Struct({ finish: Finish }));
 

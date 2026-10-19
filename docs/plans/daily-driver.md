@@ -343,6 +343,41 @@ turnEnding(turn) = holder/exits -> notices; any continues the turn
 - A stale socket file that refuses connections is removed before the holder listens.
 - Ended commands keep their output in the holder until it ends.
 
+## Step 8: composer
+
+`inbox` owns tags, pictures and stashes; `files` registers the tag source for workspace files and folders; `session-log`'s `UserEntry` carries images.
+
+```mermaid
+flowchart LR
+  composer["composer: @ list, [Image N], ctrl+s, /pop"] -- "inbox/tags, inbox/send, inbox/stash..." --> inbox
+  inbox --> sources["TagSources"]
+  files["files: git ls-files index"] --> sources
+  inbox --> pictures["<data>/pictures/<sha256>.<ext>"]
+  inbox --> stashes["stashes.db"]
+  inbox --> log["UserEntry: text, images; model parts: text, listings, images"]
+```
+
+| Where | Change |
+| --- | --- |
+| `inbox` contract | `TagRow { kind: file, folder, reference or image; path; tag; note? }`; `TagAttachment`: `TagText { text }` or `TagImage { data, mediaType }`; `TagSource { find(query), attach(tag) }`; `TagSources` registry and `offerTagSource`; `Picture { data, mediaType }`; `UserInput { text, pictures }`; `Stash { id, text, createdAt }`; `StashesError`; tag text helpers `tagAt`, `tagText`, `tagPaths`; RPCs `inbox/send` takes pictures, `inbox/tags`, `inbox/stash`, `inbox/stashes`, `inbox/unstash` |
+| `inbox` server | `compose.ts`: saves pictures, resolves each tag by the first source that attaches it, builds the user message; queues hold drafts; `stashes.ts`: `stashes.db`, one list per workspace folder, newest first, the same text twice is `duplicate` |
+| `inbox` TUI | `tags.ts` + `TagMenu.tsx`: the `@` list at the cursor (up, down, tab opens a folder or tags, enter tags, esc closes); `pictures.ts`: `[Image N]` chips from ctrl+v or an empty paste (clipboard) and from a pasted picture path; sending renumbers chips and drops the rest; ctrl+s stashes the draft; `/pop` opens the stashes, enter pops into the draft, ctrl+d discards after a confirm |
+| `files` server | `tags.ts`: `git ls-files -co --exclude-standard` in the workspace, folders from the paths; fuzzy rows ranked by fewest match runs then length; picture files are `image` rows with their size; a folder tag attaches a one-level listing without git-ignored names; a picture tag attaches its bytes; a file tag attaches nothing, as the model reads it |
+| `session-log` | `UserEntry` data gains `images` (path, media type); `userMessage(text, parts)` adds listings and image parts after the text |
+| `sdk` | `SelectDialog` gains `actions` (key, label, run on the highlighted value) |
+| gallery | Composer: picture state, ctrl+s stash hint; Stashes dialog; palette loses the ctrl+s session key |
+
+```ts
+send(session, { text, pictures }, mode) =
+  images = pictures.map(save)                       // <data>/pictures/<sha256>.png
+  attached = tagPaths(text) -> first source.attach  // TagText -> text part, TagImage -> save -> image part
+  draft = userMessage(text, [...attached, ...images])
+  turn running ? queue(draft) : start(draft)
+```
+
+- Tags outside a git repository find no files or folders; other sources still answer.
+- Pictures go to the model whatever input it accepts.
+
 ## New dependency
 
 - `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Unpatched here: its console logs are cut only when the script ends.

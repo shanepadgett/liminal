@@ -20,6 +20,7 @@ import { ModelPicker, ThinkingPicker } from "./chat/ModelPicker.tsx";
 import type { ReloadShown } from "./chat/ReloadStatus.tsx";
 import { SessionPicker } from "./chat/SessionPicker.tsx";
 import { Sidebar } from "./chat/Sidebar.tsx";
+import { StashPicker } from "./chat/StashPicker.tsx";
 import { Toast, type ToastMessage } from "./chat/Toast.tsx";
 import { TrustPrompt } from "./chat/TrustPrompt.tsx";
 import { only, withRoles } from "./entryViews.ts";
@@ -191,6 +192,12 @@ const sessionsState = (name: string, selected: string): EntryState => ({
   view: withRoles((color) => <SessionPicker color={color} selected={selected} />),
 });
 
+const stashesState = (name: string, selected: number): EntryState => ({
+  name,
+  fill: "screen",
+  view: withRoles((color) => <StashPicker color={color} selected={selected} />),
+});
+
 const thinkingState = (name: string, selected: string): EntryState => ({
   name,
   fill: "screen",
@@ -247,6 +254,8 @@ export const GROUPS: Groups = [
               composerState("Slash commands, filtered", false, "/co"),
               composerState("File tags", false, "explain how @"),
               composerState("File tags, filtered", false, "explain how @plug"),
+              composerState("File tags, folder opened", false, "explain how @kernel/src/"),
+              composerState("With a picture", false, "what's off in this layout? [Image 1] "),
               questionsState("Questions, choosing", FORM_CHOOSING),
               questionsState("Questions, writing a note", FORM_NOTING),
               questionsState("Questions, yes or no", FORM_CONFIRMING),
@@ -316,6 +325,11 @@ export const GROUPS: Groups = [
               sessionsState("Current session", "s4"),
               sessionsState("An older session", "s2"),
             ],
+          },
+          {
+            id: "stashes",
+            title: "Stashes",
+            states: [stashesState("Newest stash", 3), stashesState("An older stash", 1)],
           },
           { id: "connect", title: "Connect", states: CONNECT_STATES },
           {

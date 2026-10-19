@@ -41,6 +41,8 @@ export {
   type Command,
   type CommandKey,
   enterKeys,
+  moveKeys,
+  type MovingList,
   type ListedCommand,
   makeTuiCommands,
   type Slash,
@@ -68,7 +70,13 @@ export {
   type TuiToastsService,
 } from "./toasts.ts";
 
-export { SelectDialog, type SelectDialogProps, type SelectOption } from "./SelectDialog.tsx";
+export {
+  type SelectAction,
+  SelectDialog,
+  type SelectDialogProps,
+  type SelectOption,
+} from "./SelectDialog.tsx";
+
 export { ConfirmDialog, type ConfirmDialogProps } from "./ConfirmDialog.tsx";
 export { PromptField, type PromptFieldProps } from "./PromptField.tsx";
 export { matchIndices, type MatchRun, matchRuns } from "./match.ts";

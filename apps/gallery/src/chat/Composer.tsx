@@ -46,7 +46,8 @@ const SUGGESTION_HINTS: Readonly<Record<"commands" | "files", readonly Hint[]>> 
   ],
   files: [
     ["↑↓", "choose"],
-    ["tab", "tag"],
+    ["enter", "tag"],
+    ["tab", "open folder"],
     ["esc", "close"],
   ],
 };
@@ -68,6 +69,7 @@ const hintsFor = (
     return hasDraft
       ? [
           ["enter", "queue"],
+          ["ctrl+s", "stash"],
           ["esc", "interrupt"],
         ]
       : [["esc", "interrupt"]];
@@ -77,11 +79,13 @@ const hintsFor = (
     ? [
         ["enter", "send"],
         ["shift+enter", "newline"],
+        ["ctrl+s", "stash"],
       ]
     : [
         ["/", "commands"],
+        ["@", "tag"],
+        ["ctrl+v", "picture"],
         ["ctrl+p", "palette"],
-        ["ctrl+s", "sessions"],
       ];
 };
 
