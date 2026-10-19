@@ -1,6 +1,6 @@
 # commit
 
-`/commit` turns every changed file of the workspace's repository into conventional commits, then asks before pushing.
+`/commit` turns every changed file of the workspace's repository into conventional commits, then pushes as the `commit` settings say.
 
 Status: built
 
@@ -10,7 +10,7 @@ Status: built
 
 ## Requires
 
-- `CommitChecks`, `CommandRunner`, `AgentLoop`, `Models`, `ModelTask`, `Inbox`, `SessionLog`
+- `CommitChecks`, `CommandRunner`, `AgentLoop`, `Models`, `ModelTask`, `Inbox`, `SessionLog`, `Settings`
 
 ## Adds
 
@@ -33,7 +33,9 @@ Status: built
 ### Commit and push
 
 - Each commit stages exactly its files; hooks run, and a failure names the commits already made
-- Push is always asked, No first; a branch without an upstream pushes to `origin` and sets it
+- The `commit` settings section has `push`: `ask` (the default), `always` or `never`, from the global or project `settings.json`; invalid settings ask
+- `ask` asks before pushing, No first; `always` pushes without asking; `never` leaves the commits local
+- A branch without an upstream pushes to `origin` and sets it
 - Esc answers no to a question and stops checks and planning; committing and pushing finish
 
 ## References

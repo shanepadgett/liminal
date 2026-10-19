@@ -12,6 +12,7 @@ import { Inbox } from "@liminal/inbox/contract";
 import { Models, ModelTask } from "@liminal/models/contract";
 import { Directories, type SessionId } from "@liminal/sdk";
 import { SessionLog, UserEntry } from "@liminal/session-log/contract";
+import { Settings } from "@liminal/settings/contract";
 
 import {
   type ChangedFile,
@@ -24,6 +25,7 @@ import {
   Committing,
   type CommitProgress,
   CommitRpcs,
+  CommitSettings,
   type CommitStart,
   type PlannedCommit,
 } from "./contract.ts";
@@ -132,6 +134,7 @@ const make = Effect.gen(function* () {
   const loop = yield* AgentLoop;
   const models = yield* Models;
   const task = yield* ModelTask;
+  const store = yield* Settings;
   const promptsSince = promptsAfterHead(git, yield* SessionLog);
 
   /** The small model of the provider a new turn would use. */
@@ -139,6 +142,14 @@ const make = Effect.gen(function* () {
     Effect.mapError(() => new CommitError({ message: "No model is set. Pick one with /model." })),
     Effect.flatMap((settings) => models.cheap(settings.model.provider)),
     Effect.mapError(failWith),
+  );
+
+  /** What `settings.json` says about pushing; invalid settings ask. */
+  const pushSetting = store.section("commit", CommitSettings).pipe(
+    Effect.map(({ push }) => push),
+    Effect.catchTag("SettingsInvalid", (error) =>
+      Effect.as(Effect.logWarning(`commit settings ignored: ${error.message}`), "ask" as const),
+    ),
   );
 
   const start = Effect.fn("commit.start")(function* (session: SessionId) {
@@ -153,6 +164,7 @@ const make = Effect.gen(function* () {
       root,
       files,
       checks: due.count,
+      push: yield* pushSetting,
       planner: `${pick.model.provider}/${pick.model.id}`,
     };
 

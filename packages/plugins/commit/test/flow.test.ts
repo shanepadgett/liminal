@@ -9,7 +9,13 @@ import { SessionId } from "@liminal/sdk";
 import { effectTest } from "@liminal/sdk/testing";
 import { makeTuiInputWaits, type TuiInputWaitsService } from "@liminal/sdk/tui";
 
-import { ChecksPassed, Committed, Committing, CommitRpcs } from "../src/contract.ts";
+import {
+  ChecksPassed,
+  Committed,
+  Committing,
+  CommitRpcs,
+  type PushSetting,
+} from "../src/contract.ts";
 import { CommitStep, makeFlow } from "../src/tui/flow.ts";
 
 const s1 = SessionId.make("s1");
@@ -23,7 +29,7 @@ const untilWait = (waits: TuiInputWaitsService, id: string) =>
     Stream.runHead,
   );
 
-const fixture = Effect.fn("fixture")(function* () {
+const fixture = Effect.fn("fixture")(function* (push: PushSetting = "ask") {
   const waits = yield* makeTuiInputWaits;
   const work: string[] = [];
 
@@ -39,6 +45,7 @@ const fixture = Effect.fn("fixture")(function* () {
           Effect.as(working("start"), {
             root: "/repo",
             checks: 0,
+            push,
             planner: "scripted/test",
             files: [],
           }),
@@ -118,6 +125,34 @@ effectTest(
     yield* Fiber.join(fiber);
     expect(work).toEqual(["start", "check", "plan", "apply", "target"]);
     expect(yield* active(waits)).toEqual([]);
+  }),
+  Layer.empty,
+);
+
+effectTest(
+  "the push setting always pushes without asking",
+  Effect.gen(function* () {
+    const { waits, work, finished, flow, run } = yield* fixture("always");
+    const fiber = yield* run.pipe(Effect.forkScoped);
+    yield* untilWait(waits, "review");
+    flow.answer(true);
+    yield* Fiber.join(fiber);
+    expect(work).toEqual(["start", "check", "plan", "apply", "target", "push"]);
+    expect(finished).toEqual(["Committed 1 commit (abc123) and pushed to origin/main."]);
+  }),
+  Layer.empty,
+);
+
+effectTest(
+  "the push setting never leaves the commits local without asking",
+  Effect.gen(function* () {
+    const { waits, work, finished, flow, run } = yield* fixture("never");
+    const fiber = yield* run.pipe(Effect.forkScoped);
+    yield* untilWait(waits, "review");
+    flow.answer(true);
+    yield* Fiber.join(fiber);
+    expect(work).toEqual(["start", "check", "plan", "apply"]);
+    expect(finished).toEqual(["Committed 1 commit (abc123)."]);
   }),
   Layer.empty,
 );

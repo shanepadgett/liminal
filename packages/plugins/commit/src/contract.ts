@@ -4,7 +4,7 @@
  * committing and before pushing.
  */
 
-import { Schema } from "effect";
+import { Effect, Schema } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import { SessionId } from "@liminal/sdk";
@@ -18,11 +18,27 @@ export const ChangedFile = Schema.Struct({
 
 export type ChangedFile = typeof ChangedFile.Type;
 
-/** The repository and its changed files when `/commit` started; `checks` counts the due checks. */
+/** Whether `/commit` asks before pushing, always pushes, or never does. */
+export const PushSetting = Schema.Literals(["ask", "always", "never"]);
+
+export type PushSetting = typeof PushSetting.Type;
+
+/** The `commit` section of `settings.json`. */
+export const CommitSettings = Schema.Struct({
+  push: PushSetting.pipe(Schema.withDecodingDefaultKey(Effect.succeed<PushSetting>("ask"))),
+});
+
+export type CommitSettings = typeof CommitSettings.Type;
+
+/**
+ * The repository and its changed files when `/commit` started; `checks` counts the due checks and
+ * `push` is the setting for what follows the commits.
+ */
 export const CommitStart = Schema.Struct({
   root: Schema.String,
   files: Schema.Array(ChangedFile),
   checks: Schema.Int,
+  push: PushSetting,
   /** The model that plans, as `provider/id`. */
   planner: Schema.String,
 });

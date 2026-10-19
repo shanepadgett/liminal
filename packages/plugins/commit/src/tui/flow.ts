@@ -103,13 +103,15 @@ const applied = (steps: Steps, root: string, commits: ReadonlyArray<PlannedCommi
     ),
   );
 
-/** Asks before pushing, No first, and pushes when the user says yes. */
+/** Pushes as the `push` setting says: never, always, or after asking with No first. */
 const pushed = Effect.fn("commit.pushed")(function* (
   steps: Steps,
-  root: string,
+  start: CommitStart,
   hashes: ReadonlyArray<string>,
 ) {
+  const { root, push } = start;
   const done = committedText(hashes);
+  if (push === "never") return yield* end(`${done}.`, "success");
 
   const target: PushTarget | null = yield* steps.client["commit/push-target"]({ root }).pipe(
     failed("error", `${done}; `),
@@ -117,8 +119,10 @@ const pushed = Effect.fn("commit.pushed")(function* (
 
   if (target === null) return yield* end(`${done}.`, "success");
 
-  steps.show(CommitStep.Push({ target: target.name, count: hashes.length }));
-  if (!(yield* steps.ask("push"))) return yield* end(`${done}.`, "success");
+  if (push === "ask") {
+    steps.show(CommitStep.Push({ target: target.name, count: hashes.length }));
+    if (!(yield* steps.ask("push"))) return yield* end(`${done}.`, "success");
+  }
 
   steps.show(CommitStep.Pushing({ target: target.name, count: hashes.length }));
 
@@ -146,7 +150,7 @@ const commitAll = Effect.fn("commit.all")(function* (
   steps.show(CommitStep.Review({ commits }));
   if (!(yield* steps.ask("review"))) return yield* end("Commit cancelled.", "info");
 
-  return yield* pushed(steps, start.root, yield* applied(steps, start.root, commits));
+  return yield* pushed(steps, start, yield* applied(steps, start.root, commits));
 });
 
 /** The flow's state for the dialog, and how the user answers or stops it. */

@@ -181,6 +181,18 @@ const planAnswer = (files: ReadonlyArray<number>) =>
   );
 
 effectTest(
+  "start reports the commit push setting, which asks until settings say otherwise",
+  Effect.gen(function* () {
+    const client = yield* setUp;
+    expect((yield* client["commit/start"]({ session: s1 })).push).toBe("ask");
+
+    yield* (yield* Settings).write("global", ["commit", "push"], "always");
+    expect((yield* client["commit/start"]({ session: s1 })).push).toBe("always");
+  }),
+  stack,
+);
+
+effectTest(
   "a plan that repeats a file is asked again, up to three answers",
   Effect.gen(function* () {
     const client = yield* setUp;
