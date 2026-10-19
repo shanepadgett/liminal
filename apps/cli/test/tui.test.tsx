@@ -306,6 +306,44 @@ effectTest(
 );
 
 effectTest(
+  "esc clears a draft that is still a lone slash word, with or without matches",
+  Effect.gen(function* () {
+    const { setup } = yield* boot(() => Effect.void);
+
+    yield* frameWith(setup, "Ask anything");
+    yield* Effect.promise(() => setup.mockInput.typeText("/rel"));
+    yield* frameWith(setup, "Apply a reload that waits");
+    setup.mockInput.pressEscape();
+    expect(yield* frameWhere(setup, (frame) => !frame.includes("/rel"))).toContain("Ask anything");
+
+    yield* Effect.promise(() => setup.mockInput.typeText("/zzz"));
+    yield* frameWith(setup, "/zzz");
+    setup.mockInput.pressEscape();
+    expect(yield* frameWhere(setup, (frame) => !frame.includes("/zzz"))).toContain("Ask anything");
+  }),
+  trustedServices,
+);
+
+effectTest(
+  "the slash menu scrolls to keep the highlighted command in view",
+  Effect.gen(function* () {
+    const { setup } = yield* boot(() => Effect.void);
+
+    yield* frameWith(setup, "Ask anything");
+    yield* Effect.promise(() => setup.mockInput.typeText("/"));
+    yield* frameWith(setup, "/quit");
+
+    // Up wraps to the last command, below the ten rows shown.
+    setup.mockInput.pressArrow("up");
+    expect(yield* frameWhere(setup, (frame) => !frame.includes("/quit"))).toContain("/new");
+
+    setup.mockInput.pressArrow("down");
+    yield* frameWith(setup, "/quit");
+  }),
+  trustedServices,
+);
+
+effectTest(
   "enter on the slash menu runs the highlighted command",
   Effect.gen(function* () {
     const path = yield* Path.Path;

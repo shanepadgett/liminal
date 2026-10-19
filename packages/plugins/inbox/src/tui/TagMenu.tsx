@@ -9,6 +9,7 @@ import { For, Show } from "solid-js";
 import { matchIndices, matchRuns, useColor } from "@liminal/sdk/tui";
 
 import type { TagKind, TagRow } from "../contract.ts";
+import { useReveal } from "./reveal.ts";
 
 /** Emoji that show as emoji by default, so each is two columns in every terminal. */
 const ICONS: Readonly<Record<TagKind, string>> = {
@@ -67,9 +68,11 @@ export function TagMenu(props: {
   readonly selected: number;
 }) {
   const color = useColor();
+  const ref = useReveal(() => props.selected);
 
   return (
     <scrollbox
+      ref={ref}
       height={Math.min(props.rows.length, MAX_ROWS)}
       flexShrink={0}
       marginBottom={1}

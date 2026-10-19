@@ -42,7 +42,7 @@ const SUGGESTION_HINTS: Readonly<Record<"commands" | "files", readonly Hint[]>> 
     ["↑↓", "choose"],
     ["tab", "complete"],
     ["enter", "run"],
-    ["esc", "close"],
+    ["esc", "clear"],
   ],
   files: [
     ["↑↓", "choose"],

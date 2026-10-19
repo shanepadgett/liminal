@@ -49,6 +49,17 @@ const slashKeys = (actions: {
   ],
 });
 
+/** Esc clears a draft that is still a lone `/word`, with or without matches. */
+const clearOf = (input: () => TextareaRenderable | undefined, typing: () => boolean) => ({
+  clearCommand: {
+    name: "inbox.slash-clear",
+    run: () => {
+      input()?.clear();
+    },
+  },
+  clearKeys: () => (typing() ? [{ key: "escape", cmd: "inbox.slash-clear" }] : []),
+});
+
 export const useSlash = (deps: SlashDeps) => {
   const [selected, setSelected] = createSignal(0);
 
@@ -58,8 +69,9 @@ export const useSlash = (deps: SlashDeps) => {
     return word === undefined ? [] : slashMatches(deps.commands.listed(), word);
   });
 
-  // A boolean memo, so the keymap changes the menu's keys cause do not run them again.
+  // Boolean memos, so the keymap changes the menu's keys cause do not run them again.
   const open = createMemo(() => matches().length > 0);
+  const typing = createMemo(() => slashWord(deps.draft()) !== undefined);
 
   createEffect(
     on(
@@ -110,5 +122,7 @@ export const useSlash = (deps: SlashDeps) => {
 
   const keys = slashKeys({ move, pick, complete });
 
-  return { matches, selected, open, submit, ...keys };
+  const clear = clearOf(deps.input, typing);
+
+  return { matches, selected, open, submit, ...keys, ...clear };
 };

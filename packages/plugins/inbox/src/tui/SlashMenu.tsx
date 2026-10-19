@@ -1,7 +1,8 @@
 /**
  * The commands matching what follows a typed `/`, opening upward from the composer on its surface:
  * each slash name with the matched characters in the accent, then what the command does. Names sit
- * in one column as wide as the longest, so descriptions line up.
+ * in one column as wide as the longest, so descriptions line up. The list scrolls to keep the
+ * highlight in view.
  */
 
 import { For } from "solid-js";
@@ -13,6 +14,8 @@ import {
   matchRuns,
   useColor,
 } from "@liminal/sdk/tui";
+
+import { useReveal } from "./reveal.ts";
 
 /** A slash command whose name or an alias holds the typed text in order. */
 export interface SlashMatch {
@@ -92,9 +95,11 @@ export function SlashMenu(props: {
 }) {
   const color = useColor();
   const columns = () => Math.max(...props.matches.map((match) => match.name.length)) + 2;
+  const ref = useReveal(() => props.selected);
 
   return (
     <scrollbox
+      ref={ref}
       height={Math.min(props.matches.length, MAX_ROWS)}
       flexShrink={0}
       marginBottom={1}

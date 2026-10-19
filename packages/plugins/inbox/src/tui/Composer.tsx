@@ -194,6 +194,13 @@ const editKeys = [
   { key: "ctrl+v", cmd: "inbox.paste-picture" },
 ];
 
+/** The draft's keys: editing, esc on a lone `/word`, then the open list's or tab's. */
+const draftKeys = (draft: ReturnType<typeof useDraft>, running: boolean) => [
+  ...editKeys,
+  ...draft.slash.clearKeys(),
+  ...listKeys([draft.slash, draft.tags], running),
+];
+
 /** The model line with the plugins' items after it, then the last send's failure. */
 function StatusLines(props: { readonly deps: ComposerDeps; readonly turn: TurnProps }) {
   const color = useColor();
@@ -308,6 +315,7 @@ export const makeComposer = (deps: ComposerDeps) =>
     useBindings(() => ({
       commands: [
         ...draft.slash.commands,
+        draft.slash.clearCommand,
         ...draft.tags.commands,
         {
           name: "inbox.queue",
@@ -317,7 +325,7 @@ export const makeComposer = (deps: ComposerDeps) =>
         },
         ...editCommands(deps, draft.current, draft.pictures.fromClipboard),
       ],
-      bindings: [...editKeys, ...listKeys([draft.slash, draft.tags], props.running)],
+      bindings: draftKeys(draft, props.running),
     }));
 
     return (
