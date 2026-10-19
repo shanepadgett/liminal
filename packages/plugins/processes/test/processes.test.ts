@@ -10,7 +10,7 @@ import { Effect, Layer, Option, Schema } from "effect";
 import { TestClock } from "effect/testing";
 
 import { BeforeCall, BeforeCallHooks, TurnEndingHooks } from "@liminal/agent-loop/contract";
-import { KeyedRegistry, Registry, SessionId } from "@liminal/sdk";
+import { Directories, KeyedRegistry, Registry, SessionId } from "@liminal/sdk";
 import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
 import sessionLog from "@liminal/session-log";
 import sessionStore from "@liminal/session-store";
@@ -94,5 +94,17 @@ effectTest(
     expect(yield* turnEnding).toEqual(["Command p3 (sleep 0.3; exit 4) exited with code 4."]);
     expect(yield* turnEnding).toEqual([]);
   }).pipe(TestClock.withLive),
+  stack,
+);
+
+effectTest(
+  "process_start names the workspace and tells the model not to cd into it",
+  Effect.gen(function* () {
+    const { workspace } = yield* Directories;
+    const tool = Option.getOrThrow(yield* (yield* Tools).get(processTools.start));
+
+    expect(tool.spec.description).toContain(workspace);
+    expect(tool.guidance.join("\n")).toContain(`starts in ${workspace}`);
+  }),
   stack,
 );

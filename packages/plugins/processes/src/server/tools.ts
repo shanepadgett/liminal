@@ -83,12 +83,12 @@ const onHolder = <A, E extends { readonly message: string }>(
 const startTool = (link: HolderLink, workspace: string) =>
   defineTool({
     name: processTools.start,
-    description:
-      "Starts a command line with /bin/sh in the workspace and leaves it running across turns. Waits briefly, then returns its id, its state and its output so far.",
+    description: `Starts a command line with /bin/sh in ${workspace} and leaves it running across turns. Waits briefly, then returns its id, its state and its output so far.`,
     parameters: StartParams,
     guidance: [
       "Use `process_start` for commands that keep running or need input, such as dev servers, watchers and REPLs; use `shell` for commands that finish.",
       "Stop each command with `process_stop` once it is no longer needed.",
+      `Every command starts in ${workspace}, so do not cd into it.`,
     ],
     runAlongside: false,
     safeToRerun: false,

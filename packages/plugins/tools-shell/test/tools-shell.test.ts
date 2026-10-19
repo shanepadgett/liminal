@@ -40,3 +40,16 @@ effectTest(
   }),
   stack,
 );
+
+effectTest(
+  "the tool names the workspace and tells the model not to cd into it",
+  Effect.gen(function* () {
+    const { workspace } = yield* Directories;
+    const tool = Option.getOrThrow(yield* (yield* Tools).get("shell"));
+
+    expect(tool.spec.description).toContain(workspace);
+    expect(tool.guidance.join("\n")).toContain(`starts in ${workspace}`);
+    expect(tool.guidance.join("\n")).toContain("do not cd");
+  }),
+  stack,
+);
