@@ -44,3 +44,25 @@ test("streamed text appears over a few steps, and a settled paragraph renders as
   expect(settled).toContain("Second part.");
   expect(settled).not.toContain("**");
 });
+
+test("settled Markdown wraps at the reading width on a wider screen", async () => {
+  const words = Array.from({ length: 50 }, () => "word").join(" ");
+
+  const setup = await testRender(
+    () => (
+      <ColorContext.Provider value={color}>
+        <Said text={`${words}\n\nEnd.`} />
+      </ColorContext.Provider>
+    ),
+    { width: 200, height: 8 },
+  );
+
+  await setup.renderOnce();
+  const frame = await frameAfter(setup, 800);
+  setup.renderer.destroy();
+
+  const widest = Math.max(...frame.split("\n").map((line) => line.trimEnd().length));
+
+  expect(widest).toBeLessThanOrEqual(120);
+  expect(widest).toBeGreaterThan(100);
+});

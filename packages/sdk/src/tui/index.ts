@@ -24,7 +24,7 @@ export * from "./ornament/HeaderRule.tsx";
 export * from "./ornament/Track.tsx";
 export { type Bridge, makeBridge } from "./bridge.ts";
 export { type Hint, Hints } from "./Hints.tsx";
-export { useMarkdownStyle } from "./markdown.ts";
+export { READING_WIDTH, useMarkdownStyle } from "./markdown.ts";
 export { useMarkdownDiagrams } from "./mermaid.ts";
 export { SHIMMER_PERIOD_MS, shimmerColors } from "./shimmer.ts";
 export { useClock } from "./clock.ts";

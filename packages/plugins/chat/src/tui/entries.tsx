@@ -10,6 +10,7 @@ import type { SavedEntry } from "@liminal/sdk";
 import {
   clampLines,
   EDGE_BAR,
+  READING_WIDTH,
   useColor,
   useMarkdownDiagrams,
   useMarkdownStyle,
@@ -29,6 +30,10 @@ export interface OpenPrompts {
 export const OpenPromptsContext = createContext<OpenPrompts>();
 
 const COLLAPSED_LINES = 2;
+const PROMPT_PADDING = 2;
+
+/** How far the prompt's text sits inside the band: its accent bar, then its padding. */
+export const PROMPT_TEXT_INSET = 1 + PROMPT_PADDING;
 
 /**
  * What the user typed. A long prompt shows its first two lines and ends in `…`; a click opens and
@@ -55,7 +60,7 @@ export function Prompt(props: EntryProps) {
       customBorderChars={EDGE_BAR}
       borderColor={color("border.focus")}
       backgroundColor={color("surface.raised")}
-      paddingX={2}
+      paddingX={PROMPT_PADDING}
       paddingY={1}
       onMouseUp={() => {
         if (isLong()) open.toggle(props.entry.seq);
@@ -86,6 +91,7 @@ export function Said(props: EntryProps) {
       syntaxStyle={style()}
       renderNode={diagrams()}
       fg={color("text.base")}
+      maxWidth={READING_WIDTH}
       conceal
     />
   );

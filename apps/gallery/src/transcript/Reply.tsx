@@ -2,7 +2,8 @@
  * The assistant's side of a turn at one moment: what it said with the rows of work between, the
  * growing tip, and once the work is over, how long it worked and the answer or the form it left.
  * Everything the assistant says is full-brightness text and all its work is gray, so the two never
- * blur; every block is a line apart on one left edge, but the live line joins the work above it.
+ * blur; every block is a line apart on the prompt's text edge, but the live line joins the work
+ * above it.
  */
 
 import { Index, Show } from "solid-js";
@@ -13,6 +14,7 @@ import { Asked } from "./Asked.tsx";
 import type { Block, Ending, TurnFrame } from "./frame.ts";
 import { Said } from "./Said.tsx";
 import { Tip } from "./Tip.tsx";
+import { PROMPT_TEXT_INSET } from "./UserPrompt.tsx";
 import { WorkedFor } from "./WorkedFor.tsx";
 import { WorkRows } from "./WorkRows.tsx";
 
@@ -58,7 +60,7 @@ function Closing(props: { readonly color: RoleColor; readonly ending: Ending }) 
 
 export function Reply(props: { readonly color: RoleColor; readonly frame: TurnFrame }) {
   return (
-    <box flexDirection="column">
+    <box flexDirection="column" paddingLeft={PROMPT_TEXT_INSET}>
       <Index each={props.frame.blocks}>
         {(block) => <BlockView color={props.color} block={block()} />}
       </Index>

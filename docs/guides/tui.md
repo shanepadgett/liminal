@@ -51,7 +51,7 @@ The chat screen's slots, from `@liminal/chat/contract`:
 | Slot | Kind | Key | Component props |
 | --- | --- | --- | --- |
 | `ChatSlots.header` | list | | none |
-| `ChatSlots.entry` | keyed | entry kind | `{ entry: SavedEntry, sessionId }` |
+| `ChatSlots.entry` | keyed | entry kind, `meta: EntryLook` | `{ entry: SavedEntry, sessionId }` |
 | `ChatSlots.tool` | keyed | tool name, `meta: ToolRows` | `{ call: ToolCall, sessionId }` |
 | `ChatSlots.live` | keyed | live kind | `{ live: LiveState, sessionId }` |
 | `ChatSlots.composer` | chain | | `{ running, sessionId, matched }` |
@@ -78,6 +78,8 @@ The transcript draws each saved entry with the component registered under its ki
 3. Register it: `host.register(ChatSlots.entry, { key: YourEntry.kind, meta: {} }, View)`.
 
 Example: `packages/plugins/notices/src/tui/Notice.tsx`.
+
+The transcript draws your entry on the prompt's text edge. An entry that is a raised band with its own bar and padding, like the prompt, registers `meta: { isBand: true }` to start at the column edge. Example: `packages/plugins/questions/src/tui.tsx`.
 
 Entries of a kind defined with `user: "debug"` draw only while the debug view is on: `/debug` flips it for the run, and `{ "chat": { "debug": true } }` in `settings.json` starts it on. Draw them as one `text.faint` line. Example: `packages/plugins/approval/src/tui/AnswerRow.tsx`.
 

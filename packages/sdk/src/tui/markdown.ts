@@ -6,6 +6,9 @@ import { createMemo, onCleanup } from "solid-js";
 
 import type { RoleColor } from "./tokens/roles.ts";
 
+/** The widest a line of reply text runs, in columns; wider lines are hard to read. */
+export const READING_WIDTH = 120;
+
 const stylesOf = (color: RoleColor): Record<string, StyleDefinitionInput> => ({
   default: { fg: color("text.base") },
   "markup.heading": { fg: color("text.heading"), bold: true },

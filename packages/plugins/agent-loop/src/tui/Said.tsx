@@ -10,6 +10,7 @@ import {
   inkedOf,
   inkRunsAt,
   markdownOf,
+  READING_WIDTH,
   useColor,
   useMarkdownDiagrams,
   useMarkdownStyle,
@@ -28,6 +29,7 @@ function Markdown(props: { readonly text: string }) {
       syntaxStyle={style()}
       renderNode={diagrams()}
       fg={color("text.base")}
+      maxWidth={READING_WIDTH}
       streaming
       conceal
     />
@@ -57,7 +59,7 @@ export function Said(props: { readonly text: string }) {
           <Show when={now().settled !== ""}>
             <Markdown text={now().settled} />
           </Show>
-          <text wrapMode="word">
+          <text wrapMode="word" maxWidth={READING_WIDTH}>
             <For each={runs(now().live, now().shown)}>
               {(run) => <span style={{ fg: run.fg }}>{run.text}</span>}
             </For>

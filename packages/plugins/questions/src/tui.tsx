@@ -106,7 +106,12 @@ export default defineTui({
     yield* registerForm(host, state);
 
     yield* host.register(ChatSlots.entry, { key: FormEntry.kind, meta: {} }, AskedRow);
-    yield* host.register(ChatSlots.entry, { key: AnswersEntry.kind, meta: {} }, AnswersRow);
+
+    yield* host.register(
+      ChatSlots.entry,
+      { key: AnswersEntry.kind, meta: { isBand: true } },
+      AnswersRow,
+    );
 
     yield* host.register(
       ChatSlots.tool,

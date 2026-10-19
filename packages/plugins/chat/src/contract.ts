@@ -86,12 +86,20 @@ export interface TurnProps {
   readonly running: boolean;
 }
 
+/**
+ * How an entry sits in the transcript. A band is a raised block with its own bar and padding that
+ * spans the column; any other entry sits on the prompt's text edge.
+ */
+export interface EntryLook {
+  readonly isBand?: boolean;
+}
+
 /** The slots chat declares under the root slot. */
 export const ChatSlots = {
   /** Items at the header's right end. */
   header: Slot.list<NoProps, "root">("chat/header", { scope: "root" }),
-  /** A transcript entry, keyed by entry kind. */
-  entry: Slot.keyed<{ readonly entry: SavedEntry }, NoProps, "session">("chat/entry", {
+  /** A transcript entry, keyed by entry kind; its metadata says how it sits. */
+  entry: Slot.keyed<{ readonly entry: SavedEntry }, EntryLook, "session">("chat/entry", {
     scope: "session",
   }),
   /** A tool call's opened detail, keyed by tool name; its metadata words the call's row. */

@@ -9,13 +9,13 @@
 import type { BoxRenderable } from "@opentui/core";
 import { type Accessor, createSignal, Index, Match, onCleanup, Show, Switch } from "solid-js";
 
-import type { SavedEntry, SessionId } from "@liminal/sdk";
-import { createPin, SlotView, useColor } from "@liminal/sdk/tui";
+import type { LiveState, SavedEntry, SessionId } from "@liminal/sdk";
+import { createPin, SlotView, useColor, useSlotMeta } from "@liminal/sdk/tui";
 import { UserEntry } from "@liminal/session-log/contract";
 
 import { ChatSlots } from "../contract.ts";
 import { createDim } from "./dim.ts";
-import { OpenPromptsContext } from "./entries.tsx";
+import { OpenPromptsContext, PROMPT_TEXT_INSET } from "./entries.tsx";
 import {
   isLeftBehind,
   type Item,
@@ -28,18 +28,22 @@ const PADDING_X = 2;
 
 function EntryRow(props: { readonly sessionId: SessionId; readonly entry: SavedEntry }) {
   const color = useColor();
+  const lookOf = useSlotMeta(ChatSlots.entry);
+  const isBand = () => lookOf(props.entry.kind)?.isBand === true;
 
   return (
-    <SlotView
-      of={ChatSlots.entry}
-      cell={props.entry.kind}
-      props={{ sessionId: props.sessionId, entry: props.entry }}
-      fallback={
-        <text fg={color(props.entry.user === "debug" ? "text.faint" : "text.base")}>
-          {props.entry.text}
-        </text>
-      }
-    />
+    <box paddingLeft={isBand() ? 0 : PROMPT_TEXT_INSET}>
+      <SlotView
+        of={ChatSlots.entry}
+        cell={props.entry.kind}
+        props={{ sessionId: props.sessionId, entry: props.entry }}
+        fallback={
+          <text fg={color(props.entry.user === "debug" ? "text.faint" : "text.base")}>
+            {props.entry.text}
+          </text>
+        }
+      />
+    </box>
   );
 }
 
@@ -102,7 +106,11 @@ function ItemRow(props: {
         {(shown) => <EntryRow sessionId={props.sessionId} entry={shown()} />}
       </Match>
       <Match when={steps()}>
-        {(run) => <WorkItem sessionId={props.sessionId} steps={run()} isLeft={props.isLeft} />}
+        {(run) => (
+          <box paddingLeft={PROMPT_TEXT_INSET}>
+            <WorkItem sessionId={props.sessionId} steps={run()} isLeft={props.isLeft} />
+          </box>
+        )}
       </Match>
     </Switch>
   );
@@ -141,6 +149,23 @@ function Pinned(props: {
 const endsInWork = (transcript: TranscriptState, debug: boolean) =>
   transcript.items.findLast((item) => item.kind === "work" || debug || item.entry.user !== "debug")
     ?.kind === "work";
+
+/** The live state at the transcript's end, on the prompt's text edge. */
+function LiveRow(props: {
+  readonly sessionId: SessionId;
+  readonly live: LiveState;
+  readonly afterWork: boolean;
+}) {
+  return (
+    <box paddingLeft={PROMPT_TEXT_INSET}>
+      <SlotView
+        of={ChatSlots.live}
+        cell={props.live.kind}
+        props={{ sessionId: props.sessionId, live: props.live, afterWork: props.afterWork }}
+      />
+    </box>
+  );
+}
 
 const toggled = (seqs: ReadonlySet<number>, seq: number): ReadonlySet<number> => {
   const next = new Set(seqs);
@@ -194,14 +219,10 @@ export function Transcript(props: {
             </Index>
             <Show when={props.transcript().live}>
               {(live) => (
-                <SlotView
-                  of={ChatSlots.live}
-                  cell={live().kind}
-                  props={{
-                    sessionId: props.sessionId,
-                    live: live(),
-                    afterWork: endsInWork(props.transcript(), props.debug()),
-                  }}
+                <LiveRow
+                  sessionId={props.sessionId}
+                  live={live()}
+                  afterWork={endsInWork(props.transcript(), props.debug())}
                 />
               )}
             </Show>

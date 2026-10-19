@@ -9,6 +9,10 @@ import { createSignal, For } from "solid-js";
 import { clampLines, EDGE_BAR, type RoleColor, wrapText } from "@liminal/sdk/tui";
 
 const COLLAPSED_LINES = 2;
+const PROMPT_PADDING = 2;
+
+/** How far the prompt's text sits inside the band: its accent bar, then its padding. */
+export const PROMPT_TEXT_INSET = 1 + PROMPT_PADDING;
 
 export function UserPrompt(props: {
   readonly color: RoleColor;
@@ -32,7 +36,7 @@ export function UserPrompt(props: {
       customBorderChars={EDGE_BAR}
       borderColor={props.color("border.focus")}
       backgroundColor={props.color("surface.raised")}
-      paddingX={2}
+      paddingX={PROMPT_PADDING}
       paddingY={1}
       onMouseUp={() => {
         if (isLong()) props.onToggle();

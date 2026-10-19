@@ -162,7 +162,7 @@ export default defineTui({
       Object.values(ChatSlots),
     );
 
-    yield* host.register(ChatSlots.entry, { key: UserEntry.kind, meta: {} }, Prompt);
+    yield* host.register(ChatSlots.entry, { key: UserEntry.kind, meta: { isBand: true } }, Prompt);
     yield* host.register(ChatSlots.entry, { key: TextEntry.kind, meta: {} }, Said);
   }),
 });

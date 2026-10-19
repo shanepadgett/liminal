@@ -13,6 +13,7 @@ import {
   inkedOf,
   inkRunsAt,
   markdownOf,
+  READING_WIDTH,
   type RoleColor,
   useMarkdownDiagrams,
   useMarkdownStyle,
@@ -37,6 +38,7 @@ function Markdown(props: {
       syntaxStyle={style()}
       renderNode={diagrams()}
       fg={props.color("text.base")}
+      maxWidth={READING_WIDTH}
       streaming={props.streaming}
       conceal
     />
@@ -53,7 +55,7 @@ function Live(props: { readonly color: RoleColor; readonly faded: Inked }) {
     });
 
   return (
-    <text wrapMode="word">
+    <text wrapMode="word" maxWidth={READING_WIDTH}>
       <For each={runs()}>{(run) => <span style={{ fg: run.fg }}>{run.text}</span>}</For>
     </text>
   );
