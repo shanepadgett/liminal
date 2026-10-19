@@ -14,6 +14,7 @@ import {
   inkRunsAt,
   markdownOf,
   type RoleColor,
+  useMarkdownDiagrams,
   useMarkdownStyle,
 } from "@liminal/sdk/tui";
 
@@ -28,11 +29,13 @@ function Markdown(props: {
   readonly streaming: boolean;
 }) {
   const style = useMarkdownStyle(() => props.color);
+  const diagrams = useMarkdownDiagrams(() => props.color);
 
   return (
     <markdown
       content={props.text}
       syntaxStyle={style()}
+      renderNode={diagrams()}
       fg={props.color("text.base")}
       streaming={props.streaming}
       conceal

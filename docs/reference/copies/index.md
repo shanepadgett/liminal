@@ -184,3 +184,10 @@ jsdiff: line diffs and unified patches. structuredPatch and formatPatch with OMI
 
 - Docs: `docs/reference/copies/diff/9.0.0/` (1 file: README.md)
 - API (types): `packages/sdk/node_modules/diff/libesm/index.d.ts`
+
+## beautiful-mermaid 1.1.3
+
+Renders Mermaid diagrams as Unicode box-drawing text: renderMermaidASCII(source, options) returns a string, throwing on a diagram it cannot parse. The SDK's Markdown draws mermaid fences with it.
+
+- Docs: `docs/reference/copies/beautiful-mermaid/1.1.3/` (1 file: README.md)
+- API (types): `packages/sdk/node_modules/beautiful-mermaid/dist/index.d.ts`

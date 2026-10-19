@@ -7,7 +7,14 @@ import { type BoxRenderable, TextAttributes } from "@opentui/core";
 import { createContext, createSignal, Index, Show, useContext } from "solid-js";
 
 import type { SavedEntry } from "@liminal/sdk";
-import { clampLines, EDGE_BAR, useColor, useMarkdownStyle, wrapText } from "@liminal/sdk/tui";
+import {
+  clampLines,
+  EDGE_BAR,
+  useColor,
+  useMarkdownDiagrams,
+  useMarkdownStyle,
+  wrapText,
+} from "@liminal/sdk/tui";
 
 interface EntryProps {
   readonly entry: SavedEntry;
@@ -71,9 +78,16 @@ export function Prompt(props: EntryProps) {
 export function Said(props: EntryProps) {
   const color = useColor();
   const style = useMarkdownStyle(() => color);
+  const diagrams = useMarkdownDiagrams(() => color);
 
   return (
-    <markdown content={props.entry.text} syntaxStyle={style()} fg={color("text.base")} conceal />
+    <markdown
+      content={props.entry.text}
+      syntaxStyle={style()}
+      renderNode={diagrams()}
+      fg={color("text.base")}
+      conceal
+    />
   );
 }
 

@@ -94,7 +94,7 @@ export const BOOT: Script = {
   ],
   close: {
     kind: "answer",
-    text: "The host reads every manifest first, without loading plugin code. It resolves the dependency graph from what each plugin `provides` and `requires`, then activates plugins in graph order.\n\nOne test fails: `git` and `shell` have no dependency between them and start 41ms apart, but the test expects them to start together.",
+    text: "The host reads every manifest first, without loading plugin code. It resolves the dependency graph from what each plugin `provides` and `requires`, then activates plugins in graph order.\n\n```mermaid\nflowchart LR\n  M[Manifests] --> G[Graph] --> A[Activate]\n```\n\nOne test fails: `git` and `shell` have no dependency between them and start 41ms apart, but the test expects them to start together.",
     ms: 3200,
   },
 };

@@ -57,6 +57,7 @@ Brightness follows importance, and what is newest is brightest.
 - While working, the tip of the turn is one live line: a turning arc and the action in the present tense with a band of light across it; elapsed time after 3s
 - Under the live line, what the action produces, gone when it ends: thinking as three fading italic lines, a command's newest two output lines, the diff an edit writes, checks ticking off
 - Everything the assistant says is full-brightness Markdown; the paragraph being written warms up from the background like thinking and becomes Markdown once settled, and inside a code fence text arrives a whole word at a time; all its work is gray rows between, on the same left edge, with a blank line between blocks
+- Mermaid fences draw as box diagrams; a fence still open, unparsable or wider than the transcript shows its source
 - Between two things the assistant said, work folds into one row per group: a mark, the verb in bold, what it worked on, detail in brackets (`◈ Explored kernel/test, 2 files, 1 search`, `◆ Ran checks (all passed)`)
 - Reads and searches in a row join one group; so do edits in a row; `◈` marks a group of several actions, `◆` a single one
 - A group still going on is the live line in the present tense, and settles into its row once the next thing starts

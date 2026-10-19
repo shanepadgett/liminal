@@ -25,6 +25,7 @@ export * from "./ornament/Track.tsx";
 export { type Bridge, makeBridge } from "./bridge.ts";
 export { type Hint, Hints } from "./Hints.tsx";
 export { useMarkdownStyle } from "./markdown.ts";
+export { useMarkdownDiagrams } from "./mermaid.ts";
 export { Tail } from "./Tail.tsx";
 export { createPin } from "./pin.ts";
 export { clampLines, cutLine, wrapText, wrapWords } from "./wrap.ts";

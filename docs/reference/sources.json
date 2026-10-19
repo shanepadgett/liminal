@@ -256,6 +256,13 @@
       "summary": "jsdiff: line diffs and unified patches. structuredPatch and formatPatch with OMIT_HEADERS give hunks only; the SDK's unifiedDiff uses them.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
       "api": [{ "kind": "types", "path": "libesm/index.d.ts" }]
+    },
+    {
+      "package": "beautiful-mermaid",
+      "versionSource": "lock",
+      "summary": "Renders Mermaid diagrams as Unicode box-drawing text: renderMermaidASCII(source, options) returns a string, throwing on a diagram it cannot parse. The SDK's Markdown draws mermaid fences with it.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "types", "path": "dist/index.d.ts" }]
     }
   ]
 }

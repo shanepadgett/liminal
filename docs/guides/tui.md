@@ -223,6 +223,7 @@ Other helpers from `@liminal/sdk/tui`:
 | Helper | Does |
 | --- | --- |
 | `useMarkdownStyle(() => color)` | The `syntaxStyle` for `<markdown>` |
+| `useMarkdownDiagrams(() => color)` | The `renderNode` for `<markdown>` that draws closed mermaid fences as box diagrams; source while open, unparsable or too wide |
 | `Tail` | The last `lines` lines of `text` |
 | `Hints` | Key hints, `[key, action]` pairs |
 | `useCopy()` | `copy(text)` to the terminal clipboard and `isCopied()` for feedback |

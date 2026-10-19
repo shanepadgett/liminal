@@ -11,6 +11,7 @@ import {
   inkRunsAt,
   markdownOf,
   useColor,
+  useMarkdownDiagrams,
   useMarkdownStyle,
 } from "@liminal/sdk/tui";
 
@@ -19,11 +20,13 @@ import { createHead } from "./head.ts";
 function Markdown(props: { readonly text: string }) {
   const color = useColor();
   const style = useMarkdownStyle(() => color);
+  const diagrams = useMarkdownDiagrams(() => color);
 
   return (
     <markdown
       content={props.text}
       syntaxStyle={style()}
+      renderNode={diagrams()}
       fg={color("text.base")}
       streaming
       conceal
