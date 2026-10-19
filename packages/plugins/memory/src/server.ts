@@ -8,13 +8,21 @@ import { Effect, FiberMap, FileSystem, Layer, Path } from "effect";
 import { BeforeCallHooks } from "@liminal/agent-loop/contract";
 import { CommandRunner } from "@liminal/command-runner/contract";
 import { ViewSteps } from "@liminal/context/contract";
+import { WorkspaceFiles } from "@liminal/files/contract";
 import { Models, ModelTask } from "@liminal/models/contract";
 import { dataFile, Directories, type SessionId } from "@liminal/sdk";
 import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
 import { Settings } from "@liminal/settings/contract";
 import { ToolChecks, Tools, ToolWrappers } from "@liminal/tools/contract";
 
-import { CheckpointEntry, HandoffEntry, MemoryRpcs, NoteEntry, TouchedEntry } from "./contract.ts";
+import {
+  CheckpointEntry,
+  HandoffEntry,
+  MemoryRpcs,
+  NoteEntry,
+  RestoredEntry,
+  TouchedEntry,
+} from "./contract.ts";
 import { beforeCallOf, type MemoryDeps } from "./server/before-call.ts";
 import { checkpointToolOf, forcedCheck } from "./server/checkpoint.ts";
 import { historyToolOf } from "./server/recall.ts";
@@ -50,6 +58,7 @@ const register = Effect.gen(function* () {
     models: yield* Models,
     task: yield* ModelTask,
     settings: yield* Settings,
+    files: yield* WorkspaceFiles,
     exists: (file) =>
       fs.exists(path.resolve(workspace, file)).pipe(Effect.orElseSucceed(() => false)),
   };
@@ -59,6 +68,7 @@ const register = Effect.gen(function* () {
   yield* kinds.register(HandoffEntry);
   yield* kinds.register(NoteEntry);
   yield* kinds.register(TouchedEntry);
+  yield* kinds.register(RestoredEntry);
 
   yield* Effect.forEach(renamedKinds, ([from, to]) => deps.log.renameKind(from, to), {
     discard: true,

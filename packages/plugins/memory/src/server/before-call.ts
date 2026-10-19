@@ -150,7 +150,13 @@ export const beforeCallOf =
       );
 
       const trigger = yield* dueTrigger(deps, first, model);
-      if (Option.isSome(trigger)) yield* saveCheckpoint(deps, sessionId, trigger.value);
+
+      if (Option.isSome(trigger))
+        yield* saveCheckpoint(deps, sessionId, {
+          trigger: trigger.value,
+          budget: first.budget,
+          parts: Option.none(),
+        });
 
       const measured = Option.isSome(trigger) ? yield* read : first;
       const { stage } = measured;

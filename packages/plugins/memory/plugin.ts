@@ -7,6 +7,7 @@
 import { BeforeCallHooks } from "@liminal/agent-loop/contract";
 import { CommandRunner } from "@liminal/command-runner/contract";
 import { ViewSteps } from "@liminal/context/contract";
+import { WorkspaceFiles } from "@liminal/files/contract";
 import { Models, ModelTask } from "@liminal/models/contract";
 import { definePlugin } from "@liminal/sdk";
 import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
@@ -26,6 +27,7 @@ export default definePlugin({
     ToolChecks,
     ToolWrappers,
     CommandRunner,
+    WorkspaceFiles,
     BeforeCallHooks,
     Models,
     ModelTask,

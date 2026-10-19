@@ -11,7 +11,7 @@ import {
   turnModelOf,
 } from "@liminal/session-log/contract";
 
-import { CheckpointData, CheckpointEntry, HandoffEntry } from "../contract.ts";
+import { CheckpointData, CheckpointEntry, HandoffEntry, RestoredEntry } from "../contract.ts";
 
 /** A checkpoint that counts: an automatic one, or the model's once its call is done. */
 export interface Checkpoint {
@@ -19,7 +19,8 @@ export interface Checkpoint {
   readonly data: CheckpointData;
 }
 
-const isCheckpointData = Schema.is(CheckpointData);
+/** Decoded, not checked, so checkpoints saved before a field was added get its default. */
+const decodeCheckpoint = Schema.decodeUnknownOption(CheckpointData);
 
 const decodeResult = Schema.decodeUnknownOption(
   Schema.Struct({ callId: Schema.String, status: Schema.String }),
@@ -27,6 +28,7 @@ const decodeResult = Schema.decodeUnknownOption(
 
 const decodeCall = Schema.decodeUnknownOption(Schema.Struct({ id: Schema.String }));
 const decodeHandoff = Schema.decodeUnknownOption(HandoffEntry.data);
+const decodeRestored = Schema.decodeUnknownOption(RestoredEntry.data);
 
 /** The result entry of call `callId`. */
 export const resultOf = (entries: ReadonlyArray<Entry>, callId: string): Option.Option<Entry> =>
@@ -46,12 +48,15 @@ const isDone = (entries: ReadonlyArray<Entry>, callId: string) =>
 /** The checkpoints that count, oldest first. */
 export const checkpointsOf = (entries: ReadonlyArray<Entry>): ReadonlyArray<Checkpoint> =>
   entries.flatMap((entry) => {
-    if (entry.kind !== CheckpointEntry.kind || !isCheckpointData(entry.data)) return [];
+    if (entry.kind !== CheckpointEntry.kind) return [];
 
-    const { trigger } = entry.data;
+    const data = decodeCheckpoint(entry.data);
+    if (Option.isNone(data)) return [];
+
+    const { trigger } = data.value;
     if (Predicate.isTagged(trigger, "Model") && !isDone(entries, trigger.callId)) return [];
 
-    return [{ entry, data: entry.data }];
+    return [{ entry, data: data.value }];
   });
 
 /** The newest checkpoint that counts. */
@@ -67,6 +72,13 @@ export const handoffOf = (entries: ReadonlyArray<Entry>, checkpoint: Checkpoint)
     ).pipe(Option.flatMap((entry) => decodeHandoff(entry.data))),
     ({ handoff }) => handoff,
   );
+
+/** The files read back with `checkpoint`. */
+export const restoredOf = (entries: ReadonlyArray<Entry>, checkpoint: Checkpoint) =>
+  Arr.findFirst(
+    entries,
+    (entry) => entry.kind === RestoredEntry.kind && entry.seq > checkpoint.entry.seq,
+  ).pipe(Option.flatMap((entry) => decodeRestored(entry.data)));
 
 /** A turn's start and the model it ran on. */
 export interface TurnStart {

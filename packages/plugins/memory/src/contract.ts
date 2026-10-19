@@ -39,6 +39,8 @@ export const CheckpointData = Schema.Struct({
   shortTerm: Schema.Array(Schema.Int),
   /** The first entry no note or memory covers. */
   tailFrom: Seq,
+  /** The files read back with it; checkpoints saved before restoring files read none. */
+  restored: Schema.Int.pipe(Schema.withDecodingDefaultKey(Effect.succeed(0))),
 });
 
 export type CheckpointData = typeof CheckpointData.Type;
@@ -104,6 +106,23 @@ export const MemoryFile = Schema.Struct({
 });
 
 export type MemoryFile = typeof MemoryFile.Type;
+
+/** A file a checkpoint read back, in `read`'s format; no ranges means the whole file. */
+export const RestoredFile = Schema.Struct({
+  path: Schema.String,
+  ranges: Schema.Array(LineRange),
+  text: Schema.String,
+});
+
+export type RestoredFile = typeof RestoredFile.Type;
+
+/** The files a checkpoint read back, and those the budget left out; the view step shows them. */
+export const RestoredEntry = defineEntry({
+  kind: "memory/restored",
+  data: Schema.Struct({ files: Schema.Array(RestoredFile), leftOut: Schema.Array(Schema.String) }),
+  model: false,
+  user: "debug",
+});
 
 /** The tool the model calls to write a checkpoint. */
 export const checkpointTool = "checkpoint";

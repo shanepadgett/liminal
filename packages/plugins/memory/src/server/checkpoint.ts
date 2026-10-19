@@ -5,7 +5,15 @@
 
 import { Array as Arr, Effect, Option, Schema } from "effect";
 
-import { defineTool, type Entry, Seq, type SessionId, ToolFailed } from "@liminal/sdk";
+import type { WorkspaceFiles } from "@liminal/files/contract";
+import {
+  defineTool,
+  type Entry,
+  type EntryDraft,
+  Seq,
+  type SessionId,
+  ToolFailed,
+} from "@liminal/sdk";
 import {
   NamedEntry,
   SessionName,
@@ -18,11 +26,14 @@ import {
   CheckpointEntry,
   checkpointTool,
   HandoffEntry,
+  LineRange,
   ModelTrigger,
+  RestoredEntry,
   type Trigger,
 } from "../contract.ts";
 import { replyAround, turnStartsOf } from "./history.ts";
 import { type MeasureDeps, measure } from "./measure.ts";
+import { rememberedFiles, restore, RESTORE_SHARE, type Wanted } from "./restore.ts";
 import { type Memories, unfoldedNotes } from "./store.ts";
 import type { Stored } from "./view.ts";
 
@@ -56,22 +67,83 @@ export const covered = (stored: Stored): Covered => {
 export interface CheckpointDeps {
   readonly log: SessionLog["Service"];
   readonly memories: Memories["Service"];
+  readonly files: WorkspaceFiles["Service"];
 }
 
-/** Saves a checkpoint of `trigger` over what the notes cover now. */
+/** What the model saved with its checkpoint. */
+export interface ModelParts {
+  readonly handoff: string;
+  readonly name: Option.Option<string>;
+  /** The files it asked for, most important first; none means the memories' choice. */
+  readonly files: Option.Option<ReadonlyArray<Wanted>>;
+}
+
+const restoredSummary = (files: number, leftOut: number) =>
+  leftOut === 0 ? `Files: ${files} read` : `Files: ${files} read, ${leftOut} left out`;
+
+/** One checkpoint to save. */
+export interface CheckpointRequest {
+  readonly trigger: Trigger;
+  /** The session's budget; restored files take a share of it. */
+  readonly budget: number;
+  /** What the model saved with it; none for an automatic checkpoint. */
+  readonly parts: Option.Option<ModelParts>;
+}
+
+/**
+ * Saves a checkpoint over what the memories cover now, with the files read back within a share of
+ * the budget and, from the model, its handoff and session name, in one batch.
+ */
 export const saveCheckpoint = Effect.fn("memory.saveCheckpoint")(function* (
   deps: CheckpointDeps,
   session: SessionId,
-  trigger: Trigger,
+  { trigger, budget, parts }: CheckpointRequest,
 ) {
   const stored: Stored = {
     notes: yield* deps.memories.notes(session),
     memories: yield* deps.memories.memories(session),
   };
 
-  return yield* deps.log.append(session, [
-    { entry: CheckpointEntry, data: { trigger, ...covered(stored) }, text: "Checkpoint" },
-  ]);
+  const used = covered(stored);
+
+  const wanted = Option.getOrElse(
+    Option.flatMap(parts, (each) => each.files),
+    () => rememberedFiles(stored, used),
+  );
+
+  const restored = yield* restore(deps.files, wanted, Math.floor(budget * RESTORE_SHARE));
+  const isRestoring = restored.files.length > 0 || restored.leftOut.length > 0;
+
+  const drafts: readonly [EntryDraft, ...Array<EntryDraft>] = [
+    {
+      entry: CheckpointEntry,
+      data: { trigger, ...used, restored: restored.files.length },
+      text: "Checkpoint",
+    },
+    ...Option.match(parts, {
+      onNone: () => [],
+      onSome: ({ handoff, name }) => [
+        { entry: HandoffEntry, data: { handoff }, text: handoff },
+        ...Option.match(name, {
+          onNone: () => [],
+          onSome: (each) => [
+            { entry: NamedEntry, data: { name: each }, text: `Session named: ${each}` },
+          ],
+        }),
+      ],
+    }),
+    ...(isRestoring
+      ? [
+          {
+            entry: RestoredEntry,
+            data: restored,
+            text: restoredSummary(restored.files.length, restored.leftOut.length),
+          },
+        ]
+      : []),
+  ];
+
+  return yield* deps.log.append(session, drafts);
 });
 
 const Params = Schema.Struct({
@@ -79,6 +151,21 @@ const Params = Schema.Struct({
     description:
       "What you need to continue: the user's request and limits, unfinished work, blockers, unanswered questions and the exact next action last; 500 to 1,500 characters",
   }),
+  files: Schema.optionalKey(
+    Schema.Array(
+      Schema.Struct({
+        path: Schema.String.annotate({ description: "Relative to the workspace" }),
+        ranges: Schema.optionalKey(
+          Schema.Array(LineRange).annotate({
+            description: "Lines you need; leave out for the whole file",
+          }),
+        ),
+      }),
+    ).annotate({
+      description:
+        "Files you need open after the checkpoint, most important first. Leave out to restore the relevant files your memory lists",
+    }),
+  ),
   name: Schema.optionalKey(
     SessionName.annotate({
       description:
@@ -90,11 +177,11 @@ const Params = Schema.Struct({
 const alone = "Call checkpoint alone, without other tool calls.";
 
 /** The model's `checkpoint` tool. */
-export const checkpointToolOf = (deps: CheckpointDeps) =>
+export const checkpointToolOf = (deps: CheckpointDeps & MeasureDeps) =>
   defineTool({
     name: checkpointTool,
     description: [
-      "Folds your context: from your next model call you see your short-term memory, the recent entries and this handoff instead of the full history.",
+      "Folds your context: from your next model call you see your short-term memory, the files it reads back, the recent entries and this handoff instead of the full history.",
       "Call it on its own, when a nudge asks and a bounded unit of work is done, never only to send a final answer.",
     ].join(" "),
     parameters: Params,
@@ -106,7 +193,7 @@ export const checkpointToolOf = (deps: CheckpointDeps) =>
     },
     runAlongside: false,
     safeToRerun: false,
-    run: ({ handoff, name }, { sessionId, callId }) =>
+    run: ({ handoff, name, files }, { sessionId, callId }) =>
       Effect.gen(function* () {
         const entries = yield* deps.log.read(sessionId, {});
 
@@ -116,18 +203,32 @@ export const checkpointToolOf = (deps: CheckpointDeps) =>
 
         if (calls.length > 1) return yield* new ToolFailed({ message: alone });
 
-        yield* saveCheckpoint(deps, sessionId, ModelTrigger.make({ callId }));
+        const start = Arr.last(turnStartsOf(entries));
 
-        yield* deps.log.append(sessionId, [
-          { entry: HandoffEntry, data: { handoff }, text: handoff },
-          ...(name === undefined
-            ? []
-            : [{ entry: NamedEntry, data: { name }, text: `Session named: ${name}` }]),
-        ]);
+        const budget = Option.isNone(start)
+          ? 0
+          : yield* measure(deps, sessionId, entries, start.value.model).pipe(
+              Effect.map((measured) => measured.budget),
+              Effect.catch((error) =>
+                Effect.as(Effect.logWarning("memory budget unknown; no files read back", error), 0),
+              ),
+            );
+
+        yield* saveCheckpoint(deps, sessionId, {
+          trigger: ModelTrigger.make({ callId }),
+          budget,
+          parts: Option.some({
+            handoff,
+            name: Option.fromUndefinedOr(name),
+            files: Option.map(Option.fromUndefinedOr(files), (each) =>
+              each.map((file) => ({ path: file.path, ranges: file.ranges ?? [] })),
+            ),
+          }),
+        });
 
         return {
           result:
-            "Checkpoint saved. Your next model call starts from your long-term and short-term memory, recent entries and this handoff.",
+            "Checkpoint saved. Your next model call starts from your long-term and short-term memory, the files read back, recent entries and this handoff.",
         };
       }).pipe(
         Effect.catchTags({

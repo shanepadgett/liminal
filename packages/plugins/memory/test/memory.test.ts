@@ -28,6 +28,7 @@ import { type BeforeCall, BeforeCallHooks } from "@liminal/agent-loop/contract";
 import { CommandRunner } from "@liminal/command-runner/contract";
 import context from "@liminal/context";
 import { Context, MessageEntry } from "@liminal/context/contract";
+import filesPlugin from "@liminal/files";
 import modelCatalog from "@liminal/model-catalog";
 import modelScripted from "@liminal/model-scripted";
 import { reply, ScriptedModel, scriptedProvider } from "@liminal/model-scripted/contract";
@@ -69,6 +70,7 @@ import memory from "../plugin.ts";
 import {
   CheckpointData,
   CheckpointEntry,
+  RestoredEntry,
   MemoryRpcs,
   HandoffEntry,
   historyTool,
@@ -77,6 +79,7 @@ import {
   TouchedEntry,
 } from "../src/contract.ts";
 import { keptFound, mergeLists, mergeRanges } from "../src/server/files.ts";
+import { rememberedFiles } from "../src/server/restore.ts";
 import { statusPaths } from "../src/server/touched.ts";
 
 /** What the stub `git status` prints, as `-z` output. */
@@ -102,6 +105,7 @@ const stubRunner = Layer.effect(
 ).pipe(Layer.provideMerge(GitStatus.layer));
 
 const stack = serverOf(memory).pipe(
+  Layer.provideMerge(serverOf(filesPlugin)),
   Layer.provideMerge(stubRunner),
   Layer.provideMerge(serverOf(agentLoop)),
   Layer.provideMerge(serverOf(tools)),
@@ -184,10 +188,9 @@ const toolNamed = (name: string) =>
   );
 
 /** A saved `checkpoint` call and its done result, around the tool's own run. */
-const callCheckpoint = (handoff: string, name?: string, callId = "k1") =>
+const callCheckpoint = (params: { readonly [key: string]: Schema.Json }, callId = "k1") =>
   Effect.gen(function* () {
     const log = yield* SessionLog;
-    const params = name === undefined ? { handoff } : { handoff, name };
 
     yield* log.append(s1, [
       draft(ToolCallEntry, {
@@ -276,7 +279,11 @@ effectTest(
   "a checkpoint with a name renames the session and the folded view shows the name",
   Effect.gen(function* () {
     yield* start(said(300), userMessage("the early request"));
-    yield* callCheckpoint("Two of five files are done.", "Migrating five files to the new API");
+
+    yield* callCheckpoint({
+      handoff: "Two of five files are done.",
+      name: "Migrating five files to the new API",
+    });
 
     const log = yield* SessionLog;
 
@@ -286,7 +293,7 @@ effectTest(
 
     expect(yield* requestTexts).toContain("Session name: Migrating five files to the new API");
 
-    yield* callCheckpoint("Four of five files are done.", undefined, "k2");
+    yield* callCheckpoint({ handoff: "Four of five files are done." }, "k2");
 
     expect((yield* log.list).map((session) => session.title)).toEqual([
       "Migrating five files to the new API",
@@ -301,7 +308,7 @@ effectTest(
   "a checkpoint without a name adds no name line",
   Effect.gen(function* () {
     yield* start(said(300), userMessage("the early request"));
-    yield* callCheckpoint("Two of five files are done.");
+    yield* callCheckpoint({ handoff: "Two of five files are done." });
 
     const texts = yield* requestTexts;
     expect(texts.some((text) => text.startsWith("Session name:"))).toBe(false);
@@ -313,7 +320,7 @@ effectTest(
   "a checkpoint folds the view to the handoff and what follows",
   Effect.gen(function* () {
     yield* start(said(300), userMessage("the early request"));
-    yield* callCheckpoint("Two of five files are done.");
+    yield* callCheckpoint({ handoff: "Two of five files are done." });
     yield* (yield* SessionLog).append(s1, [userMessage("what is next?")]);
 
     const log = yield* (yield* SessionLog).read(s1, {});
@@ -630,9 +637,12 @@ effectTest(
 
     yield* beforeCall;
     yield* notesSaved(1);
-    yield* callCheckpoint("Next: the tests.");
+    yield* callCheckpoint({ handoff: "Next: the tests." });
 
-    const texts = (yield* requestTexts).join("\n");
+    const requested = yield* requestTexts;
+    const texts = requested.join("\n");
+
+    expect(requested).toContain('<reminder kind="files">\nsrc/found.ts\n\nx\n</reminder>');
 
     expect(texts).toContain(
       "Read two files.\n\nRelevant files:\n- src/a.ts (lines 1–40)\n- src/found.ts: config\n\nExplored, not relevant:\n- src/b.ts: unrelated",
@@ -695,4 +705,95 @@ test("file lists merge by path: the newest label wins, lines join and edits stay
   ).toEqual([]);
 
   expect(statusPaths(" M a.ts\0R  b.ts\0c.ts\0?? d e.ts\0")).toEqual(["a.ts", "b.ts", "d e.ts"]);
+});
+
+/** `count` lines of `width` characters, the first reading `l1`. */
+const linesOf = (count: number, width = 4) =>
+  Array.from({ length: count }, (_, index) => `l${index + 1}`.padEnd(width, ".")).join("\n");
+
+effectTest(
+  "a checkpoint reads back the model's files in order: short ones whole, long ones padded, the cap leaving out what does not fit",
+  Effect.gen(function* () {
+    yield* writeFile("small.ts", "one\ntwo");
+    yield* writeFile("long.ts", linesOf(400));
+    yield* writeFile("huge.ts", linesOf(300, 100));
+    yield* writeFile("after.ts", "last");
+
+    yield* start(said(100));
+    yield* (yield* Settings).write("global", ["memory", "budget"], 10_000);
+
+    yield* callCheckpoint({
+      handoff: "Next: the tests.",
+      files: [
+        { path: "small.ts", ranges: [{ from: 1, through: 1 }] },
+        {
+          path: "long.ts",
+          ranges: [
+            { from: 130, through: 140 },
+            { from: 100, through: 105 },
+          ],
+        },
+        { path: "missing.ts" },
+        { path: "huge.ts" },
+        { path: "after.ts" },
+      ],
+    });
+
+    const log = yield* (yield* SessionLog).read(s1, {});
+    const checkpoint = log.find((entry) => entry.kind === CheckpointEntry.kind);
+
+    const data = Option.flatMap(Option.fromUndefinedOr(checkpoint), (entry) =>
+      decodeCheckpoint(entry.data),
+    );
+
+    expect(Option.map(data, ({ restored }) => restored)).toEqual(Option.some(3));
+    expect(log.at(-2)?.kind).toBe(RestoredEntry.kind);
+
+    const files = (yield* requestTexts).filter((text) =>
+      text.startsWith('<reminder kind="files">'),
+    );
+
+    const window = linesOf(400).split("\n").slice(79, 160).join("\n");
+
+    expect(files).toEqual([
+      '<reminder kind="files">\nsmall.ts\n\none\ntwo\n</reminder>',
+      `<reminder kind="files">\nlong.ts\n\n${window}\n[lines 80-160 of 400; read on from offset 161]\n</reminder>`,
+      '<reminder kind="files">\nafter.ts\n\nlast\n</reminder>',
+      '<reminder kind="files">\nRelevant files not read back, to stay within the context budget; read them when you need them:\n- huge.ts\n</reminder>',
+    ]);
+
+    expect(yield* requestTexts).toEqual(yield* requestTexts);
+  }),
+  stack,
+);
+
+const remembered = (files: ReadonlyArray<MemoryFile>) =>
+  rememberedFiles(
+    {
+      notes: [
+        {
+          number: 1,
+          session: s1,
+          from: Seq.make(1),
+          through: Seq.make(9),
+          text: "",
+          tokens: 0,
+          files,
+        },
+      ],
+      memories: [],
+    },
+    { shortTerm: [1] },
+  ).map((each) => each.path);
+
+test("a checkpoint without the model's list reads relevant files, edited first, then newest", () => {
+  expect(
+    remembered([
+      file("old-read.ts", 2),
+      file("new-read.ts", 8),
+      file("old-edit.ts", 3, { edited: true }),
+      file("skip.ts", 9, { relevant: false }),
+      file("new-edit.ts", 5, { edited: true }),
+    ]),
+  ).toEqual(["new-edit.ts", "old-edit.ts", "new-read.ts", "old-read.ts"]);
 });

@@ -6,20 +6,10 @@ import { WorkspaceFiles } from "@liminal/files/contract";
 import { defineTool, ToolFailed } from "@liminal/sdk";
 import { Tools } from "@liminal/tools/contract";
 
-import { ReadParams } from "./contract.ts";
+import { lineWindow, ReadParams } from "./contract.ts";
 
 /** Lines `read` returns when the model sets no limit. */
 const defaultLimit = 2000;
-
-/** The lines `offset` (from 1) through `offset + limit - 1`, and a note when more follow. */
-const window = (content: string, offset: number, limit: number) => {
-  const lines = content.split("\n");
-  const shown = lines.slice(offset - 1, offset - 1 + limit);
-  const last = offset - 1 + shown.length;
-  if (last >= lines.length) return shown.join("\n");
-
-  return `${shown.join("\n")}\n[lines ${offset}-${last} of ${lines.length}; read on from offset ${last + 1}]`;
-};
 
 const readTool = Effect.gen(function* () {
   const files = yield* WorkspaceFiles;
@@ -43,7 +33,7 @@ const readTool = Effect.gen(function* () {
     run: ({ path: file, offset = 1, limit = defaultLimit }) =>
       files.read(file).pipe(
         Effect.mapError((error) => new ToolFailed({ message: error.message })),
-        Effect.map((content) => ({ result: window(content, offset, limit) })),
+        Effect.map((content) => ({ result: lineWindow(content, offset, limit) })),
       ),
   });
 });

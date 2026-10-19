@@ -16,9 +16,11 @@ import {
   handoffOf,
   latestCheckpoint,
   replyAround,
+  restoredOf,
   resultOf,
   switchCutOf,
 } from "./history.ts";
+import { restoredText } from "./restore.ts";
 import type { Memory, Note } from "./store.ts";
 
 /** A session's notes and memories, as the store holds them. */
@@ -74,6 +76,26 @@ const rememberedTexts = (checkpoint: Checkpoint, stored: Stored): ReadonlyArray<
   ];
 };
 
+/** The files the checkpoint read back, one reminder each, then the paths it left out. */
+const restoredTexts = (entries: ReadonlyArray<Entry>, checkpoint: Checkpoint) =>
+  Option.match(restoredOf(entries, checkpoint), {
+    onNone: () => [],
+    onSome: ({ files, leftOut }) => [
+      ...files.map((file) => reminder("files", restoredText(file))),
+      ...(leftOut.length === 0
+        ? []
+        : [
+            reminder(
+              "files",
+              [
+                "Relevant files not read back, to stay within the context budget; read them when you need them:",
+                ...leftOut.map((path) => `- ${path}`),
+              ].join("\n"),
+            ),
+          ]),
+    ],
+  });
+
 /** The seqs a model checkpoint leaves out: its call, the reasoning before it and its result. */
 const checkpointCall = (entries: ReadonlyArray<Entry>, checkpoint: Checkpoint) => {
   const { trigger } = checkpoint.data;
@@ -102,7 +124,7 @@ const foldAt = (entries: ReadonlyArray<Entry>, checkpoint: Checkpoint, stored: S
   const at = checkpoint.entry.seq;
   const left = checkpointCall(entries, checkpoint);
   const isKept = (entry: Entry) => !left.has(entry.seq);
-  const texts = rememberedTexts(checkpoint, stored);
+  const texts = [...rememberedTexts(checkpoint, stored), ...restoredTexts(entries, checkpoint)];
 
   const handoff = Option.match(handoffOf(entries, checkpoint), {
     onNone: () => [],
