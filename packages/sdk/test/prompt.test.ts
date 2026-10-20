@@ -92,3 +92,31 @@ effectTest(
   }),
   testBaseServices,
 );
+
+const ask: ModelTool = { ...declared("ask_question", false), offered: false };
+
+/** A user message that offers or withdraws `ask`. */
+const changing = (change: "offer" | "withdraw"): ModelContent => ({
+  role: "user",
+  parts: [{ type: "tool-change", change, tool: ask }],
+});
+
+/** The names of the tools sent for `messages`. */
+const sentFor = (messages: ReadonlyArray<ModelContent>) =>
+  toolkitOf([declared("read", false), ask], messages, "added").pipe(
+    Effect.map((toolkit) => Object.keys(toolkit.tools)),
+  );
+
+effectTest(
+  "a tool not offered at the start is sent once an offer is in the messages, and after its withdrawal",
+  Effect.gen(function* () {
+    expect(yield* sentFor([])).toEqual(["read"]);
+    expect(yield* sentFor([changing("offer")])).toEqual(["read", "ask_question"]);
+
+    expect(yield* sentFor([changing("offer"), changing("withdraw")])).toEqual([
+      "read",
+      "ask_question",
+    ]);
+  }),
+  testBaseServices,
+);

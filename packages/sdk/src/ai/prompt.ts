@@ -182,10 +182,20 @@ const loadedTools = (messages: ReadonlyArray<ModelContent>): ReadonlySet<string>
     ),
   );
 
+/** The tools a `tool-change` offer part in `messages` names; a later withdrawal leaves them. */
+const offeredTools = (messages: ReadonlyArray<ModelContent>): ReadonlySet<string> =>
+  new Set(
+    messages.flatMap((content) =>
+      content.parts.flatMap((part) =>
+        part.type === "tool-change" && part.change === "offer" ? [part.tool.name] : [],
+      ),
+    ),
+  );
+
 /**
- * The tools to send. Every declared tool goes, offered or not, since a later offer arrives as a
- * tools reminder. A deferred tool goes only once a result in `messages` loads it, unless the
- * provider withholds deferred tools itself.
+ * The tools to send. A tool not offered at the start goes once an offer for it is in `messages`,
+ * and stays after its withdrawal, which the model learns from a reminder. A deferred tool goes only
+ * once a result in `messages` loads it, unless the provider withholds deferred tools itself.
  */
 export const toolkitOf = Effect.fn("Ai.toolkitOf")(function* (
   tools: ReadonlyArray<ModelTool>,
@@ -193,11 +203,13 @@ export const toolkitOf = Effect.fn("Ai.toolkitOf")(function* (
   loading: DeferredLoading,
 ) {
   const loaded = loadedTools(messages);
+  const offered = offeredTools(messages);
+  const present = tools.filter((tool) => tool.offered || offered.has(tool.name));
 
   const sent =
     loading === "native"
-      ? tools
-      : tools.filter((tool) => tool.deferred !== true || loaded.has(tool.name));
+      ? present
+      : present.filter((tool) => tool.deferred !== true || loaded.has(tool.name));
 
   return Toolkit.make(...(yield* Effect.forEach(sent, dynamicTool)));
 });
