@@ -805,6 +805,29 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/tools-search": {
+      "name": "@liminal/tools-search",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@liminal/agent-loop": "workspace:*",
+        "@liminal/model-catalog": "workspace:*",
+        "@liminal/model-scripted": "workspace:*",
+        "@liminal/models": "workspace:*",
+        "@liminal/session-store": "workspace:*",
+        "@liminal/settings": "workspace:*",
+      },
+      "peerDependencies": {
+        "@liminal/chat": "workspace:*",
+        "@liminal/context": "workspace:*",
+        "@liminal/sdk": "workspace:*",
+        "@liminal/session-log": "workspace:*",
+        "@liminal/tools": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/tools-shell": {
       "name": "@liminal/tools-shell",
       "version": "0.1.0",
@@ -1142,6 +1165,8 @@
     "@liminal/tools-read": ["@liminal/tools-read@workspace:packages/plugins/tools-read"],
 
     "@liminal/tools-run": ["@liminal/tools-run@workspace:packages/plugins/tools-run"],
+
+    "@liminal/tools-search": ["@liminal/tools-search@workspace:packages/plugins/tools-search"],
 
     "@liminal/tools-shell": ["@liminal/tools-shell@workspace:packages/plugins/tools-shell"],
 

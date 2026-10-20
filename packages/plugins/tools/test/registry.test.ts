@@ -36,7 +36,7 @@ effectTest(
     });
 
     expect(tool.hints).toEqual({ ...defaultHints, readOnlyHint: true });
-    expect(tool.offeredAtStart).toBe(true);
+    expect(tool.offer).toBe("start");
     expect(tool.guidance).toEqual([]);
 
     expect(yield* tool.run({ text: "hi" }, context)).toEqual({ result: "hi" });

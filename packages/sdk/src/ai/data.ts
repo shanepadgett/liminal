@@ -18,7 +18,8 @@ type Kept = Readonly<Record<string, Schema.Json>>;
 
 type Metadata = Response.ProviderMetadata | Kept;
 
-const isFields = (value: Schema.Json): value is Kept =>
+/** Whether a JSON value is an object of fields. */
+export const isFields = (value: Schema.Json): value is Kept =>
   Predicate.isObject(value) && !Array.isArray(value);
 
 /**

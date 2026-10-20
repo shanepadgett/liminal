@@ -11,12 +11,23 @@ export type MessageOptions = Prompt.SystemMessageOptions
   & Prompt.AssistantMessageOptions
   & Prompt.ToolMessageOptions;
 
+/**
+ * How deferred tools reach the model: `native` sends them all and the provider withholds them until
+ * a result loads them; `added` sends each only once a result loads it, at one cache miss.
+ */
+export type DeferredLoading = "native" | "added";
+
 export interface ProviderPrompt {
   /** The metadata reply parts keep for the next request. */
   readonly data: ProviderData;
   /** The options a message with a cache mark gets; none when the provider caches on its own. */
   readonly cache: Option.Option<MessageOptions>;
+  readonly deferredLoading: DeferredLoading;
 }
 
 /** OpenAI caches prefixes on its own, routed by the request's cache key; marks are ignored. */
-export const OpenAiPrompt: ProviderPrompt = { data: OpenAiData, cache: Option.none() };
+export const OpenAiPrompt: ProviderPrompt = {
+  data: OpenAiData,
+  cache: Option.none(),
+  deferredLoading: "added",
+};

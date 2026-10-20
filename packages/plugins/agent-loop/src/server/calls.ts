@@ -22,11 +22,16 @@ export const saveDrafts = (
 /** What the model sees of a call's outcome. */
 const outcomeResult = (outcome: ToolOutcome): ToolResult =>
   outcome.status === "done"
-    ? { status: "done", result: outcome.output.result, details: outcome.output.details }
-    : { status: outcome.status, result: outcome.message, details: outcome.details };
+    ? {
+        status: "done",
+        result: outcome.output.result,
+        details: outcome.output.details,
+        loads: outcome.output.loads ?? [],
+      }
+    : { status: outcome.status, result: outcome.message, details: outcome.details, loads: [] };
 
 const cancelled = (call: CallPart) =>
-  resultDraft(call, { status: "cancelled", result: "cancelled", details: undefined });
+  resultDraft(call, { status: "cancelled", result: "cancelled", details: undefined, loads: [] });
 
 /** Cancelled results for every call in `calls`. */
 export const cancelledDrafts = (calls: ReadonlyArray<CallPart>) => calls.map(cancelled);
@@ -93,6 +98,7 @@ export const makeCalls = (log: SessionLog["Service"], pipeline: ToolPipeline["Se
                 status: "interrupted",
                 result: "interrupted by a restart",
                 details: undefined,
+                loads: [],
               }),
             ],
       ),

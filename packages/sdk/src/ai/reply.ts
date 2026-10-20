@@ -26,7 +26,7 @@ export const replyOf = (
       Effect.gen(function* () {
         const language = yield* model;
         const prompt = yield* promptOf(request.messages, provider);
-        const toolkit = yield* toolkitOf(request.tools);
+        const toolkit = yield* toolkitOf(request.tools, request.messages, provider.deferredLoading);
 
         return language
           .streamText({

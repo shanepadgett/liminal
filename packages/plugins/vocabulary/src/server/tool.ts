@@ -64,6 +64,7 @@ export const vocabularyToolOf = (store: Store) =>
       "Reads and changes the project's vocabulary, its agreed terms with definitions. op get reads one term, or all of them; set adds a term or replaces its definition, or renames it with `was`; remove deletes a term.",
     guidance: GUIDANCE,
     parameters: VocabularyParams,
+    offer: "search",
     hints: {
       readOnlyHint: false,
       destructiveHint: false,

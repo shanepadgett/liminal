@@ -4,9 +4,9 @@ import { expect } from "bun:test";
 
 import { Effect } from "effect";
 
-import { promptOf } from "../src/ai/prompt.ts";
+import { promptOf, toolkitOf } from "../src/ai/prompt.ts";
 import { OpenAiPrompt } from "../src/ai/provider-prompt.ts";
-import type { ToolSpec } from "../src/core/index.ts";
+import type { ModelContent, ModelTool, ToolSpec } from "../src/core/index.ts";
 import { effectTest } from "../src/testing/effect-test.ts";
 import { testBaseServices } from "../src/testing/index.ts";
 
@@ -46,6 +46,49 @@ effectTest(
         ],
       },
     ]);
+  }),
+  testBaseServices,
+);
+
+const declared = (name: string, deferred: boolean): ModelTool => {
+  const tool: ModelTool = {
+    name,
+    description: name,
+    parameters: { type: "object", properties: {} },
+    offered: true,
+  };
+
+  return deferred ? { ...tool, deferred: true } : tool;
+};
+
+const tools = [declared("read", false), declared("websearch", true), declared("webfetch", true)];
+
+/** A tool message whose result loads `loads`. */
+const loading = (loads: ReadonlyArray<string>): ModelContent => ({
+  role: "tool",
+  parts: [
+    { type: "tool-result", callId: "c1", name: "tool_search", result: "", isFailure: false, loads },
+  ],
+});
+
+effectTest(
+  "deferred tools are sent once a result loads them",
+  Effect.gen(function* () {
+    const before = yield* toolkitOf(tools, [], "added");
+    const after = yield* toolkitOf(tools, [loading(["websearch"])], "added");
+
+    expect(Object.keys(before.tools)).toEqual(["read"]);
+    expect(Object.keys(after.tools)).toEqual(["read", "websearch"]);
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "a provider that withholds deferred tools itself gets every tool",
+  Effect.gen(function* () {
+    const toolkit = yield* toolkitOf(tools, [], "native");
+
+    expect(Object.keys(toolkit.tools)).toEqual(["read", "websearch", "webfetch"]);
   }),
   testBaseServices,
 );

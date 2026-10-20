@@ -72,7 +72,7 @@ const checksFile = {
 
 const writer: Tool = {
   spec: { name: "write", description: "", parameters: {} },
-  offeredAtStart: true,
+  offer: "start",
   guidance: [],
   hints: defaultHints,
   runAlongside: false,

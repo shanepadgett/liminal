@@ -266,16 +266,17 @@ Example: `packages/plugins/memory/src/server/before-call.ts`.
 | Field | Meaning |
 | --- | --- |
 | `hints` | MCP tool hints; permission checks read them. Unset hints take MCP defaults: not read-only, may be destructive, open world |
-| `offeredAtStart` | Optional; whether the model sees the tool from the first request |
+| `offer` | Optional; how the model gets the tool: `start` (default) from the first request, `search` deferred until `tool_search` loads it, `plugin` declared but offered only by its own plugin through `tool-change` parts |
 | `guidance` | Optional rule lines for the system prompt, such as when to prefer this tool; `tools` lists each line once across all tools |
 | `runAlongside` | Can run at the same time as other calls in the same step |
 | `safeToRerun` | Can run again after a crash without harm |
-| `run` | Gets the decoded params and `{ sessionId, callId }`; returns `{ result, details? }` or fails with `ToolFailed` |
+| `run` | Gets the decoded params and `{ sessionId, callId }`; returns `{ result, details?, loads? }` or fails with `ToolFailed` |
 
 Rules:
 
 - `parameters` is a `Schema.Struct`; a tool that takes no params uses `Schema.Struct({})`, sent as an object with no properties.
-- `result` is what the model reads. `details` is JSON for the TUI only.
+- `result` is what the model reads. `details` is JSON for the TUI only. `loads` names deferred tools the call loads; the next request offers them. Only `tool_search` sets it today.
+- Give a rarely used tool `offer: "search"`, so its schema stays out of the request until the model loads it; example: `packages/plugins/tools-web/src/server.ts`.
 - Fail with `ToolFailed({ message })` for anything the model should see and react to. Never let a tool die.
 - To word the call in the transcript, register a tool row in the TUI part; see [tui.md](tui.md#show-a-tool-call).
 - To stop a tool without changing the request's cached tool list, keep it listed and register a `ToolChecks` check that denies it; example: `packages/plugins/session-name/src/server/once.ts`.

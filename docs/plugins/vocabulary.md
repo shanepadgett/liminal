@@ -23,6 +23,6 @@ Status: built
 - Writes are one at a time and finish by renaming a complete copy over the file
 - A file that cannot be read or does not parse fails the tool, leaves the prompt section as it was and tells the session once
 - In an untrusted folder the file is not read, the section is empty and writes are refused
-- The tool is offered at the start of every session
+- The tool is deferred: the model loads it through tool search
 - The call reads as a work row: `Read`, `Saved term` or `Removed term`
 - Approval modes apply to the tool as to any other

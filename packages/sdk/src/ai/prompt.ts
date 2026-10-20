@@ -11,7 +11,7 @@ import {
   reminder,
 } from "../core/index.ts";
 import { keptData } from "./data.ts";
-import type { MessageOptions, ProviderPrompt } from "./provider-prompt.ts";
+import type { DeferredLoading, MessageOptions, ProviderPrompt } from "./provider-prompt.ts";
 
 type Kept = ReturnType<typeof keptData>;
 
@@ -174,7 +174,30 @@ const dynamicTool = (tool: ModelTool) => {
       );
 };
 
-/** Every declared tool, offered or not; a later offer arrives as a tools reminder. */
-export const toolkitOf = Effect.fn("Ai.toolkitOf")(function* (tools: ReadonlyArray<ModelTool>) {
-  return Toolkit.make(...(yield* Effect.forEach(tools, dynamicTool)));
+/** The deferred tools the tool results in `messages` load, by name. */
+const loadedTools = (messages: ReadonlyArray<ModelContent>): ReadonlySet<string> =>
+  new Set(
+    messages.flatMap((content) =>
+      content.parts.flatMap((part) => (part.type === "tool-result" ? (part.loads ?? []) : [])),
+    ),
+  );
+
+/**
+ * The tools to send. Every declared tool goes, offered or not, since a later offer arrives as a
+ * tools reminder. A deferred tool goes only once a result in `messages` loads it, unless the
+ * provider withholds deferred tools itself.
+ */
+export const toolkitOf = Effect.fn("Ai.toolkitOf")(function* (
+  tools: ReadonlyArray<ModelTool>,
+  messages: ReadonlyArray<ModelContent>,
+  loading: DeferredLoading,
+) {
+  const loaded = loadedTools(messages);
+
+  const sent =
+    loading === "native"
+      ? tools
+      : tools.filter((tool) => tool.deferred !== true || loaded.has(tool.name));
+
+  return Toolkit.make(...(yield* Effect.forEach(sent, dynamicTool)));
 });

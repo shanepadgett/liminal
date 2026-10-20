@@ -48,8 +48,8 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 - Daily driver ([plans/daily-driver.md](plans/daily-driver.md)): steps 1 to 13 built (sessions and the command line; tool output spill, the loop guard and `history`; checks; the `run` tool; web search and fetch; the sidebar with usage, cost and compaction; processes; the composer's `@` tags, pictures and stashes; references; `/qna`; `/commit`; skills; the attention sound); next: the user's live checks
 - Session polish ([plans/session-polish.md](plans/archive/session-polish.md)): `ctrl+t` cycles thinking, a Session sidebar section, the shell tools name their folder, `/qna` and `/commit` run on `enter` in the slash menu, the approval dialog shows the reviewer's summary instead of the command; built, awaiting review
 - Custom prompts ([plans/custom-prompts.md](plans/custom-prompts.md)): approval and commit prompts and the `CommandMenu` rename built, awaiting review; trust keeps its own full-composer prompt
-- Vocabulary ([plugins/vocabulary.md](plugins/vocabulary.md)): built, awaiting review; the tool is always offered until deferred tools exist
-- Deferred tools ([plans/deferred-tools.md](plans/deferred-tools.md)): think through how rarely used tools stay out of the request; agree the open decisions, then plan the code
+- Vocabulary ([plugins/vocabulary.md](plugins/vocabulary.md)): built, awaiting review
+- Deferred tools ([plans/deferred-tools.md](plans/deferred-tools.md)): built, awaiting review; next: the live checks in the plan
 - When the current work is done: clean up all implemented plans in `docs/plans/`
 - Session name ([plans/session-name.md](plans/archive/session-name.md)): `name_session` and the checkpoint's `name` field are built; check live that the model names once, renames only at a checkpoint, and the `/sessions` dialog shows the name
 - Entry versions and graph-scoped registries ([plans/entry-versions.md](plans/entry-versions.md)): step 1 (graph-scoped registries) built, awaiting review; step 2 (entry versions) next

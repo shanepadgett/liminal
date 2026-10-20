@@ -57,7 +57,7 @@ export const askQuestion = defineTool({
   name: askQuestionTool,
   description: DESCRIPTION,
   parameters: Form,
-  offeredAtStart: false,
+  offer: "plugin",
   hints: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   runAlongside: false,
   safeToRerun: true,

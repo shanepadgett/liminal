@@ -32,7 +32,15 @@ export interface ToolCallContext {
 export interface ToolOutput {
   readonly result: Schema.Json;
   readonly details?: Schema.Json | undefined;
+  /** Deferred tools this call loads, by name, such as the tools a search found. */
+  readonly loads?: ReadonlyArray<string> | undefined;
 }
+
+/**
+ * How a tool reaches the model: offered from the session's first request, deferred until the model
+ * loads it through tool search, or declared and offered only by its own plugin.
+ */
+export type ToolOffer = "start" | "search" | "plugin";
 
 /** A call that failed: wrong params or the tool's own failure; the model sees `message`. */
 export class ToolFailed extends Schema.TaggedError<ToolFailed, { readonly brand: unique symbol }>()(
@@ -42,8 +50,7 @@ export class ToolFailed extends Schema.TaggedError<ToolFailed, { readonly brand:
 
 export interface Tool {
   readonly spec: ToolSpec;
-  /** Offered from the session's first request; otherwise declared and offered later. */
-  readonly offeredAtStart: boolean;
+  readonly offer: ToolOffer;
   /** Rule lines for the system prompt, such as when to prefer this tool over another. */
   readonly guidance: ReadonlyArray<string>;
   readonly hints: ToolHints;
@@ -63,7 +70,8 @@ export interface ToolDefinition<S extends Schema.Top> {
   readonly description: string;
   /** Checks the params; its JSON Schema is what the model sees. */
   readonly parameters: S;
-  readonly offeredAtStart?: boolean;
+  /** Missing offer is `start`. */
+  readonly offer?: ToolOffer;
   /** Missing guidance is none. */
   readonly guidance?: ReadonlyArray<string>;
   /** Missing hints take the MCP defaults. */
@@ -113,7 +121,7 @@ export const defineTool = <S extends Schema.Top & { readonly DecodingServices: n
       description: definition.description,
       parameters: jsonSchemaOf(definition.parameters),
     },
-    offeredAtStart: definition.offeredAtStart ?? true,
+    offer: definition.offer ?? "start",
     guidance: definition.guidance ?? [],
     hints: { ...defaultHints, ...definition.hints },
     runAlongside: definition.runAlongside,

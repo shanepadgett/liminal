@@ -53,6 +53,8 @@ export const ModelPart = Schema.Union([
     name: Schema.String,
     result: Schema.Json,
     isFailure: Schema.Boolean,
+    /** Deferred tools this result loads, by name; the model may call them from here on. */
+    loads: Schema.optionalKey(Schema.Array(Schema.String)),
   }),
   ImagePart,
   /** In user messages only: offers or withdraws a tool from this point on. */
@@ -111,8 +113,16 @@ export const ThinkingOption = Schema.Struct({
 
 export type ThinkingOption = typeof ThinkingOption.Type;
 
-/** A tool declared on the request; one not offered at the start waits for a `tool-change` offer. */
-export const ModelTool = Schema.Struct({ ...ToolSpec.fields, offered: Schema.Boolean });
+/**
+ * A tool declared on the request; one not offered at the start waits for a `tool-change` offer. A
+ * deferred tool is offered but withheld from the model until a tool result loads it.
+ */
+export const ModelTool = Schema.Struct({
+  ...ToolSpec.fields,
+  offered: Schema.Boolean,
+  deferred: Schema.optionalKey(Schema.Literal(true)),
+});
+
 export type ModelTool = typeof ModelTool.Type;
 
 /** Which tools the model may call: any or none, at least one, or the named one. */

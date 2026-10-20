@@ -89,6 +89,7 @@ const streamOn = (wire: Wire, protocol: Protocol, request: ModelRequest) =>
         ...named,
         options: messagesOptions(wire, request),
         preamble: [],
+        deferredLoading: () => false,
       })(request),
     ),
     Match.exhaustive,

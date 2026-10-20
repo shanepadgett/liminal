@@ -88,10 +88,10 @@ Pick the stream helper for the vendor's wire protocol. Each helper converts the 
 | Protocol | Helper | Signing |
 | --- | --- | --- |
 | OpenAI Chat Completions | `chatStream` from `@liminal/sdk/ai/chat` | `{ provider, name, options }` |
-| Anthropic Messages | `messagesStream` from `@liminal/sdk/ai/messages` | `{ provider, name, options, preamble }` |
+| Anthropic Messages | `messagesStream` from `@liminal/sdk/ai/messages` | `{ provider, name, options, preamble, deferredLoading }` |
 | OpenAI Responses | `responsesStream` from `@liminal/sdk/ai/responses` | `{ provider, name, options }` |
 
-`options` is an Effect that gives the client options for one call: `apiKey`, `apiUrl`, and `transformClient` to change each HTTP request, such as adding headers.
+`options` is an Effect that gives the client options for one call: `apiKey`, `apiUrl`, and `transformClient` to change each HTTP request, such as adding headers. To change a field the `@effect/ai-*` package cannot send, rewrite the JSON body with `HttpClient.mapRequest(mapJsonBody(change))` from `@liminal/sdk/ai`; example: `withReasoning` in `packages/plugins/model-openrouter/src/server/provider.ts`.
 
 ```ts
 chatStream(http, fs, {
@@ -107,7 +107,9 @@ chatStream(http, fs, {
 
 Rules:
 
-- When the vendor has its own `@effect/ai-*` package, build its `LanguageModel` and pass it to `replyOf(name, prompt, languageModel, request)` from `@liminal/sdk/ai`. `prompt` is a `ProviderPrompt`: the schema of the vendor's part metadata, and the cache mark to put on marked messages.
+- When the vendor has its own `@effect/ai-*` package, build its `LanguageModel` and pass it to `replyOf(name, prompt, languageModel, request)` from `@liminal/sdk/ai`. `prompt` is a `ProviderPrompt`: the schema of the vendor's part metadata, the cache mark to put on marked messages, and `deferredLoading`.
+- Set `deferredLoading: "added"` unless the vendor withholds deferred tools itself: then a deferred tool is sent only once a tool result in `messages` loads it. `"native"` sends every tool and leaves the withholding to the vendor.
+- For `messagesStream`, `deferredLoading(id)` says whether model `id` takes Anthropic's `defer_loading` and `tool_reference` blocks; the helper then rewrites the request body. Return `false` for a server that only copies the Messages protocol. Example: `loadsDeferredTools` in `packages/plugins/model-anthropic/src/server/provider.ts`.
 - Read the request's own fields only: `model.id`, `messages`, `tools`, `thinking`, `maxOutputTokens`, `cacheKey`, and `providerOptions[<your id>]`.
 - Map `thinking` (`Off`, `On`, `Effort`, `Budget`) to the vendor's field. Fail with `invalid-request` for a value the vendor does not take.
 - Never retry inside `stream`. Retries belong to `AfterFailureHooks`.

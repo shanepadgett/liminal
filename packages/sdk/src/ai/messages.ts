@@ -4,7 +4,7 @@
  */
 
 import { AnthropicClient, AnthropicLanguageModel, AnthropicTool } from "@effect/ai-anthropic";
-import { Effect, FileSystem, Match, Option, Schema, Stream } from "effect";
+import { Effect, FileSystem, Match, Option, Predicate, Schema, Stream } from "effect";
 import { Toolkit } from "effect/ai";
 import { HttpClient } from "effect/http";
 
@@ -15,6 +15,8 @@ import {
   type ThinkingValue,
   type WebQuery,
 } from "../core/index.ts";
+import { mapJsonBody } from "./body.ts";
+import { isFields } from "./data.ts";
 import type { ProviderPrompt } from "./provider-prompt.ts";
 import { replyOf } from "./reply.ts";
 import { hostedSearch } from "./search.ts";
@@ -33,6 +35,7 @@ const AnthropicData = Schema.Struct({
 const AnthropicPrompt: ProviderPrompt = {
   data: AnthropicData,
   cache: Option.some({ anthropic: { cacheControl: { type: "ephemeral" } } }),
+  deferredLoading: "added",
 };
 
 /**
@@ -69,7 +72,140 @@ export interface MessagesSigning {
   readonly options: Effect.Effect<AnthropicClient.Options, ModelError>;
   /** Messages sent before the request's, such as an identity the signing requires. */
   readonly preamble: ModelRequest["messages"];
+  /**
+   * Whether model `id` loads deferred tools itself: every tool is sent, the deferred ones marked
+   * `defer_loading`, and a result that loads tools carries `tool_reference` blocks for them.
+   */
+  readonly deferredLoading: (id: string) => boolean;
 }
+
+/** A request's deferred tools by name, and the tools each result loads, by its call id. */
+interface Deferred {
+  readonly tools: ReadonlySet<string>;
+  readonly loads: ReadonlyMap<string, ReadonlyArray<string>>;
+}
+
+const deferredOf = (request: ModelRequest): Deferred => {
+  const loads = new Map<string, ReadonlyArray<string>>();
+
+  for (const content of request.messages) {
+    for (const part of content.parts) {
+      if (part.type === "tool-result" && part.loads !== undefined)
+        loads.set(part.callId, part.loads);
+    }
+  }
+
+  return {
+    tools: new Set(request.tools.flatMap((tool) => (tool.deferred === true ? [tool.name] : []))),
+    loads,
+  };
+};
+
+const isList = (value: Schema.Json | undefined): value is ReadonlyArray<Schema.Json> =>
+  Array.isArray(value);
+
+/** `value` as an object's fields, or undefined when it is not an object. */
+const fieldsOf = (value: Schema.Json): Fields | undefined => (isFields(value) ? value : undefined);
+
+const nameOf = (tool: Schema.Json) => {
+  const name = fieldsOf(tool)?.name;
+
+  return Predicate.isString(name) ? name : undefined;
+};
+
+/** A result's content as blocks: `@effect/ai-anthropic` sends it as one string. */
+const blocksOf = (content: Schema.Json | undefined): ReadonlyArray<Schema.Json> => {
+  if (isList(content)) return content;
+  if (Predicate.isString(content) && content !== "") return [{ type: "text", text: content }];
+
+  return [];
+};
+
+/** A block as sent, and the blocks moved out of it to follow the message's results. */
+interface Referenced {
+  readonly block: Schema.Json;
+  readonly moved: ReadonlyArray<Schema.Json>;
+}
+
+/**
+ * A `tool_result` block that loads tools holds only a `tool_reference` for each: Anthropic refuses
+ * one that mixes them with other content, so its text moves out to follow the results.
+ */
+const referencing =
+  (loads: Deferred["loads"], marked: ReadonlySet<string>) =>
+  (block: Schema.Json): Referenced => {
+    const fields = fieldsOf(block);
+    const id = fields?.tool_use_id;
+
+    if (fields === undefined || fields.type !== "tool_result" || !Predicate.isString(id)) {
+      return { block, moved: [] };
+    }
+
+    const references = (loads.get(id) ?? []).flatMap((name) =>
+      marked.has(name) ? [{ type: "tool_reference", tool_name: name }] : [],
+    );
+
+    if (references.length === 0) return { block, moved: [] };
+
+    return { block: { ...fields, content: references }, moved: blocksOf(fields.content) };
+  };
+
+/**
+ * `body` with the deferred tools marked `defer_loading` and the results that load them referencing
+ * them. Anthropic refuses a request whose every tool is deferred, so then it is left as it is.
+ */
+const deferredBody = (body: Fields, deferred: Deferred): Fields => {
+  const tools = isList(body.tools) ? body.tools : [];
+  const names = tools.flatMap((tool) => nameOf(tool) ?? []);
+  const marked = new Set(names.filter((name) => deferred.tools.has(name)));
+
+  if (marked.size === 0 || marked.size === names.length) return body;
+
+  const mark = (tool: Schema.Json): Schema.Json => {
+    const fields = fieldsOf(tool);
+    const name = nameOf(tool);
+
+    return fields !== undefined && name !== undefined && marked.has(name)
+      ? { ...fields, defer_loading: true }
+      : tool;
+  };
+
+  /** A message's results come first, so moved text goes after all its blocks. */
+  const message = (each: Schema.Json): Schema.Json => {
+    const fields = fieldsOf(each);
+    const content = fields?.content;
+    if (fields === undefined || !isList(content)) return each;
+
+    const referenced = content.map(referencing(deferred.loads, marked));
+    const moved = referenced.flatMap((one) => one.moved);
+
+    return moved.length === 0 && referenced.every((one, index) => one.block === content[index])
+      ? each
+      : { ...fields, content: [...referenced.map((one) => one.block), ...moved] };
+  };
+
+  const messages = isList(body.messages) ? body.messages : [];
+
+  return { ...body, tools: tools.map(mark), messages: messages.map(message) };
+};
+
+/** `options` with the deferred tools rewrite after its own client changes. */
+const withDeferredTools = (
+  options: AnthropicClient.Options,
+  deferred: Deferred,
+): AnthropicClient.Options => {
+  const inner = options.transformClient;
+  const rewrite = HttpClient.mapRequest(mapJsonBody((body) => deferredBody(body, deferred)));
+
+  return {
+    ...options,
+    transformClient: (client) => rewrite(inner === undefined ? client : inner(client)),
+  };
+};
+
+/** Whether `request` goes to a model that loads deferred tools itself. */
+const loadsNatively = (signing: MessagesSigning, request: ModelRequest) =>
+  signing.deferredLoading(request.model.id);
 
 /** The `effect/ai` language model for `request`, signed as `signing` gives. */
 const languageModel = (
@@ -78,9 +214,14 @@ const languageModel = (
   request: ModelRequest,
 ) =>
   Effect.gen(function* () {
-    const client = yield* AnthropicClient.make(yield* signing.options).pipe(
-      Effect.provideService(HttpClient.HttpClient, http),
-    );
+    const options = yield* signing.options;
+    const deferred = deferredOf(request);
+
+    const client = yield* AnthropicClient.make(
+      loadsNatively(signing, request) && deferred.tools.size > 0
+        ? withDeferredTools(options, deferred)
+        : options,
+    ).pipe(Effect.provideService(HttpClient.HttpClient, http));
 
     return yield* AnthropicLanguageModel.make({
       model: request.model.id,
@@ -96,10 +237,14 @@ const languageModel = (
 export const messagesStream =
   (http: HttpClient.HttpClient, fs: FileSystem.FileSystem, signing: MessagesSigning) =>
   (request: ModelRequest) =>
-    replyOf(signing.name, AnthropicPrompt, languageModel(signing, http, request), {
-      ...request,
-      messages: [...signing.preamble, ...request.messages],
-    }).pipe(Stream.provideService(FileSystem.FileSystem, fs));
+    replyOf(
+      signing.name,
+      loadsNatively(signing, request)
+        ? { ...AnthropicPrompt, deferredLoading: "native" }
+        : AnthropicPrompt,
+      languageModel(signing, http, request),
+      { ...request, messages: [...signing.preamble, ...request.messages] },
+    ).pipe(Stream.provideService(FileSystem.FileSystem, fs));
 
 /** At most this many searches per question; each costs the account. */
 const searchUses = 3;

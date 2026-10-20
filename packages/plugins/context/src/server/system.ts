@@ -125,12 +125,18 @@ const sectionChanges = (
   });
 };
 
+/**
+ * A declaration without its deferral: a tool that becomes deferred or stops being deferred keeps
+ * the declaration its session's baseline gave it, so the cached prefix holds.
+ */
+const undeferred = ({ deferred: _deferred, ...declared }: ModelTool): ModelTool => declared;
+
 /** The tool's change from its saved declaration: none or one. */
 const toolChanges = (tool: ModelTool, saved: ModelTool | undefined): ReadonlyArray<ToolChange> => {
-  const { offered, ...spec } = tool;
+  const { offered, deferred: _deferred, ...spec } = tool;
 
   if (offered) {
-    return saved !== undefined && Equal.equals(saved, tool)
+    return saved !== undefined && Equal.equals(undeferred(saved), undeferred(tool))
       ? []
       : [{ change: "offer", tool: spec }];
   }
@@ -161,8 +167,9 @@ export const diff = (
 
   const changedTools = [
     ...tools.flatMap((tool) => toolChanges(tool, saved.tools.get(tool.name))),
-    ...[...saved.tools.values()].flatMap(({ offered, ...spec }): ReadonlyArray<ToolChange> =>
-      offered && !names.has(spec.name) ? [{ change: "withdraw", tool: spec }] : [],
+    ...[...saved.tools.values()].flatMap(
+      ({ offered, deferred: _deferred, ...spec }): ReadonlyArray<ToolChange> =>
+        offered && !names.has(spec.name) ? [{ change: "withdraw", tool: spec }] : [],
     ),
   ];
 
@@ -198,6 +205,13 @@ export const systemModel = (data: SystemData): ReadonlyArray<ModelContent> => {
 const toolLine = (label: string, tool: { readonly description: string }) =>
   `- ${label}: ${tool.description}`;
 
+/** A baseline tool's name, marked when the model cannot call it yet. */
+const baselineLabel = (tool: ModelTool) => {
+  if (!tool.offered) return `${tool.name} (not offered)`;
+
+  return tool.deferred === true ? `${tool.name} (deferred)` : tool.name;
+};
+
 /**
  * The plain text a system entry shows in the debug view: every section's full text as the model
  * reads it, then each tool with its description.
@@ -208,9 +222,7 @@ export const systemText = (data: SystemData): string => {
 
   const tools =
     data.type === "baseline"
-      ? data.tools.map((tool) =>
-          toolLine(tool.offered ? tool.name : `${tool.name} (not offered)`, tool),
-        )
+      ? data.tools.map((tool) => toolLine(baselineLabel(tool), tool))
       : data.tools.map(({ change, tool }) => toolLine(`${change} ${tool.name}`, tool));
 
   return [title, ...texts, ...(tools.length === 0 ? [] : [`Tools:\n${tools.join("\n")}`])].join(

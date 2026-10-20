@@ -16,7 +16,13 @@ import { LoginMethod, LoginMethods } from "@liminal/logins/contract";
 import { ModelCatalog } from "@liminal/model-catalog/contract";
 import models from "@liminal/models";
 import { Models } from "@liminal/models/contract";
-import { type ModelContent, type ModelRequest, ThinkingBudget, ThinkingEffort } from "@liminal/sdk";
+import {
+  type ModelContent,
+  type ModelRequest,
+  type ModelTool,
+  ThinkingBudget,
+  ThinkingEffort,
+} from "@liminal/sdk";
 import {
   effectTest,
   event,
@@ -80,19 +86,19 @@ const fakeCatalog = Layer.succeed(
   ModelCatalog,
   ModelCatalog.of({
     models: () =>
-      Effect.succeed([
-        {
+      Effect.succeed(
+        ["claude-test", "claude-sonnet-4-5-20250929", "claude-opus-4-1-20250805"].map((id) => ({
           info: {
-            id: "claude-test",
-            name: "Claude Test",
+            id,
+            name: id,
             contextWindow: 200_000,
             maxOutput: 64_000,
             thinking: [],
             input: ["text"],
           },
           package: Option.none(),
-        },
-      ]),
+        })),
+      ),
   }),
 );
 
@@ -321,5 +327,101 @@ effectTest(
     expect(Exit.isFailure(api) && JSON.stringify(api.cause)).toContain("auth");
     expect(yield* messageRequests).toEqual([]);
   }).pipe(Effect.provideService(ConfigProvider.ConfigProvider, noKey)),
+  stack,
+);
+
+const tool = (name: string, deferred: boolean): ModelTool => {
+  const declared: ModelTool = {
+    name,
+    description: name,
+    parameters: { type: "object", properties: {} },
+    offered: true,
+  };
+
+  return deferred ? { ...declared, deferred: true } : declared;
+};
+
+/** A conversation where `tool_search` loaded `lookup`. */
+const searched = (model: string): ModelRequest => ({
+  ...requestTo(anthropicApiProvider),
+  model: { provider: anthropicApiProvider, id: model },
+  tools: [tool("tool_search", false), tool("lookup", true), tool("unused", true)],
+  messages: [
+    ...messages,
+    {
+      role: "assistant",
+      parts: [
+        {
+          type: "tool-call",
+          id: "toolu_1",
+          name: "tool_search",
+          params: { query: "select:lookup" },
+          providerData: {},
+        },
+      ],
+    },
+    {
+      role: "tool",
+      parts: [
+        {
+          type: "tool-result",
+          callId: "toolu_1",
+          name: "tool_search",
+          result: "Loaded lookup",
+          isFailure: false,
+          loads: ["lookup"],
+        },
+      ],
+    },
+  ],
+});
+
+const ToolsBody = Schema.Struct({ tools: Schema.Array(Schema.Json) });
+
+effectTest(
+  "marks deferred tools and has a loading result hold only references, on models that load them",
+  Effect.gen(function* () {
+    yield* Stream.runDrain((yield* Models).stream(searched("claude-sonnet-4-5-20250929")));
+    const [request] = yield* messageRequests;
+    const body = yield* firstBody;
+
+    expect(yield* Schema.decodeUnknownEffect(ToolsBody)(request?.body)).toMatchObject({
+      tools: [
+        { name: "tool_search" },
+        { name: "lookup", defer_loading: true },
+        { name: "unused", defer_loading: true },
+      ],
+    });
+
+    // Anthropic refuses a result that mixes references with text, so the text follows the result.
+    expect(body.messages.at(-1)?.content).toMatchObject([
+      {
+        type: "tool_result",
+        tool_use_id: "toolu_1",
+        content: [{ type: "tool_reference", tool_name: "lookup" }],
+      },
+      { type: "text", text: "Loaded lookup" },
+    ]);
+  }).pipe(Effect.provideService(ConfigProvider.ConfigProvider, withKey)),
+  stack,
+);
+
+effectTest(
+  "sends an older model only the deferred tools a result loaded",
+  Effect.gen(function* () {
+    yield* Stream.runDrain((yield* Models).stream(searched("claude-opus-4-1-20250805")));
+    const [request] = yield* messageRequests;
+    const body = yield* firstBody;
+
+    const { tools } = yield* Schema.decodeUnknownEffect(ToolsBody)(request?.body);
+
+    expect(tools).toEqual([
+      expect.objectContaining({ name: "tool_search" }),
+      expect.objectContaining({ name: "lookup" }),
+    ]);
+
+    expect(tools[1]).not.toHaveProperty("defer_loading");
+    expect(body.messages.at(-1)?.content[0]).toMatchObject({ content: "Loaded lookup" });
+  }).pipe(Effect.provideService(ConfigProvider.ConfigProvider, withKey)),
   stack,
 );

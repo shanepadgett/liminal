@@ -62,8 +62,8 @@ const tool = (name: string) =>
     run: () => Effect.succeed({ result: name }),
   });
 
-/** A tool source with one tool, offered as the tool declares. */
-const offer = (one: Tool) => Effect.succeed([{ ...one.spec, offered: one.offeredAtStart }]);
+/** A tool source with one tool offered from the start. */
+const offer = (one: Tool) => Effect.succeed([{ ...one.spec, offered: true }]);
 
 /** Builds the stack in the current scope and registers a notes section read from `notes`. */
 const start = Effect.fn("start")(function* (notes: Ref.Ref<SectionRead<string>>) {

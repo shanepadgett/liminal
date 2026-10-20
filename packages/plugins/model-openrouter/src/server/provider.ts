@@ -8,19 +8,18 @@ import {
   Layer,
   Match,
   Option,
-  Predicate,
   type Redacted,
   Schema,
   Stream,
 } from "effect";
-import { HttpClient, HttpClientRequest } from "effect/http";
+import { HttpClient } from "effect/http";
 
 import { apiKeyOf, CredentialStore } from "@liminal/credential-store/contract";
 import { DecisionModels } from "@liminal/decisions/contract";
 import { LoginMethod, LoginMethods } from "@liminal/logins/contract";
 import { ModelProviders, ModelSource } from "@liminal/models/contract";
 import { ModelError, type ModelRequest, type ThinkingValue, ThinkingOff } from "@liminal/sdk";
-import { type ProviderPrompt, replyOf } from "@liminal/sdk/ai";
+import { mapJsonBody, type ProviderPrompt, replyOf } from "@liminal/sdk/ai";
 import { systemOne } from "@liminal/sdk/ai/decisions";
 
 import { openRouterKeyVariable, openRouterLogin, openRouterProvider } from "../contract.ts";
@@ -41,6 +40,7 @@ const OpenRouterData = Schema.Struct({
 const OpenRouterPrompt: ProviderPrompt = {
   data: OpenRouterData,
   cache: Option.some({ openrouter: { cacheControl: { type: "ephemeral" } } }),
+  deferredLoading: "added",
 };
 
 const isEffort = Schema.is(Generated.ReasoningEffort);
@@ -64,24 +64,11 @@ const reasoningOf = (thinking: ThinkingValue): Effect.Effect<Reasoning, ModelErr
     Budget: ({ tokens }) => Effect.succeed({ max_tokens: tokens }),
   });
 
-const decodeBody = Schema.decodeUnknownOption(
-  Schema.fromJsonString(Schema.Record(Schema.String, Schema.Json)),
-);
-
 /**
  * Sets `reasoning` on each JSON request body. `@effect/ai-openrouter` types the Chat request's
  * `reasoning` with `effort` alone, though OpenRouter also takes `enabled` and `max_tokens`.
  */
-const withReasoning =
-  (reasoning: Reasoning) =>
-  (request: HttpClientRequest.HttpClientRequest): HttpClientRequest.HttpClientRequest => {
-    if (!Predicate.isTagged(request.body, "Uint8Array")) return request;
-
-    return Option.match(decodeBody(new TextDecoder().decode(request.body.body)), {
-      onNone: () => request,
-      onSome: (body) => HttpClientRequest.bodyJsonUnsafe(request, { ...body, reasoning }),
-    });
-  };
+const withReasoning = (reasoning: Reasoning) => mapJsonBody((body) => ({ ...body, reasoning }));
 
 /** The `effect/ai` language model for `request`, signed with `key`. */
 const languageModel = (

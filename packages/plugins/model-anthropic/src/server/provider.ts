@@ -25,11 +25,19 @@ const cheapModel = "claude-haiku-5-5";
 const keyOf = (store: CredentialStore["Service"]) =>
   apiKeyOf(store, { login: anthropicApiProvider, env: anthropicKeyVariable, name: "Anthropic" });
 
+/** Claude 3, Opus 4.1, Opus 4 and Sonnet 4: models older than these 4.5 ones and their successors. */
+const olderThanDeferredTools =
+  /^claude-(?:[0-3](?:\D|$)|instant|(?:opus|sonnet)-4(?:-[01])?(?:-\d{8})?$)/;
+
+/** Claude Haiku 4.5, Sonnet 4.5, Opus 4.5 and every later model load deferred tools themselves. */
+const loadsDeferredTools = (id: string) => !olderThanDeferredTools.test(id);
+
 const keySigning = (store: CredentialStore["Service"]): MessagesSigning => ({
   provider: anthropicApiProvider,
   name: "Anthropic",
   options: Effect.map(keyOf(store), (apiKey) => ({ apiKey })),
   preamble: [],
+  deferredLoading: loadsDeferredTools,
 });
 
 /** Signs as Claude Code, which Anthropic also requires to be named first in the system prompt. */
@@ -47,6 +55,7 @@ const claudeSigning = (
     return { transformClient: HttpClient.mapRequest(signAsClaudeCode(access, version)) };
   }),
   preamble: [claudeCodeIdentity],
+  deferredLoading: loadsDeferredTools,
 });
 
 /**

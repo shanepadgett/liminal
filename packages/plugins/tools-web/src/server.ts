@@ -25,6 +25,7 @@ const searchTool = (searchers: WebSearchers["Service"]) =>
       untrusted,
     ].join("\n"),
     parameters: SearchParams,
+    offer: "search",
     runAlongside: true,
     safeToRerun: true,
     run: ({ query, maxSources = 8, timeout = 25 }) =>
@@ -43,6 +44,7 @@ const fetchTool = (http: HttpClient.HttpClient) =>
       untrusted,
     ].join("\n"),
     parameters: FetchParams,
+    offer: "search",
     runAlongside: true,
     safeToRerun: true,
     run: ({ url, timeout = 30 }) =>

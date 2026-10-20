@@ -168,26 +168,28 @@ export interface ToolResult {
   readonly status: ToolResultStatus;
   readonly result: Schema.Json;
   readonly details: Schema.Json | undefined;
+  /** Deferred tools the result loads; only a done call loads any. */
+  readonly loads: ReadonlyArray<string>;
 }
 
 /** A tool call's result entry; every status but `done` is a failure. */
 export const resultDraft = (call: CallPart, result: ToolResult): EntryDraft => {
   const data = { callId: call.id, name: call.name, status: result.status, result: result.result };
 
+  const part: Extract<ModelPart, { type: "tool-result" }> = {
+    type: "tool-result",
+    callId: call.id,
+    name: call.name,
+    result: result.result,
+    isFailure: result.status !== "done",
+  };
+
   return draft(ToolResultEntry, {
     data: result.details === undefined ? data : { ...data, details: result.details },
     model: [
       {
         role: "tool",
-        parts: [
-          {
-            type: "tool-result",
-            callId: call.id,
-            name: call.name,
-            result: result.result,
-            isFailure: result.status !== "done",
-          },
-        ],
+        parts: [result.loads.length === 0 ? part : { ...part, loads: result.loads }],
       },
     ],
     text: `${call.name}: ${result.status}`,

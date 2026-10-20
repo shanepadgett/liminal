@@ -24,7 +24,11 @@ const ChatData = Schema.Struct({
 });
 
 /** Chat servers cache on their own; marks are ignored. */
-const ChatPrompt: ProviderPrompt = { data: ChatData, cache: Option.none() };
+const ChatPrompt: ProviderPrompt = {
+  data: ChatData,
+  cache: Option.none(),
+  deferredLoading: "added",
+};
 
 type Fields = Readonly<Record<string, Schema.Json>>;
 

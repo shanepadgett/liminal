@@ -17,7 +17,7 @@ const stack = serverOf(toolOutput).pipe(
 
 const tool: Tool = {
   spec: { name: "sh", description: "", parameters: {} },
-  offeredAtStart: true,
+  offer: "start",
   guidance: [],
   hints: defaultHints,
   runAlongside: false,
