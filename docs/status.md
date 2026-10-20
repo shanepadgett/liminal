@@ -62,6 +62,18 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [memory](plugins/memory.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
 
+### Requested follow-up work
+
+- Provider onboarding: replace “No model is set; set agent-loop.model in a settings file” with “No providers connected” when no providers are connected; consider selecting a recent, cheap model from each connected provider until the user sets a default.
+- Network recovery: automatically retry transient network failures, including “✕ Network error”, `OpenAiClient.createResponseStream: TransportError: A network error occurred. (POST https://chatgpt.com/backend-api/codex/responses)` and “Check your network connection and verify that the requested URL is accessible.”
+- Thread resolution: support resolving (archiving) threads; review the existing [session archive work](plans/session-archive.md) against this workflow.
+- Tool entry display: fix edit rows showing “edited” instead of “Edit” after opening and collapsing; show readable diffs when expanded; brighten hovered transcript entries other than assistant and user messages.
+- Thoughts: do not stream thought text into the transcript; show “Thinking/Thought” with a summary, and let clicking reveal the full streamed thought when the provider supports it.
+- Session resume: open at the bottom immediately rather than visibly scrolling down.
+- Local learning plugin: explore `/learn` or an evolve plugin that learns from sessions with failed tool calls and identifies changes that prevent those failures.
+- Keyboard focus: Tab switches focus between the composer and tool rows.
+- Scoped checks: split check selection so gallery-only changes do not run every check.
+
 ## Open topics
 
 ### Release readiness
