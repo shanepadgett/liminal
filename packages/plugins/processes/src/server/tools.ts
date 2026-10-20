@@ -83,13 +83,9 @@ const onHolder = <A, E extends { readonly message: string }>(
 const startTool = (link: HolderLink, workspace: string) =>
   defineTool({
     name: processTools.start,
-    description: `Starts a command line with /bin/sh in ${workspace} and leaves it running across turns. Waits briefly, then returns its id, its state and its output so far.`,
+    description: `Starts a command line with /bin/sh in ${workspace} and leaves it running across turns, for commands that keep running or need input, such as dev servers, watchers and REPLs; \`shell\` runs commands that finish. Waits briefly, then returns its id, its state and its output so far. Stop each command with \`process_stop\` once it is no longer needed. The command starts in ${workspace}, so do not cd into it.`,
     parameters: StartParams,
-    guidance: [
-      "Use `process_start` for commands that keep running or need input, such as dev servers, watchers and REPLs; use `shell` for commands that finish.",
-      "Stop each command with `process_stop` once it is no longer needed.",
-      `Every command starts in ${workspace}, so do not cd into it.`,
-    ],
+    offer: "search",
     runAlongside: false,
     safeToRerun: false,
     run: ({ command, pty = false, waitSeconds = START_WAIT }, { sessionId }) =>
@@ -106,6 +102,7 @@ const waitTool = (link: HolderLink) =>
     description:
       "Waits on a running command until it exits, a line matches `pattern`, its output goes quiet for `quietSeconds`, or `deadlineSeconds` pass. Returns the output since the last read.",
     parameters: WaitParams,
+    offer: "search",
     hints: { readOnlyHint: true },
     runAlongside: true,
     safeToRerun: true,
@@ -129,6 +126,7 @@ const readTool = (link: HolderLink) =>
     name: processTools.read,
     description: "Returns a command's state and the output since the last read, without waiting.",
     parameters: IdParams,
+    offer: "search",
     hints: { readOnlyHint: true },
     runAlongside: true,
     safeToRerun: false,
@@ -146,6 +144,7 @@ const writeTool = (link: HolderLink) =>
     description:
       "Types text into a running command's input. End a line with \\n to send it; process_wait or process_read shows the answer.",
     parameters: WriteParams,
+    offer: "search",
     runAlongside: false,
     safeToRerun: false,
     run: ({ id, text }, { sessionId }) =>
@@ -159,6 +158,7 @@ const stopTool = (link: HolderLink) =>
     name: processTools.stop,
     description: "Stops a command and every process it started.",
     parameters: IdParams,
+    offer: "search",
     runAlongside: false,
     safeToRerun: true,
     run: ({ id }, { sessionId }) =>
@@ -184,6 +184,7 @@ const listTool = (link: HolderLink) =>
     name: processTools.list,
     description: "Lists this session's commands with their ids and states.",
     parameters: Schema.Struct({}),
+    offer: "search",
     hints: { readOnlyHint: true },
     runAlongside: true,
     safeToRerun: true,

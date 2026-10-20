@@ -50,9 +50,11 @@ effectTest(
     const { workspace } = yield* Directories;
     const tool = Option.getOrThrow(yield* (yield* Tools).get("shell"));
 
-    expect(tool.spec.description).toContain(workspace);
-    expect(tool.guidance.join("\n")).toContain(`starts in ${workspace}`);
-    expect(tool.guidance.join("\n")).toContain("do not cd");
+    expect(tool.spec.description).toContain(
+      `starts in ${workspace} in a fresh shell, so do not cd`,
+    );
+
+    expect(tool.guidance.join("\n")).toContain("`process_start`");
   }),
   stack,
 );

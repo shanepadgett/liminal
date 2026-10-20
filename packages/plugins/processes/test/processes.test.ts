@@ -103,8 +103,8 @@ effectTest(
     const { workspace } = yield* Directories;
     const tool = Option.getOrThrow(yield* (yield* Tools).get(processTools.start));
 
-    expect(tool.spec.description).toContain(workspace);
-    expect(tool.guidance.join("\n")).toContain(`starts in ${workspace}`);
+    expect(tool.spec.description).toContain(`starts in ${workspace}, so do not cd into it`);
+    expect(tool.offer).toBe("search");
   }),
   stack,
 );

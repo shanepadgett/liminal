@@ -31,11 +31,10 @@ const make = Effect.gen(function* () {
   yield* tools.register(
     defineTool({
       name: "shell",
-      description: `Runs a command line with /bin/sh in ${workspace} and returns its output.`,
+      description: `Runs a command line with /bin/sh in ${workspace} and returns its output. Every command starts in ${workspace} in a fresh shell, so do not cd into it; a cd does not carry over to the next call.`,
       parameters: ShellParams,
       guidance: [
-        "Use `shell` to run programs, builds and tests; use a file tool to read or change a file when one fits.",
-        `Every command starts in ${workspace} in a fresh shell, so do not cd into it. A cd does not carry over to the next call.`,
+        "Use `shell` to run programs, builds and tests that finish; use a file tool to read or change a file when one fits. For a command that keeps running or needs input, load `process_start` with `tool_search`.",
       ],
       runAlongside: false,
       safeToRerun: false,
