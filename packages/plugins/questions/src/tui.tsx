@@ -10,18 +10,26 @@ import { createEffect, onCleanup, Show } from "solid-js";
 import { ChatSlots, ToolRows } from "@liminal/chat/contract";
 import { InboxSlots } from "@liminal/inbox/contract";
 import type { SessionId } from "@liminal/sdk";
-import { defineTui, Hints, TuiCommands, TuiHost, useColor } from "@liminal/sdk/tui";
+import {
+  defineTui,
+  Hints,
+  hintsPriority,
+  PromptPriority,
+  TuiCommands,
+  TuiHost,
+  useColor,
+} from "@liminal/sdk/tui";
 
 import { AnswersEntry, askQuestionTool, FormEntry } from "./contract.ts";
 import { AnswersRow, AskedRow } from "./tui/entries.tsx";
 import { QuestionForm } from "./tui/QuestionForm.tsx";
 import { makeQuestionsState, NONE, type QuestionsState } from "./tui/state.ts";
 
-/** Ahead of the draft, which holds priority 0. */
-const priority = -1;
+/** Ahead of the draft, which holds priority 0, behind the approval and commit prompts. */
+const priority = PromptPriority.questions;
 
-/** Ahead of the composer's hints at 0, behind trust's at -1. */
-const hintsPriority = -0.5;
+/** Ahead of the composer's hints at 0. */
+const formHintsPriority = hintsPriority(priority);
 
 /** After the approval mode and references on the composer's model line. */
 const LINE_ORDER = 30;
@@ -68,7 +76,7 @@ const registerForm = (host: TuiHost["Service"], state: QuestionsState) => {
 
     yield* host.register(
       ChatSlots.composerHints,
-      { select, priority: hintsPriority },
+      { select, priority: formHintsPriority },
       function FormHints() {
         const color = useColor();
 

@@ -16,7 +16,13 @@ import {
   Switch,
 } from "solid-js";
 
-import { enterKeys, type Hint, useBindings, useColor } from "@liminal/sdk/tui";
+import {
+  enterKeys,
+  type Hint,
+  PROMPT_KEYS_PRIORITY,
+  useBindings,
+  useColor,
+} from "@liminal/sdk/tui";
 
 import type { Answers, Form, Question } from "../contract.ts";
 import { ChoiceTab, type ChoiceEvents } from "./ChoiceTab.tsx";
@@ -50,9 +56,6 @@ export interface FormDeps {
   /** Whether a dialog is open, which takes the keys. */
   readonly dialogOpen: Accessor<boolean>;
 }
-
-/** Above the composer's own keys. */
-const KEYS_PRIORITY = 1;
 
 const choosingKeys = (state: FormState) =>
   isWriting(state) ? [] : [...enterKeys("questions.pick"), { key: "n", cmd: "questions.note" }];
@@ -179,7 +182,7 @@ const useFormKeys = (state: Accessor<FormState>, update: Update, deps: FormDeps)
   });
 
   useBindings(() => ({
-    priority: KEYS_PRIORITY,
+    priority: PROMPT_KEYS_PRIORITY,
     commands: formCommands(state, update, deps),
     bindings: formKeys(state(), deps.dialogOpen()),
   }));
