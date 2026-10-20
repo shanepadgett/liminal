@@ -22,3 +22,4 @@ One file per piece of work being planned or built. A plan moves to `archive/` on
 | [session-name.md](session-name.md) | Built; awaiting review |
 | [entry-versions.md](entry-versions.md) | Step 1 built; awaiting review |
 | [memory.md](memory.md) | Built; awaiting review |
+| [custom-prompts.md](custom-prompts.md) | Approval and commit prompts built; `CommandMenu` rename next |

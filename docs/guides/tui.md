@@ -149,7 +149,7 @@ yield* commands.register(
 | Field | Meaning |
 | --- | --- |
 | `name` | `<area>.<action>`, unique |
-| `slash` | `{ name, aliases?, arguments? }`; with `arguments` the text after the command goes to `run(args)`; picking it in the slash menu fills `/name ` for `true` and runs it at once for `"optional"` |
+| `slash` | `{ name, aliases?, arguments? }`; with `arguments` the text after the command goes to `run(args)`; picking it in the command menu fills `/name ` for `true` and runs it at once for `"optional"` |
 | `palette` | `true` to list it in the palette |
 | `category` | The palette group |
 
@@ -198,6 +198,18 @@ dialogs.show((props: DialogProps) => (
 | `DialogFrame` | Your own dialog body with the standard title, hints and close |
 
 Examples: `packages/plugins/agent-loop/src/tui.tsx`, `packages/plugins/logins/src/tui/`.
+
+## Ask the user in the composer's place
+
+Use a custom prompt, not a dialog, when the app needs a decision from the user: it takes the composer's draft area, keeps the model line and leaves the draft alone. Use a dialog for a list the user opened to browse or pick from.
+
+1. Keep a signal for what waits (the asks, the running flow) and a `select` that returns `true` while something does.
+2. Register the prompt on `InboxSlots.input` and its key hints on `ChatSlots.composerHints`, both with `PromptPriority.<yours>` (hints at `hintsPriority(priority)`); the lowest priority shows.
+3. Bind keys with `priority: PROMPT_KEYS_PRIORITY` and no bindings while `dialogs.top()` is set; `esc` is the cancel.
+4. Show choices as `ListRow`s, and end the prompt body with `marginBottom={1}`.
+5. Key the prompt with `<Show when={...} keyed>` so a new ask starts afresh; keep the same ask's state when it arrives again.
+
+Examples: `packages/plugins/approval/src/tui/ApprovalPrompt.tsx`, `packages/plugins/commit/src/tui/CommitPrompt.tsx`, `packages/plugins/questions/src/tui.tsx`.
 
 ## Request user attention
 
