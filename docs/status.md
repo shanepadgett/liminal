@@ -45,6 +45,7 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 
 ## Next
 
+- Priority: saved-session compatibility ([plans/entry-versions.md](plans/entry-versions.md)); today's shapes establish version 1; the read-only history audit is built and reports no mismatches or unknown kinds in the local session database; step 2 covers stored versions, server-side migrations, safe approval recovery and read-only viewing with resume blocked for newer unsupported versions; then step 3: schema-change protection and the saved-data code rule
 - Daily driver ([plans/daily-driver.md](plans/daily-driver.md)): steps 1 to 13 built (sessions and the command line; tool output spill, the loop guard and `history`; checks; the `run` tool; web search and fetch; the sidebar with usage, cost and compaction; processes; the composer's `@` tags, pictures and stashes; references; `/qna`; `/commit`; skills; the attention sound); next: the user's live checks
 - Session polish ([plans/session-polish.md](plans/archive/session-polish.md)): `ctrl+t` cycles thinking, a Session sidebar section, the shell tools name their folder, `/qna` and `/commit` run on `enter` in the slash menu, the approval dialog shows the reviewer's summary instead of the command; built, awaiting review
 - Custom prompts ([plans/custom-prompts.md](plans/custom-prompts.md)): approval and commit prompts and the `CommandMenu` rename built, awaiting review; trust keeps its own full-composer prompt
@@ -52,13 +53,31 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 - Deferred tools ([plans/deferred-tools.md](plans/deferred-tools.md)): built, awaiting review; next: the live checks in the plan
 - When the current work is done: clean up all implemented plans in `docs/plans/`
 - Session name ([plans/session-name.md](plans/archive/session-name.md)): `name_session` and the checkpoint's `name` field are built; check live that the model names once, renames only at a checkpoint, and the `/sessions` dialog shows the name
-- Entry versions and graph-scoped registries ([plans/entry-versions.md](plans/entry-versions.md)): step 1 (graph-scoped registries) built, awaiting review; step 2 (entry versions) next
 - Check memory live ([plans/compaction.md](plans/archive/compaction.md)): the checkpoint rule, and the handoff and note lines in the debug view.
 - Check memory files live ([plans/memory.md](plans/archive/memory.md)): the Context rows, the rule's file count, the debug Files line and the files read back after a checkpoint
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [memory](plugins/memory.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
 
 ## Open topics
+
+### Release readiness
+
+- First release scope: a focused terminal-agent alpha rather than feature parity with OpenCode, Pi, Codex and Crush; settle the release bar after saved-session compatibility
+- Installation and releases: supported install and upgrade paths, release notes, platform requirements and distribution/license terms
+- First-run experience: install, connect a model and complete a task without maintainer help
+- Change review and recovery: readable diffs, conversation rewind/fork and file rollback; keep conversation branching distinct from restoring files ([file-snapshots](plugins/file-snapshots.md))
+- Session management: search across sessions, export and sharing; review sensitive content before exporting or sharing
+- Integrations: consider MCP after compatibility and change recovery; include authentication and deferred tool discovery
+- Provider configuration: custom OpenAI-/Anthropic-compatible endpoints, local models and cloud providers; prioritize supported setups over provider count
+- Language servers: diagnostics and code navigation beyond the existing project checks
+- Automation and editor access: structured print output, a supported external RPC/SDK interface and ACP; terminal-first scope may defer these
+- Plugin distribution: installation, updates and dependency handling beyond manually placing or symlinking an annex folder
+- Support: diagnostic export and bug reports with explicit review and secret redaction, without requiring an entire session database
+- Live reliability: validate advertised providers, interruption, restart, compaction, expired credentials and process recovery before release
+- Safety and privacy: document command permissions, credential storage, plugin execution and the absence of OS sandboxing; approvals and workspace trust are not isolation
+- Broader scope: decide when sandboxing, more platforms, subagents, desktop access and collaboration justify expanding the first release
+
+### Other topics
 
 - Code conventions: port Tau's standards and custom lint rules, reviewed per rule
 - Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`); [plans/reload.md](plans/archive/reload.md) serves them into each build's `Bun.ModuleGraph`, and plugin packages' exports come from the folder the host loaded them from; an import of a package no plugin folder holds still resolves the plugin's own copy

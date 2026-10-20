@@ -9,7 +9,7 @@ One file per piece of work being planned or built. A plan moves to `archive/` on
 | [transcript.md](transcript.md) | Built in the gallery, awaiting review |
 | [connect.md](connect.md) | Steps 1 to 6 built |
 | [daily-driver.md](daily-driver.md) | Architecture planned; steps to plan and build |
-| [entry-versions.md](entry-versions.md) | Step 1 built; awaiting review |
+| [entry-versions.md](entry-versions.md) | Current priority: step 2, saved entry versions; step 1 built |
 | [custom-prompts.md](custom-prompts.md) | Approval and commit prompts built; `CommandMenu` rename next |
 | [deferred-tools.md](deferred-tools.md) | Open decisions; nothing built |
 | [prompt-trim.md](prompt-trim.md) | Built; live check not run |
