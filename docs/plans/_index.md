@@ -12,3 +12,4 @@ One file per piece of work being planned or built. A plan moves to `archive/` on
 | [entry-versions.md](entry-versions.md) | Step 1 built; awaiting review |
 | [custom-prompts.md](custom-prompts.md) | Approval and commit prompts built; `CommandMenu` rename next |
 | [deferred-tools.md](deferred-tools.md) | Open decisions; nothing built |
+| [prompt-trim.md](prompt-trim.md) | Built; live check not run |
