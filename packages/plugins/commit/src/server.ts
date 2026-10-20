@@ -137,12 +137,13 @@ const make = Effect.gen(function* () {
   const store = yield* Settings;
   const promptsSince = promptsAfterHead(git, yield* SessionLog);
 
-  /** The small model of the provider a new turn would use. */
-  const planner = loop.defaults.pipe(
-    Effect.mapError(() => new CommitError({ message: "No model is set. Pick one with /model." })),
-    Effect.flatMap((settings) => models.cheap(settings.model.provider)),
-    Effect.mapError(failWith),
-  );
+  /** The small model of the provider the session's next turn would use. */
+  const planner = (session: SessionId) =>
+    loop.sessionSettings(session).pipe(
+      Effect.mapError(() => new CommitError({ message: "No model is set. Pick one with /model." })),
+      Effect.flatMap((settings) => models.cheap(settings.model.provider)),
+      Effect.mapError(failWith),
+    );
 
   /** What `settings.json` says about pushing; invalid settings ask. */
   const pushSetting = store.section("commit", CommitSettings).pipe(
@@ -158,7 +159,7 @@ const make = Effect.gen(function* () {
     if (files.length === 0) return yield* new CommitError({ message: "Nothing to commit." });
 
     const due = yield* dueOf(session, files);
-    const pick = yield* planner;
+    const pick = yield* planner(session);
 
     const found: CommitStart = {
       root,
@@ -184,7 +185,7 @@ const make = Effect.gen(function* () {
       instruction: instruction.trim(),
     };
 
-    return yield* planCommits(task, { model: yield* planner, session, evidence });
+    return yield* planCommits(task, { model: yield* planner(session), session, evidence });
   });
 
   return CommitRpcs.of({

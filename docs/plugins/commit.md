@@ -25,7 +25,7 @@ Status: built
 
 ### Plan
 
-- The cheap model of the default provider groups every changed file into conventional commits; it answers up to three times, each time shown its last plan and why it broke a rule (a file left out or repeated, a bad subject)
+- The cheap model of the session's provider, the one its next turn would use, groups every changed file into conventional commits; it answers up to three times, each time shown its last plan and why it broke a rule (a file left out or repeated, a bad subject)
 - A single commit of every file is asked for with `allFiles`, not by listing each number
 - The planner reads the numbered files, each file's diff against HEAD under its number and cut to an even share of the total, recent subjects, the user's prompts since the last commit and the text after `/commit`
 - The commit prompt lists one line per commit; enter commits, esc cancels
