@@ -6,6 +6,7 @@
 
 import { type ScrollBoxRenderable, TextAttributes } from "@opentui/core";
 import { useBindings } from "@opentui/keymap/solid";
+import type { JSX } from "@opentui/solid";
 import { createEffect, createMemo, createSignal, For, on, Show } from "solid-js";
 
 import { enterKeys, moveKeys } from "./commands.ts";
@@ -58,6 +59,12 @@ export interface DialogAction {
 export interface SelectDialogProps<V> extends DialogProps {
   readonly width?: number;
   readonly emptyMessage?: string;
+  /** Ordered sections, including empty sections when the filter is blank. */
+  readonly categories?: ReadonlyArray<string>;
+  /** Retain a filter when another dialog temporarily replaces this one. */
+  readonly filter?: { readonly query: string; readonly onInput: (query: string) => void };
+  /** Detail below the list, including when no option is highlighted. */
+  readonly footer?: (value: V | undefined) => JSX.Element;
   readonly dialogActions?: ReadonlyArray<DialogAction>;
   readonly title: string;
   readonly options: ReadonlyArray<SelectOption<V>>;
@@ -66,7 +73,7 @@ export interface SelectDialogProps<V> extends DialogProps {
   /** Highlighted on opening or entering a screen; the first matching option when absent. */
   readonly current?: V | undefined;
   /** Runs after the dialog closes. */
-  readonly onSelect: (value: V) => void;
+  readonly onSelect?: (value: V) => void;
   /** Runs when the highlight lands on an option, including the one it starts on. */
   readonly onHighlight?: (value: V) => void;
   /** Other keys on the highlighted option, shown after the dialog's own hints. */
@@ -90,8 +97,14 @@ const MAX_LIST_ROWS = 16;
 const HINTS: readonly Hint[] = [["enter", "select"]];
 
 /** The options matching `query`, grouped by category in first-seen order, numbered in that order. */
-const groupsOf = <V,>(options: ReadonlyArray<SelectOption<V>>, query: string) => {
-  const byCategory = new Map<string, Array<Omit<Row<V>, "index">>>();
+const groupsOf = <V,>(
+  options: ReadonlyArray<SelectOption<V>>,
+  query: string,
+  categories: ReadonlyArray<string>,
+) => {
+  const byCategory = new Map<string, Array<Omit<Row<V>, "index">>>(
+    query === "" ? categories.map((category) => [category, []]) : [],
+  );
 
   for (const option of options) {
     const matches = matchIndices(query, option.title);
@@ -112,7 +125,10 @@ const groupsOf = <V,>(options: ReadonlyArray<SelectOption<V>>, query: string) =>
 const rowCount = <V,>(groups: ReadonlyArray<Group<V>>) =>
   groups.reduce(
     (total, group, index) =>
-      total + (index === 0 ? 0 : 1) + (group.category === "" ? 0 : 1) + group.rows.length,
+      total
+      + (index === 0 ? 0 : 1)
+      + (group.category === "" ? 0 : 1)
+      + Math.max(1, group.rows.length),
     0,
   );
 
@@ -134,7 +150,7 @@ const spanOf = <V,>(groups: ReadonlyArray<Group<V>>, index: number) => {
       return { top: index === first ? line : row, bottom: row + 1 };
     }
 
-    line += title + group.rows.length;
+    line += title + Math.max(1, group.rows.length);
   }
 
   return { top: 0, bottom: 0 };
@@ -155,7 +171,7 @@ function OptionTitle<V>(props: {
 
   return (
     <Show
-      when={props.row.option.trailing !== undefined}
+      when={props.row.option.trailing !== undefined && props.row.option.description === undefined}
       fallback={
         <text flexShrink={0} wrapMode="none">
           {titleRuns(props.row.option.title)}
@@ -193,13 +209,14 @@ function OptionRow<V>(props: {
     >
       <OptionTitle color={props.color} row={props.row} fg={fg()} />
       <Show
-        when={props.row.option.trailing !== undefined}
-        fallback={
-          <text flexGrow={1} flexShrink={1} wrapMode="none" fg={faint()}>
-            {props.row.option.description ?? ""}
-          </text>
-        }
+        when={props.row.option.description !== undefined || props.row.option.trailing === undefined}
       >
+        <EllipsizedText
+          text={props.row.option.description?.replace(/\s+/g, " ") ?? ""}
+          fg={faint()}
+        />
+      </Show>
+      <Show when={props.row.option.trailing !== undefined}>
         <text flexShrink={0} maxWidth="50%" wrapMode="none" truncate fg={faint()}>
           {props.row.option.trailing}
         </text>
@@ -234,7 +251,10 @@ function GroupRows<V>(props: {
           {props.group.category}
         </text>
       </Show>
-      <For each={props.group.rows}>
+      <For
+        each={props.group.rows}
+        fallback={<text fg={props.color("text.faint")}>No options in this section.</text>}
+      >
         {(row) => (
           <OptionRow color={props.color} row={row} isSelected={row.index === props.selected} />
         )}
@@ -243,7 +263,7 @@ function GroupRows<V>(props: {
   );
 }
 
-function FilterLine(props: { readonly onInput: (value: string) => void }) {
+function FilterLine(props: { readonly value: string; readonly onInput: (value: string) => void }) {
   const color = useColor();
   const surface = () => color("surface.raised");
 
@@ -256,6 +276,7 @@ function FilterLine(props: { readonly onInput: (value: string) => void }) {
         focused
         flexGrow={1}
         placeholder="Type to filter"
+        value={props.value}
         onInput={props.onInput}
         backgroundColor={surface()}
         focusedBackgroundColor={surface()}
@@ -340,8 +361,15 @@ const selectKeys = <V,>(
 });
 
 const createSelection = <V,>(props: SelectDialogProps<V>) => {
-  const [query, setQuery] = createSignal("");
-  const groups = createMemo(() => groupsOf(props.options, query()));
+  const [internalQuery, setInternalQuery] = createSignal("");
+  const query = () => props.filter?.query ?? internalQuery();
+
+  const setQuery = (value: string) => {
+    if (props.filter) props.filter.onInput(value);
+    else setInternalQuery(value);
+  };
+
+  const groups = createMemo(() => groupsOf(props.options, query(), props.categories ?? []));
   const rows = () => groups().flatMap((group) => group.rows);
   const [selected, setSelected] = createSignal(startOf(rows(), props.current));
 
@@ -413,7 +441,7 @@ export function SelectDialog<V>(props: SelectDialogProps<V>) {
       props.dialogActions ?? [],
       {
         choose: () => {
-          onHighlighted(props.onSelect);
+          if (props.onSelect) onHighlighted(props.onSelect);
         },
         act: (action) => {
           runSelectAction(action, rows()[selected()], props.close);
@@ -423,7 +451,7 @@ export function SelectDialog<V>(props: SelectDialogProps<V>) {
   );
 
   const hints = (): readonly Hint[] => [
-    ...HINTS,
+    ...(props.onSelect ? HINTS : []),
     ...(props.dialogActions ?? []).map((action): Hint => [action.key, action.label]),
     ...actions().map((action): Hint => [action.key, action.label]),
   ];
@@ -431,13 +459,14 @@ export function SelectDialog<V>(props: SelectDialogProps<V>) {
   return (
     <DialogFrame title={props.title} width={props.width} hints={hints()} close={props.close}>
       <FilterLine
+        value={query()}
         onInput={(value) => {
           setQuery(value);
           setSelected(0);
         }}
       />
       <Show
-        when={rows().length > 0}
+        when={groups().length > 0}
         fallback={
           <text fg={color("text.faint")}>
             {query() === "" ? (props.emptyMessage ?? "No options") : "No matching options"}
@@ -446,6 +475,7 @@ export function SelectDialog<V>(props: SelectDialogProps<V>) {
       >
         <OptionList groups={groups()} selected={selected()} />
       </Show>
+      {props.footer?.(rows()[selected()]?.option.value)}
     </DialogFrame>
   );
 }

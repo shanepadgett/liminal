@@ -412,6 +412,43 @@ effectTest(
 );
 
 effectTest(
+  "skills keep slash commands but expose only their manager in the palette",
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const { home } = yield* Directories;
+    const folder = path.join(home, ".agents", "skills", "unique-skill");
+
+    yield* fs.makeDirectory(folder, { recursive: true });
+
+    yield* fs.writeFileString(
+      path.join(folder, "SKILL.md"),
+      "---\ndescription: Unique skill description\n---\nReview files.",
+    );
+
+    const { setup } = yield* boot(() => Effect.void);
+
+    yield* frameWith(setup, "Ask anything");
+    yield* Effect.promise(() => setup.mockInput.typeText("/unique-skill"));
+    yield* frameWith(setup, "Unique skill description");
+    setup.mockInput.pressEscape();
+    yield* frameWith(setup, "Ask anything");
+    setup.mockInput.pressKey("p", { ctrl: true });
+    yield* frameWith(setup, "Type to filter");
+    yield* Effect.promise(() => setup.mockInput.typeText("unique-skill"));
+    yield* frameWith(setup, "No matching options");
+    setup.mockInput.pressEscape();
+    setup.mockInput.pressKey("p", { ctrl: true });
+    yield* frameWith(setup, "Type to filter");
+    yield* Effect.promise(() => setup.mockInput.typeText("Manage skills"));
+    yield* frameWith(setup, "Manage skills");
+    setup.mockInput.pressEnter();
+    expect(yield* frameWith(setup, "Unique skill description")).toContain("ctrl+x delete");
+  }),
+  trustedServices,
+);
+
+effectTest(
   "typing a slash opens the menu of matching commands",
   Effect.gen(function* () {
     const { setup } = yield* boot(() => Effect.void);

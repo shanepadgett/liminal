@@ -8,6 +8,38 @@ import { createSignal } from "solid-js";
 
 import { ColorContext, PALETTES, resolveRoles, SelectDialog } from "@liminal/sdk/tui";
 
+test("explicit empty categories and selected details remain visible without an enter action", async () => {
+  let closed = false;
+
+  const setup = await drawDialog(() => (
+    <SelectDialog
+      title="Manage skills"
+      categories={["Empty folder", "Skills folder"]}
+      options={[{ title: "review", value: "review", category: "Skills folder" }]}
+      close={() => {
+        closed = true;
+      }}
+      footer={(value) => <text>{value ? `Details for ${value}` : "No selected skill"}</text>}
+    />
+  ));
+
+  try {
+    const frame = setup.captureCharFrame();
+    expect(frame).toContain("Empty folder");
+    expect(frame).toContain("No options in this section.");
+    expect(frame).toContain("Details for review");
+    setup.mockInput.pressEnter();
+    await setup.renderOnce();
+    expect(closed).toBe(false);
+    await setup.mockInput.typeText("absent");
+    await setup.renderOnce();
+    expect(setup.captureCharFrame()).toContain("No selected skill");
+    expect(setup.captureCharFrame()).not.toContain("Empty folder");
+  } finally {
+    setup.renderer.destroy();
+  }
+});
+
 test("the current option is scrolled into view when the dialog opens", async () => {
   const setup = await createTestRenderer({ width: 80, height: 30 });
   const keymap = createDefaultOpenTuiKeymap(setup.renderer);
@@ -128,6 +160,36 @@ const drawDialog = async (draw: () => JSX.Element, width = 110) => {
 
   return setup;
 };
+
+for (const width of [48, 110]) {
+  test(`descriptions share the title row, ellipsize and retain trailing metadata at ${width} columns`, async () => {
+    const description = "Review changes\nfor bugs, missing tests and regressions. ".repeat(8);
+
+    const setup = await drawDialog(
+      () => (
+        <SelectDialog
+          title="Manage skills"
+          width={90}
+          options={[{ title: "review", value: "review", description, trailing: "Symlink" }]}
+          close={() => {}}
+        />
+      ),
+      width,
+    );
+
+    try {
+      const frame = setup.captureCharFrame();
+      const row = frame.split("\n").find((line) => line.includes("review"));
+      expect(row).toContain("Review changes");
+      expect(row).toContain("…");
+      expect(row).toContain("Symlink");
+      expect(frame).not.toContain(description);
+      expect(frame.match(/Review changes/g)).toHaveLength(1);
+    } finally {
+      setup.renderer.destroy();
+    }
+  });
+}
 
 test("a dialog action works with an empty filtered list and preserves the filter", async () => {
   const [values, setValues] = createSignal(["one"]);

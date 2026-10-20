@@ -198,12 +198,14 @@ dialogs.show((props: DialogProps) => (
 | `DialogFrame` | Your own dialog body with the standard title, hints and close |
 
 - Set `screen` on `SelectDialog` to identify its current screen. Opening or changing screens highlights `current` when it matches the filtered list, otherwise the first row; screen changes retain the filter. Keep the identity unchanged for refreshes so they preserve the highlighted value. Omit `current` for lists such as sessions that always start at the top.
+- Set `categories` on `SelectDialog` to order sections and retain empty sections while its filter is blank. Set `footer={(value) => ...}` for selected-option details; `value` is `undefined` when no option matches. Omit `onSelect` for a browser whose actions run through other keys; enter then leaves it open.
+- Pass `filter={{ query, onInput }}` to keep the filter outside the component when another dialog temporarily replaces it. Keep the highlighted value through `onHighlight` and pass it back as `current` on reopening.
 - Set `width` on `SelectDialog` or `DialogFrame` to request columns; the default is 60 and the terminal width caps it.
-- Set an option's `trailing` for right-aligned dimmed metadata and a shrinking title with a trailing `…`. Existing descriptions, tags and keys retain their layout without it.
+- Set an option's `description` for muted single-line text beside its title, cut with `…` when needed. Set `trailing` for right-aligned dimmed metadata; descriptions yield space to it. Without a description, the title shrinks with a trailing `…` instead.
 - Use `dialogActions: [{ key, label, run }]` for keys that work with an empty list; use `actions` for highlighted-row keys. Async option updates keep the highlighted value or select its next row, then the previous at the end. Use `emptyMessage` for an empty unfiltered list.
 - Format activity labels with `formatRelativeDate(at, now)` from `@liminal/sdk/tui`, passing both UTC timestamps explicitly. It uses English elapsed minutes/hours/days, then a local calendar date after seven days.
 
-Examples: `packages/plugins/chat/src/tui/SessionsDialog.tsx`, `packages/plugins/agent-loop/src/tui.tsx`, `packages/plugins/logins/src/tui/`.
+Examples: `packages/plugins/chat/src/tui/SessionsDialog.tsx`, `packages/plugins/skills/src/tui/SkillsDialog.tsx` (empty categories, footer and retained filter), `packages/plugins/agent-loop/src/tui.tsx`, `packages/plugins/logins/src/tui/`.
 
 ## Ask the user in the composer's place
 
@@ -290,6 +292,7 @@ Examples: `packages/plugins/notices/src/tui/Notice.tsx` (colors, `useCopy`), `pa
 The gallery (`apps/gallery`) shows every screen and component with sample data. Build a new look there first and get it agreed, then build the plugin's component.
 
 - The gallery and the TUI keep separate components. A visual change updates both in the same change.
+- Show grouped managers with every supported source type, duplicate names, missing targets, empty lists, failure messages and each deletion confirmation. Use sample data, never real deletion.
 
 Example: `apps/gallery/src/transcript/Notice.tsx` beside `packages/plugins/notices/src/tui/Notice.tsx`.
 

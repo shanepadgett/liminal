@@ -6,14 +6,10 @@
 
 import { Effect, type FileSystem, Option, type Path, Result } from "effect";
 
-import {
-  type FileText,
-  foldersDown,
-  readFileTexts,
-  splitFrontMatter,
-} from "@liminal/context/contract";
+import { type FileText, readFileTexts, splitFrontMatter } from "@liminal/context/contract";
 import type { Notice } from "@liminal/notices/contract";
-import type { Directories, ProjectTrust } from "@liminal/sdk";
+
+import { type Finder, foldersOf } from "./folders.ts";
 
 const SKILL_FILE = "SKILL.md";
 
@@ -33,13 +29,6 @@ export interface Skill {
   readonly isUserOnly: boolean;
 }
 
-export interface Finder {
-  readonly fs: FileSystem.FileSystem;
-  readonly path: Path.Path;
-  readonly directories: Directories["Service"];
-  readonly trust: ProjectTrust["Service"];
-}
-
 /** What a scan found: the skills by name, the problems to tell, and whether a file failed to read. */
 export interface SkillScan {
   readonly skills: ReadonlyArray<Skill>;
@@ -50,32 +39,6 @@ export interface SkillScan {
 /** A front matter value without the quotes YAML allows around it. */
 const unquoted = (value: string | undefined) =>
   (value ?? "").replace(/^(["'])(.*)\1$/, "$2").trim();
-
-/** The skills folders, most shared first. */
-const foldersOf = Effect.fn("skills.folders")(function* ({ fs, path, directories, trust }: Finder) {
-  const shared = [
-    path.join(directories.home, ".agents", "skills"),
-    path.join(directories.global, "skills"),
-  ];
-
-  const trusted = yield* trust.trusted.pipe(Effect.orElseSucceed(() => false));
-  if (!trusted) return shared;
-
-  const folders = yield* foldersDown(fs, path, directories.workspace);
-
-  const liminal = (folder: string) =>
-    folder === path.resolve(directories.workspace)
-      ? directories.project
-      : path.join(folder, ".liminal");
-
-  return [
-    ...shared,
-    ...folders.flatMap((folder) => [
-      path.join(folder, ".agents", "skills"),
-      path.join(liminal(folder), "skills"),
-    ]),
-  ];
-});
 
 /** Whether `path` is a folder, following symlinks; false when it cannot be read. */
 const isFolder = (fs: FileSystem.FileSystem, path: string) =>

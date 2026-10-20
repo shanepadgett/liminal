@@ -18,7 +18,9 @@ import { Directories, draft, type ModelPart, ProjectTrust } from "@liminal/sdk";
 import { SessionLog, UserEntry } from "@liminal/session-log/contract";
 
 import { SkillsRpcs, UnknownSkill } from "./contract.ts";
-import { type Finder, type Skill, scanSkills, skillText } from "./server/find.ts";
+import { type Skill, scanSkills, skillText } from "./server/find.ts";
+import type { Finder } from "./server/folders.ts";
+import { makeSkillManagement } from "./server/remove.ts";
 import { makeSkillTags } from "./server/tags.ts";
 
 /** After the instruction files' sections. */
@@ -61,6 +63,7 @@ const make = Effect.gen(function* () {
   };
 
   const skills = Effect.map(scanSkills(finder), ({ skills: found }) => found);
+  const management = yield* makeSkillManagement(finder);
 
   yield* (yield* PromptSections).register(
     definePromptSection<Lines>({
@@ -100,6 +103,8 @@ const make = Effect.gen(function* () {
     );
 
   return SkillsRpcs.of({
+    "skills/inventory": management.inventory,
+    "skills/delete": management.remove,
     "skills/list": () =>
       Effect.map(skills, (found) =>
         found

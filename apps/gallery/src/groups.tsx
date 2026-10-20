@@ -26,6 +26,7 @@ import { NO_CLONES, ReferencesPicker } from "./chat/ReferencesPicker.tsx";
 import type { ReloadShown } from "./chat/ReloadStatus.tsx";
 import { SessionPicker } from "./chat/SessionPicker.tsx";
 import { Sidebar } from "./chat/Sidebar.tsx";
+import { SKILLS_STATES } from "./chat/SkillsManager.tsx";
 import { StashPicker } from "./chat/StashPicker.tsx";
 import { Toast, type ToastMessage } from "./chat/Toast.tsx";
 import { TrustPrompt } from "./chat/TrustPrompt.tsx";
@@ -375,6 +376,7 @@ export const GROUPS: Groups = [
             states: [
               commandsState("First command", "session.new"),
               commandsState("Later section", "view.sidebar"),
+              commandsState("Manage skills", "skills.manage"),
             ],
           },
           {
@@ -404,6 +406,7 @@ export const GROUPS: Groups = [
             title: "Stashes",
             states: [stashesState("Newest stash", 3), stashesState("An older stash", 1)],
           },
+          { id: "skills", title: "Manage skills", states: SKILLS_STATES },
           { id: "references", title: "References", states: REFERENCES_STATES },
           { id: "connect", title: "Connect", states: CONNECT_STATES },
         ],

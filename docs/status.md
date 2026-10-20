@@ -45,6 +45,8 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 
 ## Next
 
+- Skill management ([plans/archive/skill-management.md](plans/archive/skill-management.md)): runtime and gallery cover all discovery roots, with validated folder/link deletion, preserved filter and selection, and slash-only skill commands; built, awaiting review
+
 - Session archive ([plans/session-archive.md](plans/session-archive.md)): gallery and runtime built with seven-day expiry, archive/restore, Active/Archived views and SDK date labels; next: live behavior review
 
 - Priority: saved-session compatibility ([plans/entry-versions.md](plans/entry-versions.md)); today's shapes establish version 1; the read-only history audit is built and reports no mismatches or unknown kinds in the local session database; step 2 covers stored versions, server-side migrations, safe approval recovery and read-only viewing with resume blocked for newer unsupported versions; then step 3: schema-change protection and the saved-data code rule

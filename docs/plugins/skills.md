@@ -6,7 +6,7 @@ Status: built
 
 ## Provides
 
-- RPCs: `skills/list`, `skills/use`
+- RPCs: `skills/list`, `skills/use`, `skills/inventory`, `skills/delete`
 - Prompt section `skills/list` at order 300
 - Tag source for `@skill:<name>` at order 20
 
@@ -16,7 +16,7 @@ Status: built
 
 ## Adds
 
-- TUI: one `/<name>` command per skill, palette category Skills
+- TUI: one `/<name>` command per skill and Manage skills in the palette
 
 ## Requirements
 
@@ -35,8 +35,24 @@ Status: built
 - `disable-model-invocation: true` leaves the skill out of the model's list only
 - `/<name> args` sends the skill's text, then the args, as the user's message; the transcript shows `/<name> args`
 - A skill whose name another command has gets no command
-- The TUI lists skill commands once, when it starts
+- The TUI lists skill commands at startup and refreshes them when the manager refreshes or deletes a skill
 - `@skill:<name>` adds the skill's text to the message
+
+### Managing skills
+
+- The main palette lists one Manage skills command, not individual skills
+- The manager groups physical skills by every discovery source folder, including global and project `.agents/skills`, Liminal skills folders and trusted ancestor folders
+- The manager includes overridden copies, malformed skill folders and broken symlinks without changing invocation precedence
+- Ordinary folders have no type label; symlinks show Symlink and identify missing targets
+- Skill descriptions appear beside names in muted, single-line text with ellipses instead of in the bottom details section
+- The manager uses the Sessions dialog width of 90 columns, capped by the terminal width
+- Skill folders can be permanently deleted after confirmation
+- Symlinks offer Delete symlink only and Delete symlink and target
+- Broken symlinks offer only link deletion
+- Confirmation defaults to Cancel and shows the selected path, target and permanent-deletion warning
+- Global deletion shows a global-scope warning
+- No additional warning appears below Delete symlink and target
+- The approved gallery includes empty and deletion-failure states
 
 ## References
 

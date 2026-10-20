@@ -44,6 +44,7 @@ const COMMAND_SECTIONS: readonly CommandSection[] = [
   {
     title: "Liminal",
     commands: [
+      { id: "skills.manage", label: "Manage skills" },
       { id: "help.keys", label: "Keyboard shortcuts", key: "?" },
       { id: "app.quit", label: "Quit", key: "ctrl+c" },
     ],

@@ -10,52 +10,25 @@ import {
   Schema,
   Effect,
   FileSystem,
-  Layer,
   Option,
   Path,
   Predicate,
 } from "effect";
 import { RpcTest } from "effect/rpc";
 
-import agentLoop from "@liminal/agent-loop";
-import context from "@liminal/context";
 import { Context, type ContextRequest } from "@liminal/context/contract";
-import inbox from "@liminal/inbox";
 import { TagText } from "@liminal/inbox/contract";
-import modelCatalog from "@liminal/model-catalog";
-import modelScripted from "@liminal/model-scripted";
 import { reply, ScriptedModel, scriptedProvider } from "@liminal/model-scripted/contract";
-import models from "@liminal/models";
-import notices from "@liminal/notices";
 import { NoticeEntry } from "@liminal/notices/contract";
 import { Directories, draft, ProjectTrust, SessionId } from "@liminal/sdk";
-import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
-import sessionLog from "@liminal/session-log";
+import { effectTest } from "@liminal/sdk/testing";
 import { SessionLog, UserEntry } from "@liminal/session-log/contract";
-import sessionStore from "@liminal/session-store";
-import settingsPlugin from "@liminal/settings";
 import { Settings } from "@liminal/settings/contract";
-import tools from "@liminal/tools";
 
-import skills from "../plugin.ts";
 import { SkillsRpcs } from "../src/contract.ts";
 import { scanSkills } from "../src/server/find.ts";
 import { makeSkillTags } from "../src/server/tags.ts";
-
-const stack = serverOf(skills).pipe(
-  Layer.provideMerge(serverOf(notices)),
-  Layer.provideMerge(serverOf(inbox)),
-  Layer.provideMerge(serverOf(agentLoop)),
-  Layer.provideMerge(serverOf(tools)),
-  Layer.provideMerge(serverOf(context)),
-  Layer.provideMerge(serverOf(modelScripted)),
-  Layer.provideMerge(serverOf(models)),
-  Layer.provideMerge(serverOf(modelCatalog)),
-  Layer.provideMerge(serverOf(sessionLog)),
-  Layer.provideMerge(serverOf(sessionStore)),
-  Layer.provideMerge(serverOf(settingsPlugin)),
-  Layer.provideMerge(testBaseServices),
-);
+import { stack } from "./stack.ts";
 
 const s1 = SessionId.make("s1");
 
