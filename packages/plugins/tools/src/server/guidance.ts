@@ -1,4 +1,4 @@
-/** The guidance section: the guidance lines of every registered tool, each once. */
+/** The guidance section: the guidance lines of the tools offered at the start, each once. */
 
 import { Effect, Layer } from "effect";
 
@@ -25,10 +25,12 @@ export const guidance = Layer.effectDiscard(
         read: () =>
           Effect.map(tools.list, (all): SectionRead<Lines> => ({
             type: "present",
-            value: [...new Set(all.flatMap((tool) => tool.guidance))],
+            value: [
+              ...new Set(all.flatMap((tool) => (tool.offer === "start" ? tool.guidance : []))),
+            ],
           })),
         render: linesRender({
-          initial: "Using tools:",
+          tag: "tool_rules",
           added: "New tool guidance:",
           removed: "No longer applies:",
         }),

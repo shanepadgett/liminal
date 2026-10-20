@@ -33,7 +33,7 @@ const selected = (specs: ReadonlyArray<ToolSpec>, query: string) => {
   };
 };
 
-/** What the model reads: the loaded tools with their descriptions, then any unknown names. */
+/** What the model reads: the loaded tools by name, then any unknown names. */
 const resultText = (
   query: string,
   found: ReadonlyArray<ToolSpec>,
@@ -42,10 +42,7 @@ const resultText = (
   const loaded =
     found.length === 0
       ? [`No deferred tool matches "${query}".`]
-      : [
-          "Loaded these tools; call them directly:",
-          ...found.map((spec) => `- ${spec.name}: ${spec.description}`),
-        ];
+      : [`Loaded: ${found.map((spec) => spec.name).join(", ")}. Call them directly.`];
 
   const missing = unknown.length === 0 ? [] : [`No deferred tool is named: ${unknown.join(", ")}`];
 
@@ -70,7 +67,7 @@ export const toolSearchToolOf = (
   defineTool({
     name: toolSearchTool,
     description:
-      "Finds deferred tools and loads them, so you can call them. Search with keywords, or load tools by name with `select:a,b`.",
+      "Loads deferred tools so you can call them; call one only after loading it here. Search with keywords, or load tools by name with `select:a,b`.",
     parameters: SearchParams,
     hints: {
       readOnlyHint: true,

@@ -38,9 +38,10 @@ const prompt = (text: string) =>
 const s1 = SessionId.make("s1");
 const model = { provider: "scripted", id: "scripted" };
 
-const tool = (name: string, guidance: ReadonlyArray<string>) =>
+const tool = (name: string, guidance: ReadonlyArray<string>, offer: "start" | "search" = "start") =>
   defineTool({
     name,
+    offer,
     description: `The ${name} tool`,
     parameters: Schema.Struct({}),
     guidance,
@@ -81,7 +82,7 @@ effectTest(
     expect(first.messages[0]?.parts).toEqual([
       {
         type: "text",
-        text: "Using tools:\n- Keep oldText short.\n- Read a file before changing it.\n- Write new files.",
+        text: "<tool_rules>\n- Keep oldText short.\n- Read a file before changing it.\n- Write new files.\n</tool_rules>",
         providerData: {},
       },
     ]);
@@ -97,6 +98,26 @@ effectTest(
 
     expect(lastTexts(yield* next("removed"))).toEqual([
       '<reminder kind="instructions">\nNo longer applies:\n- Run tests with shell.\n</reminder>',
+    ]);
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "a deferred tool's guidance stays out of the system prompt",
+  Effect.gen(function* () {
+    const { tools, next } = yield* start();
+    yield* tools.register(tool("read", ["Use read for files."]));
+    yield* tools.register(tool("lookup", ["Look things up."], "search"));
+
+    const first = yield* next("hello");
+
+    expect(first.messages[0]?.parts).toEqual([
+      {
+        type: "text",
+        text: "<tool_rules>\n- Use read for files.\n</tool_rules>",
+        providerData: {},
+      },
     ]);
   }),
   testBaseServices,

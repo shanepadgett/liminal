@@ -5,7 +5,7 @@
 
 import { Effect, Option, Schema, Stream, SubscriptionRef } from "effect";
 
-import { definePromptSection, Lines, type SectionRead } from "@liminal/context/contract";
+import { definePromptSection, Lines, type SectionRead, wrapped } from "@liminal/context/contract";
 import { draft, type SessionId } from "@liminal/sdk";
 import type { SessionLog } from "@liminal/session-log/contract";
 
@@ -108,7 +108,7 @@ export const makeAttached = Effect.fn("references.attached")(function* (
             : ({ type: "present", value: names } satisfies SectionRead<Lines>);
         }).pipe(Effect.orElseSucceed((): SectionRead<Lines> => ({ type: "unavailable" }))),
       render: {
-        initial: (names) => attachedText(folder, "Attached", names),
+        initial: (names) => wrapped("references", attachedText(folder, "Attached", names)),
         changed: (_before, names) => attachedText(folder, "Attached now", names),
         removed: () => "No reference repositories are attached any more.",
       },

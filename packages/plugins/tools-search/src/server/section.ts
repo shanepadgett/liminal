@@ -5,10 +5,10 @@
 
 import { Effect, Schema } from "effect";
 
-import { definePromptSection, type SectionRead } from "@liminal/context/contract";
+import { definePromptSection, type SectionRead, wrapped } from "@liminal/context/contract";
 import type { Tool, ToolSpec } from "@liminal/sdk";
 
-import { selectPrefix, toolSearchTool } from "../contract.ts";
+import { toolSearchTool } from "../contract.ts";
 import { deferredSpecs } from "./tool.ts";
 import type { ToolUse } from "./use.ts";
 
@@ -61,8 +61,6 @@ const budgeted = (listing: Listing): ReadonlyArray<string> => {
   return more === 0 ? lines : [...lines, `${more} more; find them with ${toolSearchTool}`];
 };
 
-const intro = `Deferred tools: load one with \`${toolSearchTool}\` before calling it, by keywords or with \`${selectPrefix}name\`.`;
-
 const missingFrom = (from: Listing, other: Listing) => {
   const kept = new Set(other.map(({ name }) => name));
 
@@ -101,7 +99,7 @@ export const deferredSection = (
         } satisfies SectionRead<Listing>;
       }),
     render: {
-      initial: (listing) => [intro, ...budgeted(listing)].join("\n"),
+      initial: (listing) => wrapped("deferred_tools", budgeted(listing).join("\n")),
       changed: changedText,
       removed: () => "No deferred tools are available now.",
     },

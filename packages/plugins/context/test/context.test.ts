@@ -271,14 +271,16 @@ test("file sections send whole files, then diffs, added files and removed lines"
   const a = { path: "a.md", text: lines.join("\n") };
   const b = { path: "b.md", text: "bee" };
 
-  expect(fileTextsRender.initial([a, b])).toBe(
-    `<file path="a.md">\n${a.text}\n</file>\n\n<file path="b.md">\nbee\n</file>`,
+  const render = fileTextsRender("project_instructions");
+
+  expect(render.initial([a, b])).toBe(
+    `<project_instructions>\n<file path="a.md">\n${a.text}\n</file>\n\n<file path="b.md">\nbee\n</file>\n</project_instructions>`,
   );
 
   const edited = { path: "a.md", text: lines.with(5, "line six").join("\n") };
   const added = { path: "c.md", text: "sea" };
 
-  expect(fileTextsRender.changed([a, b], [edited, added])).toBe(
+  expect(render.changed([a, b], [edited, added])).toBe(
     [
       "`a.md` changed:",
       "```diff",
@@ -297,11 +299,11 @@ test("file sections send whole files, then diffs, added files and removed lines"
     ].join("\n"),
   );
 
-  expect(fileTextsRender.changed([b], [{ path: "b.md", text: "bees" }])).toBe(
+  expect(render.changed([b], [{ path: "b.md", text: "bees" }])).toBe(
     '<file path="b.md">\nbees\n</file>',
   );
 
-  expect(fileTextsRender.removed?.([a])).toBe("`a.md` was removed; stop following it.");
+  expect(render.removed?.([a])).toBe("`a.md` was removed; stop following it.");
 });
 
 test("a system entry shows the full prompt text and each tool's description", () => {

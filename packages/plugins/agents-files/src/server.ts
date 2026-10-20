@@ -55,7 +55,7 @@ export const layer = Layer.effectDiscard(
         order: 200,
         codec: FileTexts,
         read: ({ sessionId }) => read(sessionId),
-        render: fileTextsRender,
+        render: fileTextsRender("agent_instructions"),
       }),
     );
   }),

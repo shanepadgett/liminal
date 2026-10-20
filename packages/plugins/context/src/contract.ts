@@ -136,6 +136,9 @@ export type FileText = typeof FileText.Type;
 export const FileTexts = Schema.Array(FileText);
 export type FileTexts = typeof FileTexts.Type;
 
+/** `body` under one `<tag>` wrapper, the shape of every section's first text. */
+export const wrapped = (tag: string, body: string) => `<${tag}>\n${body}\n</${tag}>`;
+
 const fileTag = ({ path, text }: FileText) => `<file path="${path}">\n${text}\n</file>`;
 
 const removedLine = ({ path }: FileText) => `\`${path}\` was removed; stop following it.`;
@@ -158,11 +161,11 @@ const fileChange = (before: ReadonlyMap<string, FileText>, after: FileText) => {
 };
 
 /**
- * The render for a `FileTexts` section: whole files at first, then per path a diff, the whole text
- * of an added file, or a line that a removed file no longer applies.
+ * The render for a `FileTexts` section: whole files under `<tag>` at first, then per path a diff,
+ * the whole text of an added file, or a line that a removed file no longer applies.
  */
-export const fileTextsRender: PromptSectionDefinition<FileTexts>["render"] = {
-  initial: (files) => files.map(fileTag).join("\n\n"),
+export const fileTextsRender = (tag: string): PromptSectionDefinition<FileTexts>["render"] => ({
+  initial: (files) => (files.length === 0 ? "" : wrapped(tag, files.map(fileTag).join("\n\n"))),
   changed: (before, after) => {
     const saved = new Map(before.map((file) => [file.path, file]));
     const current = new Set(after.map((file) => file.path));
@@ -173,36 +176,45 @@ export const fileTextsRender: PromptSectionDefinition<FileTexts>["render"] = {
     ].join("\n\n");
   },
   removed: (before) => before.map(removedLine).join("\n\n"),
-};
+});
 
 /** A section that holds one line per item, such as a rule or a path. */
 export const Lines = Schema.Array(Schema.String);
 export type Lines = typeof Lines.Type;
 
-/** Titles for a `Lines` section's texts; without `removed`, removed lines are left out. */
+/**
+ * Texts for a `Lines` section: its `<tag>` wrapper, an optional line before the bullets, and the
+ * titles of later changes. Without `removed`, removed lines are left out.
+ */
 export interface LinesTitles {
-  readonly initial: string;
+  readonly tag: string;
+  readonly intro?: string;
   readonly added: string;
   readonly removed?: string;
 }
 
 /** The title, then each line as a `- ` bullet, or nothing when there are no lines. */
-const titled = (title: string, lines: Lines): ReadonlyArray<string> =>
+export const titled = (title: string, lines: Lines): ReadonlyArray<string> =>
   lines.length === 0 ? [] : [[title, ...lines.map((line) => `- ${line}`)].join("\n")];
 
 /** The lines of `from` missing from `other`. */
-const missing = (from: Lines, other: Lines) => {
+export const missing = (from: Lines, other: Lines) => {
   const kept = new Set(other);
 
   return from.filter((line) => !kept.has(line));
 };
 
 /**
- * The render for a `Lines` section: every line as a bullet at first, then only the lines added and
- * removed.
+ * The render for a `Lines` section: every line as a bullet under its wrapper at first, then only
+ * the lines added and removed.
  */
 export const linesRender = (titles: LinesTitles): PromptSectionDefinition<Lines>["render"] => ({
-  initial: (lines) => titled(titles.initial, lines).join(""),
+  initial: (lines) => {
+    const bullets = lines.map((line) => `- ${line}`);
+    const body = titles.intro === undefined ? bullets : [titles.intro, ...bullets];
+
+    return lines.length === 0 ? "" : wrapped(titles.tag, body.join("\n"));
+  },
   changed: (before, after) => {
     const removed =
       titles.removed === undefined ? [] : titled(titles.removed, missing(before, after));

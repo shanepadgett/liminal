@@ -54,7 +54,7 @@ export const layer = Layer.effectDiscard(
               failed,
             ),
           ),
-        render: fileTextsRender,
+        render: fileTextsRender("project_instructions"),
       }),
     );
 
@@ -73,7 +73,8 @@ export const layer = Layer.effectDiscard(
             ),
           ),
         render: linesRender({
-          initial: readWhenGuidance,
+          tag: "instruction_files",
+          intro: readWhenGuidance,
           added: "More instruction files for situations:",
           removed: "These instruction files are gone; stop following them:",
         }),

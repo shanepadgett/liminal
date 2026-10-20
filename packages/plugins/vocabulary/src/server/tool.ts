@@ -8,11 +8,6 @@ import { VocabularyParams, vocabularyTool } from "../contract.ts";
 import type { Store } from "./store.ts";
 import { findTerm, removeTerm, setTerm, tidy, type Terms } from "./terms.ts";
 
-const GUIDANCE = [
-  "The vocabulary holds the project's agreed terms: stable names for its concepts. Use them exactly as written, and read a term's definition with the vocabulary tool before using it in a way you are unsure of.",
-  "Add or change a term only after you and the user have discussed the concept and its definition and the user has clearly agreed to both. Never save a term on your own. A term names a product concept, not a code symbol or a file name.",
-];
-
 const needs = (op: string, field: string) =>
   new ToolFailed({ message: `op ${op} needs ${field}.` });
 
@@ -61,8 +56,7 @@ export const vocabularyToolOf = (store: Store) =>
   defineTool({
     name: vocabularyTool,
     description:
-      "Reads and changes the project's vocabulary, its agreed terms with definitions. op get reads one term, or all of them; set adds a term or replaces its definition, or renames it with `was`; remove deletes a term.",
-    guidance: GUIDANCE,
+      "Reads and changes the project's vocabulary, its agreed terms with definitions. op get reads one term, or all of them; set adds a term or replaces its definition, or renames it with `was`; remove deletes a term. Add or change a term only after you and the user have discussed the concept and its definition and the user has clearly agreed to both; never save a term on your own. A term names a product concept, not a code symbol or a file name.",
     parameters: VocabularyParams,
     offer: "search",
     hints: {

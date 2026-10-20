@@ -38,8 +38,9 @@ export const termsSection = (store: Store, tell: ProblemNotices) =>
         ),
       ),
     render: linesRender({
-      initial:
-        "Vocabulary: the project's agreed terms. Use these names exactly; read a definition with the vocabulary tool.",
+      tag: "vocabulary",
+      intro:
+        "The project's agreed terms. Use these names exactly. Load the `vocabulary` tool to read a definition.",
       added: "New vocabulary terms:",
       removed: "Vocabulary terms no longer used:",
     }),

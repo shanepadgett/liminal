@@ -28,7 +28,7 @@ const SECTION_ORDER = 300;
 const TAG_ORDER = 20;
 
 const guidance =
-  "Skills: instructions for particular tasks. When a task matches a skill, read its SKILL.md with "
+  "Instructions for particular tasks. When a task matches a skill, read its SKILL.md with "
   + "the read tool before starting; files it names sit beside it:";
 
 const textPart = (text: string): ModelPart => ({ type: "text", text, providerData: {} });
@@ -82,7 +82,8 @@ const make = Effect.gen(function* () {
           ),
         ),
       render: linesRender({
-        initial: guidance,
+        tag: "skills",
+        intro: guidance,
         added: "More skills:",
         removed: "These skills are gone; stop using them:",
       }),
