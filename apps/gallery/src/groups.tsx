@@ -1,12 +1,14 @@
 /** Everything the gallery shows, in review order: tokens first, scenarios last. */
 
-import { ChatHeader } from "@liminal/sdk/tui";
+import type { JSX } from "@opentui/solid";
 
-import { type ApprovalAsk, ApprovalDialog } from "./chat/ApprovalDialog.tsx";
+import { ChatHeader, type RoleColor } from "@liminal/sdk/tui";
+
+import { type ApprovalAsk, ApprovalPrompt } from "./chat/ApprovalPrompt.tsx";
 import { ChatScreen, type GlideAt } from "./chat/ChatScreen.tsx";
 import { CommandPalette } from "./chat/CommandPalette.tsx";
-import { COMMIT_STATES } from "./chat/CommitDialog.tsx";
-import { type ApprovalMode, Composer } from "./chat/Composer.tsx";
+import { COMMIT_PLAN, COMMIT_STATES, CommitPrompt, PUSH_QUESTION } from "./chat/CommitPrompt.tsx";
+import { Composer } from "./chat/Composer.tsx";
 import { CONNECT_STATES } from "./chat/connectStates.tsx";
 import {
   FORM_CHOOSING,
@@ -18,6 +20,7 @@ import {
   FORM_WRITING,
 } from "./chat/formSamples.ts";
 import type { FormState } from "./chat/formState.ts";
+import type { ApprovalMode } from "./chat/ModelLine.tsx";
 import { ModelPicker, ThinkingPicker } from "./chat/ModelPicker.tsx";
 import { NO_CLONES, ReferencesPicker } from "./chat/ReferencesPicker.tsx";
 import type { ReloadShown } from "./chat/ReloadStatus.tsx";
@@ -116,6 +119,7 @@ type ChatOptions = {
   readonly isSidebarOpen: boolean;
   readonly isCommandsOpen: boolean;
   readonly toast?: ToastMessage;
+  readonly prompt?: (color: RoleColor) => JSX.Element;
 };
 
 const TOASTS: Readonly<Record<NoticeKind, ToastMessage>> = {
@@ -178,14 +182,31 @@ const approvalState = (
   name: string,
   ask: ApprovalAsk,
   isRejecting: boolean,
-  note = "",
+  { waiting = 0, note = "" }: { waiting?: number; note?: string } = {},
 ): EntryState => ({
   name,
-  fill: "screen",
+  fill: "width",
   view: withRoles((color) => (
-    <ApprovalDialog color={color} ask={ask} isRejecting={isRejecting} note={note} />
+    <ApprovalPrompt
+      color={color}
+      approval="ask"
+      ask={ask}
+      waiting={waiting}
+      isRejecting={isRejecting}
+      note={note}
+    />
   )),
 });
+
+/** A chat screen with a custom prompt in the composer's place, held mid-turn. */
+const promptScreenState = (name: string, prompt: NonNullable<ChatOptions["prompt"]>): EntryState =>
+  chatState(name, {
+    isWorking: true,
+    glideAt: "composer",
+    isSidebarOpen: true,
+    isCommandsOpen: false,
+    prompt,
+  });
 
 const sessionsState = (name: string, selected: string): EntryState => ({
   name,
@@ -302,6 +323,19 @@ export const GROUPS: Groups = [
             ],
           },
           {
+            id: "approval-prompt",
+            title: "Approval prompt",
+            states: [
+              approvalState("Reviewed command", SHELL_ASK, false),
+              approvalState("Write outside the workspace", WRITE_ASK, false),
+              approvalState("More asks waiting", SHELL_ASK, false, { waiting: 2 }),
+              approvalState("Rejecting with a note", SHELL_ASK, true, {
+                note: "keep dist, only reinstall",
+              }),
+            ],
+          },
+          { id: "commit-prompt", title: "Commit prompt", states: COMMIT_STATES },
+          {
             id: "sidebar",
             title: "Sidebar",
             states: only(
@@ -358,16 +392,6 @@ export const GROUPS: Groups = [
           },
           { id: "references", title: "References", states: REFERENCES_STATES },
           { id: "connect", title: "Connect", states: CONNECT_STATES },
-          { id: "commit", title: "Commit", states: COMMIT_STATES },
-          {
-            id: "approval",
-            title: "Approval",
-            states: [
-              approvalState("Reviewed command", SHELL_ASK, false),
-              approvalState("Rejecting with a note", SHELL_ASK, true, "keep dist, only reinstall"),
-              approvalState("Write outside the workspace", WRITE_ASK, false),
-            ],
-          },
         ],
       },
     ],
@@ -419,6 +443,22 @@ export const GROUPS: Groups = [
                 isSidebarOpen: true,
                 isCommandsOpen: true,
               }),
+              promptScreenState("Approval prompt", (color) => (
+                <ApprovalPrompt
+                  color={color}
+                  approval="ask"
+                  ask={SHELL_ASK}
+                  waiting={1}
+                  isRejecting={false}
+                  note=""
+                />
+              )),
+              promptScreenState("Commit prompt, plan", (color) => (
+                <CommitPrompt color={color} shown={COMMIT_PLAN} />
+              )),
+              promptScreenState("Commit prompt, push", (color) => (
+                <CommitPrompt color={color} shown={PUSH_QUESTION} />
+              )),
             ],
           },
         ],

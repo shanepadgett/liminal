@@ -15,12 +15,10 @@ import { type Hint, Hints, type RoleColor } from "@liminal/sdk/tui";
 import { CommandSuggestions } from "./CommandSuggestions.tsx";
 import { FileSuggestions } from "./FileSuggestions.tsx";
 import { type FormState, formHintsOf } from "./formState.ts";
+import { type ApprovalMode, ModelLine } from "./ModelLine.tsx";
 import { QuestionForm } from "./QuestionForm.tsx";
 import { type ReloadShown, ReloadStatus } from "./ReloadStatus.tsx";
 import { ScanLine } from "./ScanLine.tsx";
-
-/** How the session's tool calls are approved. */
-export type ApprovalMode = "auto" | "ask" | "full";
 
 /** Which list a draft opens: commands for a lone `/` word, files for a trailing `@` word. */
 type Suggesting = { readonly kind: "commands" | "files" | "none"; readonly typed: string };
@@ -142,7 +140,7 @@ export function Composer(props: {
             model={props.model}
             thinking={props.thinking}
             approval={props.approval}
-            hasForm={props.form !== undefined}
+            isSpaced={props.form !== undefined}
           />
         </box>
       </box>
@@ -153,32 +151,6 @@ export function Composer(props: {
           {(reload) => <ReloadStatus color={props.color} reload={reload()} />}
         </Show>
       </box>
-    </box>
-  );
-}
-
-/** The model with its thinking option, then the session's approval mode. */
-function ModelLine(props: {
-  readonly color: RoleColor;
-  readonly model: string;
-  readonly thinking: string;
-  readonly approval: ApprovalMode;
-  readonly hasForm: boolean;
-}) {
-  return (
-    <box flexDirection="row" gap={2} marginTop={props.hasForm ? 1 : 0}>
-      <text wrapMode="none">
-        <span style={{ fg: props.color("text.accent") }}>{props.model}</span>
-        <span style={{ fg: props.color("text.muted") }}>{` (${props.thinking})`}</span>
-      </text>
-      <text wrapMode="none">
-        <span style={{ fg: props.color("text.faint") }}>{"approval "}</span>
-        <span
-          style={{ fg: props.color(props.approval === "full" ? "feedback.warning" : "text.muted") }}
-        >
-          {props.approval}
-        </span>
-      </text>
     </box>
   );
 }

@@ -4,10 +4,11 @@
  * when it does not, an open sidebar becomes a drawer over the dimmed chat. Fills whatever size it
  * is given, as the terminal would. The command palette opens over all of it, and toasts show in the
  * chat column's top right, under the header. While working, one place glides: the header or the
- * composer's top edge.
+ * composer's top edge. A custom prompt, when given, takes the composer's place.
  */
 
 import type { BoxRenderable } from "@opentui/core";
+import type { JSX } from "@opentui/solid";
 import { createSignal, Match, Show, Switch } from "solid-js";
 
 import { ChatHeader, type RoleColor } from "@liminal/sdk/tui";
@@ -31,6 +32,34 @@ const MIN_CHAT_COLUMNS = 80;
 /** While working, the fix turn is held mid-run as its tests run. */
 const WORKING_MS = momentOf(FIX, 6, 0.7);
 
+/** Where the user answers: a custom prompt when one is given, else the composer, draft empty. */
+function ComposerPlace(props: {
+  readonly color: RoleColor;
+  readonly isWorking: boolean;
+  readonly isGliding: boolean;
+  readonly prompt: ((color: RoleColor) => JSX.Element) | undefined;
+}) {
+  return (
+    <Show
+      when={props.prompt}
+      fallback={
+        <Composer
+          color={props.color}
+          model="claude-opus-4"
+          thinking="high"
+          approval="auto"
+          draft=""
+          isWorking={props.isWorking}
+          isGliding={props.isGliding}
+          form={undefined}
+        />
+      }
+    >
+      {(prompt) => prompt()(props.color)}
+    </Show>
+  );
+}
+
 export function ChatScreen(props: {
   readonly color: RoleColor;
   readonly isWorking: boolean;
@@ -38,6 +67,8 @@ export function ChatScreen(props: {
   readonly isSidebarOpen: boolean;
   readonly isCommandsOpen: boolean;
   readonly toast?: ToastMessage;
+  /** A custom prompt, drawn in the palette's colors, in place of the composer. */
+  readonly prompt?: (color: RoleColor) => JSX.Element;
 }) {
   const [screen, setScreen] = createSignal<BoxRenderable>();
   const [columns, setColumns] = createSignal(0);
@@ -67,15 +98,11 @@ export function ChatScreen(props: {
             ms={props.isWorking ? WORKING_MS : 0}
           />
         </box>
-        <Composer
+        <ComposerPlace
           color={props.color}
-          model="claude-opus-4"
-          thinking="high"
-          approval="auto"
-          draft=""
           isWorking={props.isWorking}
           isGliding={props.isWorking && props.glideAt === "composer"}
-          form={undefined}
+          prompt={props.prompt}
         />
         <ToastCorner color={props.color} toast={props.toast} />
       </box>
