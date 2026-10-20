@@ -89,10 +89,7 @@ effectTest(
     const waits = yield* makeTuiInputWaits;
     const played = yield* Queue.unbounded<string>();
 
-    const fiber = yield* chimeWith(
-      s1,
-      Stream.never,
-      waits.changes,
+    const fiber = yield* chimeWith(s1, Stream.never, waits.changes, () =>
       Queue.offer(played, "sound").pipe(Effect.asVoid),
     ).pipe(Stream.runDrain, Effect.forkScoped);
 
@@ -103,10 +100,7 @@ effectTest(
     yield* Fiber.interrupt(fiber);
     expect(yield* Queue.size(played)).toBe(0);
 
-    yield* chimeWith(
-      s1,
-      Stream.make(Synced.make({}), ended("ended-by-plugin")),
-      Stream.empty,
+    yield* chimeWith(s1, Stream.make(Synced.make({}), ended("ended-by-plugin")), Stream.empty, () =>
       Queue.offer(played, "sound").pipe(Effect.asVoid),
     ).pipe(Stream.runDrain);
 

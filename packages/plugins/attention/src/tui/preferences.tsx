@@ -3,7 +3,8 @@
  * palette's Notifications section changes them and saves each change to the global settings.
  */
 
-import { Effect } from "effect";
+import type { CliRenderer } from "@opentui/core";
+import { Effect, Option } from "effect";
 import { createSignal } from "solid-js";
 
 import {
@@ -17,6 +18,8 @@ import {
 } from "@liminal/sdk/tui";
 
 import { AttentionRpcs, type AttentionSettings } from "../contract.ts";
+import type { Chime } from "./chimes.ts";
+import { notifyWith } from "./notifications.ts";
 import { playWith } from "./sound.ts";
 import { SoundDialog } from "./SoundDialog.tsx";
 import { soundOf } from "./sounds.ts";
@@ -38,13 +41,35 @@ const unsaved = (toasts: TuiToastsService) => (error: { readonly message: string
     toasts.show({ kind: "error", title: "Notification setting not saved", message: error.message });
   });
 
-/**
- * Loads the saved choices and registers the Notifications commands. `play` plays the chosen sound
- * and does nothing while notifications are off.
- */
-export const setUpPreferences = Effect.fn("setUpPreferences")(function* (player: string) {
-  const host = yield* TuiHost;
+const setUpSoundCommand = Effect.fn("setUpSoundCommand")(function* (
+  current: () => string,
+  preview: (id: string) => void,
+  pick: (id: string) => void,
+) {
   const dialogs = yield* TuiDialogs;
+  const commands = yield* TuiCommands;
+
+  yield* commands.register([
+    {
+      name: "attention.sound",
+      title: "Notification sound",
+      desc: "Pick which sound plays",
+      category: CATEGORY,
+      palette: true,
+      run: () => {
+        dialogs.show((props: DialogProps) => (
+          <SoundDialog close={props.close} current={current()} preview={preview} pick={pick} />
+        ));
+      },
+    },
+  ]);
+});
+
+/** Loads saved choices; sound selection is available only with a sound player. */
+export const setUpPreferences = Effect.fn("setUpPreferences")(function* (
+  player: Option.Option<string>,
+) {
+  const host = yield* TuiHost;
   const toasts = yield* TuiToasts;
   const commands = yield* TuiCommands;
   const bridge = yield* makeBridge;
@@ -66,47 +91,43 @@ export const setUpPreferences = Effect.fn("setUpPreferences")(function* (player:
     );
   };
 
-  const pickSound = () => {
-    dialogs.show((props: DialogProps) => (
-      <SoundDialog
-        close={props.close}
-        current={soundId()}
-        preview={(id) => {
-          bridge.run(playWith(player, soundOf(id)));
-        }}
-        pick={(id) => {
-          setSoundId(id);
+  const play = (id: string) =>
+    Option.match(player, {
+      onNone: () => Effect.void,
+      onSome: (command) => playWith(command, soundOf(id)),
+    });
 
-          bridge.run(
-            client["attention/set-sound"]({ sound: id }).pipe(
-              Effect.catchTag("AttentionError", unsaved(toasts)),
-            ),
-          );
-        }}
-      />
-    ));
-  };
+  if (Option.isSome(player)) {
+    yield* setUpSoundCommand(
+      soundId,
+      (id) => {
+        bridge.run(play(id));
+      },
+      (id) => {
+        setSoundId(id);
+
+        bridge.run(
+          client["attention/set-sound"]({ sound: id }).pipe(
+            Effect.catchTag("AttentionError", unsaved(toasts)),
+          ),
+        );
+      },
+    );
+  }
 
   yield* commands.register([
     {
       name: "attention.toggle",
       title: "Toggle notifications",
-      desc: "Turn the sound for a finished turn or a waiting question on or off",
+      desc: "Turn terminal notifications and sound on or off",
       category: CATEGORY,
       palette: true,
       run: toggle,
     },
-    {
-      name: "attention.sound",
-      title: "Notification sound",
-      desc: "Pick which sound plays",
-      category: CATEGORY,
-      palette: true,
-      run: pickSound,
-    },
   ]);
 
   return {
-    play: Effect.suspend(() => (isEnabled() ? playWith(player, soundOf(soundId())) : Effect.void)),
+    notify: (renderer: Pick<CliRenderer, "triggerNotification">, chime: Chime) =>
+      Effect.suspend(() => notifyWith(renderer, chime, isEnabled(), play(soundId()))),
   };
 });

@@ -1,9 +1,6 @@
-/**
- * Attention's TUI part: follows the session on screen and plays the notification sound when its
- * turn ends or a workflow waits for input. The palette's Notifications section turns the sound on
- * and off and picks which one plays.
- */
+/** Requests terminal notifications and sound when the on-screen session needs the user. */
 
+import { useRenderer } from "@opentui/solid";
 import { Effect, Option, Stream } from "effect";
 
 import { ChatSlots } from "@liminal/chat/contract";
@@ -20,21 +17,22 @@ const LINE_ORDER = 60;
 export default defineTui({
   setup: Effect.gen(function* () {
     const player = playerOf(process.platform, (name) => Bun.which(name));
-    if (Option.isNone(player)) return;
 
     const host = yield* TuiHost;
     const inputWaits = yield* TuiInputWaits;
     const bridge = yield* makeBridge;
-    const { play } = yield* setUpPreferences(player.value);
+    const { notify } = yield* setUpPreferences(player);
 
     yield* host.register(
       ChatSlots.composerLine,
       { id: "attention", order: LINE_ORDER },
       function Chimes(props: { readonly sessionId: SessionId }) {
+        const renderer = useRenderer();
+
         bridge.watch(
-          chimeWith(props.sessionId, host.follow(props.sessionId), inputWaits.changes, play).pipe(
-            Stream.map(Option.some),
-          ),
+          chimeWith(props.sessionId, host.follow(props.sessionId), inputWaits.changes, (chime) =>
+            notify(renderer, chime),
+          ).pipe(Stream.map(Option.some)),
           Option.none(),
         );
 

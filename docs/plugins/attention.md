@@ -1,6 +1,6 @@
 # attention
 
-Plays a sound when the on-screen session needs the user: its turn ends or a workflow waits for input.
+Requests a terminal notification and plays a sound when the on-screen session needs the user: its turn ends or a workflow waits for input.
 
 Status: built
 
@@ -28,10 +28,15 @@ Status: built
 - A question form ends the turn, so the turn end sound covers it
 - Other sessions make no sound
 - The system player plays the file: `afplay` on macOS, `paplay`, `pw-play` or `aplay` on Linux
-- No player found means no sound, and no Notifications section
+- No player found means no sound or Notification sound command; terminal notifications and Toggle notifications remain available
+- OpenTUI detects the terminal and selects supported OSC 777, OSC 99 or OSC 9 notifications
+- Terminal notifications are requested regardless of terminal focus or background status
+- Turn ends request “Response ready”; input waits request “Input needed”, with title “Liminal”
+- Unsupported or failed terminal delivery does not prevent sound playback
+- Terminal and OS settings control banner display and may add their own sound
 - The TUI starts with the saved choices; global and project settings both apply, the project's winning
 - Threshold is the sound when `attention.sound` is unset or names no sound
-- Toggle notifications flips the sound on or off, saves it to the global settings and shows a toast
+- Toggle notifications turns both terminal notifications and sound on or off, saves it to the global settings and shows a toast
 - Notification sound lists the four sounds with their mood
 - The highlighted sound plays as the highlight moves, and again on ctrl+y, even with notifications off; opening the menu plays nothing
 - Enter saves the highlighted sound to the global settings; Esc keeps the saved sound

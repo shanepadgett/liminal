@@ -24,14 +24,14 @@ export const turnEnds = <E>(events: Stream.Stream<FollowEvent, E>): Stream.Strea
     Stream.as<Chime>("turn-ended"),
   );
 
-/** Playback is injected so the session's notification path also runs without native audio. */
+/** Delivery is injected so session events do not depend on terminal or audio devices. */
 export const chimeWith = <E>(
   session: SessionId,
   events: Stream.Stream<FollowEvent, E>,
   waits: Stream.Stream<ReadonlyArray<InputWait>>,
-  play: Effect.Effect<void>,
+  notify: (chime: Chime) => Effect.Effect<void>,
 ): Stream.Stream<Chime, E> =>
-  Stream.merge(turnEnds(events), newWaits(session, waits)).pipe(Stream.tap(() => play));
+  Stream.merge(turnEnds(events), newWaits(session, waits)).pipe(Stream.tap(notify));
 
 /** Only new identities for the session on screen call for attention. */
 export const newWaits = <E>(
