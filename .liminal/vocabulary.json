@@ -1,0 +1,84 @@
+{
+  "terms": [
+    {
+      "term": "annex",
+      "definition": "The unit plugins are distributed in: an npm, git or local package containing one or more plugins."
+    },
+    {
+      "term": "approval",
+      "definition": "The decision whether a tool call runs. How it is made depends on the approval mode: auto, ask or full."
+    },
+    {
+      "term": "checkpoint",
+      "definition": "A point where the agent's view of a session folds to its memory, the files it read back and a handoff."
+    },
+    { "term": "command menu", "definition": "The menu after `/`." },
+    {
+      "term": "composer",
+      "definition": "Where the user writes: the draft area and the model line under it."
+    },
+    {
+      "term": "contract",
+      "definition": "A plugin's public schemas and service tags, which other plugins and its own parts depend on."
+    },
+    {
+      "term": "custom prompt",
+      "definition": "An input that takes the composer's place when the app needs a decision from the user, built by a tool or flow that offers options, such as approval, questions, trust and commit."
+    },
+    {
+      "term": "dialog",
+      "definition": "An overlay for browsing and picking from a list the user opened."
+    },
+    {
+      "term": "entry",
+      "definition": "One saved record in a session's log, such as a message, a tool call, a notice or a checkpoint."
+    },
+    {
+      "term": "handoff",
+      "definition": "The note the agent writes at a checkpoint: the request, unfinished work and the next action."
+    },
+    {
+      "term": "instructions",
+      "definition": "Markdown rules an agent reads only when doing the work they cover."
+    },
+    {
+      "term": "memory",
+      "definition": "Summaries Liminal writes of a session so the agent keeps working after a checkpoint: long-term and short-term."
+    },
+    {
+      "term": "menu",
+      "definition": "A list of choices opening above the composer while the user types."
+    },
+    {
+      "term": "plugin",
+      "definition": "One package that adds a capability to Liminal, in parts: manifest, contract, server and TUI."
+    },
+    { "term": "prompt", "definition": "What the user types in the composer and submits." },
+    {
+      "term": "reload",
+      "definition": "Applying changed plugin code to the running app at the end of a turn."
+    },
+    {
+      "term": "session",
+      "definition": "One conversation with the agent, kept as an ordered log of entries."
+    },
+    { "term": "tag menu", "definition": "The menu after `@`." },
+    {
+      "term": "tool",
+      "definition": "A named action the agent can call, such as `read` or `edit`, with a description and parameters."
+    },
+    { "term": "tool call", "definition": "One use of a tool by the agent, with its result." },
+    {
+      "term": "trust",
+      "definition": "A user's decision that a folder's project plugins and instructions may load."
+    },
+    {
+      "term": "turn",
+      "definition": "One run of the agent, from the user's input until it stops replying."
+    },
+    {
+      "term": "vocabulary",
+      "definition": "The project's agreed terms, kept in `.liminal/vocabulary.json`."
+    }
+  ]
+}

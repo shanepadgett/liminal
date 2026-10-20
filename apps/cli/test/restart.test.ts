@@ -81,6 +81,7 @@ const run = <A, E>(use: (services: Context.Context<never>) => Effect.Effect<A, E
         "tools-web",
         "trust",
         "usage",
+        "vocabulary",
       ]);
 
       return yield* kernel.use(use);
