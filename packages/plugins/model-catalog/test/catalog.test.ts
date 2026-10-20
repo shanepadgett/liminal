@@ -61,6 +61,21 @@ const startCatalog = (status = 200) =>
     return { catalog: Context.get(built, ModelCatalog), requests };
   });
 
+/** A catalog whose HTTP requests never finish, to expose reads that wait on the network. */
+const startBlockedCatalog = Effect.gen(function* () {
+  const requests = yield* Queue.unbounded<string>();
+
+  const http = HttpClient.make((request) =>
+    Effect.andThen(Queue.offer(requests, request.url), Effect.never),
+  );
+
+  const built = yield* Layer.build(
+    catalogLayer.pipe(Layer.provide(Layer.succeed(HttpClient.HttpClient, http))),
+  );
+
+  return { catalog: Context.get(built, ModelCatalog), requests };
+});
+
 /** The catalog's models under `catalogId`, without their packages. */
 const infosOf = (catalog: ModelCatalog["Service"], catalogId: string) =>
   Effect.map(catalog.models(catalogId), (models) => models.map((model) => model.info));
@@ -153,24 +168,51 @@ effectTest(
 );
 
 effectTest(
-  "a cache older than a day refreshes in the background; a fresh one is used as it is",
+  "a stale cache is available after restart while its daily refresh is blocked",
   Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
+    yield* (yield* startCatalog()).catalog.models("openai");
+    yield* TestClock.adjust(Duration.days(2));
+
+    const { catalog, requests } = yield* startBlockedCatalog;
+    expect(yield* Queue.take(requests)).toBe("https://models.dev/api.json");
+
+    const models = yield* infosOf(catalog, "openai").pipe(
+      Effect.timeout(Duration.seconds(1)),
+      TestClock.withLive,
+    );
+
+    expect(models.map((model) => model.id)).toEqual(["gpt-5.2", "gpt-4o"]);
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "a cached provider does not wait for another provider's first fetch",
+  Effect.gen(function* () {
+    yield* (yield* startCatalog()).catalog.models("openai");
+    const { catalog, requests } = yield* startBlockedCatalog;
+
+    yield* Effect.forkScoped(catalog.models("anthropic"));
+    yield* Queue.take(requests);
+
+    const models = yield* infosOf(catalog, "openai").pipe(
+      Effect.timeout(Duration.seconds(1)),
+      TestClock.withLive,
+    );
+
+    expect(models.map((model) => model.id)).toEqual(["gpt-5.2", "gpt-4o"]);
+  }),
+  testBaseServices,
+);
+
+effectTest(
+  "a fresh cache survives a restart without fetching",
+  Effect.gen(function* () {
     yield* (yield* startCatalog()).catalog.models("openai");
 
     const fresh = yield* startCatalog();
     yield* fresh.catalog.models("openai");
     expect(yield* Queue.size(fresh.requests)).toBe(0);
-
-    yield* TestClock.adjust(Duration.days(2));
-    const stale = yield* startCatalog();
-    expect(yield* Queue.take(stale.requests)).toBe("https://models.dev/api.json");
-
-    // Waits for the refresh, which holds the lock through the save.
-    yield* stale.catalog.models("openai");
-
-    const saved = yield* savedCache(fs);
-    expect(saved.fetchedAt).toBe(Duration.toMillis(Duration.days(2)));
   }),
   testBaseServices,
 );

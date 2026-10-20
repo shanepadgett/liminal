@@ -51,8 +51,8 @@ const make = Effect.gen(function* () {
     );
   });
 
-  /** The cached entries for `catalogId`, fetching every known id and it when it is missing. */
-  const entries = (catalogId: string) =>
+  /** Rechecks under the lock so concurrent misses only fetch once. */
+  const fetchMissing = (catalogId: string) =>
     Effect.gen(function* () {
       const known = (yield* Ref.get(cache)).providers;
       if (!(catalogId in known)) yield* refresh([...Object.keys(known), catalogId]);
@@ -65,6 +65,14 @@ const make = Effect.gen(function* () {
       lock.withPermits(1),
       Effect.mapError((error) => new CatalogUnavailable({ catalogId, message: error.message })),
     );
+
+  /** Cached reads never wait for a refresh or another provider's first fetch. */
+  const entries = Effect.fn("ModelCatalog.entries")(function* (catalogId: string) {
+    const found = (yield* Ref.get(cache)).providers[catalogId];
+    if (found !== undefined) return found.models;
+
+    return yield* fetchMissing(catalogId);
+  });
 
   const start = yield* Ref.get(cache);
   const ids = Object.keys(start.providers);
