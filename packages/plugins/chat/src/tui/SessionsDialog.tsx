@@ -17,7 +17,6 @@ import type { SessionLogRpcs, SessionSummary } from "@liminal/session-log/contra
 
 interface SessionsDialogProps extends DialogProps {
   readonly initial: ReadonlyArray<SessionSummary>;
-  readonly active: SessionId;
   readonly now: DateTime.Utc;
   readonly log: RpcClient.FromGroup<typeof SessionLogRpcs, RpcClientError.RpcClientError>;
   readonly bridge: Bridge;
@@ -133,7 +132,7 @@ export function SessionsDialog(props: SessionsDialogProps) {
       title={`Sessions · ${isArchived() ? "Archived" : "Active"}`}
       width={90}
       options={optionsOf(browser)}
-      current={props.active}
+      screen={browser.view()}
       close={props.close}
       onSelect={props.onSelect}
       emptyMessage={isArchived() ? "No archived sessions" : "No active sessions"}

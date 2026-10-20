@@ -26,14 +26,12 @@ export const sessionsCommand = Effect.fn("sessionsCommand")(function* (
 
   const open = Effect.gen(function* () {
     const sessions = yield* log["session-log/list"]();
-    const active = yield* SubscriptionRef.get(current);
     const now = yield* DateTime.now;
 
     dialogs.show((props: DialogProps) => (
       <SessionsDialog
         {...props}
         initial={sessions}
-        active={active}
         now={now}
         log={log}
         bridge={bridge}

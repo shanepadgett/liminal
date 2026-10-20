@@ -669,6 +669,47 @@ effectTest(
 );
 
 effectTest(
+  "/sessions starts at the newest conversation rather than the currently open session",
+  Effect.gen(function* () {
+    const { setup } = yield* boot((kernel) =>
+      kernel.use((services) =>
+        Effect.gen(function* () {
+          const log = Context.getUnsafe(services, SessionLog);
+          const newer = SessionId.make("s2");
+          yield* log.create(s1);
+          yield* log.append(s1, [userMessage("older conversation")]);
+          yield* TestClock.adjust("1 second");
+          yield* log.create(newer);
+          yield* log.append(newer, [userMessage("newer conversation")]);
+        }),
+      ),
+    );
+
+    yield* slash(setup, "/sessions", "Switch to a session");
+    yield* frameWith(setup, "Sessions · Active");
+    setup.mockInput.pressArrow("down");
+    setup.mockInput.pressEnter();
+
+    yield* frameWhere(
+      setup,
+      (frame) => !frame.includes("Sessions · Active") && frame.includes("older conversation"),
+    );
+
+    yield* slash(setup, "/sessions", "Switch to a session");
+    yield* frameWith(setup, "Sessions · Active");
+    setup.mockInput.pressEnter();
+
+    expect(
+      yield* frameWhere(
+        setup,
+        (frame) => !frame.includes("Sessions · Active") && frame.includes("newer conversation"),
+      ),
+    ).toContain("newer conversation");
+  }),
+  trustedServices,
+);
+
+effectTest(
   "/sessions archives and restores without closing; viewing stays archived until a message is sent",
   Effect.gen(function* () {
     const { kernel, setup } = yield* bootScripted(

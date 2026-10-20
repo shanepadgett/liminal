@@ -58,7 +58,9 @@ How the TUI and the gallery look and move, and how the transcript shows a sessio
 
 - Dialog width is configurable through the SDK, with the existing default and a terminal-width cap
 - The sessions dialog is wider, shows more of each title before `…`, and right-aligns a dimmed last-conversation date
-- The sessions dialog opens on Active; Tab switches between Active and Archived
+- Opening or switching dialog screens highlights the first selectable row unless the screen supplies a current value, such as models or thinking
+- Refreshing a dialog screen preserves the highlighted item; removing it selects the next row or the previous at the end; changing the filter selects the first match
+- The sessions dialog opens on Active; Tab switches between Active and Archived, preserving the filter and starting the highlight at the first matching row
 - Ctrl+A archives the highlighted Active session or restores the highlighted Archived session without closing the dialog
 - Enter opens a session from either view without restoring it
 - The SDK provides a shared relative-date formatter: `just now`, whole minutes, hours and days, then a local month/day after seven days and a year for previous years

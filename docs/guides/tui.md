@@ -197,6 +197,7 @@ dialogs.show((props: DialogProps) => (
 | `PromptField` | A line of input; `question`, `isSecret`, `onSubmit` |
 | `DialogFrame` | Your own dialog body with the standard title, hints and close |
 
+- Set `screen` on `SelectDialog` to identify its current screen. Opening or changing screens highlights `current` when it matches the filtered list, otherwise the first row; screen changes retain the filter. Keep the identity unchanged for refreshes so they preserve the highlighted value. Omit `current` for lists such as sessions that always start at the top.
 - Set `width` on `SelectDialog` or `DialogFrame` to request columns; the default is 60 and the terminal width caps it.
 - Set an option's `trailing` for right-aligned dimmed metadata and a shrinking title with a trailing `…`. Existing descriptions, tags and keys retain their layout without it.
 - Use `dialogActions: [{ key, label, run }]` for keys that work with an empty list; use `actions` for highlighted-row keys. Async option updates keep the highlighted value or select its next row, then the previous at the end. Use `emptyMessage` for an empty unfiltered list.

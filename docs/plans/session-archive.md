@@ -87,7 +87,7 @@ interface DialogAction {
 | Row | Title uses remaining cells and ends in `…`; `trailing` is dimmed and right-aligned. Keep description/tag/keys behavior for existing callers. At extremely narrow widths, metadata yields rather than overflowing. |
 | Dates | `<1m`: `just now`; `<1h`: whole minutes; `<24h`: whole hours; `<7d`: whole days; older: `Oct 17`, adding year outside this local year. Clamp future timestamps to `just now`. |
 | Formatting | English labels, local calendar dates; `Intl.RelativeTimeFormat("en", { numeric: "always" })` plus `DateTime.formatLocal`. SDK owns thresholds; no new dependency. |
-| Views | Open Active every time; Tab switches views even when empty; retain filter text across views. Title and hints name the current view and action. |
+| Views | Open Active every time; Tab switches views even when empty; retain filter text across views. Opening and switching views highlight the first matching row through the shared `SelectDialog.screen` identity. Title and hints name the current view and action. |
 | Actions | Ctrl+A archives/restores highlighted row through existing `SelectAction` with `keepsOpen`. Do not optimistically hide it; on success refetch, select the next row or previous at end; errors leave it present. Disable repeat action while saving. |
 | Opening | Enter opens either state without restoring; sending a user message restores. Archiving the currently open session does not switch or stop its conversation. |
 | Refresh | Fetch on open, view switch and successful action; refresh once a minute while mounted for expiry and date labels. Release refresh work when closed/reloaded. Keep selection by id across refresh; clamp when rows vanish; explicit empty-state text. |

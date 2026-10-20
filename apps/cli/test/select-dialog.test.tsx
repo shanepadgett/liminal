@@ -192,6 +192,103 @@ test("async removal selects the next row, then the previous row at the end", asy
   setup.renderer.destroy();
 });
 
+for (const current of [undefined, "two"] as const) {
+  test(`entering a screen resets to ${current ?? "the first row"}, even with unchanged options`, async () => {
+    const [screen, setScreen] = createSignal("active");
+    const options = ["one", "two", "three"].map((value) => ({ title: value, value }));
+    const highlighted: string[] = [];
+    const chosen: string[] = [];
+
+    const setup = await drawDialog(() => (
+      <SelectDialog
+        title="Screens"
+        screen={screen()}
+        current={current}
+        options={options}
+        close={() => {}}
+        onSelect={(value) => chosen.push(value)}
+        onHighlight={(value) => highlighted.push(value)}
+      />
+    ));
+
+    expect(highlighted.at(-1)).toBe(current ?? "one");
+
+    const enterScreen = async (next: string) => {
+      setup.mockInput.pressArrow("down");
+      await setup.renderOnce();
+      expect(highlighted.at(-1)).toBe(current === undefined ? "two" : "three");
+      setScreen(next);
+      await setup.renderOnce();
+      expect(highlighted.at(-1)).toBe(current ?? "one");
+      setup.mockInput.pressEnter();
+      await setup.renderOnce();
+    };
+
+    await enterScreen("archived");
+    await enterScreen("active");
+
+    expect(chosen).toEqual([current ?? "one", current ?? "one"]);
+    setup.renderer.destroy();
+  });
+}
+
+test("refreshing a screen preserves the highlight by value instead of reapplying current", async () => {
+  const [values, setValues] = createSignal(["one", "two", "three"]);
+  const chosen: string[] = [];
+
+  const setup = await drawDialog(() => (
+    <SelectDialog
+      title="Models"
+      screen="models"
+      current="one"
+      options={values().map((value) => ({ title: value, value }))}
+      close={() => {}}
+      onSelect={(value) => chosen.push(value)}
+    />
+  ));
+
+  setup.mockInput.pressArrow("down");
+  await setup.renderOnce();
+  setValues(["three", "one", "two"]);
+  await setup.renderOnce();
+  setup.mockInput.pressEnter();
+  await setup.renderOnce();
+  expect(chosen).toEqual(["two"]);
+  setup.renderer.destroy();
+});
+
+test("screen entry retains the filter and falls back when current does not match", async () => {
+  const [screen, setScreen] = createSignal("active");
+  const [values, setValues] = createSignal(["keep one", "keep two", "other"]);
+  const chosen: string[] = [];
+
+  const setup = await drawDialog(() => (
+    <SelectDialog
+      title="Screens"
+      screen={screen()}
+      current="other"
+      options={values().map((value) => ({ title: value, value }))}
+      close={() => {}}
+      onSelect={(value) => chosen.push(value)}
+    />
+  ));
+
+  await setup.mockInput.typeText("keep");
+  await setup.renderOnce();
+  setup.mockInput.pressArrow("down");
+  await setup.renderOnce();
+  setScreen("archived");
+  await setup.renderOnce();
+  setup.mockInput.pressEnter();
+  await setup.renderOnce();
+  expect(chosen).toEqual(["keep one"]);
+  expect(setup.captureCharFrame()).not.toContain("other");
+  setValues(["other"]);
+  await setup.renderOnce();
+  expect(setup.captureCharFrame()).toContain("No matching options");
+  setup.renderer.destroy();
+});
+
 for (const width of [38, 110]) {
   test(`a wide dialog at ${width} columns keeps dates and truncates grapheme titles at the end`, async () => {
     const setup = await drawDialog(

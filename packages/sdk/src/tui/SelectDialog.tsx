@@ -61,7 +61,9 @@ export interface SelectDialogProps<V> extends DialogProps {
   readonly dialogActions?: ReadonlyArray<DialogAction>;
   readonly title: string;
   readonly options: ReadonlyArray<SelectOption<V>>;
-  /** Highlighted when the dialog opens; the first option when none. */
+  /** Changes when entering another screen; resets the highlight without clearing the filter. */
+  readonly screen?: string;
+  /** Highlighted on opening or entering a screen; the first matching option when absent. */
   readonly current?: V | undefined;
   /** Runs after the dialog closes. */
   readonly onSelect: (value: V) => void;
@@ -306,11 +308,8 @@ function OptionList<V>(props: {
 }
 
 /** Where the highlight starts: on `current`, else on the first option. */
-const startOf = <V,>(options: ReadonlyArray<SelectOption<V>>, current: V | undefined) => {
-  const rows = groupsOf(options, "").flatMap((group) => group.rows);
-
-  return rows.find((row) => row.option.value === current)?.index ?? 0;
-};
+const startOf = <V,>(rows: ReadonlyArray<Row<V>>, current: V | undefined) =>
+  rows.find((row) => row.option.value === current)?.index ?? 0;
 
 const actionName = (index: number) => `select.action-${index}`;
 
@@ -344,15 +343,23 @@ const createSelection = <V,>(props: SelectDialogProps<V>) => {
   const [query, setQuery] = createSignal("");
   const groups = createMemo(() => groupsOf(props.options, query()));
   const rows = () => groups().flatMap((group) => group.rows);
-  const [selected, setSelected] = createSignal(startOf(props.options, props.current));
+  const [selected, setSelected] = createSignal(startOf(rows(), props.current));
 
   let previousQuery = query();
 
   createEffect(
-    on(groups, (next, previous) => {
+    on([groups, () => props.screen], ([next, screen], previous) => {
       if (previous === undefined) return;
       const nextRows = next.flatMap((group) => group.rows);
-      const oldValue = previous.flatMap((group) => group.rows)[selected()]?.option.value;
+
+      if (screen !== previous[1]) {
+        setSelected(startOf(nextRows, props.current));
+        previousQuery = query();
+
+        return;
+      }
+
+      const oldValue = previous[0].flatMap((group) => group.rows)[selected()]?.option.value;
       const kept = nextRows.findIndex((row) => row.option.value === oldValue);
       const index = kept >= 0 ? kept : Math.min(selected(), Math.max(0, nextRows.length - 1));
       setSelected(query() === previousQuery ? index : 0);
