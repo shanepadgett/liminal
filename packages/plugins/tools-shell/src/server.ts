@@ -7,6 +7,7 @@ import { defineTool, Directories, ToolFailed } from "@liminal/sdk";
 import { Tools } from "@liminal/tools/contract";
 
 import { ShellParams } from "./contract.ts";
+import { detectGuidance } from "./server/guidance.ts";
 
 /** What the model reads: stdout, then stderr, then how the command ended. */
 const report = (result: CommandResult, timeout: number) => {
@@ -27,6 +28,7 @@ const make = Effect.gen(function* () {
   const tools = yield* Tools;
   const runner = yield* CommandRunner;
   const { workspace } = yield* Directories;
+  const helperGuidance = yield* detectGuidance();
 
   yield* tools.register(
     defineTool({
@@ -35,6 +37,9 @@ const make = Effect.gen(function* () {
       parameters: ShellParams,
       guidance: [
         "Use `shell` to run programs, builds and tests that finish; use a file tool to read or change a file when one fits. For a command that keeps running or needs input, load `process_start` with `tool_search`.",
+        "Prefer targeted, noninteractive shell commands with plain output. Disable pagers and color where supported. Follow repository-specific commands and restrictions first.",
+        "Avoid broad recursive listings and full-file dumps. Narrow the query before truncating output; do not use a broad search piped to head as the default. If output is truncated, say so and do not treat it as exhaustive.",
+        ...helperGuidance,
       ],
       runAlongside: false,
       safeToRerun: false,
