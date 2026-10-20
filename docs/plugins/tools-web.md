@@ -23,7 +23,7 @@ Status: built
 - `webfetch` takes `url` and optional `timeout` (default 30); http and https only; text types only; at most 5 MB
 - HTML becomes plain text with each link's address after its words; other text comes back as it is
 - Both tools are deferred: the model loads them through tool search
-- Rows read `Searched the web <query>` with the source count and `Fetched <url>`; opened, they show the end of the result
+- Rows read `Web search <query>` with the source count and `Web fetch <url>`; opened, they show the end of the result
 
 ## References
 

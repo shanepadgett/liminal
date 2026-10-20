@@ -235,7 +235,7 @@
     {
       "package": "@opencode/codemode",
       "versionSource": "lock",
-      "summary": "Confined interpreter for a JavaScript subset whose only reach is host tools: CodeMode.execute({ code, tools, limits }) returns a Result of value, logs and warnings or a diagnostic; Tool.make takes an Effect Schema or a render-only JSON Schema; search finds tools by path and description. tools-run runs its scripts with it.",
+      "summary": "Confined interpreter for a JavaScript subset whose only reach is host tools: CodeMode.execute({ code, tools, limits }) returns a Result of value, logs and warnings or a diagnostic; Tool.make takes an Effect Schema or a render-only JSON Schema; search finds tools by path and description. tools-execute runs its scripts with it.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
       "api": [
         { "kind": "types", "path": "dist/index.d.ts" },

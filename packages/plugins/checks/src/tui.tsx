@@ -15,7 +15,7 @@ const decodeReport = Schema.decodeUnknownOption(CheckReport);
 
 const checksRows = ToolRows.Rows({
   fold: (call) => {
-    if (call.outcome === undefined) return { verb: "Running", subject: "checks" };
+    if (call.outcome === undefined) return { label: "Checks", subject: "" };
 
     // A call with no report, such as one with nothing to check, has no detail.
     const detail = Option.match(decodeReport(call.outcome.details), {
@@ -26,7 +26,7 @@ const checksRows = ToolRows.Rows({
           : report.failed.map(({ name }) => name).join(", "),
     });
 
-    return { verb: "Ran", subject: "checks", detail };
+    return { label: "Checks", subject: "", detail };
   },
 });
 

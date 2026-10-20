@@ -1,6 +1,6 @@
 /**
- * How a group of work reads as a row: a verb, what it worked on, and quieter detail after. A group
- * still going on reads in the present tense on the live line; once over, in the past tense. A
+ * How a group of work reads as a row: a label, what it worked on, and quieter detail after. The
+ * label names the kind of work and reads the same while the group goes on and once it is over. A
  * failure is the one part said in color.
  */
 
@@ -11,10 +11,8 @@ import { formatDuration } from "@liminal/sdk/tui";
 import type { Check } from "./script.ts";
 import type { Edit, Looked, Web, WorkGroup } from "./workGroups.ts";
 
-export type Tense = "past" | "present";
-
 export type Wording = {
-  readonly verb: string;
+  readonly label: string;
   readonly subject: string;
   /** Quiet detail after the subject, or empty. */
   readonly detail: string;
@@ -42,8 +40,8 @@ const placeOf = (paths: readonly string[]) => {
   return depth === 0 ? "." : first.slice(0, depth).join("/");
 };
 
-const worded = (verb: string, subject: string, detail = "", failure = ""): Wording => ({
-  verb,
+const worded = (label: string, subject: string, detail = "", failure = ""): Wording => ({
+  label,
   subject,
   detail,
   failure,
@@ -53,19 +51,15 @@ const worded = (verb: string, subject: string, detail = "", failure = ""): Wordi
 const cut = (wording: Wording): Wording => ({ ...wording, oneLine: true });
 
 /** One read or search, said on its own. */
-const lookedOf = (action: Looked, tense: Tense): Wording => {
-  const isPast = tense === "past";
+const lookedOf = (action: Looked): Wording => {
+  if (action.kind === "read") return worded("Read", action.path);
 
-  if (action.kind === "read") return worded(isPast ? "Read" : "Reading", action.path);
-
-  return isPast
-    ? worded("Searched for", action.pattern, counted(action.hits, "hit", "hits"))
-    : worded("Searching for", action.pattern);
+  return worded("Search", action.pattern, counted(action.hits, "hit", "hits"));
 };
 
-const exploredOf = (actions: readonly Looked[], tense: Tense): Wording => {
+const exploredOf = (actions: readonly Looked[]): Wording => {
   const [first] = actions;
-  if (actions.length === 1 && first !== undefined) return lookedOf(first, tense);
+  if (actions.length === 1 && first !== undefined) return lookedOf(first);
 
   const paths = actions.flatMap((action) => (action.kind === "read" ? [action.path] : []));
   const searches = actions.length - paths.length;
@@ -75,74 +69,44 @@ const exploredOf = (actions: readonly Looked[], tense: Tense): Wording => {
     ...(searches === 0 ? [] : [counted(searches, "search", "searches")]),
   ];
 
-  return worded(tense === "past" ? "Explored" : "Exploring", parts.join(", "));
+  return worded("Explore", parts.join(", "));
 };
 
-const editedOf = (edits: readonly Edit[], tense: Tense): Wording => {
-  const verb = tense === "past" ? "Edited" : "Editing";
+const editedOf = (edits: readonly Edit[]): Wording => {
   const paths = [...new Set(edits.map((edit) => edit.path))];
   const [only] = paths;
 
-  if (paths.length === 1 && only !== undefined) return worded(verb, only);
+  if (paths.length === 1 && only !== undefined) return worded("Edit", only);
 
-  return worded(verb, `${placeOf(paths)}, ${counted(paths.length, "file", "files")}`);
+  return worded("Edit", `${placeOf(paths)}, ${counted(paths.length, "file", "files")}`);
 };
 
-const checkedOf = (checks: readonly Check[], tense: Tense): Wording => {
-  if (tense === "present") return worded("Running", "checks");
-
+const checkedOf = (checks: readonly Check[]): Wording => {
   const failed = checks.flatMap((check) => (check.hasPassed ? [] : [check.name]));
 
   return failed.length === 0
-    ? worded("Ran", "checks", "all passed")
-    : worded("Ran", "checks", "", `${failed.join(", ")} failed`);
+    ? worded("Checks", "", "all passed")
+    : worded("Checks", "", "", `${failed.join(", ")} failed`);
 };
 
-const webOf = (web: Web, tense: Tense): Wording =>
+const webOf = (web: Web): Wording =>
   web.kind === "websearch"
-    ? worded(
-        tense === "past" ? "Searched the web" : "Searching the web",
-        web.query,
-        tense === "past" ? counted(web.sources, "source", "sources") : "",
-      )
-    : worded(tense === "past" ? "Fetched" : "Fetching", web.url);
+    ? worded("Web search", web.query, counted(web.sources, "source", "sources"))
+    : worded("Web fetch", web.url);
 
-export const wordingOf = (group: WorkGroup, tense: Tense): Wording =>
+export const wordingOf = (group: WorkGroup): Wording =>
   Match.value(group).pipe(
     Match.discriminatorsExhaustive("kind")({
-      thought: (thought) =>
-        tense === "past"
-          ? worded("Thought", `for ${formatDuration(Math.round(thought.seconds))}`)
-          : worded("Thinking", ""),
-      explored: (explored) => exploredOf(explored.actions, tense),
-      edited: (edited) => editedOf(edited.edits, tense),
-      ran: ({ run }) =>
-        cut(
-          tense === "present"
-            ? worded("Running", run.command)
-            : worded("Ran", run.command, "", run.hasPassed ? "" : "failed"),
-        ),
-      checked: (checked) => checkedOf(checked.checks, tense),
-      scripted: ({ script }) =>
-        cut(
-          worded(
-            tense === "past" ? "Ran" : "Running",
-            script.code.split("\n")[0] ?? "",
-            counted(script.calls.length, "call", "calls"),
-          ),
-        ),
-      browsed: ({ web }) => webOf(web, tense),
+      thought: (thought) => worded("Thought", `for ${formatDuration(Math.round(thought.seconds))}`),
+      explored: (explored) => exploredOf(explored.actions),
+      edited: (edited) => editedOf(edited.edits),
+      ran: ({ run }) => cut(worded("Shell", run.command, "", run.hasPassed ? "" : "failed")),
+      checked: (checked) => checkedOf(checked.checks),
+      scripted: () => worded("Execute", ""),
+      browsed: ({ web }) => webOf(web),
       managed: ({ process }) =>
-        cut(
-          tense === "past"
-            ? worded(process.done, process.subject, process.state)
-            : worded(process.doing, process.subject),
-        ),
-      recalled: ({ recall }) =>
-        worded(
-          tense === "past" ? "Recalled" : "Recalling",
-          `entries ${recall.from}–${recall.through}`,
-        ),
+        cut(worded("Process", `${process.action} ${process.subject}`, process.state)),
+      recalled: ({ recall }) => worded("History", `entries ${recall.from}–${recall.through}`),
     }),
   );
 
@@ -156,11 +120,7 @@ const linesChanged = (edit: Edit) => {
 /** The rows an opened group lists, one per action; a group of one action lists none. */
 export const actionWordingsOf = (group: WorkGroup): readonly Wording[] => {
   if (group.kind === "explored" && group.actions.length > 1) {
-    return group.actions.map((action) =>
-      action.kind === "read"
-        ? worded("Read", action.path)
-        : worded("Search", action.pattern, counted(action.hits, "hit", "hits")),
-    );
+    return group.actions.map(lookedOf);
   }
 
   if (group.kind === "edited" && group.edits.length > 1) {

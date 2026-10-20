@@ -1,7 +1,7 @@
 /**
  * Memory's TUI part: the checkpoint rule, the handoff in the debug view and a line per note or
  * memory, the files a checkpoint read back, no row for the `checkpoint` call, which the rule stands
- * for, `Recalled entries 12–40` for `history`, and memory's rows in the sidebar's Context section.
+ * for, `History entries 12–40` for `history`, and memory's rows in the sidebar's Context section.
  */
 
 import { Effect, Option, Schema, Stream } from "effect";
@@ -30,7 +30,7 @@ const decodeRange = Schema.decodeUnknownOption(HistoryParams);
 
 const historyRows = ToolRows.Rows({
   fold: (call) => ({
-    verb: call.outcome === undefined ? "Recalling" : "Recalled",
+    label: "History",
     subject: Option.match(decodeRange(call.params), {
       onNone: () => "entries",
       onSome: ({ from, through }) => `entries ${from}–${through}`,

@@ -1,9 +1,9 @@
 /**
- * A run of thoughts and tool calls as quiet rows: a mark, the verb in bold, what it worked on, and
+ * A run of thoughts and tool calls as quiet rows: a mark, the label in bold, what it worked on, and
  * fainter detail in brackets; a failure shows in the danger color. A click opens a row: a joined
- * row lists its calls, a single call shows its tool's detail, and a thought shows its text. Calls a
- * `run` script made sit under its row. Rows fade from their current colors to dim ones once the
- * work is left behind.
+ * row lists its calls, a single call shows its tool's detail, and a thought shows its text. Calls
+ * an `execute` script made sit under its row, one row each. Rows fade from their current colors to
+ * dim ones once the work is left behind.
  */
 
 import { TextAttributes } from "@opentui/core";
@@ -73,7 +73,7 @@ function Opened(props: {
   );
 }
 
-/** Calls a single call ran inside it, such as a `run` script's. */
+/** Calls a single call ran inside it, such as an `execute` script's. */
 const innerOf = (group: WorkGroup): ReadonlyArray<ToolCall> =>
   group.kind === "calls" && group.calls.length === 1 ? (group.calls[0]?.call.inner ?? []) : [];
 
@@ -101,6 +101,7 @@ function GroupRow(props: {
             sessionId={props.sessionId}
             steps={stepsOf(innerOf(props.group))}
             dim={props.dim}
+            joinsCalls={false}
           />
         </box>
       </Show>
@@ -116,9 +117,11 @@ export function WorkRows(props: {
   readonly steps: ReadonlyArray<Step>;
   /** How far the work has dimmed, from 0 to 1. */
   readonly dim: number;
+  /** Whether neighbouring calls of one kind gather into one row; on unless said otherwise. */
+  readonly joinsCalls?: boolean;
 }) {
   const rowsOf = useSlotMeta(ChatSlots.tool);
-  const groups = () => groupsOf(props.steps, rowsOf);
+  const groups = () => groupsOf(props.steps, rowsOf, props.joinsCalls);
 
   // A run of only hidden calls draws nothing, so it leaves no gap in the transcript.
   return (

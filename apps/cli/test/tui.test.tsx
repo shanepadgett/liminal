@@ -265,26 +265,26 @@ effectTest(
 );
 
 effectTest(
-  "a run row cuts its script to one line",
+  "an execute row shows no script",
   Effect.gen(function* () {
-    const run: ModelPart = {
+    const execute: ModelPart = {
       type: "tool-call",
       id: "c1",
-      name: "run",
+      name: "execute",
       params: {
         code: `const paths = [${"'far/away.ts', ".repeat(20)}]; console.log(paths.length);`,
       },
       providerData: {},
     };
 
-    const { setup } = yield* bootScripted(reply([run]), replyText("ran it"));
+    const { setup } = yield* bootScripted(reply([execute]), replyText("ran it"));
 
-    yield* send(setup, "run far away");
+    yield* send(setup, "execute far away");
 
     const lines = (yield* frameWith(setup, "ran it")).split("\n");
-    const row = lines.findIndex((line) => line.includes("\u25c6 Ran"));
+    const row = lines.findIndex((line) => line.includes("\u25c6 Execute"));
 
-    expect(lines[row]).toContain("\u2026");
+    expect(lines[row]).not.toContain("far/away");
     expect(lines[row + 1]).not.toContain("far/away");
   }),
   trustedServices,

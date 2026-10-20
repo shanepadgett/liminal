@@ -1,11 +1,11 @@
 # Daily driver
 
-Brings Liminal to where Tau was, so it can replace Tau for daily work: sessions and print mode, checks, web, long-running processes, a `run` script tool, the sidebar with usage and cost, `@` tags and pictures, stash, references, `/qna`, `/commit`, skills and a notification sound. Each step gets its own code plan here when it is built.
+Brings Liminal to where Tau was, so it can replace Tau for daily work: sessions and print mode, checks, web, long-running processes, an `execute` script tool, the sidebar with usage and cost, `@` tags and pictures, stash, references, `/qna`, `/commit`, skills and a notification sound. Each step gets its own code plan here when it is built.
 
 ## Decisions
 
-- Separate tools stay. A `run` tool joins them: it runs a script whose functions are the other tools, and its guidance tells the model to use it when chaining or filtering saves tokens.
-- Every function call inside `run` goes through `ToolPipeline` as its own call, so checks, approvals and output spill judge each one.
+- Separate tools stay. An `execute` tool joins them: it runs a script whose functions are the other tools, and its guidance tells the model to use it when chaining or filtering saves tokens.
+- Every function call inside `execute` goes through `ToolPipeline` as its own call, so checks, approvals and output spill judge each one.
 - Web search comes from a searcher registry: providers with built-in search (Anthropic, OpenAI) register, Exa registers too; the tool uses the first that works.
 - A sidebar like Tau's: Ctrl+B, beside the chat at 122 columns or wider, over it when narrower. Plugins fill its sections through a slot.
 - The processes holder program exits when it holds no running commands and no server is connected.
@@ -35,7 +35,7 @@ flowchart LR
 
 | Foundation | Where | What it gives later steps |
 | --- | --- | --- |
-| Inner calls | `tools`: `ToolCall` gains the outer call's id | `run` dispatches each function through the pipeline; wrappers such as checks' `fix` run once per outer call |
+| Inner calls | `tools`: `ToolCall` gains the outer call's id | `execute` dispatches each function through the pipeline; wrappers such as checks' `fix` run once per outer call |
 | Sidebar slot | `chat`: `ChatSlots.sidebar`, a list slot of sections, session scope; Ctrl+B; width rule | Usage, compaction stage, processes and references each register one section |
 | Composer tags | `inbox`: a `TagSources` registry; a tag resolves to text or an image part | Files and folders, pictures, references and skills each register one source |
 | User message parts | `session-log`: `UserEntry` gains image parts beside its text | Pictures; the providers already send `ModelPart` images |
@@ -47,7 +47,7 @@ flowchart LR
 | 1. Sessions and the command line | `chat`, which owns `/new`; `session-store`; `session-log`; `settings`; `apps/cli` | `session-log/list`; `SelectDialog`; `effect/cli` | `/sessions` dialog; `--session`, `-p`, `--model` |
 | 2. Small tool hooks | new `tool-output`; `agent-loop`; `compaction` | `ToolWrappers`; `BeforeCallHooks` ends a turn on repeats; `Memories` ranges | `history` tool rows |
 | 3. Checks | new `checks` | `command-runner`; `ToolWrappers` for `fix`; `TurnEndingHooks` re-runs skipped or stale checks and continues the turn on failure | `checks` tool row `Hidden`; its own `checks/report` entry; `fix` runs as debug lines |
-| 4. `run` tool | new `tools-run`; `tools` | Inner calls; `Tools` as script functions; codemode's `search` for deferred functions | Its row opens to the script and output; inner calls fold under it |
+| 4. `execute` tool | new `tools-execute`; `tools` | Inner calls; `Tools` as script functions; codemode's `search` for deferred functions | Its row opens to the script and output; inner calls fold under it |
 | 5. Web | new `tools-web`; `model-anthropic`, `model-openai` register searchers | `effect/http` `HttpClient` for fetch | `search` and `fetch` rows |
 | 6. Sidebar, usage and cost | `chat`; new `usage`; `compaction` | `Finish.usage`; `model-catalog` prices | Sidebar with Context, Cost, Compaction sections (gallery first) |
 | 7. Processes | `processes` and its holder program | Bun's PTY; `TurnEndingHooks`; a resumed turn's reminder | Process rows; Processes section; live output |
@@ -138,7 +138,7 @@ history { from: Seq, through: Seq } -> log.read(session, { after: from - 1, thro
   through < from -> ToolFailed
 ```
 
-- Spill sees the final outcome of every call, so the later `run` tool's inner calls spill one by one.
+- Spill sees the final outcome of every call, so the later `execute` tool's inner calls spill one by one.
 - Notes in the view already name their entry range; the `history` guidance points the model at them.
 - The ended-by-plugin notice is the only place the user sees why a turn stopped; the loop guard is its first user.
 
@@ -190,26 +190,26 @@ failed -> [ReportEntry]                                                         
 - The tool draws as the gallery's checks row: `Running checks`, `Ran checks (all passed)`, `Ran checks (lint failed)`; opened, each check's mark and the failures' output. The settle report draws the same row.
 - Edits to `checks.json` apply from the next model call.
 
-## Step 4: the `run` tool
+## Step 4: the `execute` tool
 
-A new `tools-run` plugin registers `run`, which runs a script in codemode's interpreter. The script's functions are the registered tools by the same names and params, so `run` adds no second set of file or shell functions. Each function call is an inner call: it goes through `ToolPipeline` with the outer call's id, and its outcome is saved as its own entry for the transcript.
+A new `tools-execute` plugin registers `execute`, which runs a script in codemode's interpreter. The script's functions are the registered tools by the same names and params, so `execute` adds no second set of file or shell functions. Each function call is an inner call: it goes through `ToolPipeline` with the outer call's id, and its outcome is saved as its own entry for the transcript.
 
 What OpenCode does with codemode (`packages/core/src/codemode/tool.ts`, `instructions.ts`): it wraps every tool as a `Tool.make` with its JSON schema, runs `CodeMode.make({ tools }).execute(code)`, folds the result's value, warnings and logs into text, and keeps the changing catalog out of the tool's description so the request's cached start stays the same. Liminal's tools are already in the model's tool list, so the description only says the functions are those tools; `search` finds the tools not offered yet.
 
 | Where | Change |
 | --- | --- |
-| `tools` contract | `ToolCall.outer?: string`: the `run` call an inner call runs inside |
+| `tools` contract | `ToolCall.outer?: string`: the `execute` call an inner call runs inside |
 | `session-log` contract | `InnerCallEntry` `session-log/inner-call`, hidden, no model view: `{ outer, id, name, params, status, result, details? }` |
-| `checks` fix wrapper | Skips inner calls; the outer `run` call is tracked once |
+| `checks` fix wrapper | Skips inner calls; the outer `execute` call is tracked once |
 | `chat` | `ToolCall.inner`; the transcript adds inner-call entries to their outer call; `WorkRows` draws a call's inner rows under its row, each worded by its own tool |
-| new `tools-run` | `RunParams { code, timeout? }`; the tool; its TUI row |
+| new `tools-execute` | `ExecuteParams { code, timeout? }`; the tool; its TUI row |
 | gallery | A `script` action whose inner actions draw as rows under it |
 | root `package.json` | `overrides.effect` pins codemode's `effect` to the workspace's 4.0.5 |
 
 ```ts
-// tools-run server
+// tools-execute server
 run({ code, timeout = 300 }, { sessionId, callId }) =>
-  functions = Tools.list without "run", each Tool.make({ description, input: spec.parameters, output: {} ,
+  functions = Tools.list without "execute", each Tool.make({ description, input: spec.parameters, output: {} ,
     execute: (input) => inner(sessionId, callId, name, input) })
   CodeMode.execute({ code, tools: functions, limits: { timeoutMs, maxOutputBytes: 10 MiB } })
   ok -> { result: logs + value + warnings }; failed -> ToolFailed(logs + diagnostic)
@@ -223,13 +223,13 @@ inner(session, outer, name, input) =                                  // callId 
 
 - Checks, approvals and output spill judge each inner call; the repeat guard sees only the model's calls.
 - Inner calls of tools that cannot run alongside others wait for each other.
-- The row reads `Ran <first line of the script>` with `N calls`; opened, it shows the script and its output.
+- The row reads `Executing` then `Executed`, with its calls listed under it; opened, it shows the script and its output.
 
 ## Step 5: web
 
 A new `tools-web` plugin registers `websearch` and `webfetch` and owns `WebSearchers`, an ordered registry of searchers. Providers with a search tool on their side register one searcher per provider: `model-anthropic` for `anthropic` and `anthropic-api`, `model-openai` for `openai` and `chatgpt`, each on its cheap model. `tools-web` registers Exa last. `websearch` tries the searchers in order and answers with the first that works; a searcher without a login fails at once and the next one runs.
 
-The names are `websearch` and `webfetch` because a `run` script already has a built-in `search`.
+The names are `websearch` and `webfetch` because an `execute` script already has a built-in `search`.
 
 | Where | Change |
 | --- | --- |
@@ -536,7 +536,7 @@ chime = merge(turnEnds(host.follow(session)), newAsks(approval/pending)) -> spaw
 
 ## New dependency
 
-- `@opencode/codemode` 2.0.32 for the `run` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Unpatched here: its console logs are cut only when the script ends.
+- `@opencode/codemode` 2.0.32 for the `execute` interpreter, which Tau used (`src/sandbox/Sandbox.ts`, patched there). Unpatched here: its console logs are cut only when the script ends.
 
 ## Guides
 

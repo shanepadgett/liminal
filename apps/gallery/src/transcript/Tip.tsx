@@ -1,8 +1,8 @@
 /**
  * The growing end of a turn: the live line for what the assistant is doing now, the whole group the
- * action carries on (`Exploring kernel/test, 2 files`), with what that action is producing under
- * it. The live line stays mounted from one action to the next, so its light keeps sweeping as the
- * words change under it.
+ * action carries on (`Explore kernel/test, 2 files`), with what that action is producing under it.
+ * The live line stays mounted from one action to the next, so its light keeps sweeping as the words
+ * change under it.
  */
 
 import { Show } from "solid-js";
@@ -26,11 +26,11 @@ type Live = {
   readonly progress: number;
 };
 
-/** The group going on now in the present tense: `Exploring kernel/test, 2 files`. */
+/** The group going on now, worded as its row will be: `Explore kernel/test, 2 files`. */
 const doingOf = (group: WorkGroup) => {
-  const { verb, subject } = wordingOf(group, "present");
+  const { label, subject } = wordingOf(group);
 
-  return subject === "" ? verb : `${verb} ${subject}`;
+  return subject === "" ? label : `${label} ${subject}`;
 };
 
 const liveOf = (tip: TipFrame): Live | undefined => {

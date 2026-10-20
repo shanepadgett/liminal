@@ -1,5 +1,5 @@
 /**
- * The work between two things the assistant said, one quiet row per group: a mark, the verb in
+ * The work between two things the assistant said, one quiet row per group: a mark, the label in
  * bold, what it worked on, and fainter detail in brackets. Everything is gray but a failure, and it
  * all dims further once the assistant speaks after it or the turn is over. A group of several
  * actions opens on a click to list them, and a thought opens to show what was thought. A script's
@@ -43,7 +43,7 @@ function GroupRow(props: {
       <WorkWords
         color={props.color}
         mark={markOf(props.group)}
-        words={wordingOf(props.group, "past")}
+        words={wordingOf(props.group)}
         dim={props.dim}
       />
       <Show when={script()}>

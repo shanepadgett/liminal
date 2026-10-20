@@ -66,9 +66,10 @@ Brightness follows importance, and what is newest is brightest.
 - Everything the assistant says is full-brightness Markdown; the paragraph being written warms up from the background like thinking and becomes Markdown once settled, and inside a code fence text arrives a whole word at a time; all its work is gray rows between, on the prompt's text edge, with a blank line between blocks
 - Reply text lines run at most 120 columns
 - Mermaid fences draw as box diagrams; a fence still open, unparsable or wider than the transcript shows its source
-- Between two things the assistant said, work folds into one row per group: a mark, the verb in bold, what it worked on, detail in brackets (`◈ Explored kernel/test, 2 files, 1 search`, `◆ Ran checks (all passed)`)
+- Between two things the assistant said, work folds into one row per group: a mark, the label in bold, what it worked on, detail in brackets (`◈ Explore kernel/test, 2 files, 1 search`, `◆ Checks (all passed)`); the label names the tool and reads the same while it runs and after
 - Reads and searches in a row join one group; so do edits in a row; `◈` marks a group of several actions, `◆` a single one
-- A group still going on is the live line in the present tense, and settles into its row once the next thing starts
+- A group still going on is the live line, worded as its row will be, and settles into its row once the next thing starts
+- A row whose call is still running turns an arc in place of its mark and shimmers its label
 - A group opens on a click to one row per action; a thought opens to its text; past turns fold the same way
 - Work dims once left behind: a stretch fades to dim over 600ms once the assistant next speaks, and all of it dims when the turn's work is over
 - Thoughts are work rows: thoughts and tool calls between two things the assistant said form one block, no blank line between rows

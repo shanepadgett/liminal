@@ -164,12 +164,12 @@ Parses JSON with comments and edits it in place: parse, modify and applyEdits ke
 
 ## @opencode/codemode 2.0.32
 
-Confined interpreter for a JavaScript subset whose only reach is host tools: CodeMode.execute({ code, tools, limits }) returns a Result of value, logs and warnings or a diagnostic; Tool.make takes an Effect Schema or a render-only JSON Schema; search finds tools by path and description. tools-run runs its scripts with it.
+Confined interpreter for a JavaScript subset whose only reach is host tools: CodeMode.execute({ code, tools, limits }) returns a Result of value, logs and warnings or a diagnostic; Tool.make takes an Effect Schema or a render-only JSON Schema; search finds tools by path and description. tools-execute runs its scripts with it.
 
 - Docs: `docs/reference/copies/@opencode/codemode/2.0.32/` (1 file: README.md)
-- API (types): `packages/plugins/tools-run/node_modules/@opencode/codemode/dist/index.d.ts`
-- API (types): `packages/plugins/tools-run/node_modules/@opencode/codemode/dist/codemode.d.ts`
-- API (types): `packages/plugins/tools-run/node_modules/@opencode/codemode/dist/tool.d.ts`
+- API (types): `packages/plugins/tools-execute/node_modules/@opencode/codemode/dist/index.d.ts`
+- API (types): `packages/plugins/tools-execute/node_modules/@opencode/codemode/dist/codemode.d.ts`
+- API (types): `packages/plugins/tools-execute/node_modules/@opencode/codemode/dist/tool.d.ts`
 
 ## unbash 6.0.0
 

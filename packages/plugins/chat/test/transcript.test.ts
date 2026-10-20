@@ -70,11 +70,13 @@ const pathOf = Schema.decodeUnknownSync(Schema.Struct({ path: Schema.String }));
 
 const read = ToolRows.Rows({
   fold: (each) => ({
-    verb: "Read",
+    label: "Read",
     subject: pathOf(each.params).path,
-    joins: { verb: "Explored", noun: "files" },
+    joins: { label: "Read", noun: "files" },
   }),
 });
+
+const readOnly = (name: string) => (name === "read" ? read : undefined);
 
 /** The tool calls of the work item at `index`. */
 const callsAt = (transcript: Transcript, index: number) => {
@@ -115,7 +117,14 @@ describe("transcript", () => {
     const groups = groupsOf(stepsOf(transcript, 1), (name) => (name === "read" ? read : undefined));
 
     expect(groups.map((group) => group.words)).toEqual([
-      { verb: "Explored", subject: "2 files", detail: "", failure: "1 failed", oneLine: false },
+      {
+        label: "Read",
+        subject: "2 files",
+        detail: "",
+        failure: "1 failed",
+        oneLine: false,
+        isRunning: false,
+      },
     ]);
   });
 
@@ -127,7 +136,7 @@ describe("transcript", () => {
     ]);
 
     expect(transcript.running).toBe(false);
-    expect(groupsOf(stepsOf(transcript, 0), () => {})[0]?.words.verb).toBe("shell");
+    expect(groupsOf(stepsOf(transcript, 0), () => {})[0]?.words.label).toBe("shell");
   });
 
   test("a hidden tool's calls draw no row", () => {
@@ -138,23 +147,39 @@ describe("transcript", () => {
 
     const groups = groupsOf(calls, (name) => (name === "read" ? read : ToolRows.Hidden({})));
 
-    expect(groups.map((group) => group.words.verb)).toEqual(["Read"]);
+    expect(groups.map((group) => group.words.label)).toEqual(["Read"]);
     expect(groupsOf(calls.slice(1), () => ToolRows.Hidden({}))).toEqual([]);
   });
 
-  test("a run script's inner calls sit under their outer call", () => {
+  test("calls keep their own rows when joining is off, and a call without an outcome is running", () => {
+    const done = { status: "done", result: "" } as const;
+
+    const calls: ReadonlyArray<Step> = [
+      { kind: "call", call: { id: "c1", name: "read", params: { path: "a.ts" }, outcome: done } },
+      { kind: "call", call: { id: "c2", name: "read", params: { path: "b.ts" } } },
+    ];
+
+    const apart = groupsOf(calls, readOnly, false);
+
+    expect(apart.map((group) => group.words.subject)).toEqual(["a.ts", "b.ts"]);
+    expect(apart.map((group) => group.words.isRunning)).toEqual([false, true]);
+
+    expect(groupsOf(calls, readOnly)[0]?.words).toMatchObject({ label: "Read", isRunning: true });
+  });
+
+  test("an execute script's inner calls sit under their outer call", () => {
     const transcript = folded([
-      call("c1", "run", ""),
+      call("c1", "execute", ""),
       innerCall("c1/1", "a.ts"),
       innerCall("c1/2", "b.ts"),
-      result("c1", "run", "done"),
+      result("c1", "execute", "done"),
     ]);
 
     const calls = callsAt(transcript, 0);
-    const [run] = calls;
+    const [executed] = calls;
     expect(calls.map((each) => each.id)).toEqual(["c1"]);
-    expect(run?.outcome?.status).toBe("done");
-    const inner = run?.inner ?? [];
+    expect(executed?.outcome?.status).toBe("done");
+    const inner = executed?.inner ?? [];
     expect(inner.map((each) => each.id)).toEqual(["c1/1", "c1/2"]);
     expect(inner[0]?.outcome?.status).toBe("done");
   });
@@ -193,9 +218,9 @@ describe("transcript", () => {
 
     const groups = groupsOf(stepsOf(transcript, 0), (name) => (name === "read" ? read : undefined));
 
-    expect(groups.map((group) => `${group.words.verb} ${group.words.subject}`)).toEqual([
+    expect(groups.map((group) => `${group.words.label} ${group.words.subject}`)).toEqual([
       "Thought Reading the host",
-      "Explored 2 files",
+      "Read 2 files",
       "Thought Checking tests",
       "Read c.ts",
     ]);

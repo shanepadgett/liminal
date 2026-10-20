@@ -93,9 +93,9 @@ Example: `packages/plugins/agent-loop/src/tui/live.tsx`.
 
 ## Show a tool call
 
-The transcript shows tool calls as work rows such as `Read src/kernel.ts`. Rows with the same `joins.verb` in a row merge into one, such as `Explored 3 files`.
+The transcript shows tool calls as work rows such as `Read src/kernel.ts`. The row leads with the tool's friendly label, such as `Shell`, `Read` or `Web search`, which is the same while the call runs and after. Rows with the same `joins.label` in a row merge into one, such as `Read 3 files`.
 
-1. Word the row. For a tool whose params have a `path`, use `pathRows({ running, done, joins })` from `@liminal/chat/contract`. Otherwise write a `fold(call)` that returns a `WorkRow`: `verb`, `subject`, optional `detail`, `joins: { verb, noun }` and `oneLine` to cut a long subject to one line with `…`. `call.outcome` is absent while the call runs, so pick the running verb then.
+1. Word the row. For a tool whose params have a `path`, use `pathRows({ label, joins })` from `@liminal/chat/contract`. Otherwise write a `fold(call)` that returns a `WorkRow`: `label`, `subject`, optional `detail`, `joins: { label, noun }` and `oneLine` to cut a long subject to one line with `…`. Never word the label by tense: while `call.outcome` is absent the row turns an arc in place of its mark and shimmers its label, and shows the same label after.
 2. Pick the opened row's component. It gets `call`, with `outcome.result` and `outcome.details` once done, and `text`, the result when it is text. The SDK's `Tail` shows the end of `text`, 8 lines unless given `lines`.
 3. Register both under the tool name: `host.register(ChatSlots.tool, { key: "read", meta: rows }, Tail)`.
 
@@ -272,7 +272,7 @@ Other helpers from `@liminal/sdk/tui`:
 | `formatDuration(seconds)` | `12s`, `2m 5s` |
 | `LiveLine` | What the assistant is doing now: a turning arc, a shimmering `label`, and `seconds` once past 3 |
 | `Vapor` | A thought's newest three lines in faint italic, inked up to `head`, older lines paler |
-| `WorkWords`, `workColor(color, part, dim)` | One work row (mark, bold verb, subject, bracketed detail, failure) and each part's color, `dim` of the way to dimmed |
+| `WorkWords`, `workColor(color, part, dim)` | One work row (mark or running arc, bold label that shimmers while running, subject, bracketed detail, failure) and each part's color, `dim` of the way to dimmed |
 | `fadeAt(text, head)`, `inkedOf`, `markdownOf` | A streaming answer split into settled Markdown and the inked paragraph being written; all Markdown while a code fence is open |
 
 Examples: `packages/plugins/notices/src/tui/Notice.tsx` (colors, `useCopy`), `packages/plugins/agent-loop/src/tui/live.tsx` (markdown, `LiveLine`, `Vapor`), `packages/plugins/chat/src/tui/WorkRows.tsx` (`WorkWords`).

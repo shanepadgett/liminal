@@ -4,7 +4,7 @@ Rarely used tools stay out of the model's request and are loaded when needed, so
 
 ## Requirements
 
-- The model finds and loads deferred tools with a search tool it calls directly; `run`'s built-in `search` is not the only way.
+- The model finds and loads deferred tools with a search tool it calls directly; `execute`'s built-in `search` is not the only way.
 - One field on a tool says how it is offered: at the start, by search, or only by its own plugin (`ask_question`); it replaces `offeredAtStart`
 - A stable prompt section lists each deferred tool by name and one line of description
 - The listing holds about 1,000 tokens, most used tools first, then one line saying how many more search can find
@@ -56,7 +56,7 @@ flowchart LR
 - Pattern: the data travels with the message (a field on the result part), so encoding stays a pure function of the request. The alternative, a per-session `ToolLoads` registry read by a session-aware `ToolSources`, needed two contract changes and a second log read on each request.
 - A checkpoint that drops the loading result drops the load; the model searches again. Anthropic behaves the same, since `tool_reference` blocks expand only where they are.
 - `ask_question` (`offer: "plugin"`) stays declared from the start, so `/qna` keeps the cache.
-- `run`'s inner calls reach deferred tools without loading them; their `loads` are dropped, since the model sees only the script's output.
+- `execute`'s inner calls reach deferred tools without loading them; their `loads` are dropped, since the model sees only the script's output.
 
 ## Types
 

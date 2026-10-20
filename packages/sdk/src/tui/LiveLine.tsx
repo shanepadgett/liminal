@@ -5,15 +5,11 @@
 
 import { Index, Show } from "solid-js";
 
+import { Arc } from "./Arc.tsx";
 import { useClock } from "./clock.ts";
 import { formatDuration } from "./duration.ts";
 import { SHIMMER_PERIOD_MS, shimmerColors } from "./shimmer.ts";
 import type { RoleColor } from "./tokens/roles.ts";
-
-const ARC = ["◜", "◝", "◞", "◟"] as const;
-
-/** How long each arc is shown. Divides the shimmer period, so the two loop together. */
-const ARC_MS = 150;
 
 /** An action shows its time only after this many seconds, so quick ones stay quiet. */
 const ELAPSED_AFTER_SECONDS = 3;
@@ -35,9 +31,7 @@ export function LiveLine(props: {
 
   return (
     <box flexDirection="row" height={1} gap={1}>
-      <text wrapMode="none" flexShrink={0} fg={props.color("text.accent")}>
-        {ARC[Math.floor(ms() / ARC_MS) % ARC.length]}
-      </text>
+      <Arc color={props.color} />
       <text wrapMode="none" truncate flexShrink={1}>
         <Index each={props.label.split("")}>
           {(char, index) => <span style={{ fg: colors()[index] }}>{char()}</span>}

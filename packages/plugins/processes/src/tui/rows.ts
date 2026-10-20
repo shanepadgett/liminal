@@ -1,6 +1,6 @@
 /**
- * How the `process_*` calls read as work rows: `Started npm run dev (running)`, `Waited on p1
- * (exited 0)`, `Typed into p2`.
+ * How the `process_*` calls read as work rows: `Process start npm run dev (running)`, `Process wait
+ * p1 (exited 0)`, `Process write p2`.
  */
 
 import { Match, Option, Schema } from "effect";
@@ -24,21 +24,21 @@ export const stateWord = (process: ProcessSummary) =>
 /** The command's summary from a finished call's details. */
 export const summaryOf = (call: ToolCall) => decodeSummary(call.outcome?.details);
 
-const rowOf = (call: ToolCall, words: readonly [string, string], subject: string): WorkRow => {
-  const verb = call.outcome === undefined ? words[0] : words[1];
+const rowOf = (call: ToolCall, action: string, target: string): WorkRow => {
+  const subject = `${action} ${target}`;
 
   return Option.match(summaryOf(call), {
-    onNone: () => ({ verb, subject, oneLine: true }),
-    onSome: (process) => ({ verb, subject, detail: stateWord(process), oneLine: true }),
+    onNone: () => ({ label: "Process", subject, oneLine: true }),
+    onSome: (process) => ({ label: "Process", subject, detail: stateWord(process), oneLine: true }),
   });
 };
 
-const idRows = (words: readonly [string, string]) =>
+const idRows = (action: string) =>
   ToolRows.Rows({
     fold: (call) =>
       rowOf(
         call,
-        words,
+        action,
         Option.match(decodeId(call.params), { onNone: () => "a command", onSome: ({ id }) => id }),
       ),
   });
@@ -51,7 +51,7 @@ export const processRows: ReadonlyArray<readonly [string, ToolRows]> = [
       fold: (call) =>
         rowOf(
           call,
-          ["Starting", "Started"],
+          "start",
           Option.match(decodeCommand(call.params), {
             onNone: () => "a command",
             onSome: ({ command }) => command,
@@ -59,17 +59,9 @@ export const processRows: ReadonlyArray<readonly [string, ToolRows]> = [
         ),
     }),
   ],
-  [processTools.wait, idRows(["Waiting on", "Waited on"])],
-  [processTools.read, idRows(["Reading", "Read"])],
-  [processTools.write, idRows(["Typing into", "Typed into"])],
-  [processTools.stop, idRows(["Stopping", "Stopped"])],
-  [
-    processTools.list,
-    ToolRows.Rows({
-      fold: (call) => ({
-        verb: call.outcome === undefined ? "Listing" : "Listed",
-        subject: "commands",
-      }),
-    }),
-  ],
+  [processTools.wait, idRows("wait")],
+  [processTools.read, idRows("read")],
+  [processTools.write, idRows("write")],
+  [processTools.stop, idRows("stop")],
+  [processTools.list, ToolRows.Rows({ fold: () => ({ label: "Process", subject: "list" }) })],
 ];

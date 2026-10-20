@@ -1,6 +1,6 @@
 /**
  * A script's functions: each registered tool, called through the tool pipeline as an inner call of
- * the `run` call, with its outcome saved for the transcript.
+ * the `execute` call, with its outcome saved for the transcript.
  */
 
 import { Tool as ScriptTool, type ToolError, toolError } from "@opencode/codemode";
@@ -46,8 +46,8 @@ const failure = (outcome: ToolOutcome): Effect.Effect<Schema.Json, ToolError> =>
     ? Effect.succeed(outcome.output.result)
     : Effect.fail(toolError(`${outcome.status}: ${outcome.message}`));
 
-/** The functions of one script run by the `run` call `outer` in `session`. */
-export const makeFunctions = Effect.fn("ToolsRun.functions")(function* (
+/** The functions of one script run by the `execute` call `outer` in `session`. */
+export const makeFunctions = Effect.fn("ToolsExecute.functions")(function* (
   deps: InnerDeps,
   session: SessionId,
   outer: string,
@@ -85,7 +85,7 @@ export const makeFunctions = Effect.fn("ToolsRun.functions")(function* (
       const { name, description, parameters } = tool.spec;
 
       // Checks must be the model's final direct call so their report has its own transcript row.
-      if (name === "run" || name === "checks") return [];
+      if (name === "execute" || name === "checks") return [];
 
       const made = ScriptTool.make({
         description,

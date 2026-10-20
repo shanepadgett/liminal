@@ -1,6 +1,6 @@
 /**
- * The run tool: a script calls the other tools through the pipeline as inner calls, each saved for
- * the transcript; checks judge each inner call; a failing script fails the call.
+ * The execute tool: a script calls the other tools through the pipeline as inner calls, each saved
+ * for the transcript; checks judge each inner call; a failing script fails the call.
  */
 
 import { expect } from "bun:test";
@@ -22,9 +22,9 @@ import {
   Tools,
 } from "@liminal/tools/contract";
 
-import toolsRun from "../plugin.ts";
+import toolsExecute from "../plugin.ts";
 
-const stack = serverOf(toolsRun).pipe(
+const stack = serverOf(toolsExecute).pipe(
   Layer.provideMerge(serverOf(tools)),
   Layer.provideMerge(serverOf(sessionLog)),
   Layer.provideMerge(serverOf(sessionStore)),
@@ -58,18 +58,18 @@ const setup = Effect.gen(function* () {
 });
 
 /** Runs `code` as the model's call `c1` and returns its outcome. */
-const runScript = (code: string) =>
+const executeScript = (code: string) =>
   Effect.gen(function* () {
     const registry = yield* Tools;
 
     const call: ToolCall = {
       sessionId: s1,
       callId: "c1",
-      name: "run",
+      name: "execute",
       params: { code, timeout: 60 },
     };
 
-    return yield* (yield* ToolPipeline).run(call, yield* registry.get("run"));
+    return yield* (yield* ToolPipeline).run(call, yield* registry.get("execute"));
   });
 
 const innerEntries = Effect.gen(function* () {
@@ -87,7 +87,7 @@ effectTest(
   Effect.gen(function* () {
     yield* setup;
 
-    const outcome = yield* runScript(
+    const outcome = yield* executeScript(
       [
         'const a = await tools.upper({ text: "one" })',
         'const [b, c] = await Promise.all([tools.upper({ text: "two" }), tools.upper({ text: "x" })])',
@@ -123,14 +123,14 @@ effectTest(
       }),
     );
 
-    const searched = yield* runScript('return search({ query: "checks" })');
+    const searched = yield* executeScript('return search({ query: "checks" })');
     expect(searched.status).toBe("done");
 
     expect(searched.status === "done" && JSON.stringify(searched.output.result)).not.toContain(
       "checks",
     );
 
-    const nested = yield* runScript('return await tools.checks({ text: "checked" })');
+    const nested = yield* executeScript('return await tools.checks({ text: "checked" })');
     expect(nested.status).toBe("failed");
     expect(yield* innerEntries).toEqual([]);
 
@@ -149,14 +149,14 @@ effectTest(
   Effect.gen(function* () {
     yield* setup;
 
-    const caught = yield* runScript(
+    const caught = yield* executeScript(
       'try { await tools.upper({ text: "boom" }) } catch (e) { return "caught: " + e.message }',
     );
 
     expect(caught.status).toBe("done");
     expect(caught.status === "done" && JSON.stringify(caught.output.result)).toContain("no booms");
 
-    const thrown = yield* runScript('await tools.upper({ text: "boom" })');
+    const thrown = yield* executeScript('await tools.upper({ text: "boom" })');
     expect(thrown.status).toBe("failed");
   }).pipe(Effect.scoped),
   stack,
@@ -179,9 +179,9 @@ effectTest(
       { order: 0 },
     );
 
-    const outcome = yield* runScript('return await tools.upper({ text: "a" })');
+    const outcome = yield* executeScript('return await tools.upper({ text: "a" })');
 
-    expect(seen).toEqual(["run:-", "upper:c1"]);
+    expect(seen).toEqual(["execute:-", "upper:c1"]);
     expect(outcome.status).toBe("failed");
     expect(outcome.status === "failed" && outcome.message).toContain("not today");
 

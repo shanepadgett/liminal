@@ -1,6 +1,6 @@
 /**
- * The shell tool's TUI part: a `shell` call reads as `Ran <command>`, cut to one row, and an opened
- * row shows the tail of its output.
+ * The shell tool's TUI part: a `shell` call reads as `Shell <command>`, cut to one row, and an
+ * opened row shows the tail of its output.
  */
 
 import { Effect, Option, Schema } from "effect";
@@ -19,11 +19,7 @@ const commandOf = (call: ToolCall) =>
     onSome: ({ command }) => command.split("\n")[0] ?? "",
   });
 
-const fold = (call: ToolCall) => ({
-  verb: call.outcome === undefined ? "Running" : "Ran",
-  subject: commandOf(call),
-  oneLine: true,
-});
+const fold = (call: ToolCall) => ({ label: "Shell", subject: commandOf(call), oneLine: true });
 
 function Output(props: ToolView) {
   return <Tail text={props.text} lines={12} />;

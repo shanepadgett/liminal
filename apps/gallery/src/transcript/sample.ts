@@ -52,24 +52,12 @@ export const BOOT: Script = {
     {
       kind: "act",
       ms: 900,
-      action: {
-        kind: "process",
-        doing: "Starting",
-        done: "Started",
-        subject: "bun run dev",
-        state: "running",
-      },
+      action: { kind: "process", action: "start", subject: "bun run dev", state: "running" },
     },
     {
       kind: "act",
       ms: 1400,
-      action: {
-        kind: "process",
-        doing: "Waiting on",
-        done: "Waited on",
-        subject: "p1",
-        state: "running",
-      },
+      action: { kind: "process", action: "wait", subject: "p1", state: "running" },
     },
     {
       kind: "say",

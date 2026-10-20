@@ -61,7 +61,7 @@ Status: built ([plans/memory.md](../plans/archive/memory.md)); awaiting review
 ### Memory files
 
 - Each memory holds a summary and a file list: path, line ranges, relevant or not relevant, and a one-line reason
-- A wrapper on the tool pipeline records what each `read`, `edit`, `write`, `shell` and `process_start` call read or changed, inner calls of `run` included; these are the candidates
+- A wrapper on the tool pipeline records what each `read`, `edit`, `write`, `shell` and `process_start` call read or changed, inner calls of `execute` included; these are the candidates
 - An edit's lines are where its new text sits after the call; a write covers the whole file
 - A shell or process call changed the files `git status --porcelain` newly lists after it, or lists with another mtime or size
 - The cheap model labels each candidate, and adds files it finds in shell commands and their output; code keeps an added file only when it exists in the workspace and its path appears in that range's commands or output
@@ -81,7 +81,7 @@ Status: built ([plans/memory.md](../plans/archive/memory.md)); awaiting review
 ### History
 
 - A `history` tool reads entries `from` through `through` back as a transcript, so the model can recall details a memory left out
-- Its rows read `Recalled entries 12–40`
+- Its rows read `History entries 12–40`
 
 ### Transcript
 

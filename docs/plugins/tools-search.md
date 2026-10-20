@@ -23,7 +23,7 @@ Status: built
 - Use is the model's calls of each tool in this project's saved sessions; a call's weight halves every 30 days; nothing new is stored
 - A stable prompt section, rendered as `<deferred_tools>` with no intro, lists each deferred tool by name and one line of description
 - The listing holds about 1,000 tokens, most used tools first, then one line saying how many more search can find; later it tells only of added and removed tools
-- The call reads as a work row: `Loaded <names>`, or `Searched tools <query>` when none matched
+- The call reads as a work row: `Tool search <query>` with the loaded tool names as detail, or `none found`
 
 ## References
 

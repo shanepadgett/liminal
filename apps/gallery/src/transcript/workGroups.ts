@@ -71,9 +71,9 @@ const joined = (last: WorkGroup, next: WorkGroup): WorkGroup | undefined => {
   return undefined;
 };
 
-/** The groups of a script's calls, as they sit under its row. */
+/** The groups of a script's calls, as they sit under its row: one row per call. */
 export const innerGroupsOf = (script: Scripted): readonly WorkGroup[] =>
-  groupsOf(script.calls.map((action) => ({ kind: "action", action })));
+  script.calls.map(groupOfAction);
 
 export function groupsOf(work: readonly Work[]): readonly WorkGroup[] {
   const groups: WorkGroup[] = [];

@@ -771,22 +771,8 @@
         "solid-js": "1.9.12",
       },
     },
-    "packages/plugins/tools-read": {
-      "name": "@liminal/tools-read",
-      "version": "0.1.0",
-      "peerDependencies": {
-        "@liminal/chat": "workspace:*",
-        "@liminal/files": "workspace:*",
-        "@liminal/sdk": "workspace:*",
-        "@liminal/tools": "workspace:*",
-        "@opentui/core": "0.6.6",
-        "@opentui/solid": "0.6.6",
-        "effect": "4.0.5",
-        "solid-js": "1.9.12",
-      },
-    },
-    "packages/plugins/tools-run": {
-      "name": "@liminal/tools-run",
+    "packages/plugins/tools-execute": {
+      "name": "@liminal/tools-execute",
       "version": "0.1.0",
       "dependencies": {
         "@opencode/codemode": "2.0.32",
@@ -799,6 +785,20 @@
         "@liminal/chat": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "@liminal/session-log": "workspace:*",
+        "@liminal/tools": "workspace:*",
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "effect": "4.0.5",
+        "solid-js": "1.9.12",
+      },
+    },
+    "packages/plugins/tools-read": {
+      "name": "@liminal/tools-read",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@liminal/chat": "workspace:*",
+        "@liminal/files": "workspace:*",
+        "@liminal/sdk": "workspace:*",
         "@liminal/tools": "workspace:*",
         "@opentui/core": "0.6.6",
         "@opentui/solid": "0.6.6",
@@ -1163,9 +1163,9 @@
 
     "@liminal/tools-edit": ["@liminal/tools-edit@workspace:packages/plugins/tools-edit"],
 
-    "@liminal/tools-read": ["@liminal/tools-read@workspace:packages/plugins/tools-read"],
+    "@liminal/tools-execute": ["@liminal/tools-execute@workspace:packages/plugins/tools-execute"],
 
-    "@liminal/tools-run": ["@liminal/tools-run@workspace:packages/plugins/tools-run"],
+    "@liminal/tools-read": ["@liminal/tools-read@workspace:packages/plugins/tools-read"],
 
     "@liminal/tools-search": ["@liminal/tools-search@workspace:packages/plugins/tools-search"],
 

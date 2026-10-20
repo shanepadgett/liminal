@@ -1,5 +1,5 @@
 {
-  "name": "@liminal/tools-run",
+  "name": "@liminal/tools-execute",
   "version": "0.1.0",
   "type": "module",
   "exports": {

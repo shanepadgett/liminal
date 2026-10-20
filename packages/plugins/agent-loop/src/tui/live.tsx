@@ -35,7 +35,7 @@ const decodeReply = Schema.decodeUnknownOption(LiveReply.data);
 const decodeRetry = Schema.decodeUnknownOption(LiveRetry.data);
 
 /**
- * What a call the model is writing reads as: its tool's running verb, a hidden tool's `live`, else
+ * What a call the model is writing reads as: its tool's label, a hidden tool's `live`, else
  * `Calling <name>`.
  */
 const callingOf = (name: string | undefined, rows: ToolRows | undefined) => {
@@ -43,7 +43,7 @@ const callingOf = (name: string | undefined, rows: ToolRows | undefined) => {
   if (name === undefined || rows === undefined) return fallback;
 
   return Predicate.isTagged(rows, "Rows")
-    ? rows.fold({ id: "", name, params: null }).verb
+    ? rows.fold({ id: "", name, params: null }).label
     : (rows.live ?? fallback);
 };
 

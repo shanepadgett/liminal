@@ -24,19 +24,20 @@ export interface ToolCall {
   readonly name: string;
   readonly params: Json;
   readonly outcome?: ToolOutcome;
-  /** Calls a `run` script made inside this call, in the order they ended. */
+  /** Calls an `execute` script made inside this call, in the order they ended. */
   readonly inner?: ReadonlyArray<ToolCall>;
 }
 
 /**
- * One row of work, as a tool words its call: `Read src/kernel.ts (40 lines)`. Consecutive rows with
- * the same `joins.verb` show as one row: `Explored 3 files`.
+ * One row of work, as a tool words its call: `Read src/kernel.ts (40 lines)`. The label is the
+ * tool's friendly name and stays the same while the call runs and after; the row shows that the
+ * call runs. Consecutive rows with the same `joins.label` show as one row: `Read 3 files`.
  */
 export interface WorkRow {
-  readonly verb: string;
+  readonly label: string;
   readonly subject: string;
   readonly detail?: string;
-  readonly joins?: { readonly verb: string; readonly noun: string };
+  readonly joins?: { readonly label: string; readonly noun: string };
   /** Cuts the subject to one line with `…`, its detail still shown; the opened row has it all. */
   readonly oneLine?: boolean;
 }
@@ -61,18 +62,14 @@ export interface ToolView {
 
 const decodePath = Schema.decodeUnknownOption(Schema.Struct({ path: Schema.String }));
 
-/**
- * Rows for a tool whose params name a `path`: `<running> <path>` while it runs, `<done> <path>`
- * after, joined with neighbours by `joins`.
- */
+/** Rows for a tool whose params name a `path`: `<label> <path>`, joined with neighbours by `joins`. */
 export const pathRows = (words: {
-  readonly running: string;
-  readonly done: string;
+  readonly label: string;
   readonly joins: NonNullable<WorkRow["joins"]>;
 }): ToolRows =>
   ToolRows.Rows({
     fold: (call) => ({
-      verb: call.outcome === undefined ? words.running : words.done,
+      label: words.label,
       subject: Option.match(decodePath(call.params), {
         onNone: () => "",
         onSome: ({ path }) => path,

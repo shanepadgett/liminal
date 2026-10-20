@@ -1,6 +1,6 @@
 /**
- * Tool search's TUI part: a search reads as `Loaded <names>`, or `Searched tools <query>` with
- * none.
+ * Tool search's TUI part: a search reads as `Tool search <query>`, with the tools it loaded as
+ * detail, or `none found`.
  */
 
 import { Effect, Option, Schema } from "effect";
@@ -27,13 +27,16 @@ const queryOf = (call: ToolCall) =>
 
 const searchRows = ToolRows.Rows({
   fold: (call) => {
-    if (call.outcome === undefined) return { verb: "Searching tools", subject: queryOf(call) };
+    const subject = queryOf(call);
+    if (call.outcome === undefined) return { label: "Tool search", subject };
 
     const loaded = loadedOf(call);
 
-    return loaded.length === 0
-      ? { verb: "Searched tools", subject: queryOf(call), detail: "none found" }
-      : { verb: "Loaded", subject: loaded.join(", ") };
+    return {
+      label: "Tool search",
+      subject,
+      detail: loaded.length === 0 ? "none found" : `loaded ${loaded.join(", ")}`,
+    };
   },
 });
 

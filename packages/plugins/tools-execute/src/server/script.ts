@@ -42,7 +42,7 @@ export const resultOf = (result: CodeMode.Result): ScriptResult => {
 };
 
 /** Runs `code` with `functions` as its `tools`, stopped after `timeout`. */
-export const runScript = (
+export const executeScript = (
   code: string,
   functions: Record<string, ScriptTool.Tool>,
   timeout: Duration.Duration,

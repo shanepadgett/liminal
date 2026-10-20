@@ -21,7 +21,7 @@ Leaks and repeats:
 
 - `tools/guidance` lists the guidance of every registered tool, so deferred tools' rules (`vocabulary`, ~110 tokens) are always in the prompt
 - `vocabulary/terms` header names the deferred `vocabulary` tool
-- `run`'s description holds a generated `search` signature (~300 tokens) and a second way to find tools besides `tool_search`
+- `execute`'s description holds a generated `search` signature (~300 tokens) and a second way to find tools besides `tool_search`
 - `tool_search`'s result prints each loaded tool's full description, which the tool definition already carries
 - The `checks` rule is in its guidance and its description; the "do not cd" rule is in two guidance lines
 - The base prompt says "outcome first" four times and "do not narrate" three times; `<planning>` and `<coding>` repeat `planning.md` and `code.md`
@@ -69,7 +69,7 @@ flowchart LR
 - The `Deferred tools:` intro is removed; `tool_search`'s description says to load a tool before calling it
 - The listing keeps one line per deferred tool within its budget
 - `tool_search`'s result names the loaded tools and unknown names, without descriptions
-- `run`'s description gives `search` in one line
+- `execute`'s description gives `search` in one line
 - `ask_question` is `offer: "plugin"` and absent from `tools` until `/qna` offers it
 - The six `process_*` tools are `offer: "search"`; `shell`'s guidance says commands that keep running need `process_start`, loaded with `tool_search`
 - The base prompt keeps `<communication>` with repeated bullets merged, drops `<planning>` and `<coding>`, and keeps a short work rule for repositories with no instructions: stay within what the user asked, no unrequested features or refactors, the simplest change that solves the problem
@@ -88,7 +88,7 @@ flowchart LR
 | `vocabulary` `tool.ts`, `section.ts` | Change: rules into the description; header wording |
 | `processes` `tools.ts` | Change: `offer: "search"`; rules into descriptions |
 | `tools-search` `section.ts`, `tool.ts` | Change: no intro; result without descriptions |
-| `tools-run` `server.ts` | Change: one-line `search` |
+| `tools-execute` `server.ts` | Change: one-line `search` |
 | `system-prompt` `base.ts` | Change: merge bullets; work rule; fix "The the" |
 | `environment` | Change: one section, root listing |
 | `context` `contract.ts` | Change: section wrapper in the line and file renderers |

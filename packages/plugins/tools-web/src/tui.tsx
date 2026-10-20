@@ -1,6 +1,6 @@
 /**
- * Web tools' TUI part: a search reads as `Searched the web <query>` with its source count, a fetch
- * as `Fetched <url>`; an opened row shows the end of the result.
+ * Web tools' TUI part: a search reads as `Web search <query>` with its source count, a fetch as
+ * `Web fetch <url>`; an opened row shows the end of the result.
  */
 
 import { Effect, Option, Predicate, Schema } from "effect";
@@ -25,7 +25,7 @@ const sourcesOf = (call: ToolCall) => {
 
 const searchRows = ToolRows.Rows({
   fold: (call) => ({
-    verb: call.outcome === undefined ? "Searching the web" : "Searched the web",
+    label: "Web search",
     subject: Option.match(decodeSearch(call.params), {
       onNone: () => "",
       onSome: ({ query }) => query,
@@ -36,7 +36,7 @@ const searchRows = ToolRows.Rows({
 
 const fetchRows = ToolRows.Rows({
   fold: (call) => ({
-    verb: call.outcome === undefined ? "Fetching" : "Fetched",
+    label: "Web fetch",
     subject: Option.match(decodeFetch(call.params), { onNone: () => "", onSome: ({ url }) => url }),
   }),
 });
