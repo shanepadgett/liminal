@@ -15,7 +15,7 @@ import { Settings } from "@liminal/settings/contract";
 import { ShellSafety } from "@liminal/shell-safety/contract";
 import { Approvers, ToolChecks } from "@liminal/tools/contract";
 
-import { Approval, ApprovalEntry, ApprovalRpcs } from "./contract.ts";
+import { Approval, ApprovalEntry, ApprovalRpcs, ModeEntry } from "./contract.ts";
 import { makeApprover } from "./server/chain.ts";
 import { approvalCheck } from "./server/checks.ts";
 import { makeModes } from "./server/modes.ts";
@@ -28,10 +28,13 @@ const make = Effect.gen(function* () {
   const { workspace } = yield* Directories;
   const safety = yield* ShellSafety;
   const files = yield* WorkspaceFiles;
-  const modes = yield* makeModes(yield* Settings);
+  const log = yield* SessionLog;
+  const modes = yield* makeModes(yield* Settings, log);
   const pending = yield* makePending;
 
-  yield* (yield* EntryKinds).register(ApprovalEntry);
+  const kinds = yield* EntryKinds;
+  yield* kinds.register(ApprovalEntry);
+  yield* kinds.register(ModeEntry);
 
   yield* (yield* ToolChecks).register(
     approvalCheck({ modes, safety, files, path: yield* Path.Path, workspace }),
@@ -42,7 +45,7 @@ const make = Effect.gen(function* () {
     modes,
     safety,
     pending,
-    log: yield* SessionLog,
+    log,
     decisions: yield* Effect.serviceOption(Decisions),
     reviewer: {
       models: yield* Models,

@@ -161,7 +161,7 @@ packages/plugins/approval/
   src/server/review.ts    ModelTask on Models.cheap(session provider); tools read and shell (safe list only);
                           submit_review { decision approved|ask, summary ≤ 600, reason ≤ 300 }
   src/server/pending.ts   SubscriptionRef of pending asks; a Deferred per ask; removed when the turn is interrupted
-  src/server/modes.ts     session modes in memory, over the settings mode
+  src/server/modes.ts     session modes, saved as `approval/mode` entries, over the settings mode
   src/tui.tsx             dialog for the session's oldest pending ask; /approvals; shift+tab; composer label
 chat contract             ChatSlots.composerLine: items next to the composer's model line
 inbox Composer            draws ChatSlots.composerLine

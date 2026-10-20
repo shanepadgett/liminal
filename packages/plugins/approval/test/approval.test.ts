@@ -38,7 +38,14 @@ import tools from "@liminal/tools";
 import { ToolPipeline } from "@liminal/tools/contract";
 
 import approval from "../plugin.ts";
-import { Approval, ApprovalEntry, type ApprovalRecord, type PendingAsk } from "../src/contract.ts";
+import {
+  Approval,
+  ApprovalEntry,
+  type ApprovalRecord,
+  ModeEntry,
+  type PendingAsk,
+} from "../src/contract.ts";
+import { makeModes } from "../src/server/modes.ts";
 
 const stack = serverOf(approval).pipe(
   Layer.provideMerge(serverOf(tools)),
@@ -278,6 +285,56 @@ effectTest(
 
     expect((yield* runCall(shell, { command: "rm -rf build" })).status).toBe("done");
     expect(yield* modelCalls).toBe(0);
+  }),
+  stack,
+);
+
+const savedModes = Effect.flatMap(SessionLog, (log) =>
+  log
+    .read(s1, {})
+    .pipe(
+      Effect.map((entries: ReadonlyArray<Entry>) =>
+        entries.flatMap((entry) => (entry.kind === ModeEntry.kind ? [entry.data] : [])),
+      ),
+    ),
+);
+
+effectTest(
+  "a set mode is saved in the session, and a server with no memory of it reads it back",
+  Effect.gen(function* () {
+    yield* start;
+    const service = yield* Approval;
+
+    yield* service.setMode(s1, "ask");
+    expect(yield* savedModes).toEqual([{ mode: "ask" }]);
+
+    // What a restarted server sees: no memory of the session, only the log.
+    yield* (yield* SessionLog).append(s1, [
+      draft(ModeEntry, { data: { mode: "full" }, text: "Approval mode: full" }),
+    ]);
+
+    const fresh = yield* makeModes(yield* Settings, yield* SessionLog);
+
+    expect(yield* fresh.get(s1)).toBe("full");
+  }),
+  stack,
+);
+
+effectTest(
+  "a mode set before the session exists is saved once it does",
+  Effect.gen(function* () {
+    const service = yield* Approval;
+    yield* service.setMode(s1, "full");
+
+    yield* start;
+    expect(yield* savedModes).toEqual([]);
+
+    const fresh = yield* makeModes(yield* Settings, yield* SessionLog);
+    expect(yield* fresh.get(s1)).toBe("auto");
+
+    expect((yield* runCall(shell, { command: "rm -rf build" })).status).toBe("done");
+    expect(yield* savedModes).toEqual([{ mode: "full" }]);
+    expect(yield* fresh.get(s1)).toBe("full");
   }),
   stack,
 );

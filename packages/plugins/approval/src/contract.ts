@@ -87,6 +87,14 @@ export const ApprovalEntry = defineEntry({
   user: "debug",
 });
 
+/** The user set the session's mode; the newest one is the session's mode. */
+export const ModeEntry = defineEntry({
+  kind: "approval/mode",
+  data: Schema.Struct({ mode: ApprovalMode }),
+  model: false,
+  user: "hidden",
+});
+
 export class Approval extends Context.Service<
   Approval,
   {
@@ -94,9 +102,9 @@ export class Approval extends Context.Service<
     readonly pending: (session: SessionId) => Stream.Stream<ReadonlyArray<PendingAsk>>;
     /** Answers the ask `id`; `note` tells the model why a call was rejected. Unknown ids do nothing. */
     readonly answer: (id: string, approve: boolean, note: string) => Effect.Effect<void>;
-    /** The session's mode: its own once set, else the settings' mode; then after each change. */
+    /** The session's mode: its newest saved one, else the settings' mode; then after each change. */
     readonly mode: (session: SessionId) => Stream.Stream<ApprovalMode>;
-    /** Sets the session's mode until the server stops; settings are not written. */
+    /** Sets the session's mode and saves it in the session; settings are not written. */
     readonly setMode: (session: SessionId, mode: ApprovalMode) => Effect.Effect<void>;
   }
 >()("liminal/approval/Approval") {}
