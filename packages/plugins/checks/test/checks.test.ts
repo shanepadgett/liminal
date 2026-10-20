@@ -226,6 +226,9 @@ effectTest(
     const tool = Option.getOrThrow(yield* (yield* Tools).get(checksTool));
     expect(tool.spec.parameters).toMatchObject({ type: "object" });
     expect(tool.spec.description).toContain("- clean: no bad words");
+    expect(tool.spec.description).toContain("only way to run checks, period");
+    expect(tool.spec.description).toContain("Never run one any other way");
+    expect(tool.guidance.join("\n")).toContain("add it to the checks file");
 
     expect(yield* tool.run({}, { sessionId: s1, callId: "c1" })).toEqual({
       result: "No checks apply to the changes in this run.",

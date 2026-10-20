@@ -42,8 +42,17 @@ const descriptionOf = (checks: ProjectChecks) =>
       Option.match(details, { onNone: () => `- ${name}`, onSome: (text) => `- ${name}: ${text}` }),
     ),
     "",
-    "Call it last: it is the final action before your final summary. A completed call counts as current whether the checks pass or fail. Any later call that can write, even one that changes nothing, makes the result stale; finish that work and call checks again. Fix failures yourself. Do not run these checks yourself with a shell command.",
+    "Call it last: it is the final action before your final summary. A completed call counts as current whether the checks pass or fail. Any later call that can write, even one that changes nothing, makes the result stale; finish that work and call checks again. Fix failures yourself. This tool is the only way to run checks, period. Never run one any other way, even in part. If a check you want is not listed, work it out with the user and add it to the checks file.",
   ].join("\n");
+
+/**
+ * Reaches the model through the system prompt, where the tool's description is easiest to skim
+ * past.
+ */
+const GUIDANCE = [
+  "The `checks` tool is the only way to run checks, period. Never run a check by any command, tool or script, whole or in part, for any reason.",
+  "If a check you want to run does not exist, do not run it yourself: work it out with the user first and add it to the checks file. Write the code, fix what `checks` reports, and call it last.",
+];
 
 export const makeChecksTool = Effect.gen(function* () {
   const log = yield* SessionLog;
@@ -76,6 +85,7 @@ export const makeChecksTool = Effect.gen(function* () {
     defineTool({
       name: checksTool,
       description: descriptionOf(checks),
+      guidance: GUIDANCE,
       parameters: NoParams,
       hints: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
       runAlongside: false,
