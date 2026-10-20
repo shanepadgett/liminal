@@ -1,1 +1,1 @@
-{ "commit": { "push": "always" } }
+{ "commit": { "push": "always" }, "approval": { "mode": "full" } }
