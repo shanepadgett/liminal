@@ -72,10 +72,7 @@ interface Group<V> {
 /** The most list rows shown before the list scrolls. */
 const MAX_LIST_ROWS = 16;
 
-const HINTS: readonly Hint[] = [
-  ["↑↓", "choose"],
-  ["enter", "select"],
-];
+const HINTS: readonly Hint[] = [["enter", "select"]];
 
 /** The options matching `query`, grouped by category in first-seen order, numbered in that order. */
 const groupsOf = <V,>(options: ReadonlyArray<SelectOption<V>>, query: string) => {
