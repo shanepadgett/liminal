@@ -8,7 +8,7 @@ import { type Accessor, createEffect, createMemo, createSignal, on } from "solid
 
 import { enterKeys, slashCommand, type TuiCommandsService } from "@liminal/sdk/tui";
 
-import { type SlashMatch, slashMatches, slashWord } from "./SlashMenu.tsx";
+import { type CommandMatch, commandMatches, commandWord } from "./CommandMenu.tsx";
 
 export interface SlashDeps {
   readonly commands: TuiCommandsService;
@@ -63,19 +63,19 @@ const clearOf = (input: () => TextareaRenderable | undefined, typing: () => bool
 export const useSlash = (deps: SlashDeps) => {
   const [selected, setSelected] = createSignal(0);
 
-  const matches = createMemo((): ReadonlyArray<SlashMatch> => {
-    const word = slashWord(deps.draft());
+  const matches = createMemo((): ReadonlyArray<CommandMatch> => {
+    const word = commandWord(deps.draft());
 
-    return word === undefined ? [] : slashMatches(deps.commands.listed(), word);
+    return word === undefined ? [] : commandMatches(deps.commands.listed(), word);
   });
 
   // Boolean memos, so the keymap changes the menu's keys cause do not run them again.
   const open = createMemo(() => matches().length > 0);
-  const typing = createMemo(() => slashWord(deps.draft()) !== undefined);
+  const typing = createMemo(() => commandWord(deps.draft()) !== undefined);
 
   createEffect(
     on(
-      () => slashWord(deps.draft()),
+      () => commandWord(deps.draft()),
       () => setSelected(0),
     ),
   );

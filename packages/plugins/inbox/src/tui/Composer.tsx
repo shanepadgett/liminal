@@ -22,9 +22,9 @@ import {
 } from "@liminal/sdk/tui";
 
 import { InboxSlots, type Queued, type SendMode, type UserInput } from "../contract.ts";
+import { CommandMenu } from "./CommandMenu.tsx";
 import { type ReadPicture, usePictures } from "./paste.ts";
 import { useSlash } from "./slash.ts";
-import { SlashMenu } from "./SlashMenu.tsx";
 import type { Editor } from "./stash.tsx";
 import { TagMenu } from "./TagMenu.tsx";
 import { type TagsDeps, useTags } from "./tags.ts";
@@ -260,7 +260,7 @@ function Lists(props: {
   return (
     <>
       <Show when={props.slash.open()}>
-        <SlashMenu matches={props.slash.matches()} selected={props.slash.selected()} />
+        <CommandMenu matches={props.slash.matches()} selected={props.slash.selected()} />
       </Show>
       <Show when={!props.slash.open() && props.tags.open()}>
         <TagMenu

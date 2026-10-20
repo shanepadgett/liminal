@@ -444,7 +444,7 @@ effectTest(
 );
 
 effectTest(
-  "the slash menu scrolls to keep the highlighted command in view",
+  "the command menu scrolls to keep the highlighted command in view",
   Effect.gen(function* () {
     const { setup } = yield* boot(() => Effect.void);
 
@@ -463,7 +463,7 @@ effectTest(
 );
 
 effectTest(
-  "enter on the slash menu runs the highlighted command",
+  "enter on the command menu runs the highlighted command",
   Effect.gen(function* () {
     const path = yield* Path.Path;
     const changes = yield* Queue.unbounded<ReadonlyArray<string>>();
@@ -685,7 +685,7 @@ effectTest(
   trustedServices,
 );
 
-/** Runs `command` from the composer's slash menu once its description shows. */
+/** Runs `command` from the composer's command menu once its description shows. */
 const slash = (setup: TestRendererSetup, command: string, desc: string) =>
   Effect.gen(function* () {
     yield* Effect.promise(() => setup.mockInput.typeText(command));

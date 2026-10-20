@@ -17,8 +17,8 @@ import {
 
 import { useReveal } from "./reveal.ts";
 
-/** A slash command whose name or an alias holds the typed text in order. */
-export interface SlashMatch {
+/** A command whose name or an alias holds the typed text in order. */
+export interface CommandMatch {
   readonly command: Command;
   readonly name: string;
   /** Indices in `name` the typed text matched; empty when only an alias matched. */
@@ -31,9 +31,9 @@ const MAX_ROWS = 10;
 const noMatches: ReadonlySet<number> = new Set();
 
 /** The word being typed when the draft is `/word` with nothing after it; otherwise none. */
-export const slashWord = (draft: string) => /^\/(\S*)$/.exec(draft)?.[1];
+export const commandWord = (draft: string) => /^\/(\S*)$/.exec(draft)?.[1];
 
-const matchOf = (command: Command, typed: string): SlashMatch | undefined => {
+const matchOf = (command: Command, typed: string): CommandMatch | undefined => {
   if (command.slash === undefined) return undefined;
   const name = `/${command.slash.name}`;
   const matches = matchIndices(`/${typed}`, name);
@@ -46,16 +46,16 @@ const matchOf = (command: Command, typed: string): SlashMatch | undefined => {
   return byAlias ? { command, name, matches: noMatches } : undefined;
 };
 
-/** The slash commands matching `typed`, the word after `/`. */
-export const slashMatches = (listed: ReadonlyArray<ListedCommand>, typed: string) =>
+/** The commands matching `typed`, the word after `/`. */
+export const commandMatches = (listed: ReadonlyArray<ListedCommand>, typed: string) =>
   listed.flatMap(({ command }) => {
     const match = matchOf(command, typed);
 
     return match === undefined ? [] : [match];
   });
 
-function SlashRow(props: {
-  readonly match: SlashMatch;
+function CommandRow(props: {
+  readonly match: CommandMatch;
   readonly columns: number;
   readonly isSelected: boolean;
 }) {
@@ -89,8 +89,8 @@ function SlashRow(props: {
   );
 }
 
-export function SlashMenu(props: {
-  readonly matches: ReadonlyArray<SlashMatch>;
+export function CommandMenu(props: {
+  readonly matches: ReadonlyArray<CommandMatch>;
   readonly selected: number;
 }) {
   const color = useColor();
@@ -108,7 +108,7 @@ export function SlashMenu(props: {
     >
       <For each={props.matches}>
         {(match, index) => (
-          <SlashRow match={match} columns={columns()} isSelected={index() === props.selected} />
+          <CommandRow match={match} columns={columns()} isSelected={index() === props.selected} />
         )}
       </For>
     </scrollbox>
