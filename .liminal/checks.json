@@ -81,6 +81,12 @@
       "timeoutSeconds": 300
     },
     {
+      "name": "saved history audit",
+      "command": "mise run check:session-history -- \"$HOME/.liminal/data/sessions.db\"",
+      "details": "Opt-in local audit, selected only when its implementation changes; never migrates or resumes sessions",
+      "include": ["apps/cli/src/audit-history.ts", "apps/cli/src/audit/**"]
+    },
+    {
       "name": "tool tests",
       "command": "mise run test:tools",
       "details": "Lint rule tests under Node",

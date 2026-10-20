@@ -9,6 +9,8 @@
     "tools/reference/check.ts",
     // The supervisor runs it as a child process by path.
     "apps/cli/src/main.ts",
+    // The opt-in history audit runs without starting the app.
+    "apps/cli/src/audit-history.ts",
     // The processes plugin starts its holder program by path.
     "packages/plugins/processes/src/server/holder/main.ts",
     "apps/gallery/src/main.tsx",

@@ -78,6 +78,11 @@ run = "bun tools/reference/check.ts"
 description = "Plugin package anatomy"
 run = "bun tools/checks/plugin-anatomy.ts"
 
+# Opt-in: pass a database path; omitted from the repository-wide check task.
+[tasks."check:session-history"]
+description = "Audit saved entry data read-only: mise run check:session-history -- <sessions.db>"
+run = "bun apps/cli/src/audit-history.ts"
+
 [tasks."check:versions"]
 description = "Every workspace package has the root package's version"
 run = "bun tools/checks/versions.ts"
