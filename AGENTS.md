@@ -26,26 +26,9 @@ Read an instruction file only when you are about to change something it covers. 
 
 ## Reference repositories
 
-All references live under `/Users/shanepadgett/.local/share/tau-agent/references`. Resolve each repository as `<base>/<name>`.
+Use the reference repositories attached to the current session at their supplied paths. Do not assume other repositories are installed.
 
 - `tau-agent` — the original project being reimagined.
-- `ai`
-- `bubbletea`
-- `codex`
-- `crush`
-- `deepseek-harness`
-- `glow`
-- `goose`
-- `grok-build`
-- `lipgloss`
-- `mastra`
-- `oh-my-pi`
-- `opencode`
-- `pi`
-
-These coding harnesses are ongoing sources of architectural ideas and lessons. Keep them in consideration during research, choosing the relevant repositories for the question at hand.
-
-Charm's `bubbletea`, `lipgloss`, `glow` and `crush` are the design reference for the TUI and gallery. Study how their components look and feel, not their Go implementation.
 
 Treat all reference repositories as read-only examples. Search and read only the files needed for the current task; do not modify references or copy their implementation into Liminal.
 
