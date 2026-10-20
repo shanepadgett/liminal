@@ -14,16 +14,13 @@ import { finishOf } from "@liminal/session-log/contract";
 import { IdleTrigger, type Stage, SwitchTrigger, type Trigger } from "../contract.ts";
 import { isAtLeast, STAGES } from "./budget.ts";
 import { type CheckpointDeps, covered, saveCheckpoint } from "./checkpoint.ts";
-import { isSameModel, latestCheckpoint, turnStartsOf } from "./history.ts";
+import { isSameModel, latestCheckpoint, NUDGE_LABEL, turnStartsOf } from "./history.ts";
 import { type MeasureDeps, type Measured, measure } from "./measure.ts";
 import { type NoteDeps, noteWriter } from "./notes.ts";
 import { measuredSince } from "./view.ts";
 
 /** Everything memory's server reads and writes with. */
 export type MemoryDeps = CheckpointDeps & MeasureDeps & NoteDeps;
-
-/** The label of memory's messages to the model. */
-const LABEL = "memory";
 
 const NUDGES: Readonly<Record<Exclude<Stage, "none">, string>> = {
   notice: reminder(
@@ -62,7 +59,7 @@ const lastNudged = (entries: ReadonlyArray<Entry>, since: number): Stage => {
 
       return Option.match(decodeMessage(entry.data), {
         onNone: () => [],
-        onSome: ({ label, text }) => (label === LABEL ? [text] : []),
+        onSome: ({ label, text }) => (label === NUDGE_LABEL ? [text] : []),
       });
     }),
   );
@@ -168,7 +165,7 @@ export const beforeCallOf =
         return BeforeCall.Proceed({ input: [] });
 
       return BeforeCall.Proceed({
-        input: [contextMessage({ label: LABEL, text: NUDGES[stage], user: "debug" })],
+        input: [contextMessage({ label: NUDGE_LABEL, text: NUDGES[stage], user: "debug" })],
       });
     }).pipe(
       Effect.catch((error) =>

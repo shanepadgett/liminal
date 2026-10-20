@@ -293,6 +293,7 @@ effectTest(
 
     expect(yield* requestTexts).toContain("Session name: Migrating five files to the new API");
 
+    yield* log.append(s1, [userMessage("keep going")]);
     yield* callCheckpoint({ handoff: "Four of five files are done." }, "k2");
 
     expect((yield* log.list).map((session) => session.title)).toEqual([
@@ -331,6 +332,55 @@ effectTest(
     expect(texts.some((text) => text.includes("Two of five files are done."))).toBe(true);
     expect(texts).toContain("what is next?");
     expect(texts).toContain("the early request");
+  }),
+  stack,
+);
+
+effectTest(
+  "a nudge before a checkpoint is left out of the folded view",
+  Effect.gen(function* () {
+    yield* start(said(600), userMessage("the early request"));
+    const log = yield* SessionLog;
+    const nudge = yield* beforeCall;
+    yield* log.append(s1, [nudge[0] ?? said(1)]);
+
+    const before = yield* requestTexts;
+    expect(before.some((text) => text.includes("half full"))).toBe(true);
+
+    yield* callCheckpoint({ handoff: "Two of five files are done." });
+
+    const texts = yield* requestTexts;
+    expect(texts.some((text) => text.includes("half full"))).toBe(false);
+    expect(texts).toContain("the early request");
+  }),
+  stack,
+);
+
+effectTest(
+  "a checkpoint right after a checkpoint fails, and one after new work saves",
+  Effect.gen(function* () {
+    yield* start(said(300), userMessage("the early request"));
+    const log = yield* SessionLog;
+    yield* callCheckpoint({ handoff: "Two of five files are done." });
+
+    yield* log.append(s1, [
+      draft(ToolCallEntry, {
+        data: { id: "k2", name: "checkpoint", params: {} },
+        model: [
+          {
+            role: "assistant",
+            parts: [
+              { type: "tool-call", id: "k2", name: "checkpoint", params: {}, providerData: {} },
+            ],
+          },
+        ],
+        text: "",
+      }),
+    ]);
+
+    const tool = yield* toolNamed("checkpoint");
+    const failed = yield* Effect.flip(tool.run({ handoff: "h" }, { sessionId: s1, callId: "k2" }));
+    expect(failed.message).toContain("Already checkpointed");
   }),
   stack,
 );

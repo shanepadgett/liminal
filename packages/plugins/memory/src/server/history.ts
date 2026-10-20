@@ -2,6 +2,7 @@
 
 import { Array as Arr, Option, Predicate, Schema } from "effect";
 
+import { MessageEntry } from "@liminal/context/contract";
 import type { Entry, ModelRef } from "@liminal/sdk";
 import {
   ReasoningEntry,
@@ -141,3 +142,13 @@ export const callIdOf = (entry: Entry): Option.Option<string> =>
   entry.kind === ToolCallEntry.kind
     ? Option.map(decodeCall(entry.data), ({ id }) => id)
     : Option.none();
+
+/** The label of memory's messages to the model. */
+export const NUDGE_LABEL = "memory";
+
+const decodeMessage = Schema.decodeUnknownOption(MessageEntry.data);
+
+/** Whether `entry` is one of memory's nudges to checkpoint. */
+export const isNudge = (entry: Entry): boolean =>
+  entry.kind === MessageEntry.kind
+  && Option.exists(decodeMessage(entry.data), ({ label }) => label === NUDGE_LABEL);

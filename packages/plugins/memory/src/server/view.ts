@@ -14,6 +14,7 @@ import { filesText } from "./files.ts";
 import {
   type Checkpoint,
   handoffOf,
+  isNudge,
   latestCheckpoint,
   replyAround,
   restoredOf,
@@ -124,6 +125,8 @@ const foldAt = (entries: ReadonlyArray<Entry>, checkpoint: Checkpoint, stored: S
   const at = checkpoint.entry.seq;
   const left = checkpointCall(entries, checkpoint);
   const isKept = (entry: Entry) => !left.has(entry.seq);
+  // A nudge to checkpoint before the checkpoint is answered; left in, it asks the model again.
+  const isInTail = (entry: Entry) => isKept(entry) && !isNudge(entry);
   const texts = [...rememberedTexts(checkpoint, stored), ...restoredTexts(entries, checkpoint)];
 
   const handoff = Option.match(handoffOf(entries, checkpoint), {
@@ -145,7 +148,7 @@ const foldAt = (entries: ReadonlyArray<Entry>, checkpoint: Checkpoint, stored: S
   return [
     ...texts.map((text, index) => built(checkpoint.entry, text, index === texts.length - 1)),
     ...entries.filter(
-      (entry) => entry.seq >= checkpoint.data.tailFrom && entry.seq < at && isKept(entry),
+      (entry) => entry.seq >= checkpoint.data.tailFrom && entry.seq < at && isInTail(entry),
     ),
     ...handoff,
     ...name,

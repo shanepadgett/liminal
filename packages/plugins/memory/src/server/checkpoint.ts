@@ -5,6 +5,7 @@
 
 import { Array as Arr, Effect, Option, Schema } from "effect";
 
+import { SystemEntry } from "@liminal/context/contract";
 import type { WorkspaceFiles } from "@liminal/files/contract";
 import {
   defineTool,
@@ -19,6 +20,7 @@ import {
   SessionName,
   type SessionLog,
   ToolCallEntry,
+  ToolResultEntry,
 } from "@liminal/session-log/contract";
 import { type ToolCheck, ToolDecision } from "@liminal/tools/contract";
 
@@ -31,7 +33,7 @@ import {
   RestoredEntry,
   type Trigger,
 } from "../contract.ts";
-import { replyAround, turnStartsOf } from "./history.ts";
+import { isNudge, latestCheckpoint, replyAround, turnStartsOf } from "./history.ts";
 import { type MeasureDeps, measure } from "./measure.ts";
 import { rememberedFiles, restore, RESTORE_SHARE, type Wanted } from "./restore.ts";
 import { type Memories, unfoldedNotes } from "./store.ts";
@@ -176,6 +178,32 @@ const Params = Schema.Struct({
 
 const alone = "Call checkpoint alone, without other tool calls.";
 
+const folded = "Already checkpointed, and nothing has happened since. Continue the work.";
+
+/** What follows a checkpoint without being new work: what it saved, a baseline, a nudge, results. */
+const SAVED_KINDS: ReadonlySet<string> = new Set([
+  HandoffEntry.kind,
+  RestoredEntry.kind,
+  NamedEntry.kind,
+  SystemEntry.kind,
+  ToolResultEntry.kind,
+]);
+
+/**
+ * Whether the newest checkpoint is the last thing but this call's own reply: folding again adds
+ * nothing.
+ */
+const isFolded = (entries: ReadonlyArray<Entry>, callId: string) => {
+  const own = new Set(replyAround(entries, callId).map((entry) => entry.seq));
+
+  return Option.exists(latestCheckpoint(entries), ({ entry }) =>
+    entries.every(
+      (each) =>
+        each.seq <= entry.seq || own.has(each.seq) || SAVED_KINDS.has(each.kind) || isNudge(each),
+    ),
+  );
+};
+
 /** The model's `checkpoint` tool. */
 export const checkpointToolOf = (deps: CheckpointDeps & MeasureDeps) =>
   defineTool({
@@ -202,6 +230,7 @@ export const checkpointToolOf = (deps: CheckpointDeps & MeasureDeps) =>
         );
 
         if (calls.length > 1) return yield* new ToolFailed({ message: alone });
+        if (isFolded(entries, callId)) return yield* new ToolFailed({ message: folded });
 
         const start = Arr.last(turnStartsOf(entries));
 
