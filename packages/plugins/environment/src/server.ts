@@ -1,5 +1,5 @@
 /**
- * Environment's server: the facts and files sections, read again on every request, and the Session
+ * Environment's server: the `environment` section, read again on every request, and the Session
  * section's stream.
  */
 
@@ -8,24 +8,41 @@ import { Effect, FileSystem, Layer, Path } from "effect";
 import { CommandRunner } from "@liminal/command-runner/contract";
 import {
   definePromptSection,
-  Lines,
-  linesRender,
+  missing,
   PromptSections,
+  type PromptSectionDefinition,
   type SectionRead,
+  titled,
+  wrapped,
 } from "@liminal/context/contract";
 import { Directories } from "@liminal/sdk";
 
 import { EnvironmentRpcs } from "./contract.ts";
+import { Environment } from "./server/environment.ts";
 import { factLines } from "./server/facts.ts";
 import { fileLines } from "./server/files.ts";
 import { watchSession } from "./server/session.ts";
 import type { Workspace } from "./server/workspace.ts";
 
-/** The lines as a present section; a failed read keeps the saved value. */
-const present = <E>(lines: Effect.Effect<Lines, E>) =>
-  lines.pipe(
-    Effect.map((value): SectionRead<Lines> => ({ type: "present", value })),
-    Effect.orElseSucceed((): SectionRead<Lines> => ({ type: "unavailable" })),
+/** The facts, then the workspace root's entries under a title. */
+const environmentText = ({ facts, files }: Environment) =>
+  wrapped("environment", [...facts, ...titled("Workspace root:", files)].join("\n"));
+
+const render: PromptSectionDefinition<Environment>["render"] = {
+  initial: environmentText,
+  changed: (before, after) =>
+    [
+      ...titled("The environment changed:", missing(after.facts, before.facts)),
+      ...titled("Files added:", missing(after.files, before.files)),
+      ...titled("Files removed:", missing(before.files, after.files)),
+    ].join("\n\n"),
+};
+
+/** The facts and the root listing; a failed read keeps the saved value. */
+const readEnvironment = (workspace: Workspace) =>
+  Effect.all({ facts: factLines(workspace), files: fileLines(workspace) }).pipe(
+    Effect.map((value): SectionRead<Environment> => ({ type: "present", value })),
+    Effect.orElseSucceed((): SectionRead<Environment> => ({ type: "unavailable" })),
   );
 
 /** The services the sections and the Session stream read the workspace through. */
@@ -53,26 +70,12 @@ const sectionsLayer = Layer.effectDiscard(
     const workspace = yield* workspaceOf;
 
     yield* sections.register(
-      definePromptSection<Lines>({
-        key: "environment/facts",
+      definePromptSection<Environment>({
+        key: "environment",
         order: 100,
-        codec: Lines,
-        read: () => present(factLines(workspace)),
-        render: linesRender({ initial: "Environment:", added: "The environment changed:" }),
-      }),
-    );
-
-    yield* sections.register(
-      definePromptSection<Lines>({
-        key: "environment/files",
-        order: 110,
-        codec: Lines,
-        read: () => present(fileLines(workspace)),
-        render: linesRender({
-          initial: "The workspace, two levels deep:",
-          added: "Files added:",
-          removed: "Files removed:",
-        }),
+        codec: Environment,
+        read: () => readEnvironment(workspace),
+        render,
       }),
     );
   }),

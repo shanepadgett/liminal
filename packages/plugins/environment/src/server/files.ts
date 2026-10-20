@@ -1,6 +1,6 @@
 /**
- * The files section: the workspace two levels deep, folders ending in `/`. In a git repository it
- * leaves out what git ignores; elsewhere it leaves out names starting with a dot.
+ * The workspace root's entries, folders ending in `/`. In a git repository it leaves out what git
+ * ignores; elsewhere it leaves out names starting with a dot.
  */
 
 import { Effect, Schema } from "effect";
@@ -20,17 +20,13 @@ class ListingFailed extends Schema.TaggedError<ListingFailed, { readonly brand: 
   { message: Schema.String },
 ) {}
 
-/** Each path cut to its first one and two levels; a cut path ends in `/`. */
-export const twoLevels = (paths: ReadonlyArray<string>): Lines => {
+/** Each path cut to its first level; a cut path ends in `/`. */
+export const rootEntries = (paths: ReadonlyArray<string>): Lines => {
   const lines = new Set<string>();
 
   for (const file of paths) {
     const parts = file.split("/");
-
-    for (const depth of [1, 2]) {
-      if (parts.length < depth) continue;
-      lines.add(parts.slice(0, depth).join("/") + (parts.length > depth ? "/" : ""));
-    }
+    lines.add(`${parts[0] ?? file}${parts.length > 1 ? "/" : ""}`);
   }
 
   return [...lines].toSorted();
@@ -56,46 +52,28 @@ const repositoryPaths = Effect.fn("repositoryPaths")(function* ({ runner, folder
   return result.stdout.split("\0").filter((file) => file !== "");
 });
 
-/** The visible names in `folder` as lines under `prefix`; a folder ends in `/`. */
-const linesIn = Effect.fn("linesIn")(function* (
-  { fs, path }: Workspace,
-  folder: string,
-  prefix: string,
-) {
+/** Outside a repository: the visible names in the workspace root; a folder ends in `/`. */
+const folderLines = Effect.fn("folderLines")(function* ({ fs, path, folder }: Workspace) {
   const names = (yield* fs.readDirectory(folder)).filter((name) => !name.startsWith("."));
 
-  return yield* Effect.forEach(
+  const lines = yield* Effect.forEach(
     names,
     (name) =>
       fs.stat(path.join(folder, name)).pipe(
-        Effect.map((info) => `${prefix}${name}${info.type === "Directory" ? "/" : ""}`),
+        Effect.map((info) => `${name}${info.type === "Directory" ? "/" : ""}`),
         // A broken link still has a name worth showing.
-        Effect.orElseSucceed(() => `${prefix}${name}`),
+        Effect.orElseSucceed(() => name),
       ),
     { concurrency: statConcurrency },
   );
-});
 
-/** Outside a repository: the visible names in the workspace and in each of its folders. */
-const folderLines = Effect.fn("folderLines")(function* (workspace: Workspace) {
-  const top = yield* linesIn(workspace, workspace.folder, "");
-
-  const below = yield* Effect.forEach(top, (line) =>
-    line.endsWith("/")
-      ? linesIn(workspace, workspace.path.join(workspace.folder, line), line).pipe(
-          // An unreadable folder is listed without its contents.
-          Effect.orElseSucceed((): Lines => []),
-        )
-      : Effect.succeed<Lines>([]),
-  );
-
-  return [...top, ...below.flat()].toSorted();
+  return lines.toSorted();
 });
 
 /** The listing, capped at `maxLines`. */
 export const fileLines = Effect.fn("fileLines")(function* (workspace: Workspace) {
   const lines = (yield* isRepository(workspace))
-    ? twoLevels(yield* repositoryPaths(workspace))
+    ? rootEntries(yield* repositoryPaths(workspace))
     : yield* folderLines(workspace);
 
   return capped(lines);

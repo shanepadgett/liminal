@@ -1,6 +1,5 @@
 /** Run tool's server: registers `run`, whose script functions are the other registered tools. */
 
-import { searchSignature } from "@opencode/codemode";
 import { Duration, Effect, Layer } from "effect";
 
 import { defineTool, ToolFailed } from "@liminal/sdk";
@@ -15,7 +14,7 @@ const description = [
   "Runs a JavaScript program whose functions are your other tools: `await tools.<name>(params)` calls the tool `<name>` with the same params and returns its result, or throws its failure.",
   "The `run` and `checks` tools are unavailable inside scripts. Call `checks` directly as your final action before the summary.",
   'Use bracket notation for a name that is not an identifier, as in `tools["my-tool"](params)`.',
-  `Tools you have not been offered yet are there too; find them with the built-in \`${searchSignature}\`, which runs without await.`,
+  "Deferred tools are callable too; `search({ query })` lists tools by keyword and runs without await.",
   "Only what the program prints with console.log and the value it returns come back. Imports, timers and direct file or network access are unavailable.",
   "Await every call that matters; calls still running when the program ends are stopped. Use Promise.all for calls that do not depend on each other.",
 ].join("\n");

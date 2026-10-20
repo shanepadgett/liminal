@@ -1,4 +1,4 @@
-/** Environment: the workspace facts and its two-level listing, kept current as they change. */
+/** Environment: the workspace facts and its root listing, kept current as they change. */
 
 import { expect, test } from "bun:test";
 
@@ -24,7 +24,7 @@ import { SessionLog } from "@liminal/session-log/contract";
 import sessionStore from "@liminal/session-store";
 
 import environment from "../plugin.ts";
-import { twoLevels } from "../src/server/files.ts";
+import { rootEntries } from "../src/server/files.ts";
 import { homeRelative, readSession } from "../src/server/session.ts";
 
 const stack = serverOf(environment).pipe(
@@ -71,17 +71,15 @@ const start = Effect.fn("start")(function* () {
   return { services, workspace, next };
 });
 
-test("paths cut to two levels, folders ending in a slash", () => {
-  expect(twoLevels(["a.txt", "src/b.ts", "src/deep/c.ts", "src/deep/d.ts"])).toEqual([
+test("paths cut to the root, folders ending in a slash", () => {
+  expect(rootEntries(["a.txt", "src/b.ts", "src/deep/c.ts", "src/deep/d.ts"])).toEqual([
     "a.txt",
     "src/",
-    "src/b.ts",
-    "src/deep/",
   ]);
 });
 
 effectTest(
-  "outside git: facts and visible names two levels deep; added files and a new day update them",
+  "outside git: facts and visible root names; added files and a new day update them",
   Effect.gen(function* () {
     const { workspace, next } = yield* start();
     const fs = yield* FileSystem.FileSystem;
@@ -89,21 +87,24 @@ effectTest(
     yield* fs.writeFileString(`${workspace}/src/deep/c.ts`, "");
     yield* fs.writeFileString(`${workspace}/.hidden`, "");
 
-    const [facts = "", files = ""] = texts(yield* next("hello"), 0);
+    const [text = ""] = texts(yield* next("hello"), 0);
 
-    expect(facts).toContain(`- Workspace: ${workspace}\n- Git repository: no\n- Platform: `);
-    expect(facts).toMatch(/\n- Date: \w+/);
-    expect(files.split("\n")).toContain("- src/deep/");
-    expect(files).not.toContain(".hidden");
-    expect(files).not.toContain("c.ts");
+    expect(text).toContain(
+      `<environment>\nWorkspace: ${workspace}\nGit repository: no\nPlatform: `,
+    );
 
-    yield* fs.writeFileString(`${workspace}/src/b.ts`, "");
+    expect(text).toMatch(/\nDate: \w+/);
+    expect(text.split("\n")).toContain("- src/");
+    expect(text).not.toContain(".hidden");
+    expect(text).not.toContain("deep");
+
+    yield* fs.writeFileString(`${workspace}/b.ts`, "");
     yield* TestClock.adjust(Duration.days(1));
 
     const [update = ""] = texts(yield* next("later"), -1);
 
     expect(update).toMatch(
-      /^<reminder kind="instructions">\nThe environment changed:\n- Date: .+\n\nFiles added:\n- src\/b\.ts\n<\/reminder>$/,
+      /^<reminder kind="instructions">\nThe environment changed:\n- Date: .+\n\nFiles added:\n- b\.ts\n<\/reminder>$/,
     );
   }),
   testBaseServices,
@@ -124,10 +125,10 @@ effectTest(
     yield* fs.writeFileString(`${workspace}/.gitignore`, "data/\nglobal/\nproject/\n");
     yield* fs.writeFileString(`${workspace}/kept.ts`, "");
 
-    const [facts = "", files = ""] = texts(yield* next("hello"), 0);
+    const [text = ""] = texts(yield* next("hello"), 0);
 
-    expect(facts).toContain("Git repository: yes");
-    expect(files).toBe("The workspace, two levels deep:\n- .gitignore\n- kept.ts");
+    expect(text).toContain("Git repository: yes");
+    expect(text).toMatch(/Workspace root:\n- \.gitignore\n- kept\.ts\n<\/environment>$/);
   }),
   testBaseServices,
 );
