@@ -1,16 +1,22 @@
 /** Attention: which events call for the sound, and which player plays it. */
 
 import { expect, test } from "bun:test";
+import { existsSync } from "node:fs";
 
 import { DateTime, Effect, Fiber, Layer, Option, Queue, Stream } from "effect";
+import { RpcTest } from "effect/rpc";
 
 import { type FollowEvent, SavedEvent, Seq, SessionId, Synced } from "@liminal/sdk";
-import { effectTest } from "@liminal/sdk/testing";
+import { effectTest, serverOf, testBaseServices } from "@liminal/sdk/testing";
 import { type InputWait, makeTuiInputWaits } from "@liminal/sdk/tui";
 import { TurnEndedEntry, type TurnEndReason } from "@liminal/session-log/contract";
+import settingsPlugin from "@liminal/settings";
 
+import attention from "../plugin.ts";
+import { AttentionRpcs } from "../src/contract.ts";
 import { chimeWith, newWaits, turnEnds } from "../src/tui/chimes.ts";
 import { playerOf } from "../src/tui/sound.ts";
+import { DEFAULT_SOUND, SOUNDS, soundOf } from "../src/tui/sounds.ts";
 
 const s1 = SessionId.make("s1");
 
@@ -117,4 +123,36 @@ test("the player is the first installed for the system", () => {
   expect(playerOf("linux", installed(["aplay", "pw-play"]))).toEqual(Option.some("pw-play"));
   expect(playerOf("linux", installed([]))).toEqual(Option.none());
   expect(playerOf("win32", installed(["afplay"]))).toEqual(Option.none());
+});
+
+const stack = serverOf(attention).pipe(
+  Layer.provideMerge(serverOf(settingsPlugin)),
+  Layer.provideMerge(testBaseServices),
+);
+
+effectTest(
+  "the choices are saved in the global settings and read back",
+  Effect.gen(function* () {
+    const client = yield* RpcTest.makeClient(AttentionRpcs);
+
+    expect(yield* client["attention/get"]()).toEqual({});
+
+    yield* client["attention/set-enabled"]({ enabled: false });
+    yield* client["attention/set-sound"]({ sound: "vesper" });
+    expect(yield* client["attention/get"]()).toEqual({ enabled: false, sound: "vesper" });
+  }),
+  stack,
+);
+
+test("an unknown or missing sound id is the default sound", () => {
+  expect(soundOf().id).toBe(DEFAULT_SOUND.id);
+  expect(soundOf("nonesuch").id).toBe(DEFAULT_SOUND.id);
+  expect(soundOf("lintel").id).toBe("lintel");
+});
+
+test("each sound has a unique id and an audio file", () => {
+  expect(new Set(SOUNDS.map((sound) => sound.id)).size).toBe(SOUNDS.length);
+  expect(SOUNDS.map((sound) => sound.id)).toContain(DEFAULT_SOUND.id);
+
+  for (const sound of SOUNDS) expect(existsSync(sound.file)).toBe(true);
 });

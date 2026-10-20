@@ -3,11 +3,9 @@
  * installed of `paplay`, `pw-play` or `aplay`. With none installed nothing plays.
  */
 
-import { fileURLToPath } from "node:url";
-
 import { Effect, Option } from "effect";
 
-const SOUND = fileURLToPath(new URL("../../assets/notification.wav", import.meta.url));
+import type { Sound } from "./sounds.ts";
 
 const PLAYERS: Readonly<Record<string, ReadonlyArray<string>>> = {
   darwin: ["afplay"],
@@ -18,10 +16,10 @@ const PLAYERS: Readonly<Record<string, ReadonlyArray<string>>> = {
 export const playerOf = (platform: string, which: (name: string) => string | null) =>
   Option.fromUndefinedOr((PLAYERS[platform] ?? []).find((name) => which(name) !== null));
 
-/** Starts the sound with `player` and does not wait for it; a failure to start is logged. */
-export const playWith = (player: string) =>
+/** Starts `sound` with `player` and does not wait for it; a failure to start is logged. */
+export const playWith = (player: string, sound: Sound) =>
   Effect.try(() => {
-    Bun.spawn([player, SOUND], { stdin: "ignore", stdout: "ignore", stderr: "ignore" });
+    Bun.spawn([player, sound.file], { stdin: "ignore", stdout: "ignore", stderr: "ignore" });
   }).pipe(
     Effect.catch((error) => Effect.logWarning("Could not play the notification sound.", error)),
   );

@@ -1,6 +1,7 @@
 /**
  * Attention's TUI part: follows the session on screen and plays the notification sound when its
- * turn ends or a workflow waits for input.
+ * turn ends or a workflow waits for input. The palette's Notifications section turns the sound on
+ * and off and picks which one plays.
  */
 
 import { Effect, Option, Stream } from "effect";
@@ -10,7 +11,8 @@ import type { SessionId } from "@liminal/sdk";
 import { defineTui, makeBridge, TuiHost, TuiInputWaits } from "@liminal/sdk/tui";
 
 import { chimeWith } from "./tui/chimes.ts";
-import { playerOf, playWith } from "./tui/sound.ts";
+import { setUpPreferences } from "./tui/preferences.tsx";
+import { playerOf } from "./tui/sound.ts";
 
 /** After the other composer lines; draws nothing. */
 const LINE_ORDER = 60;
@@ -23,7 +25,7 @@ export default defineTui({
     const host = yield* TuiHost;
     const inputWaits = yield* TuiInputWaits;
     const bridge = yield* makeBridge;
-    const play = playWith(player.value);
+    const { play } = yield* setUpPreferences(player.value);
 
     yield* host.register(
       ChatSlots.composerLine,
