@@ -5,15 +5,10 @@
  * highlight in view.
  */
 
+import fuzzysort from "fuzzysort";
 import { For } from "solid-js";
 
-import {
-  type Command,
-  type ListedCommand,
-  matchIndices,
-  matchRuns,
-  useColor,
-} from "@liminal/sdk/tui";
+import { type Command, type ListedCommand, matchRuns, useColor } from "@liminal/sdk/tui";
 
 import { useReveal } from "./reveal.ts";
 
@@ -33,26 +28,50 @@ const noMatches: ReadonlySet<number> = new Set();
 /** The word being typed when the draft is `/word` with nothing after it; otherwise none. */
 export const commandWord = (draft: string) => /^\/(\S*)$/.exec(draft)?.[1];
 
-const matchOf = (command: Command, typed: string): CommandMatch | undefined => {
-  if (command.slash === undefined) return undefined;
+interface RankedCommandMatch extends CommandMatch {
+  readonly score: number;
+  readonly isExact: boolean;
+}
+
+const matchOf = (command: Command, typed: string): RankedCommandMatch | null => {
+  if (command.slash === undefined) return null;
   const name = `/${command.slash.name}`;
-  const matches = matchIndices(`/${typed}`, name);
-  if (matches !== undefined) return { command, name, matches };
 
-  const byAlias = (command.slash.aliases ?? []).some(
-    (alias) => matchIndices(typed, alias) !== undefined,
-  );
+  if (typed === "") return { command, name, matches: new Set([0]), score: 0, isExact: false };
 
-  return byAlias ? { command, name, matches: noMatches } : undefined;
+  const names = [command.slash.name, ...(command.slash.aliases ?? [])];
+
+  const results = names.flatMap((word) => {
+    const result = fuzzysort.single(typed, word);
+
+    return result === null ? [] : [result];
+  });
+
+  if (results.length === 0) return null;
+
+  const result = fuzzysort.single(typed, command.slash.name);
+
+  const matches =
+    result === null ? noMatches : new Set([0, ...result.indexes.map((index) => index + 1)]);
+
+  return {
+    command,
+    name,
+    matches,
+    score: Math.max(...results.map((found) => found.score)),
+    isExact: names.some((word) => word.toLowerCase() === typed.toLowerCase()),
+  };
 };
 
-/** The commands matching `typed`, the word after `/`. */
+/** Exact names and aliases first, then fuzzy relevance; ties keep registry order. */
 export const commandMatches = (listed: ReadonlyArray<ListedCommand>, typed: string) =>
-  listed.flatMap(({ command }) => {
-    const match = matchOf(command, typed);
+  listed
+    .flatMap(({ command }) => {
+      const match = matchOf(command, typed);
 
-    return match === undefined ? [] : [match];
-  });
+      return match === null ? [] : [match];
+    })
+    .toSorted((a, b) => Number(b.isExact) - Number(a.isExact) || b.score - a.score);
 
 function CommandRow(props: {
   readonly match: CommandMatch;

@@ -2,6 +2,13 @@
   "ignore": [],
   "sources": [
     {
+      "package": "fuzzysort",
+      "versionSource": "lock",
+      "summary": "Fuzzy matching with relevance scores, ranked results and matched character indexes for command names and aliases.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "types", "path": "index.d.ts" }]
+    },
+    {
       "package": "effect",
       "versionSource": "lock",
       "summary": "Effect 4: typed effects, services and layers, Schema, Stream, errors. Read the examples before writing Effect code; the module list names every API.",

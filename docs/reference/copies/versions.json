@@ -1,4 +1,9 @@
 {
+  "fuzzysort": {
+    "version": "4.0.2",
+    "fingerprint": "fce58a6470509d34",
+    "commits": []
+  },
   "effect": {
     "version": "4.0.5",
     "fingerprint": "fb00675ec567ccbe",
