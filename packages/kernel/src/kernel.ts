@@ -67,7 +67,7 @@ export const start = Effect.fn("start")(function* (options: BootOptions) {
   const reloads =
     options.reload === undefined
       ? lockedReloads
-      : yield* runReloads(options.reload, { graphs, close: turns.close });
+      : yield* runReloads(options.reload, { graphs, close: turns.close, isBusy: turns.isBusy });
 
   const memory = yield* makeMemoryServer;
 

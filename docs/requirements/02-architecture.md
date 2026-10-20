@@ -40,4 +40,5 @@ The kernel, the protocol between server and frontends, and how code reloads.
 - A setting chooses automatic or confirmed reload; dev defaults to automatic
 - User-made plugin changes, such as enabling or disabling a plugin, wait for the same turn end
 - Changes are typechecked, loaded, and set up before applying; failures keep the old version running
+- A change made while a turn runs is not checked until no turn runs, so a failure never reports on code a turn is still editing
 - Web deployment runs a locked plugin set with no plugin loading or reload

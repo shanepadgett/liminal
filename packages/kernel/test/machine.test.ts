@@ -175,6 +175,98 @@ describe("reload machine", () => {
     expect(state.phase).toEqual(Phase.Current());
   });
 
+  test("a change while a turn runs waits instead of checking", () => {
+    const [state, commands] = run(
+      initialState,
+      Event.BusyChanged({ isBusy: true }),
+      Event.Changed({ change: plugins("a") }),
+      Event.Changed({ change: plugins("b") }),
+    );
+
+    expect(state.phase).toEqual(Phase.Waiting({ change: plugins("a", "b") }));
+    expect(commands).toEqual([]);
+  });
+
+  test("the last turn ending checks the change that waited", () => {
+    const [state, commands] = run(
+      initialState,
+      Event.BusyChanged({ isBusy: true }),
+      Event.Changed({ change: plugins("a") }),
+      Event.BusyChanged({ isBusy: false }),
+    );
+
+    expect(state.phase).toEqual(Phase.Checking({ change: plugins("a"), check: 1 }));
+    expect(commands).toEqual([Command.Check({ change: plugins("a"), check: 1 })]);
+  });
+
+  test("a change during a check and a turn stops the check and waits", () => {
+    const [state, commands] = run(
+      initialState,
+      Event.Changed({ change: plugins("a") }),
+      Event.BusyChanged({ isBusy: true }),
+      Event.Changed({ change: plugins("b") }),
+    );
+
+    expect(state.phase).toEqual(Phase.Waiting({ change: plugins("a", "b") }));
+    expect(commands).toEqual([Command.StopCheck()]);
+  });
+
+  test("the result of a check stopped for a turn is dropped", () => {
+    const made = candidate("old");
+
+    const [state, commands] = run(
+      initialState,
+      Event.Changed({ change: plugins("a") }),
+      Event.BusyChanged({ isBusy: true }),
+      Event.Changed({ change: plugins("b") }),
+      passed(1, true, Option.some(made)),
+    );
+
+    expect(state.phase).toEqual(Phase.Waiting({ change: plugins("a", "b") }));
+    expect(commands).toEqual([Command.Discard({ candidate: made })]);
+  });
+
+  test("a change while ready and a turn runs discards the candidate and waits", () => {
+    const made = candidate("one");
+
+    const [state, commands] = run(
+      initialState,
+      Event.Changed({ change: plugins("a") }),
+      passed(1, false, Option.some(made)),
+      Event.BusyChanged({ isBusy: true }),
+      Event.Changed({ change: plugins("b") }),
+    );
+
+    expect(state.phase).toEqual(Phase.Waiting({ change: plugins("a", "b") }));
+    expect(commands).toEqual([Command.Discard({ candidate: made })]);
+  });
+
+  test("a change after a failure while a turn runs hides the failure", () => {
+    const [state] = run(
+      initialState,
+      Event.Changed({ change: plugins("a") }),
+      Event.CheckFailed({ check: 1, reason: "broken" }),
+      Event.BusyChanged({ isBusy: true }),
+      Event.Changed({ change: plugins("b") }),
+    );
+
+    expect(state.phase).toEqual(Phase.Waiting({ change: plugins("a", "b") }));
+  });
+
+  test("a change pending when an apply ends waits while a turn runs", () => {
+    const [state, commands] = run(
+      initialState,
+      Event.Changed({ change: plugins("a") }),
+      passed(1, true, Option.some(candidate("one"))),
+      Event.Changed({ change: plugins("b") }),
+      Event.BusyChanged({ isBusy: true }),
+      Event.Applied(),
+    );
+
+    expect(state.phase).toEqual(Phase.Waiting({ change: plugins("b") }));
+    expect(commands).toEqual([]);
+  });
+
   test("the reload command does nothing unless ready", () => {
     expect(transition(initialState, Event.Requested())).toEqual([initialState, []]);
   });

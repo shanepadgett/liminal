@@ -66,5 +66,11 @@ export const makeTurnGate = Effect.gen(function* () {
       ),
     );
 
-  return { gate, close };
+  /** Whether any turn runs, now and after each change. */
+  const isBusy = SubscriptionRef.changes(state).pipe(
+    Stream.map((current) => current.holders > 0),
+    Stream.changes,
+  );
+
+  return { gate, close, isBusy };
 });

@@ -1,11 +1,12 @@
 /**
- * Reloads at turn end over fixture plugins: checked code waits for running turns, confirmed mode
- * waits for the reload command, and a change to code loaded at start asks for a restart once idle.
+ * Reloads at turn end over fixture plugins: changes are checked and applied only once no turn runs,
+ * confirmed mode waits for the reload command, and a change to code loaded at start asks for a
+ * restart once idle.
  */
 
 import { describe, expect } from "bun:test";
 
-import { Deferred, Effect, Exit, Fiber, Predicate, Queue, Ref } from "effect";
+import { Deferred, Effect, Exit, Fiber, Option, Predicate, Queue, Ref, Stream } from "effect";
 import { ChildProcess } from "effect/process";
 
 import { ReloadFailed, ReloadReady, type ReloadState } from "@liminal/sdk";
@@ -47,13 +48,42 @@ describe("reload at turn end", () => {
       const turn = yield* holdTurn(run, current(run));
       yield* writeSource("two");
       yield* run.touch("source");
-      yield* awaitState(run.kernel, Predicate.isTagged("Applying"));
+      yield* awaitState(run.kernel, Predicate.isTagged("Checking"));
 
       expect((yield* current(run)).source).toBe(before.source);
       yield* turn.release;
       expect((yield* Fiber.join(turn.turn)).source).toBe(before.source);
       yield* awaitState(run.kernel, Predicate.isTagged("Current"));
       expect((yield* current(run)).source.value).toBe("two");
+    }),
+    testBaseServices,
+  );
+
+  effectTest(
+    "a change during a turn is checked only after the turn ends",
+    Effect.gen(function* () {
+      const run = yield* started({
+        typecheck: Option.some(ChildProcess.make("/bin/sh", ["-c", "echo broken; exit 1"])),
+      });
+
+      const states = yield* Ref.make<ReadonlyArray<ReloadState>>([]);
+
+      yield* run.kernel.reloads.state.pipe(
+        Stream.runForEach((state) => Ref.update(states, (seen) => [...seen, state])),
+        Effect.forkChild,
+      );
+
+      const turn = yield* holdTurn(run, Effect.void);
+      yield* run.touch("source");
+      yield* awaitState(run.kernel, Predicate.isTagged("Checking"));
+      yield* Effect.yieldNow;
+      expect((yield* Ref.get(states)).some(Predicate.isTagged("Failed"))).toBe(false);
+
+      yield* turn.release;
+      yield* Fiber.join(turn.turn);
+      const failed = yield* awaitState(run.kernel, Predicate.isTagged("Failed"));
+
+      expect(failed).toEqual(ReloadFailed.make({ reason: "broken" }));
     }),
     testBaseServices,
   );
@@ -87,7 +117,7 @@ describe("reload at turn end", () => {
       );
 
       yield* Queue.offer(run.changes, [`${restartRoot}/kernel.ts`]);
-      yield* awaitState(run.kernel, Predicate.isTagged("Applying"));
+      yield* awaitState(run.kernel, Predicate.isTagged("Checking"));
       yield* Effect.yieldNow;
 
       expect(yield* Ref.get(isDue)).toBe(false);

@@ -1,7 +1,7 @@
 /**
- * Runs the reload machine on one fiber: classifies changed files, checks each change out of sight,
- * and applies the newest passed one once no turn runs, by swapping the graph or asking for a
- * restart.
+ * Runs the reload machine on one fiber: classifies changed files, checks each change, and applies
+ * the newest passed one once no turn runs, by swapping the graph or asking for a restart. A change
+ * made while a turn runs is not checked until the turns end.
  */
 
 import {
@@ -199,13 +199,17 @@ const execute = (runner: Runner, command: Command) =>
   Command.$match(command, {
     Check: ({ change, check }) =>
       FiberHandle.run(runner.checks, runCheck(runner, change, check)).pipe(Effect.asVoid),
+    // Forked, since a plugin build in progress finishes before it stops and must not hold the machine.
+    StopCheck: () => Effect.forkScoped(FiberHandle.clear(runner.checks)).pipe(Effect.asVoid),
     Discard: ({ candidate }) => runner.graphs.discard(candidate),
     Apply: ({ candidate }) => Effect.forkScoped(apply(runner, candidate)).pipe(Effect.asVoid),
   });
 
 const toReloadState: (phase: Phase) => ReloadState = Phase.$match({
   Current: () => ReloadCurrent.make({}),
+  // A waiting change is not checked yet; the footer shows the same as for a check.
   Checking: () => ReloadChecking.make({}),
+  Waiting: () => ReloadChecking.make({}),
   Ready: ({ change }) => ReloadReady.make({ restart: Change.$is("Restart")(change) }),
   Failed: ({ reason }) => ReloadFailed.make({ reason }),
   Applying: () => ReloadApplying.make({}),
@@ -229,7 +233,12 @@ const watch = Effect.fn("watch")(function* (runner: Runner) {
 /** Starts the reload machine for `graphs` until the scope closes. */
 export const runReloads = Effect.fn("runReloads")(function* (
   options: ReloadOptions,
-  context: { readonly graphs: Graphs; readonly close: Runner["close"] },
+  context: {
+    readonly graphs: Graphs;
+    readonly close: Runner["close"];
+    /** Whether any turn runs, now and after each change. */
+    readonly isBusy: Stream.Stream<boolean>;
+  },
 ) {
   const runner: Runner = {
     options,
@@ -254,6 +263,11 @@ export const runReloads = Effect.fn("runReloads")(function* (
 
   yield* Queue.take(runner.events).pipe(Effect.flatMap(step), Effect.forever, Effect.forkScoped);
   yield* Effect.forkScoped(watch(runner));
+
+  yield* context.isBusy.pipe(
+    Stream.runForEach((isBusy) => offer(runner, Event.BusyChanged({ isBusy }))),
+    Effect.forkScoped,
+  );
 
   const reloads: Reloads = {
     state: SubscriptionRef.changes(published),
