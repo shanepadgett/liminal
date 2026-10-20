@@ -17,6 +17,7 @@
     "@liminal/command-runner": "workspace:*",
     "@liminal/decisions": "workspace:*",
     "@liminal/files": "workspace:*",
+    "@liminal/inbox": "workspace:*",
     "@liminal/models": "workspace:*",
     "@liminal/sdk": "workspace:*",
     "@liminal/session-log": "workspace:*",

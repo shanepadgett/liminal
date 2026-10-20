@@ -6,6 +6,7 @@
 import { CommandRunner } from "@liminal/command-runner/contract";
 import { Decisions } from "@liminal/decisions/contract";
 import { WorkspaceFiles } from "@liminal/files/contract";
+import { Inbox } from "@liminal/inbox/contract";
 import { Models, ModelTask } from "@liminal/models/contract";
 import { definePlugin } from "@liminal/sdk";
 import { EntryKinds, SessionLog } from "@liminal/session-log/contract";
@@ -30,7 +31,7 @@ export default definePlugin({
     WorkspaceFiles,
     CommandRunner,
   ],
-  uses: [Decisions],
+  uses: [Decisions, Inbox],
   enabledByDefault: true,
   rpcs: ApprovalRpcs,
   server: () => import("./src/server.ts"),

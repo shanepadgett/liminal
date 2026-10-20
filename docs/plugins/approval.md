@@ -20,6 +20,7 @@ Status: built
 ## Uses
 
 - `Decisions`
+- `Inbox`, for the composer's draft area, where the approval prompt shows
 
 ## Requirements
 

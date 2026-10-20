@@ -1,6 +1,6 @@
 /**
  * The session's approval mode after the composer's model line, `full` in the warning color.
- * Shift+tab cycles the mode, and the session's oldest waiting ask opens the approval dialog.
+ * Shift+tab cycles the mode, and the session's waiting asks go to the approval prompt.
  */
 
 import { Option } from "effect";
@@ -8,18 +8,17 @@ import { type Accessor, createEffect, onCleanup, Show } from "solid-js";
 
 import type { TurnProps } from "@liminal/chat/contract";
 import type { SessionId } from "@liminal/sdk";
-import { type DialogComponent, useBindings, useColor } from "@liminal/sdk/tui";
+import { useBindings, useColor } from "@liminal/sdk/tui";
 
 import { type ApprovalMode, approvalModes, type PendingAsk } from "../contract.ts";
-import { ApprovalDialog } from "./ApprovalDialog.tsx";
 
 /** What the label reads and does, made once by the part's setup. */
 export interface LabelDeps {
   readonly mode: (session: SessionId) => Accessor<Option.Option<ApprovalMode>>;
   readonly pending: (session: SessionId) => Accessor<ReadonlyArray<PendingAsk>>;
   readonly setMode: (session: SessionId, mode: ApprovalMode) => void;
-  readonly answer: (id: string, approve: boolean, note: string) => void;
-  readonly show: (dialog: DialogComponent) => void;
+  /** Sets the waiting asks of the session on screen, for the approval prompt. */
+  readonly setPending: (asks: ReadonlyArray<PendingAsk>) => void;
   /** Marks the session whose composer is on screen, for `/approvals`. */
   readonly onScreen: (session?: SessionId) => void;
 }
@@ -28,26 +27,14 @@ export interface LabelDeps {
 export const nextMode = (mode: ApprovalMode) =>
   approvalModes[(approvalModes.indexOf(mode) + 1) % approvalModes.length] ?? "auto";
 
-/** Opens the dialog for each new oldest ask. */
-const showAsks = (deps: LabelDeps, pending: Accessor<ReadonlyArray<PendingAsk>>) => {
-  let shown = "";
-
+/** Hands the session's waiting asks to the prompt, and clears them when the label goes. */
+const followAsks = (deps: LabelDeps, pending: Accessor<ReadonlyArray<PendingAsk>>) => {
   createEffect(() => {
-    const [oldest] = pending();
-    if (oldest === undefined || oldest.id === shown) return;
+    deps.setPending(pending());
+  });
 
-    shown = oldest.id;
-
-    deps.show((dialog) => (
-      <ApprovalDialog
-        close={dialog.close}
-        ask={oldest}
-        waiting={() => pending().some((each) => each.id === oldest.id)}
-        onAnswer={(approve, note) => {
-          deps.answer(oldest.id, approve, note);
-        }}
-      />
-    ));
+  onCleanup(() => {
+    deps.setPending([]);
   });
 };
 
@@ -62,7 +49,7 @@ export const makeModeLabel = (deps: LabelDeps) =>
       deps.onScreen();
     });
 
-    showAsks(deps, deps.pending(props.sessionId));
+    followAsks(deps, deps.pending(props.sessionId));
 
     useBindings(() => ({
       commands: [
