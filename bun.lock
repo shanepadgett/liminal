@@ -639,11 +639,12 @@
       "name": "@liminal/session-name",
       "version": "0.1.0",
       "devDependencies": {
-        "@liminal/context": "workspace:*",
         "@liminal/session-store": "workspace:*",
       },
       "peerDependencies": {
+        "@liminal/agent-loop": "workspace:*",
         "@liminal/chat": "workspace:*",
+        "@liminal/context": "workspace:*",
         "@liminal/sdk": "workspace:*",
         "@liminal/session-log": "workspace:*",
         "@liminal/tools": "workspace:*",

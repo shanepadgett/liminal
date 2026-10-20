@@ -6,7 +6,7 @@ Status: built
 
 ## Requires
 
-- `SessionLog`, `Tools`, `ToolChecks`
+- `BeforeCallHooks`, `SessionLog`, `Tools`, `ToolChecks`
 
 ## Adds
 
@@ -18,6 +18,8 @@ Status: built
 - A name is one line of 1 to 80 characters with no edge whitespace, about 10 words; a bad name fails the call with the reason
 - Guidance in the system prompt: name the session once, after the first exchange makes the topic clear, never on a vague opening message; never rename, because `checkpoint` renames
 - A check allows `name_session` once per session; a later call is denied with a reason pointing to the checkpoint's `name` field
+- An unnamed session gets one gentle reminder after five completed tool calls across the session; the saved reminder prevents repeats after reload or restart
+- The reminder allows naming to wait while the topic is unclear; it never blocks tools, fails checks or asks the user to clarify just for a name
 - The tool stays in the tool list, so the cached request prefix is unchanged
 - A fork starts with its parent's name, so its first call is denied
 - The call has no row in the transcript

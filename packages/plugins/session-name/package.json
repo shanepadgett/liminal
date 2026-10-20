@@ -7,11 +7,12 @@
     "./contract": "./src/contract.ts"
   },
   "devDependencies": {
-    "@liminal/context": "workspace:*",
     "@liminal/session-store": "workspace:*"
   },
   "peerDependencies": {
+    "@liminal/agent-loop": "workspace:*",
     "@liminal/chat": "workspace:*",
+    "@liminal/context": "workspace:*",
     "@liminal/sdk": "workspace:*",
     "@liminal/session-log": "workspace:*",
     "@liminal/tools": "workspace:*",

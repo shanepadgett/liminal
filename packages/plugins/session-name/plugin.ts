@@ -1,5 +1,6 @@
 /** Session name: the `name_session` tool names a session once; a checkpoint renames it later. */
 
+import { BeforeCallHooks } from "@liminal/agent-loop/contract";
 import { definePlugin } from "@liminal/sdk";
 import { SessionLog } from "@liminal/session-log/contract";
 import { ToolChecks, Tools } from "@liminal/tools/contract";
@@ -7,7 +8,7 @@ import { ToolChecks, Tools } from "@liminal/tools/contract";
 export default definePlugin({
   name: "session-name",
   provides: [],
-  requires: [SessionLog, Tools, ToolChecks],
+  requires: [BeforeCallHooks, SessionLog, Tools, ToolChecks],
   uses: [],
   enabledByDefault: true,
   server: () => import("./src/server.ts"),
