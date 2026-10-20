@@ -62,6 +62,7 @@ export {
 export {
   formatShare,
   formatTokens,
+  SidebarField,
   SidebarNote,
   SidebarSection,
   SidebarStat,

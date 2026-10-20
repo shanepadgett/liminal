@@ -16,9 +16,9 @@ import {
   formatShare,
   formatTokens,
   makeBridge,
+  SidebarField,
   SidebarNote,
   SidebarSection,
-  SidebarStat,
   SlotView,
   TuiHost,
 } from "@liminal/sdk/tui";
@@ -42,11 +42,11 @@ const costText = (cost: number) => `$${cost.toFixed(2)}`;
 function Context(props: { readonly usage: SessionUsage; readonly sessionId: SessionId }) {
   return (
     <SidebarSection title="Context">
-      <SidebarStat label="used" value={usedText(props.usage)} />
+      <SidebarField label="used" value={usedText(props.usage)} />
       <Show when={props.usage.contextWindow}>
-        {(window) => <SidebarStat label="window" value={formatTokens(window())} />}
+        {(window) => <SidebarField label="window" value={formatTokens(window())} />}
       </Show>
-      <SidebarStat
+      <SidebarField
         label="cache hit"
         value={props.usage.cacheHit === undefined ? "–" : formatShare(props.usage.cacheHit)}
       />
@@ -60,7 +60,7 @@ function SessionCost(props: { readonly usage: SessionUsage }) {
   return props.usage.cost === undefined ? (
     <SidebarNote text="No price for this model" />
   ) : (
-    <SidebarStat label="session" value={costText(props.usage.cost)} />
+    <SidebarField label="session" value={costText(props.usage.cost)} />
   );
 }
 
@@ -72,13 +72,13 @@ function Cost(props: { readonly report: UsageReport }) {
     <SidebarSection title="Cost">
       <SessionCost usage={props.report.session} />
       <Show when={unpriced() > 0}>
-        <SidebarStat
+        <SidebarField
           label="unpriced"
           value={`${unpriced()} ${unpriced() === 1 ? "model" : "models"}`}
         />
       </Show>
       <Show when={props.report.today !== undefined}>
-        <SidebarStat label="today" value={costText(props.report.today ?? 0)} />
+        <SidebarField label="today" value={costText(props.report.today ?? 0)} />
       </Show>
     </SidebarSection>
   );

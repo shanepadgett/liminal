@@ -1,6 +1,7 @@
 /**
  * The pieces of a sidebar section: its bold title over its lines, a stat with its label on the left
- * and its value on the right, and a muted note for a section with nothing to show yet.
+ * and its value on the right, a field with its value after a colon, and a muted note for a section
+ * with nothing to show yet.
  */
 
 import { TextAttributes } from "@opentui/core";
@@ -40,6 +41,29 @@ export function SidebarStat(props: {
     <box flexDirection="row" height={1}>
       <text wrapMode="none" flexGrow={1} fg={color("text.muted")}>
         {props.label}
+      </text>
+      <text wrapMode="none" flexShrink={0} fg={color(props.tone ?? "text.base")}>
+        {props.value}
+      </text>
+    </box>
+  );
+}
+
+/**
+ * A label and its value side by side, `label: value`, for a section whose labels and values would
+ * sit far apart as a stat. `tone` colors the value like `SidebarStat`.
+ */
+export function SidebarField(props: {
+  readonly label: string;
+  readonly value: string;
+  readonly tone?: RoleName;
+}) {
+  const color = useColor();
+
+  return (
+    <box flexDirection="row" height={1}>
+      <text wrapMode="none" flexShrink={0} fg={color("text.muted")}>
+        {`${props.label}: `}
       </text>
       <text wrapMode="none" flexShrink={0} fg={color(props.tone ?? "text.base")}>
         {props.value}

@@ -8,7 +8,7 @@ import { Option } from "effect";
 import { type Accessor, Show } from "solid-js";
 
 import type { SessionId } from "@liminal/sdk";
-import { formatShare, formatTokens, SidebarStat } from "@liminal/sdk/tui";
+import { formatShare, formatTokens, SidebarField } from "@liminal/sdk/tui";
 
 import type { MemoryStatus } from "../contract.ts";
 
@@ -25,10 +25,10 @@ function Rows(props: { readonly status: MemoryStatus }) {
 
   return (
     <>
-      <SidebarStat label="budget" value={budgetText(props.status)} tone={tone()} />
-      <SidebarStat label="short-term" value={String(props.status.shortTerm)} />
-      <SidebarStat label="long-term" value={String(props.status.longTerm)} />
-      <SidebarStat label="checkpoints" value={String(props.status.checkpoints)} />
+      <SidebarField label="budget" value={budgetText(props.status)} tone={tone()} />
+      <SidebarField label="short-term" value={String(props.status.shortTerm)} />
+      <SidebarField label="long-term" value={String(props.status.longTerm)} />
+      <SidebarField label="checkpoints" value={String(props.status.checkpoints)} />
     </>
   );
 }
