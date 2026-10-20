@@ -13,6 +13,8 @@ Status: built
 ## Requirements
 
 - Separate from the shell tool that runs a command and returns
+- The tools are deferred; `shell`'s guidance says a command that keeps running or needs input needs `process_start`, loaded with `tool_search`
+- Each tool's rules are in its description
 - Stopping a command stops everything it started
 - Commands run on Bun's built-in PTY when they need a terminal
 - A small separate program holds running commands; the server reconnects to it after a restart

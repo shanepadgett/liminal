@@ -63,7 +63,7 @@ yield* (yield* ModelProviders).register({
 | `source` | Where the model list comes from; see the next section |
 | `checkLogin` | Optional; fails with an `auth` `ModelError` while there is no usable login. Listing models checks it first |
 | `stream` | One attempt for one request; interrupting the stream cancels the call |
-| `nativeToolChanges` | `true` when the provider turns `tool-change` parts into native items; `false` sends every declared tool on each request |
+| `nativeToolChanges` | `true` when the provider turns `tool-change` parts into native items; `false` sends a tool not offered at the start once an offer for it is in the messages, with a reminder |
 | `cheap` | A small, fast model and its thinking value; other plugins read it through `Models.cheap` and use it as the default for side calls such as reviews; a `ModelTask` runs on any model |
 | `cacheLifetime` | How long the provider keeps a prompt cache after a request; memory reads it through `Models.cacheLifetime` to write a checkpoint once the cache is lost |
 

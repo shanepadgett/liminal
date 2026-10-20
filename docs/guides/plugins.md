@@ -266,8 +266,8 @@ Example: `packages/plugins/memory/src/server/before-call.ts`.
 | Field | Meaning |
 | --- | --- |
 | `hints` | MCP tool hints; permission checks read them. Unset hints take MCP defaults: not read-only, may be destructive, open world |
-| `offer` | Optional; how the model gets the tool: `start` (default) from the first request, `search` deferred until `tool_search` loads it, `plugin` declared but offered only by its own plugin through `tool-change` parts |
-| `guidance` | Optional rule lines for the system prompt, such as when to prefer this tool; `tools` lists each line once across all tools |
+| `offer` | Optional; how the model gets the tool: `start` (default) from the first request, `search` deferred until `tool_search` loads it, `plugin` declared but sent only once its own plugin's `tool-change` offer part is in the messages, as `ask_question` is after `/qna` |
+| `guidance` | Optional rule lines across tools, such as when to prefer this tool over another; `tools` lists each line once, for tools with `offer: "start"` only. A rule about this tool alone goes in `description` |
 | `runAlongside` | Can run at the same time as other calls in the same step |
 | `safeToRerun` | Can run again after a crash without harm |
 | `run` | Gets the decoded params and `{ sessionId, callId }`; returns `{ result, details?, loads? }` or fails with `ToolFailed` |
@@ -292,7 +292,7 @@ A prompt section is one part of the system prompt, such as tool guidance or proj
    | Field | Meaning |
    | --- | --- |
    | `key` | `<plugin>/<name>` |
-   | `order` | Base 0, tool guidance 50, environment 100 to 110, instructions 200 to 220, skills 300, others 900 |
+   | `order` | Base 0, tool guidance 50, deferred tools 60, environment 100, instructions 200 to 220, vocabulary 230, skills 300, others 900 |
    | `codec` | Saves the value to compare with the next read |
    | `read` | Gets `{ sessionId, model }`; returns `{ type: "present", value }`, `{ type: "unavailable" }` to keep the saved value, or `{ type: "removed" }` |
    | `render.initial` | The text for the first request |
@@ -301,8 +301,9 @@ A prompt section is one part of the system prompt, such as tool guidance or proj
 
 2. Register it in your layer with `(yield* PromptSections).register(section)`.
 
-- For sections made of files, use `FileTexts` as the codec and `fileTextsRender` as `render`.
-- For sections of one line per item, such as rules or paths, use `Lines` as the codec and `linesRender({ initial, added, removed? })` as `render`; each line renders as a `-` bullet and updates send only added and removed lines.
+- For sections made of files, use `FileTexts` as the codec and `fileTextsRender(tag)` as `render`.
+- For sections of one line per item, such as rules or paths, use `Lines` as the codec and `linesRender({ tag, intro?, added, removed? })` as `render`; the first text wraps an optional intro line and the bullets in `<tag>`, each line is a `-` bullet, and updates send only added and removed lines.
+- Wrap every section's first text in one `<name>…</name>` tag; `wrapped(tag, body)` from `@liminal/context/contract` does it.
 
 Example: the section tests in `packages/plugins/context/test/context.test.ts`.
 

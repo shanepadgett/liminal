@@ -19,7 +19,8 @@ Status: built
 - A term is 1 to 80 characters and a definition 1 to 500, each on one line with single spaces; terms match whatever their case and are kept sorted
 - The prompt section lists term names only, in the stable part of the prompt; later changes arrive as added and removed names
 - The `vocabulary` tool has one `op`: `get` reads one term, or every term with its definition; `set` adds a term or replaces its definition, and with `was` renames a term; `remove` deletes a term
-- Guidance in the system prompt: use the terms exactly; add or change one only after discussing the concept and definition with the user and the user clearly agreeing; a term names a product concept, not a code symbol or file name
+- The section header says to use the terms exactly and to load `vocabulary` to read a definition
+- The tool's description says: add or change a term only after discussing the concept and definition with the user and the user clearly agreeing; a term names a product concept, not a code symbol or file name
 - Writes are one at a time and finish by renaming a complete copy over the file
 - A file that cannot be read or does not parse fails the tool, leaves the prompt section as it was and tells the session once
 - In an untrusted folder the file is not read, the section is empty and writes are refused

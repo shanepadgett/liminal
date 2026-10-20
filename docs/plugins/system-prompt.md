@@ -12,4 +12,5 @@ Status: built
 
 - One prompt section, `system-prompt/base`, at order 0
 - The text tells the model to defer to the project's command line tools and use them as a person would: generate, never invent; anything a tool writes (lock files, build output, scaffolding, migrations, snapshots) comes from running the tool, or the model stops and tells the user
+- The text holds communication, discussion, execution and reminders rules; execution keeps a work rule for repositories with no instructions: stay within what the user asked, no unrequested features or refactors, the simplest change that solves the problem
 - The text is built into the plugin; users add to it through `AGENTS.md`; replacing it means replacing the plugin

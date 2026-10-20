@@ -21,7 +21,7 @@ Status: built
 
 ### Asking
 
-- `ask_question` is declared but not offered; `/qna` sends a user message that offers it, with any text after `/qna` as context
+- `ask_question` is declared but not offered; it is absent from the model's tools until `/qna` sends a user message that offers it, with any text after `/qna` as context, and it stays after its withdrawal
 - `ask_question` ends the turn as answered; its form entry holds the title and questions
 - A question is a select with at least two options, a yes or no, or a written answer; ids are unique and a recommendation names one of its options
 - The call streams as "Drafting questions" and stays out of the work rows

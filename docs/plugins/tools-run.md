@@ -12,6 +12,7 @@ Status: built
 ## Requirements
 
 - `run` takes `code` and a required `timeout` in seconds, up to 3600; the script runs in `@opencode/codemode`
+- The description gives the built-in `search` in one line
 - The script's functions are the registered tools by the same names and params, other than `run` and `checks`
 - Each function call is an inner call through `ToolPipeline` with the outer call's id; checks, approvals and output spill judge it
 - The repeat guard sees only the model's calls; the checks fix wrapper skips inner calls

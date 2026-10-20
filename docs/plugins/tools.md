@@ -21,6 +21,8 @@ Status: built
 
 - Registers every tool in `Tools` as one list in `ToolSources`
 - One prompt section, `tools/guidance`, at order 50
-- Lists the `guidance` lines of every registered tool, in tool-name order, each line once
+- `guidance` holds only rules across tools; the section lists the lines of tools with `offer: "start"`, in tool-name order, each line once
+- A deferred or plugin-offered tool carries all its rules in its description
+- The section renders as `<tool_rules>`
 - A tool added or removed later sends only its new or dropped lines, in the instructions reminder
 - No lines, no text

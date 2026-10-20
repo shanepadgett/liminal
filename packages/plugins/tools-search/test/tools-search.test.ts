@@ -151,8 +151,7 @@ effectTest(
       type: "tool-result",
       name: "tool_search",
       loads: ["lookup"],
-      result:
-        "Loaded these tools; call them directly:\n- lookup: Looks up a word.\nNo deferred tool is named: nope",
+      result: "Loaded: lookup. Call them directly.\nNo deferred tool is named: nope",
     });
   }),
   stack,
@@ -227,7 +226,7 @@ effectTest(
 
     const text = systemText((yield* scripted.requests)[0]);
 
-    expect(text).toContain("Deferred tools: load one with `tool_search` before calling it");
+    expect(text).toContain("<deferred_tools>\n- rare_00:");
     expect(text).toContain("- rare_00: Does one rare thing with a description long enough");
     expect(text).toMatch(/\n\d+ more; find them with tool_search/);
 
