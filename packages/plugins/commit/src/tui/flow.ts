@@ -1,6 +1,6 @@
 /**
  * `/commit` in the TUI: runs the server's steps in order, from the checks to the push question, and
- * keeps the step the dialog shows. Each ending is one toast.
+ * keeps the step the prompt shows. Each ending is one toast.
  */
 
 import { Data, Deferred, Effect, Predicate, Schema, Stream } from "effect";
@@ -18,7 +18,7 @@ import {
   type PushTarget,
 } from "../contract.ts";
 
-/** What the dialog shows; `Review` and `Push` wait for the user. */
+/** What the prompt shows; `Review` and `Push` wait for the user. */
 export type CommitStep = Data.TaggedEnum<{
   Checking: { readonly count: number };
   Planning: { readonly model: string };
@@ -153,7 +153,7 @@ const commitAll = Effect.fn("commit.all")(function* (
   return yield* pushed(steps, start, yield* applied(steps, start.root, commits));
 });
 
-/** The flow's state for the dialog, and how the user answers or stops it. */
+/** The flow's state for the prompt, and how the user answers or stops it. */
 export interface CommitFlow {
   readonly step: Accessor<CommitStep | undefined>;
   /** Answers the plan or the push question; does nothing while the flow works. */

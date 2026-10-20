@@ -1,6 +1,6 @@
 /**
- * Commit's TUI part: `/commit [instruction]` runs the commit flow for the session on screen in its
- * dialog, and ends with one toast.
+ * Commit's TUI part: `/commit [instruction]` runs the commit flow for the session on screen in a
+ * custom prompt in the composer's draft area, and ends with one toast.
  */
 
 import { Effect } from "effect";
@@ -20,8 +20,8 @@ import {
 } from "@liminal/sdk/tui";
 
 import { CommitRpcs } from "./contract.ts";
-import { CommitDialog } from "./tui/CommitDialog.tsx";
-import { type FlowDeps, makeFlow } from "./tui/flow.ts";
+import { registerPrompt } from "./tui/CommitPrompt.tsx";
+import { type CommitFlow, type FlowDeps, makeFlow } from "./tui/flow.ts";
 
 /** After questions' line; draws nothing. */
 const LINE_ORDER = 40;
@@ -31,11 +31,10 @@ export default defineTui({
     const host = yield* TuiHost;
     const dialogs = yield* TuiDialogs;
     const toasts = yield* TuiToasts;
-    const [isRunning, setRunning] = createSignal(false);
+    const [running, setRunning] = createSignal<CommitFlow>();
 
     const finish = (text: string, kind: ToastKind) => {
-      setRunning(false);
-      dialogs.close();
+      setRunning();
       toasts.show({ kind, title: "Commit", message: text });
     };
 
@@ -53,12 +52,13 @@ export default defineTui({
     const start = (session: SessionId, instruction: string) => {
       const { flow, run } = makeFlow(deps, session, instruction);
 
-      setRunning(true);
-      dialogs.show(() => <CommitDialog flow={flow} />);
+      setRunning(flow);
       bridge.run(run);
     };
 
     const commands = yield* TuiCommands;
+
+    yield* registerPrompt(host, running, () => dialogs.top() !== undefined);
 
     yield* commands.register([
       {
@@ -70,7 +70,7 @@ export default defineTui({
         palette: true,
         run: (instruction) => {
           const session = onScreen();
-          if (session !== undefined && !isRunning()) start(session, instruction);
+          if (session !== undefined && running() === undefined) start(session, instruction);
         },
       },
     ]);
