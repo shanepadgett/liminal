@@ -146,7 +146,7 @@ register(slot, options, component, declares):
 
 ## Open
 
-- Code hot reload (re-importing changed files) is not built in the kernel or the frontend; graph swaps re-run setup with the same module; [reload.md](../reload.md) plans reload at turn end
+- Code hot reload (re-importing changed files) is not built in the kernel or the frontend; graph swaps re-run setup with the same module; [reload.md](reload.md) plans reload at turn end
 - Session picker and new-session flow: the first session opens the most recent session or creates one
 - Tokens, ornament, `Hints`, `Tail` and the markdown style moved from the gallery into `@liminal/sdk/tui` rather than copied; the gallery imports them, so fallow sees no duplicates
 - Entry kinds of `session-log` and live states of `agent-loop` are drawn by `chat` (`src/tui/entries.tsx`, `src/tui/live.tsx`), not by their own plugins, so neither depends on `chat`

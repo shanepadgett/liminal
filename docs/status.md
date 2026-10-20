@@ -12,7 +12,7 @@ Step 5 is built ([plans/archive/step-5.md](plans/archive/step-5.md), [plans/arch
 
 Step 6 is built ([plans/archive/step-6.md](plans/archive/step-6.md)): the kernel holds plugin graphs by reference count and `Kernel.reload` rebuilds changed plugins and their dependents beside the running graph; requests, steps and `Work` tasks finish on the graph they hold; `agent-loop` turns run as kernel-held work and resume at boot; `apps/cli/src/supervisor.ts` restarts the app on exit code 75.
 
-Reload at turn end is built ([plans/reload.md](plans/reload.md)): each plugin package loads in its own `Bun.ModuleGraph` with the host's shared modules; the kernel's reload machine checks changed code aside and applies it under the `TurnGate` once no turn runs, swapping the graph for plugin changes or exiting 75 for the rest; the `reload` plugin shows a ready reload or a failed check in the chat header and applies it on ctrl+r; `mise run dev` runs the supervisor.
+Reload at turn end is built ([plans/reload.md](plans/archive/reload.md)): each plugin package loads in its own `Bun.ModuleGraph` with the host's shared modules; the kernel's reload machine checks changed code aside and applies it under the `TurnGate` once no turn runs, swapping the graph for plugin changes or exiting 75 for the rest; the `reload` plugin shows a ready reload or a failed check in the chat header and applies it on ctrl+r; `mise run dev` runs the supervisor.
 
 Third-party parity is built ([plans/archive/third-party.md](plans/archive/third-party.md)): plugin packages are publishable with other plugins as peers, enforced by the anatomy check; the kernel serves each plugin package's exports from the folder it loaded that package from, so a plugin never reads its own installed copy; the app loads plugins from the built-in folder, `~/.liminal/plugins/` and `<project>/.liminal/plugins/`; `apps/cli/test/plugins/pins` is a third-party plugin that saves its own entry kind and draws it in the transcript.
 
@@ -24,13 +24,13 @@ Connect and login step 3 is built ([plans/connect.md](plans/connect.md)): `Login
 
 Connect and login step 6 is built ([plans/connect.md](plans/connect.md)): `@liminal/sdk/ai/{messages,responses,chat}` hold the protocol streams; `model-openrouter` and `model-opencode-go` sign in with API keys; neither has had a live request yet.
 
-Instructions steps 1 to 6 are built ([plans/instructions.md](plans/instructions.md)): `context` sends section updates as a user-role instructions reminder; `notices`; `chat` draws only its own entries; `tools` puts each tool's `guidance` lines in the system prompt; `system-prompt` holds the base prompt; `environment` holds the workspace facts and file listing; `agents-files` and `instruction-files` hold the instruction files, each problem told to a session once.
+Instructions steps 1 to 6 are built ([plans/instructions.md](plans/archive/instructions.md)): `context` sends section updates as a user-role instructions reminder; `notices`; `chat` draws only its own entries; `tools` puts each tool's `guidance` lines in the system prompt; `system-prompt` holds the base prompt; `environment` holds the workspace facts and file listing; `agents-files` and `instruction-files` hold the instruction files, each problem told to a session once.
 
-Tool packages are built ([plans/tools.md](plans/tools.md)): `tools` holds the registry, pipeline and guidance; `context` takes tool lists through `ToolSources`; `files` gives `WorkspaceFiles`; `tools-read`, `tools-edit` (`edit` and `write`) and `tools-shell`.
+Tool packages are built ([plans/tools.md](plans/archive/tools.md)): `tools` holds the registry, pipeline and guidance; `context` takes tool lists through `ToolSources`; `files` gives `WorkspaceFiles`; `tools-read`, `tools-edit` (`edit` and `write`) and `tools-shell`.
 
-Approvals are built ([plans/approvals.md](plans/approvals.md)): `models` runs one-off typed calls on any model; `decisions` asks Jev or Luna; `shell-safety` tells read-only commands apart; `approval` owns the tool checks and answers asks through the decision model, the reviewer and the user, with a per-session mode in the composer. No live decision or review call has run yet.
+Approvals are built ([plans/approvals.md](plans/archive/approvals.md)): `models` runs one-off typed calls on any model; `decisions` asks Jev or Luna; `shell-safety` tells read-only commands apart; `approval` owns the tool checks and answers asks through the decision model, the reviewer and the user, with a per-session mode in the composer. No live decision or review call has run yet.
 
-The trust prompt is built ([plans/trust.md](plans/trust.md)): the `trust` plugin takes the composer's place in an untrusted workspace; trusting a folder trusts its subfolders; the composer's key hints follow whoever holds the composer through `ChatSlots.composerHints`.
+The trust prompt is built ([plans/trust.md](plans/archive/trust.md)): the `trust` plugin takes the composer's place in an untrusted workspace; trusting a folder trusts its subfolders; the composer's key hints follow whoever holds the composer through `ChatSlots.composerHints`.
 
 Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model providers and testing, each matching the built code.
 
@@ -46,21 +46,22 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 ## Next
 
 - Daily driver ([plans/daily-driver.md](plans/daily-driver.md)): steps 1 to 13 built (sessions and the command line; tool output spill, the loop guard and `history`; checks; the `run` tool; web search and fetch; the sidebar with usage, cost and compaction; processes; the composer's `@` tags, pictures and stashes; references; `/qna`; `/commit`; skills; the attention sound); next: the user's live checks
-- Session polish ([plans/session-polish.md](plans/session-polish.md)): `ctrl+t` cycles thinking, a Session sidebar section, the shell tools name their folder, `/qna` and `/commit` run on `enter` in the slash menu, the approval dialog shows the reviewer's summary instead of the command; built, awaiting review
-- Custom prompts ([plans/custom-prompts.md](plans/custom-prompts.md)): approval and commit prompts and the `CommandMenu` rename built, awaiting review and live checks; trust keeps its own full-composer prompt
-- Vocabulary tool, after custom prompts: like Tau's `.tau/vocabulary.json` (`{ terms: [{ term, definition }] }`); the file is created in the project's `.liminal/` the first time a term is added; discuss before planning
+- Session polish ([plans/session-polish.md](plans/archive/session-polish.md)): `ctrl+t` cycles thinking, a Session sidebar section, the shell tools name their folder, `/qna` and `/commit` run on `enter` in the slash menu, the approval dialog shows the reviewer's summary instead of the command; built, awaiting review
+- Custom prompts ([plans/custom-prompts.md](plans/custom-prompts.md)): approval and commit prompts and the `CommandMenu` rename built, awaiting review; trust keeps its own full-composer prompt
+- Vocabulary ([plugins/vocabulary.md](plugins/vocabulary.md)): built, awaiting review; the tool is always offered until deferred tools exist
+- Deferred tools ([plans/deferred-tools.md](plans/deferred-tools.md)): think through how rarely used tools stay out of the request; agree the open decisions, then plan the code
 - When the current work is done: clean up all implemented plans in `docs/plans/`
-- Session name ([plans/session-name.md](plans/session-name.md)): `name_session` and the checkpoint's `name` field are built; check live that the model names once, renames only at a checkpoint, and the `/sessions` dialog shows the name
+- Session name ([plans/session-name.md](plans/archive/session-name.md)): `name_session` and the checkpoint's `name` field are built; check live that the model names once, renames only at a checkpoint, and the `/sessions` dialog shows the name
 - Entry versions and graph-scoped registries ([plans/entry-versions.md](plans/entry-versions.md)): step 1 (graph-scoped registries) built, awaiting review; step 2 (entry versions) next
-- Check memory live ([plans/compaction.md](plans/compaction.md)): the checkpoint rule, and the handoff and note lines in the debug view.
-- Check memory files live ([plans/memory.md](plans/memory.md)): the Context rows, the rule's file count, the debug Files line and the files read back after a checkpoint
+- Check memory live ([plans/compaction.md](plans/archive/compaction.md)): the checkpoint rule, and the handoff and note lines in the debug view.
+- Check memory files live ([plans/memory.md](plans/archive/memory.md)): the Context rows, the rule's file count, the debug Files line and the files read back after a checkpoint
 - Read <https://anoma.ly/notes/opencode-reloaded>, only up to its "The End" heading; the rest is unrelated
 - Settle the open items in the plugin files: [agent-loop](plugins/agent-loop.md), [context](plugins/context.md), [memory](plugins/memory.md), [file-snapshots](plugins/file-snapshots.md), [processes](plugins/processes.md), [questions](plugins/questions.md).
 
 ## Open topics
 
 - Code conventions: port Tau's standards and custom lint rules, reviewed per rule
-- Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`); [plans/reload.md](plans/reload.md) serves them into each build's `Bun.ModuleGraph`, and plugin packages' exports come from the folder the host loaded them from; an import of a package no plugin folder holds still resolves the plugin's own copy
+- Host copies of shared modules: plugins loaded from user and project folders must get the host's `effect`, `@liminal/sdk` and OpenTUI, never their own copies. OpenCode does this with a Bun plugin that serves host modules and rejects plugin copies (`packages/plugin/src/runtime.ts`); [plans/reload.md](plans/archive/reload.md) serves them into each build's `Bun.ModuleGraph`, and plugin packages' exports come from the folder the host loaded them from; an import of a package no plugin folder holds still resolves the plugin's own copy
 - ACP adapter as a server plugin
 - Collab-style session sharing through an encrypted relay
 - TUI: built per [plans/archive/tui-session.md](plans/archive/tui-session.md); its `Open` list holds the choices made while building (entry kinds drawn by `chat`, tokens moved into `@liminal/sdk/tui`).

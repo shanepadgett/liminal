@@ -1,6 +1,6 @@
 # Trust prompt
 
-In an untrusted workspace, a prompt takes the composer's place and asks the user to trust the folder. Trust saves the folder in the global `plugins.json`; "not now" brings the composer back for the rest of the run. Requirements are in [03-plugin-model.md](../requirements/03-plugin-model.md).
+In an untrusted workspace, a prompt takes the composer's place and asks the user to trust the folder. Trust saves the folder in the global `plugins.json`; "not now" brings the composer back for the rest of the run. Requirements are in [03-plugin-model.md](../../requirements/03-plugin-model.md).
 
 ## Shape
 

@@ -1,6 +1,6 @@
 # Shared checks
 
-Makes `/commit` stop re-running checks that already passed, and runs the checks that are due in parallel. Lives in `packages/plugins/checks` ([docs/plugins/checks.md](../plugins/checks.md)); `/commit` reads it through `CommitChecks`.
+Makes `/commit` stop re-running checks that already passed, and runs the checks that are due in parallel. Lives in `packages/plugins/checks` ([docs/plugins/checks.md](../../plugins/checks.md)); `/commit` reads it through `CommitChecks`.
 
 State: decisions agreed; built.
 

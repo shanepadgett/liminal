@@ -52,13 +52,9 @@ Call path: `answer` sends `approval/answer`; the ask leaves `approval/pending`; 
 
 ## Tests
 
-- `approval.test.ts` and `input-waits.test.ts` stay; `apps/cli/test/tui.test.tsx` keeps the `/commit` toast test. No test drives an ask through the running app yet.
+- `approval.test.ts` and `input-waits.test.ts` stay; `apps/cli/test/tui.test.tsx` keeps the `/commit` toast test.
 - `apps/gallery/test/prompts.test.tsx` already covers the designs.
 
 ## Guide
 
 `docs/guides/tui.md`: a new "Ask the user in the composer's place" section (custom prompt, the two registrations, `PromptPriority`, when to use a dialog instead).
-
-## Open
-
-- An approval ask and the `/commit` prompt are not yet exercised in the running app by a test.

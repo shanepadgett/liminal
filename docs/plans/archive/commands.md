@@ -1,6 +1,6 @@
 # Commands and dialogs
 
-Lets the user run plugin commands by typing `/name` in the composer or picking them from a command palette, and lets a command open a dialog. Proven with `/reload`, `/new` and `/model`. The command definition is in [05-frontends.md](../requirements/05-frontends.md).
+Lets the user run plugin commands by typing `/name` in the composer or picking them from a command palette, and lets a command open a dialog. Proven with `/reload`, `/new` and `/model`. The command definition is in [05-frontends.md](../../requirements/05-frontends.md).
 
 ## Today
 

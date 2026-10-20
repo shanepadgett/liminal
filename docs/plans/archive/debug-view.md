@@ -1,6 +1,6 @@
 # Debug view
 
-Entries a plugin marks `debug` show in the transcript only while the debug view is on, drawn quieter than shown entries. The `debug` setting in chat's section sets the default; `/debug` flips it for the run. Approval answers are the first `debug` kind. Requirements are in [06-tui-design.md](../requirements/06-tui-design.md) and [approval.md](../plugins/approval.md).
+Entries a plugin marks `debug` show in the transcript only while the debug view is on, drawn quieter than shown entries. The `debug` setting in chat's section sets the default; `/debug` flips it for the run. Approval answers are the first `debug` kind. Requirements are in [06-tui-design.md](../../requirements/06-tui-design.md) and [approval.md](../../plugins/approval.md).
 
 ## Shape
 

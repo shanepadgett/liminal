@@ -2,7 +2,7 @@
 
 Keeps the context within the model's window.
 
-Status: built ([plans/memory.md](../plans/memory.md)); awaiting review
+Status: built ([plans/memory.md](../plans/archive/memory.md)); awaiting review
 
 ## Requires
 
@@ -34,6 +34,8 @@ Status: built ([plans/memory.md](../plans/memory.md)); awaiting review
 
 - The model writes a checkpoint through a `checkpoint` tool, called alone, with a handoff and an optional `name` that renames the session; the model fills it only when the current name no longer describes the work
 - Hidden nudges at 50% and 75% of the budget; the 50% nudge says to keep working, the 75% nudge says to finish the current bounded unit and then checkpoint, and both say to send a final answer rather than checkpoint for it; at the budget every other tool is refused until a checkpoint
+- The folded view leaves out memory's nudges from before the checkpoint
+- A `checkpoint` call fails with "Already checkpointed" when nothing but its own reply, what it saved and nudges follow the newest checkpoint
 - Budget is the lesser of the context window less a 16,000-token reserve and a setting defaulting to 200,000
 - Size is the last reply's input and output tokens, plus 4 characters per token for entries since
 - After a checkpoint the model sees the system prompt, long-term memory, short-term memories, restored files, recent entries, the handoff, the session's name when it has one, then what follows

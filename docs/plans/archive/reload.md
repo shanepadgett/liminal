@@ -1,6 +1,6 @@
 # Reload at turn end
 
-Lets Liminal pick up its own code changes, plugins in process and kernel code by restart, without ever touching a running turn. A save during a turn is checked out of sight; the new code applies once no session has a turn running, on its own or on the reload command. Requirements: [02-architecture.md](../requirements/02-architecture.md) Reload.
+Lets Liminal pick up its own code changes, plugins in process and kernel code by restart, without ever touching a running turn. A save during a turn is checked out of sight; the new code applies once no session has a turn running, on its own or on the reload command. Requirements: [02-architecture.md](../../requirements/02-architecture.md) Reload.
 
 ## Today
 
@@ -229,7 +229,7 @@ apply: gate.close(Plugins → graphs.commit · Restart → restartDue, never ope
 - `Kernel.reload(names)`; tests that swap offer a change to `ReloadOptions.changes`, or call `graphs` directly in kernel tests
 - `load(folders)`'s re-import of every manifest on each change
 - The frontend's import of TUI parts after a swap
-- The `Open` lines in [archive/step-6.md](archive/step-6.md) on fresh code and the dev watcher
+- The `Open` lines in [archive/step-6.md](step-6.md) on fresh code and the dev watcher
 
 ## Open
 

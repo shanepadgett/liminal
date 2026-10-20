@@ -1,6 +1,6 @@
 # Memory
 
-Lets a checkpoint bring back the code the work depends on. Each memory carries a labeled file list. At a checkpoint the relevant files are read once and placed in the model's view, so the model doesn't start by reading them again. The `compaction` plugin becomes `memory`, and its sidebar rows move under Context. Requirements are in [memory.md](../plugins/memory.md).
+Lets a checkpoint bring back the code the work depends on. Each memory carries a labeled file list. At a checkpoint the relevant files are read once and placed in the model's view, so the model doesn't start by reading them again. The `compaction` plugin becomes `memory`, and its sidebar rows move under Context. Requirements are in [memory.md](../../plugins/memory.md).
 
 Round 1, architecture: agreed. Round 2, code-level plan: agreed. All five steps built; awaiting review.
 
