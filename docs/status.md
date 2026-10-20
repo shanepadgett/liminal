@@ -47,6 +47,9 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 
 - Daily driver ([plans/daily-driver.md](plans/daily-driver.md)): steps 1 to 13 built (sessions and the command line; tool output spill, the loop guard and `history`; checks; the `run` tool; web search and fetch; the sidebar with usage, cost and compaction; processes; the composer's `@` tags, pictures and stashes; references; `/qna`; `/commit`; skills; the attention sound); next: the user's live checks
 - Session polish ([plans/session-polish.md](plans/session-polish.md)): `ctrl+t` cycles thinking, a Session sidebar section, the shell tools name their folder, `/qna` and `/commit` run on `enter` in the slash menu, the approval dialog shows the reviewer's summary instead of the command; built, awaiting review
+- Custom prompts: gallery designs (approval prompt, commit prompt, chat screens with each) await approval; then move the approval and commit dialogs (and the commit push question) into custom prompts on the `ChatSlots.composer` chain, as `trust` and `questions` do; rename `SlashMenu` to `CommandMenu`; plan first
+- Vocabulary tool, after custom prompts: like Tau's `.tau/vocabulary.json` (`{ terms: [{ term, definition }] }`); the file is created in the project's `.liminal/` the first time a term is added; discuss before planning
+- When the current work is done: clean up all implemented plans in `docs/plans/`
 - Session name ([plans/session-name.md](plans/session-name.md)): `name_session` and the checkpoint's `name` field are built; check live that the model names once, renames only at a checkpoint, and the `/sessions` dialog shows the name
 - Entry versions and graph-scoped registries ([plans/entry-versions.md](plans/entry-versions.md)): step 1 (graph-scoped registries) built, awaiting review; step 2 (entry versions) next
 - Check memory live ([plans/compaction.md](plans/compaction.md)): the checkpoint rule, and the handoff and note lines in the debug view.

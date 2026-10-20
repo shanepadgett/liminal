@@ -44,6 +44,10 @@ How the TUI and the gallery look and move, and how the transcript shows a sessio
 - The input grows with its text up to a third of the terminal, at least six rows, then scrolls
 - A blank row always stays between the input and the model line
 - The draft survives a reload of any plugin, cursor at its end
+- A custom prompt takes the composer's place when the app needs a decision from the user: trust, approval, commit, questions; the draft survives it
+- A dialog is an overlay for browsing and picking from a list the user opened; a decision the agent or a flow needs is a custom prompt, never a dialog
+- A menu is a list of choices opening above the composer while the user types: the command menu after `/`, the tag menu after `@`
+- Waiting asks queue; a custom prompt shows the oldest and how many wait
 
 ## Keys
 

@@ -61,6 +61,6 @@ Status: built
 - `shift+tab` cycles the mode; `/approvals` chooses it in a dialog
 - A session mode is saved in the session as a hidden `approval/mode` entry and shows over the settings' mode; a reload keeps it
 - A mode set before the session has entries is saved at the session's next ask
-- The session's oldest waiting ask opens the approval dialog: the reviewer's plain-words summary of what the call does, the reason, approve or reject with an optional note; esc rejects
-- The dialog shows the command or path only when the review wrote no summary
+- The session's oldest waiting ask opens the approval prompt, a custom prompt in the composer's place: the reviewer's plain-words summary of what the call does, the reason, approve or reject with an optional note; esc rejects
+- The approval prompt shows the command or path only when the review wrote no summary
 - The reviewer's summary never quotes the command
