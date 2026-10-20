@@ -193,6 +193,8 @@ Rules:
 
 Other `SessionLog` calls: `read(session, range)`, `subscribe(session, { after })`, `lastOfKinds(kinds)` for each session's newest entry of those kinds.
 
+Use `list` for both archive states in the current workspace, ordered by `activityAt` (conversation activity). Use `setArchive(session, "archive" | "restore")` for a manual command; do not change storage flags. Reading leaves archive state alone; a user message restores the session. Metadata does not count as activity. Keep all-session reporting on `recentOfKinds`, which includes archived sessions.
+
 Examples: `packages/plugins/notices/src/contract.ts`, `packages/plugins/session-log/src/contract.ts`.
 
 ## Show live state

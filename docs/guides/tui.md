@@ -192,12 +192,17 @@ dialogs.show((props: DialogProps) => (
 
 | Component | Use for |
 | --- | --- |
-| `SelectDialog` | A filterable list; options are `{ title, value, description?, category?, keys?, tag?, tone? }`; `onHighlight` runs as the highlight moves; `actions` bind other keys to the highlighted option, and one with `keepsOpen` runs without closing the dialog |
+| `SelectDialog` | A filterable list; options are `{ title, value, description?, trailing?, category?, keys?, tag?, tone? }`; `onHighlight` runs as the highlight moves; `actions` bind other keys to the highlighted option, and one with `keepsOpen` runs without closing the dialog |
 | `ConfirmDialog` | A yes or no; `title`, `question`, `action`, `onConfirm` |
 | `PromptField` | A line of input; `question`, `isSecret`, `onSubmit` |
 | `DialogFrame` | Your own dialog body with the standard title, hints and close |
 
-Examples: `packages/plugins/agent-loop/src/tui.tsx`, `packages/plugins/logins/src/tui/`.
+- Set `width` on `SelectDialog` or `DialogFrame` to request columns; the default is 60 and the terminal width caps it.
+- Set an option's `trailing` for right-aligned dimmed metadata and a shrinking title with a trailing `…`. Existing descriptions, tags and keys retain their layout without it.
+- Use `dialogActions: [{ key, label, run }]` for keys that work with an empty list; use `actions` for highlighted-row keys. Async option updates keep the highlighted value or select its next row, then the previous at the end. Use `emptyMessage` for an empty unfiltered list.
+- Format activity labels with `formatRelativeDate(at, now)` from `@liminal/sdk/tui`, passing both UTC timestamps explicitly. It uses English elapsed minutes/hours/days, then a local calendar date after seven days.
+
+Examples: `packages/plugins/chat/src/tui/SessionsDialog.tsx`, `packages/plugins/agent-loop/src/tui.tsx`, `packages/plugins/logins/src/tui/`.
 
 ## Ask the user in the composer's place
 
@@ -270,6 +275,8 @@ Other helpers from `@liminal/sdk/tui`:
 | `shimmerColors(length, phase, dim, bright)`, `SHIMMER_PERIOD_MS` | Each character's color as a band of light sweeps across a live line |
 | `useClock(periodMs)` | Milliseconds into a loop, updated as frames draw, for motion that is a function of time |
 | `formatDuration(seconds)` | `12s`, `2m 5s` |
+| `formatRelativeDate(at, now)` | `just now`, `12 minutes ago`, `Oct 17`, `Oct 17, 2025` |
+| `EllipsizedText` | A shrinking one-line `text` title, cut by display cells at grapheme boundaries; pass `fg` and optional children to style the visible text |
 | `LiveLine` | What the assistant is doing now: a turning arc, a shimmering `label`, and `seconds` once past 3 |
 | `Vapor` | A thought's newest three lines in faint italic, inked up to `head`, older lines paler |
 | `WorkWords`, `workColor(color, part, dim)` | One work row (mark or running arc, bold label that shimmers while running, subject, bracketed detail, failure) and each part's color, `dim` of the way to dimmed |

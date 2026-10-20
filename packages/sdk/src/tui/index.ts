@@ -31,6 +31,8 @@ export { useMarkdownDiagrams } from "./mermaid.ts";
 export { SHIMMER_PERIOD_MS, shimmerColors } from "./shimmer.ts";
 export { useClock } from "./clock.ts";
 export { formatDuration } from "./duration.ts";
+export { formatRelativeDate } from "./relative-date.ts";
+export { EllipsizedText } from "./EllipsizedText.tsx";
 export { LiveLine } from "./LiveLine.tsx";
 export { Vapor } from "./Vapor.tsx";
 
@@ -107,6 +109,7 @@ export { ListRow } from "./ListRow.tsx";
 export { hintsPriority, PROMPT_KEYS_PRIORITY, PromptPriority } from "./prompt.ts";
 
 export {
+  type DialogAction,
   type SelectAction,
   SelectDialog,
   type SelectDialogProps,

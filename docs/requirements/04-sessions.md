@@ -40,6 +40,14 @@ What a chat session is and the rules every session plugin follows. Each part bel
 - A session works in a workspace: one or more folders, one of them primary
 - The TUI uses one folder, the one it started in; the desktop app can build workspaces of several
 
+## Archive
+
+- Sessions have Active and Archived views; archiving is reversible and never deletes history
+- Sessions archive automatically after seven days without conversation activity; viewing does not count as activity
+- Sending a message in an archived session makes it active; opening it does not
+- Manually restoring a session grants a fresh seven-day window without changing its conversation timestamp or order
+- Archive and restore actions do not count as conversation activity
+
 ## References
 
 - Pi `packages/durable` (`docs/spec.md`) and `docs/session-format.md`

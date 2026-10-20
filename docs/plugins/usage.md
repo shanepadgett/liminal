@@ -16,7 +16,7 @@ Status: built
 
 - Counts each reply's finish usage against the model of the turn it ran in
 - `usage/session` streams the session's report, then again after each burst of the session's new entries
-- Today's cost adds up every priced call finished since local midnight, in every folder's sessions, a fork's inherited calls left out
+- Today's cost adds up every priced call finished since local midnight, in every folder's sessions including archived sessions, a fork's inherited calls left out
 - Context shows the latest call's request and reply tokens with their share of the model's window, the window, and the share of the request read from the cache
 - Cost adds up every call at the catalog's per-million prices; models without a price are left out and counted as unpriced
 - Cost shows the session's cost, then `today` once any call today has a price

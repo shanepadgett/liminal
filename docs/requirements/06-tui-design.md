@@ -54,6 +54,15 @@ How the TUI and the gallery look and move, and how the transcript shows a sessio
 - Enter and the keypad's enter act the same everywhere
 - Ctrl+c closes the top dialog; with none open it clears the draft; with an empty draft it quits
 
+## Dialogs and dates
+
+- Dialog width is configurable through the SDK, with the existing default and a terminal-width cap
+- The sessions dialog is wider, shows more of each title before `…`, and right-aligns a dimmed last-conversation date
+- The sessions dialog opens on Active; Tab switches between Active and Archived
+- Ctrl+A archives the highlighted Active session or restores the highlighted Archived session without closing the dialog
+- Enter opens a session from either view without restoring it
+- The SDK provides a shared relative-date formatter: `just now`, whole minutes, hours and days, then a local month/day after seven days and a year for previous years
+
 ## Transcript
 
 Brightness follows importance, and what is newest is brightest.

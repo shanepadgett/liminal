@@ -76,6 +76,7 @@ const CLOSE_KEYS = [
  */
 export function DialogFrame(props: {
   readonly title: string;
+  readonly width?: number | undefined;
   readonly isWorking?: boolean;
   readonly hints: readonly Hint[];
   readonly close: () => void;
@@ -108,7 +109,7 @@ export function DialogFrame(props: {
       backgroundColor={SCRIM}
     >
       <box
-        width={DIALOG_COLUMNS}
+        width={props.width ?? DIALOG_COLUMNS}
         maxWidth="100%"
         maxHeight="100%"
         flexDirection="column"

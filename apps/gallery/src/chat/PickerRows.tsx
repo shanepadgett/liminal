@@ -2,7 +2,7 @@
 
 import { Show } from "solid-js";
 
-import type { RoleColor } from "@liminal/sdk/tui";
+import { EllipsizedText, type RoleColor } from "@liminal/sdk/tui";
 
 import { ListRow } from "./ListRow.tsx";
 
@@ -11,23 +11,39 @@ export function NamedRow(props: {
   readonly color: RoleColor;
   readonly name: string;
   readonly detail: string;
+  readonly detailPosition?: "after-name" | "right";
   /** A word at the right edge, such as `default`. */
   readonly tag?: string | undefined;
   readonly isSelected: boolean;
 }) {
+  const isTrailing = () => props.detailPosition === "right";
+
   return (
     <ListRow color={props.color} isSelected={props.isSelected}>
       <box flexDirection="row" gap={2} flexGrow={1}>
-        <text
-          flexShrink={0}
-          wrapMode="none"
-          fg={props.color(props.isSelected ? "text.base" : "text.muted")}
+        <Show
+          when={isTrailing()}
+          fallback={
+            <text
+              flexShrink={0}
+              wrapMode="none"
+              fg={props.color(props.isSelected ? "text.base" : "text.muted")}
+            >
+              {props.name}
+            </text>
+          }
         >
-          {props.name}
-        </text>
+          <EllipsizedText
+            text={props.name}
+            fg={props.color(props.isSelected ? "text.base" : "text.muted")}
+          />
+        </Show>
         <text
-          flexGrow={1}
+          flexGrow={isTrailing() ? 0 : 1}
+          flexShrink={isTrailing() ? 0 : 1}
+          maxWidth={isTrailing() ? "50%" : "100%"}
           wrapMode="none"
+          truncate
           fg={props.color(props.isSelected ? "text.muted" : "text.faint")}
         >
           {props.detail}

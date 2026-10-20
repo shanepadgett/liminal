@@ -22,7 +22,7 @@ import {
   ModelRef,
   type Seq,
   SessionId,
-  type SessionNotFound,
+  SessionNotFound,
   StoreError,
   type Synced,
   Usage,
@@ -39,13 +39,26 @@ export const SessionSummary = Schema.Struct({
   title: Schema.String,
   createdAt: Schema.DateTimeUtc,
   updatedAt: Schema.DateTimeUtc,
+  activityAt: Schema.DateTimeUtc,
+  archived: Schema.Boolean,
   /** Its highest seq; 0 while it has no entries. */
   lastSeq: Schema.Int,
 });
 
 export type SessionSummary = typeof SessionSummary.Type;
 
-/** A session was created; clients reread the list of sessions. */
+export const ArchiveAction = Schema.Literals(["archive", "restore"]);
+export type ArchiveAction = typeof ArchiveAction.Type;
+
+/** A manual command; expiry is derived from conversation activity rather than saved. */
+export const ArchiveStateEntry = defineEntry({
+  kind: "session-log/archive-state",
+  data: Schema.Struct({ action: ArchiveAction }),
+  model: false,
+  user: "hidden",
+});
+
+/** Session list metadata changed; clients reread the list. */
 export const SessionsChanged = defineEvent({
   name: "session-log/sessions-changed",
   data: Schema.Struct({}),
@@ -60,7 +73,11 @@ export class SessionLog extends Context.Service<
   SessionLog,
   {
     readonly create: (session: SessionId) => Effect.Effect<void, StoreError>;
-    /** The sessions started in this workspace, most recently updated first. */
+    readonly setArchive: (
+      session: SessionId,
+      action: ArchiveAction,
+    ) => Effect.Effect<void, SessionNotFound | StoreError>;
+    /** Both archive states in this workspace, most recent conversation first. */
     readonly list: Effect.Effect<ReadonlyArray<SessionSummary>, StoreError>;
     /** Validates and saves the drafts as consecutive entries, all or none. */
     readonly append: (
@@ -120,6 +137,10 @@ export class EntryKinds extends KeyedRegistry.Service<EntryKinds, EntryDefinitio
 export class SessionLogRpcs extends RpcGroup.make(
   Rpc.make("session-log/create", { payload: { session: SessionId }, error: StoreError }),
   Rpc.make("session-log/list", { success: Schema.Array(SessionSummary), error: StoreError }),
+  Rpc.make("session-log/set-archive", {
+    payload: { session: SessionId, action: ArchiveAction },
+    error: Schema.Union([SessionNotFound, StoreError]),
+  }),
 ) {}
 
 /** How a reply ended; saved on the reply's last part. */
@@ -275,6 +296,7 @@ export const coreEntries: ReadonlyArray<EntryDefinition> = [
   TurnStartedEntry,
   TurnEndedEntry,
   NamedEntry,
+  ArchiveStateEntry,
 ];
 
 /**

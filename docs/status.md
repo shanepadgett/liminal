@@ -45,6 +45,8 @@ Guides are written ([guides/](guides/_index.md)): plugins, TUI parts, model prov
 
 ## Next
 
+- Session archive ([plans/session-archive.md](plans/session-archive.md)): gallery and runtime built with seven-day expiry, archive/restore, Active/Archived views and SDK date labels; next: live behavior review
+
 - Priority: saved-session compatibility ([plans/entry-versions.md](plans/entry-versions.md)); today's shapes establish version 1; the read-only history audit is built and reports no mismatches or unknown kinds in the local session database; step 2 covers stored versions, server-side migrations, safe approval recovery and read-only viewing with resume blocked for newer unsupported versions; then step 3: schema-change protection and the saved-data code rule
 - Daily driver ([plans/daily-driver.md](plans/daily-driver.md)): steps 1 to 13 built (sessions and the command line; tool output spill, the loop guard and `history`; checks; the `run` tool; web search and fetch; the sidebar with usage, cost and compaction; processes; the composer's `@` tags, pictures and stashes; references; `/qna`; `/commit`; skills; the attention sound); next: the user's live checks
 - Session polish ([plans/session-polish.md](plans/archive/session-polish.md)): `ctrl+t` cycles thinking, a Session sidebar section, the shell tools name their folder, `/qna` and `/commit` run on `enter` in the slash menu, the approval dialog shows the reviewer's summary instead of the command; built, awaiting review

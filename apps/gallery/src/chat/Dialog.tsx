@@ -20,6 +20,7 @@ const Z_INDEX = 10;
 export function Dialog(props: {
   readonly color: RoleColor;
   readonly title: string;
+  readonly width?: number;
   readonly isWorking?: boolean;
   readonly hints: readonly Hint[];
   readonly children: JSX.Element;
@@ -37,7 +38,7 @@ export function Dialog(props: {
       backgroundColor={SCRIM}
     >
       <box
-        width={DIALOG_COLUMNS}
+        width={props.width ?? DIALOG_COLUMNS}
         maxWidth="100%"
         maxHeight="100%"
         flexDirection="column"

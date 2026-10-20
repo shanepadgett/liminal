@@ -208,10 +208,20 @@ const promptScreenState = (name: string, prompt: NonNullable<ChatOptions["prompt
     prompt,
   });
 
-const sessionsState = (name: string, selected: string): EntryState => ({
+const sessionsState = (
+  name: string,
+  view: "active" | "archived",
+  selected: string,
+): EntryState => ({
   name,
   fill: "screen",
-  view: withRoles((color) => <SessionPicker color={color} selected={selected} />),
+  view: withRoles((color) => <SessionPicker color={color} view={view} selected={selected} />),
+});
+
+const emptySessionsState = (view: "active" | "archived"): EntryState => ({
+  name: view === "active" ? "No active sessions" : "No archived sessions",
+  fill: "screen",
+  view: withRoles((color) => <SessionPicker color={color} view={view} selected="" sessions={[]} />),
 });
 
 const stashesState = (name: string, selected: number): EntryState => ({
@@ -381,8 +391,12 @@ export const GROUPS: Groups = [
             id: "sessions",
             title: "Sessions",
             states: [
-              sessionsState("Current session", "s4"),
-              sessionsState("An older session", "s2"),
+              sessionsState("Active", "active", "s4"),
+              sessionsState("Active, long title", "active", "s1"),
+              sessionsState("Archived", "archived", "a3"),
+              sessionsState("Archived, long title", "archived", "a1"),
+              emptySessionsState("active"),
+              emptySessionsState("archived"),
             ],
           },
           {

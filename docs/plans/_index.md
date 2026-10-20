@@ -4,6 +4,7 @@ One file per piece of work being planned or built. A plan moves to `archive/` on
 
 | Plan | State |
 | --- | --- |
+| [session-archive.md](session-archive.md) | Gallery and runtime built; live behavior review remains |
 | [milestones.md](milestones.md) | Build order; steps 1 to 6 built |
 | [core-contracts.md](core-contracts.md) | All eight rounds agreed |
 | [transcript.md](transcript.md) | Built in the gallery, awaiting review |

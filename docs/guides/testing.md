@@ -149,7 +149,8 @@ Rules:
 - Type with `setup.mockInput`: `typeText`, `pressEnter`, `pressEscape`, `pressKey("r", { ctrl: true })`. The keypad's enter is `pressKey("\x1b[57414u")`.
 - Click with `setup.mockMouse.click(x, y)`.
 - Clipboard writes fail in the test renderer, so copy buttons cannot be tested. Check them by hand.
-- Test pure helpers, such as a fold or a text cut, with plain `test` and no renderer.
+- Test pure helpers, such as a fold or a text cut, with plain `test` and no renderer. Pass a fixed `now` to `formatRelativeDate`; cover exact thresholds, future times and local year changes.
+- Test dialogs at narrow and wide terminal widths with long and Unicode titles. Render twice when content depends on measured layout. Change option signals after an action to exercise async removal, stable selection and empty-list dialog keys.
 
 Examples: `apps/cli/test/select-dialog.test.tsx`, `packages/plugins/reload/test/status.test.ts`, `apps/gallery/test/connect.test.tsx` (`testRender` from `@opentui/solid`).
 

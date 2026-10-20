@@ -8,7 +8,7 @@ Status: built
 
 - `SessionLog` service: create, list, append, read, subscribe, live slot, newest entry of given kinds per session, recent sessions' own entries of given kinds
 - `SessionFeed` service: saved entries and the live slot in wire form, for the kernel
-- Commands: `session-log/create`, `session-log/list`
+- Commands: `session-log/create`, `session-log/list`, `session-log/set-archive`
 - Event: `session-log/sessions-changed`
 
 ## Requires
@@ -17,7 +17,7 @@ Status: built
 
 ## Adds
 
-- Entry kinds: user message, assistant text, reasoning, tool call, tool result, named
+- Entry kinds: user message, assistant text, reasoning, tool call, tool result, named, archive-state
 
 ## Requirements
 
@@ -45,6 +45,9 @@ Status: built
 - A subscriber that falls behind reads the missed entries from the store; no entry is skipped
 - Live state is a separate feed that delivers only the newest value, and becomes an entry when saved
 - Creating a session stamps the `Directories` workspace; listing shows only that workspace's sessions
+- Listing returns both archive states, ordered by conversation activity, with `activityAt` separate from the last saved entry
+- Manual archive and restore save hidden `session-log/archive-state` entries; seven-day expiry and message-driven restore are derived without deleting history
+- Restoring starts a fresh seven-day window without changing conversation activity or its list order
 - The first user message titles its session
 - A named entry (`session-log/named`, a name of 1 to 80 characters on one line, shown only in the debug view) names the session; the newest replaces the last, and the session list shows the name, else the title
 - A user message keeps its pictures' paths and media types; what its tags attach follows its text for the model

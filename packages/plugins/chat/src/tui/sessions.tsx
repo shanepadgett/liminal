@@ -1,4 +1,4 @@
-/** `/sessions`: picks one of this folder's sessions, newest first, and switches the chat to it. */
+/** `/sessions`: browse conversations in this workspace without changing archive state on open. */
 
 import { DateTime, Effect, SubscriptionRef } from "effect";
 
@@ -6,47 +6,43 @@ import type { SessionId } from "@liminal/sdk";
 import {
   type DialogProps,
   makeBridge,
-  SelectDialog,
-  type SelectOption,
   TuiCommands,
   TuiDialogs,
   TuiHost,
+  TuiToasts,
 } from "@liminal/sdk/tui";
-import { SessionLogRpcs, type SessionSummary } from "@liminal/session-log/contract";
+import { SessionLogRpcs } from "@liminal/session-log/contract";
 
-/** A session as a row: its name, then when it was last written. */
-const optionOf = (session: SessionSummary): SelectOption<SessionId> => ({
-  title: session.title === "" ? "Untitled session" : session.title,
-  value: session.id,
-  description: DateTime.formatLocal(session.updatedAt, { dateStyle: "medium", timeStyle: "short" }),
-});
+import { SessionsDialog } from "./SessionsDialog.tsx";
 
-/** Registers `/sessions`, which sets `current` to the session picked. */
 export const sessionsCommand = Effect.fn("sessionsCommand")(function* (
   current: SubscriptionRef.SubscriptionRef<SessionId>,
 ) {
   const host = yield* TuiHost;
   const bridge = yield* makeBridge;
   const dialogs = yield* TuiDialogs;
+  const toasts = yield* TuiToasts;
   const log = yield* host.client(SessionLogRpcs);
 
-  const show = (sessions: ReadonlyArray<SessionSummary>, active: SessionId) => {
+  const open = Effect.gen(function* () {
+    const sessions = yield* log["session-log/list"]();
+    const active = yield* SubscriptionRef.get(current);
+    const now = yield* DateTime.now;
+
     dialogs.show((props: DialogProps) => (
-      <SelectDialog
-        title="Sessions"
-        options={sessions.map(optionOf)}
-        current={active}
-        close={props.close}
+      <SessionsDialog
+        {...props}
+        initial={sessions}
+        active={active}
+        now={now}
+        log={log}
+        bridge={bridge}
+        toasts={toasts}
         onSelect={(session) => {
           bridge.run(SubscriptionRef.set(current, session));
         }}
       />
     ));
-  };
-
-  const open = Effect.gen(function* () {
-    const sessions = yield* log["session-log/list"]();
-    show(sessions, yield* SubscriptionRef.get(current));
   });
 
   yield* (yield* TuiCommands).register([

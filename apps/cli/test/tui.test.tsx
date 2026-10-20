@@ -669,6 +669,44 @@ effectTest(
 );
 
 effectTest(
+  "/sessions archives and restores without closing; viewing stays archived until a message is sent",
+  Effect.gen(function* () {
+    const { kernel, setup } = yield* bootScripted(
+      replyText("first reply"),
+      replyText("second reply"),
+    );
+
+    const sessions = kernel.use((services) => Context.getUnsafe(services, SessionLog).list);
+    yield* send(setup, "archive this conversation");
+    yield* frameWith(setup, "first reply");
+    yield* slash(setup, "/sessions", "Switch to a session");
+    yield* frameWith(setup, "Sessions · Active");
+    setup.mockInput.pressKey("a", { ctrl: true });
+    setup.mockInput.pressKey("a", { ctrl: true });
+    yield* frameWith(setup, "No active sessions");
+    expect((yield* sessions)[0]?.archived).toBe(true);
+    setup.mockInput.pressTab();
+    yield* frameWith(setup, "Sessions · Archived");
+    setup.mockInput.pressKey("a", { ctrl: true });
+    yield* frameWith(setup, "No archived sessions");
+    expect((yield* sessions)[0]?.archived).toBe(false);
+    setup.mockInput.pressTab();
+    yield* frameWith(setup, "Sessions · Active");
+    setup.mockInput.pressKey("a", { ctrl: true });
+    yield* frameWith(setup, "No active sessions");
+    setup.mockInput.pressTab();
+    yield* frameWith(setup, "Sessions · Archived");
+    setup.mockInput.pressEnter();
+    yield* frameWhere(setup, (frame) => !frame.includes("Sessions · Archived"));
+    expect((yield* sessions)[0]?.archived).toBe(true);
+    yield* send(setup, "continue the conversation");
+    yield* frameWith(setup, "second reply");
+    expect((yield* sessions)[0]?.archived).toBe(false);
+  }),
+  trustedServices,
+);
+
+effectTest(
   "a turn stopped by a model error shows an error notice with a copy button",
   Effect.gen(function* () {
     const error = new ModelError({ reason: "auth", message: "token expired" });

@@ -6,10 +6,11 @@
 
 import { type ScrollBoxRenderable, TextAttributes } from "@opentui/core";
 import { useBindings } from "@opentui/keymap/solid";
-import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, For, on, Show } from "solid-js";
 
 import { enterKeys, moveKeys } from "./commands.ts";
 import { DialogFrame, type DialogProps } from "./dialogs.tsx";
+import { EllipsizedText } from "./EllipsizedText.tsx";
 import type { Hint } from "./Hints.tsx";
 import { matchIndices, matchRuns } from "./match.ts";
 import { useColor } from "./theme.ts";
@@ -19,6 +20,8 @@ export interface SelectOption<V> {
   readonly title: string;
   readonly value: V;
   readonly description?: string;
+  /** Dimmed metadata aligned to the right; the title yields space to it. */
+  readonly trailing?: string;
   /** The section it sits in; options without one share an untitled first section. */
   readonly category?: string;
   /** The keys that run it, shown at the right. */
@@ -45,7 +48,17 @@ export interface SelectAction<V> {
   readonly keepsOpen?: boolean;
 }
 
+/** A dialog-level key that also works when no option is highlighted. */
+export interface DialogAction {
+  readonly key: string;
+  readonly label: string;
+  readonly run: () => void;
+}
+
 export interface SelectDialogProps<V> extends DialogProps {
+  readonly width?: number;
+  readonly emptyMessage?: string;
+  readonly dialogActions?: ReadonlyArray<DialogAction>;
   readonly title: string;
   readonly options: ReadonlyArray<SelectOption<V>>;
   /** Highlighted when the dialog opens; the first option when none. */
@@ -125,6 +138,35 @@ const spanOf = <V,>(groups: ReadonlyArray<Group<V>>, index: number) => {
   return { top: 0, bottom: 0 };
 };
 
+function OptionTitle<V>(props: {
+  readonly color: RoleColor;
+  readonly row: Row<V>;
+  readonly fg: string;
+}) {
+  const titleRuns = (text: string) => (
+    <For each={matchRuns(text, props.row.matches)}>
+      {(run) => (
+        <span style={{ fg: run.matched ? props.color("text.accent") : props.fg }}>{run.text}</span>
+      )}
+    </For>
+  );
+
+  return (
+    <Show
+      when={props.row.option.trailing !== undefined}
+      fallback={
+        <text flexShrink={0} wrapMode="none">
+          {titleRuns(props.row.option.title)}
+        </text>
+      }
+    >
+      <EllipsizedText text={props.row.option.title} fg={props.fg}>
+        {titleRuns}
+      </EllipsizedText>
+    </Show>
+  );
+}
+
 function OptionRow<V>(props: {
   readonly color: RoleColor;
   readonly row: Row<V>;
@@ -147,16 +189,19 @@ function OptionRow<V>(props: {
       gap={2}
       backgroundColor={props.isSelected ? props.color("surface.selected") : "transparent"}
     >
-      <text flexShrink={0} wrapMode="none">
-        <For each={matchRuns(props.row.option.title, props.row.matches)}>
-          {(run) => (
-            <span style={{ fg: run.matched ? props.color("text.accent") : fg() }}>{run.text}</span>
-          )}
-        </For>
-      </text>
-      <text flexGrow={1} flexShrink={1} wrapMode="none" fg={faint()}>
-        {props.row.option.description ?? ""}
-      </text>
+      <OptionTitle color={props.color} row={props.row} fg={fg()} />
+      <Show
+        when={props.row.option.trailing !== undefined}
+        fallback={
+          <text flexGrow={1} flexShrink={1} wrapMode="none" fg={faint()}>
+            {props.row.option.description ?? ""}
+          </text>
+        }
+      >
+        <text flexShrink={0} maxWidth="50%" wrapMode="none" truncate fg={faint()}>
+          {props.row.option.trailing}
+        </text>
+      </Show>
       <Show when={props.row.option.tag}>
         {(tag) => (
           <text flexShrink={0} fg={faint()}>
@@ -273,54 +318,78 @@ const actionName = (index: number) => `select.action-${index}`;
 const selectKeys = <V,>(
   moves: ReturnType<typeof moveKeys>,
   actions: ReadonlyArray<SelectAction<V>>,
-  onChoose: () => void,
-  onAction: (action: SelectAction<V>) => void,
+  dialogActions: ReadonlyArray<DialogAction>,
+  handlers: { readonly choose: () => void; readonly act: (action: SelectAction<V>) => void },
 ) => ({
   commands: [
     ...moves.commands,
-    { name: "select.choose", run: onChoose },
+    { name: "select.choose", run: handlers.choose },
+    ...dialogActions.map((action, index) => ({ name: `select.dialog-${index}`, run: action.run })),
     ...actions.map((action, index) => ({
       name: actionName(index),
       run: () => {
-        onAction(action);
+        handlers.act(action);
       },
     })),
   ],
   bindings: [
     ...moves.bindings,
     ...enterKeys("select.choose"),
+    ...dialogActions.map((action, index) => ({ key: action.key, cmd: `select.dialog-${index}` })),
     ...actions.map((action, index) => ({ key: action.key, cmd: actionName(index) })),
   ],
 });
 
-export function SelectDialog<V>(props: SelectDialogProps<V>) {
+const createSelection = <V,>(props: SelectDialogProps<V>) => {
   const [query, setQuery] = createSignal("");
   const groups = createMemo(() => groupsOf(props.options, query()));
   const rows = () => groups().flatMap((group) => group.rows);
   const [selected, setSelected] = createSignal(startOf(props.options, props.current));
 
+  let previousQuery = query();
+
+  createEffect(
+    on(groups, (next, previous) => {
+      if (previous === undefined) return;
+      const nextRows = next.flatMap((group) => group.rows);
+      const oldValue = previous.flatMap((group) => group.rows)[selected()]?.option.value;
+      const kept = nextRows.findIndex((row) => row.option.value === oldValue);
+      const index = kept >= 0 ? kept : Math.min(selected(), Math.max(0, nextRows.length - 1));
+      setSelected(query() === previousQuery ? index : 0);
+      previousQuery = query();
+    }),
+  );
+
+  return { query, setQuery, groups, rows, selected, setSelected };
+};
+
+const chooseHighlighted = <V,>(
+  row: Row<V> | undefined,
+  close: () => void,
+  run: (value: V) => void,
+) => {
+  if (row === undefined) return;
+  close();
+  run(row.option.value);
+};
+
+const runSelectAction = <V,>(
+  action: SelectAction<V>,
+  row: Row<V> | undefined,
+  close: () => void,
+) => {
+  if (row === undefined) return;
+  if (action.keepsOpen !== true) close();
+  action.run(row.option.value);
+};
+
+export function SelectDialog<V>(props: SelectDialogProps<V>) {
+  const { query, setQuery, groups, rows, selected, setSelected } = createSelection(props);
+  const color = useColor();
+
   /** Closes the dialog and runs `run` on the highlighted option, if any. */
   const onHighlighted = (run: (value: V) => void) => {
-    const row = rows()[selected()];
-    if (row === undefined) return;
-    props.close();
-    run(row.option.value);
-  };
-
-  /** Runs an action on the highlighted option; a `keepsOpen` one leaves the dialog open. */
-  const onAction = (action: SelectAction<V>) => {
-    if (action.keepsOpen !== true) {
-      onHighlighted(action.run);
-
-      return;
-    }
-
-    const row = rows()[selected()];
-    if (row === undefined) return;
-    action.run(row.option.value);
-
-    const moved = rows().findIndex((each) => each.option.value === row.option.value);
-    if (moved >= 0) setSelected(moved);
+    chooseHighlighted(rows()[selected()], props.close, run);
   };
 
   const actions = () => props.actions ?? [];
@@ -334,27 +403,42 @@ export function SelectDialog<V>(props: SelectDialogProps<V>) {
     selectKeys(
       moveKeys("select", { count: () => rows().length, select: setSelected }),
       actions(),
-      () => {
-        onHighlighted(props.onSelect);
+      props.dialogActions ?? [],
+      {
+        choose: () => {
+          onHighlighted(props.onSelect);
+        },
+        act: (action) => {
+          runSelectAction(action, rows()[selected()], props.close);
+        },
       },
-      onAction,
     ),
   );
 
   const hints = (): readonly Hint[] => [
     ...HINTS,
+    ...(props.dialogActions ?? []).map((action): Hint => [action.key, action.label]),
     ...actions().map((action): Hint => [action.key, action.label]),
   ];
 
   return (
-    <DialogFrame title={props.title} hints={hints()} close={props.close}>
+    <DialogFrame title={props.title} width={props.width} hints={hints()} close={props.close}>
       <FilterLine
         onInput={(value) => {
           setQuery(value);
           setSelected(0);
         }}
       />
-      <OptionList groups={groups()} selected={selected()} />
+      <Show
+        when={rows().length > 0}
+        fallback={
+          <text fg={color("text.faint")}>
+            {query() === "" ? (props.emptyMessage ?? "No options") : "No matching options"}
+          </text>
+        }
+      >
+        <OptionList groups={groups()} selected={selected()} />
+      </Show>
     </DialogFrame>
   );
 }

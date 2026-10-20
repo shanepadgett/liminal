@@ -23,6 +23,7 @@ import {
   userMessage,
 } from "@liminal/session-log/contract";
 import sessionStore from "@liminal/session-store";
+import { SessionStore } from "@liminal/session-store/contract";
 import settingsPlugin from "@liminal/settings";
 
 import usage from "../plugin.ts";
@@ -156,6 +157,37 @@ effectTest(
       { model: big, usage: spentOf(200, 0, 20) },
       { model: small, usage: spentOf(50, 0, 5) },
     ]);
+  }),
+  stack,
+);
+
+effectTest(
+  "today's priced calls include archived sessions and exclude a fork's inherited calls",
+  Effect.gen(function* () {
+    const log = yield* SessionLog;
+    const since = yield* DateTime.now;
+    yield* entriesOf(turn(big), replied(spentOf(1000, 0, 100)));
+    yield* (yield* SessionStore).forkSession(SessionId.make("fork"), s1, 2);
+    const expected = [{ model: big, usage: spentOf(1000, 0, 100) }];
+
+    for (const action of ["archive", "restore", "archive"] as const) {
+      yield* log.setArchive(s1, action);
+      const calls = callsSince(yield* log.recentOfKinds(callKinds, since), since);
+      expect(calls).toEqual(expected);
+      const counted = Option.getOrThrow(countCalls(yield* log.read(s1, {})));
+
+      expect(
+        usageOf(
+          counted,
+          calls.map((call) => ({
+            calls: call,
+            info: Option.some(
+              priced("big", { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 }),
+            ),
+          })),
+        ),
+      ).toMatchObject({ cost: 0.0045 });
+    }
   }),
   stack,
 );
