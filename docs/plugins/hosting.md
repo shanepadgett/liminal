@@ -8,13 +8,16 @@ Work for [status.md](../status.md) milestones 6 and 8. Hosts and distribution ar
 
 - Host level, CLI and desktop only.
 - Scans `~/.liminal/` and `<project>/.liminal/` for bundles, reads `plugins.json`, loads a project's bundles and settings only in a trusted workspace.
-- Rebuilds the composition between turns when a bundle or `plugins.json` changes; watches with `fs.watch`.
 - Imports bundles after installing OpenTUI's runtime plugin support with a module map for `effect`, `@liminal/*` contracts and OpenTUI.
-- Previous code: `trust`, `reload`, `archive/packages/kernel/src/reload`.
+- Reload restarts the app and reopens the current session from its log. Nothing is rebuilt in-process and no supervisor process runs.
+  - TUI: a `/reload` command.
+  - Desktop: a banner when a bundle or `plugins.json` changes.
+  - In a Liminal checkout, a change to Liminal's own source offers the same reload.
+- Previous code: `trust`.
 
 ```text
 scan folders → read package.json "liminal".plugins → filter by plugins.json and trust
-→ import → compose → on change: wait for turn end → compose new → swap → close old scope
+→ import → compose
 ```
 
 ### Binary

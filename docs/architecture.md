@@ -333,7 +333,7 @@ These are internals of the provider, not contracts.
 | Features | `memory` | Checkpoints, notes, context window | Wrap | `memory` |
 | Features | `session-name`, `usage`, `cache-hints` | Naming, cost, cache marks | Add, Attach, Wrap | same names |
 | Features | `checks`, `commit` | Project checks, `/commit` | Wrap, Add | same names |
-| Hosting | `loader` | Plugin folders, `plugins.json`, trust, hot reload | host level | `trust`, `reload`, `archive/packages/kernel` |
+| Hosting | `loader` | Plugin folders, `plugins.json`, trust, reload | host level | `trust`, `archive/packages/kernel` |
 | Hosting | `actors` | Who sent each input | Attach, Wrap | none |
 | Hosting | `http` | HTTP routes for send, page and live | none | `archive/packages/kernel/src/server` |
 | TUI | `chat` | Chat screen, composer, the session slots | Add (slots) | `chat`, `inbox` (composer) |
@@ -384,7 +384,8 @@ All packages publish to npm as ESM JavaScript with type declarations, so Node, B
 
 - `apps/cli` compiles with `bun build --compile` into one `liminal` executable per platform.
 - The binary contains core, the built-in plugins, the TUI and `loader`.
-- `loader` reads `~/.liminal/` and `<project>/.liminal/` for installed bundles and `plugins.json`, imports them at runtime, and rebuilds the composition between turns when they change.
+- `loader` reads `~/.liminal/` and `<project>/.liminal/` for installed bundles and `plugins.json`, and imports them at startup.
+- Reload restarts the app and reopens the current session from its log: `/reload` in the TUI, a banner in the desktop app when plugins change. Nothing is rebuilt in-process.
 
 ### Desktop app
 
@@ -394,7 +395,7 @@ All packages publish to npm as ESM JavaScript with type declarations, so Node, B
 ### Embedding
 
 - An app installs `@liminal/agent` and the plugins it wants, composes them in code, and serves them with `http` or calls them directly.
-- Embedded compositions import plugins statically. They need no loader, no plugin folders and no hot reload.
+- Embedded compositions import plugins statically. They need no loader, no plugin folders and no reload.
 
 ## External plugins
 

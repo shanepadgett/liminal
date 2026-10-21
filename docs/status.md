@@ -14,14 +14,7 @@ Milestone 1. The stack is settled in [architecture.md](architecture.md#stack).
 
 ## Next
 
-1. Plan `packages/core` in `docs/plans/core.md`, then build it.
-   - Research first: `archive/packages/kernel/src/graph`, `archive/packages/sdk`, and the plugin systems in the `mastra` and `pi` reference repositories.
-   - Round 1 decisions:
-     - `definePlugin` shape: explicit `provides`/`requires` tags or read from the layer's types; how `tui` and `web` entries attach.
-     - How plugins reach a `Registry` or `Pipeline`: a core helper such as `Registry.make<T>(name)`, or plain `Context.Tag` in a contract.
-     - Ordering: `Registry` items by `order`; the ordering rule for `Pipeline` middleware.
-     - Scope: `Registry.add` and `Pipeline.wrap` return a registration tied to the plugin's scope, so removing a plugin removes its items (milestone 6 reload needs this).
-     - `Attribute`: where values live on sessions, inputs and events, and how the log stores them.
+1. Plan `packages/core` in [plans/core.md](plans/core.md), then build it. Round 1 is in the plan; round 2 is its Open section.
 2. Build the rest of milestone 1.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
@@ -77,7 +70,7 @@ Work: [plugins/features.md](plugins/features.md)
 
 Work: [plugins/hosting.md](plugins/hosting.md)
 
-- [ ] `loader`: plugin folders, `plugins.json`, trust, hot reload
+- [ ] `loader`: plugin folders, `plugins.json`, trust, reload
 - [ ] `bun build --compile` binary that loads bundles
 - [ ] Plugin author guides in `guides/`
 
