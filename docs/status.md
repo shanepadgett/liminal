@@ -28,8 +28,8 @@ Planned dependencies are pinned in `tools/planned/package.json` so their docs ar
 Work: [plugins/base.md](plugins/base.md)
 
 - [x] `packages/core`: `definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`
-- [ ] Base plugins: `settings`, `model`, `session`, `tools`, `context`, `loop`
-- [ ] `session-sqlite`, `accounts`
+- [ ] Base plugins: `directories`, `settings`, `model`, `session`, `tools`, `context`, `loop`
+- [ ] `sqlite`, `accounts`
 - [ ] `model-catalog`, `model-anthropic`, `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go`
 - [ ] `packages/client` over function calls
 - [ ] `apps/cli`: `liminal connect` saves credentials; print mode streams a reply with them
@@ -75,7 +75,7 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 
 - [ ] `loader`: plugin folders, `plugins.json`, trust, reload
 - [ ] `bun build --compile` binary that loads bundles
-- [ ] Plugin author guides in `guides/`
+- [ ] Plugin author guides in `guides/`, including composing a host: handing in runtime services such as `BunServices.layer`
 
 ### 7. Desktop
 
@@ -86,7 +86,7 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 
 Work: [plugins/hosting.md](plugins/hosting.md)
 
-- [ ] `actors`, `http`, `session-postgres`
+- [ ] `actors`, `http`, `postgres`
 - [ ] `client` over HTTP, `@liminal/agent`, npm publishing
 - [ ] The work order agent runs in the Fresh app
 

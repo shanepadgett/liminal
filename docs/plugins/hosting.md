@@ -41,9 +41,10 @@ scan folders → read package.json "liminal".plugins → filter by plugins.json 
 - A plain `Request → Response` handler a Fresh route can mount; the host supplies the actor.
 - Previous code: `archive/packages/kernel/src/server`.
 
-### `session-postgres`
+### `postgres`
 
-- Provides `SessionLog` on servers: event and session tables, lease row runner, `LISTEN/NOTIFY` for live deltas, lease release on `SIGTERM`.
+- Provides `SqlClient` over `@effect/sql-pg`, in place of `sqlite`.
+- Sessions across server processes: see [architecture.md](../architecture.md#multiple-processes).
 
 ### Packages
 

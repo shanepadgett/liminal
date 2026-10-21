@@ -122,14 +122,11 @@ Use Attach when you need to track who, what or why:
 Every base piece is a contract with one active implementation. Replace means providing a different implementation of the same contract.
 
 ```ts
-// TUI: sessions in a local SQLite file
-compose([agent(), sessionSqlite, modelAnthropic, tui]);
+// CLI: state in a local SQLite file
+compose([...agent(), sqlite, modelAnthropic]);
 
-// Fargate: sessions in Postgres, shared across tasks
-compose([agent(), sessionPostgres, modelAnthropic, http, workOrders]);
-
-// Tests: a scripted model that replays canned replies
-compose([agent(), sessionMemory, modelScripted(["Hi", toolCall("read", { path: "a.ts" })])]);
+// Fargate: state in Postgres, shared across tasks
+compose([...agent(), postgres, modelAnthropic, http, workOrders]);
 ```
 
 The loop calls `SessionLog.append(...)` and `Model.stream(...)` without knowing which implementation is behind them.

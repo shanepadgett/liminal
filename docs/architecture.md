@@ -21,9 +21,9 @@ Each layer imports only from the layers above it.
 ```text
 core                      definePlugin, compose, Registry, Pipeline, Attribute     knows nothing about agents
   ↑
-base plugins              settings · model · session · tools · context · loop      "an agent"
+base plugins              directories · settings · model · session · tools · context · loop      "an agent"
   ↑
-providers & features      model-anthropic, session-sqlite, tools-files, approvals, memory, …
+providers & features      model-anthropic, sqlite, tools-files, approvals, memory, …
   ↑
 frontend kit              client (framework-free) · tui (OpenTUI + slots)
   ↑
@@ -43,7 +43,7 @@ Versions are pinned in `package.json`; [reference/copies/index.md](reference/cop
 | Model calls, structured output | `effect/ai` with `@effect/ai-anthropic`, `-openai`, `-openai-compat`, `-openrouter` |
 | Command line | `effect/cli` |
 | Processes | `effect/process` |
-| Storage | `effect/sql` `SqlClient`; the host supplies the driver layer: `@effect/sql-sqlite-bun`, later `@effect/sql-pg` |
+| Storage | `effect/sql` `SqlClient`, provided by `sqlite` over `@effect/sql-sqlite-bun`, later by `postgres` over `@effect/sql-pg` |
 | TUI | OpenTUI (`@opentui/core`, `@opentui/solid`, `@opentui/keymap`) on Solid 1.x |
 | Desktop | Electrobun: Bun main process and a system webview |
 | Tooling | TypeScript 7, `@effect/tsgo`, oxlint, oxfmt, fallow, mise |
@@ -131,16 +131,17 @@ Every extension uses one of four mechanisms; [extension-basics.md](extension-bas
 | Add | Contribute to a `Registry` | A tool, a prompt section, a model provider, a slash command, a UI component |
 | Wrap | Middleware on a `Pipeline` | Approval before a tool call, retry around a model call |
 | Attach | Set an `Attribute` on a session, input or event | The actor who sent an input, the work order a session belongs to |
-| Replace | Provide the same contract | `session-postgres` in place of `session-sqlite` on a server |
+| Replace | Provide the same contract | `postgres` in place of `sqlite` on a server |
 
 ## Base plugins: the agent
 
 Each base plugin owns a contract that other plugins import.
 
 ```ts
-// settings: one section per plugin
-SettingsSections: Registry<{ name: string; schema: Schema<T> }>   // the Schema holds the defaults
-Settings.section<T>(name, schema): Effect<T, SettingsInvalid>      // read on use
+// settings: each plugin owns one key in settings.json
+Setting.make<T>(key, schema): Setting<T>                           // the schema holds the defaults
+DeclaredSettings: Registry<Setting>                                // the settings screen lists these
+Settings.get<T>(setting): Effect<T, SettingsInvalid>               // read on each call
 Settings.write(scope: "global" | "project", path, value): Effect<void>
 
 // model: the LLM vocabulary, providers and one-off calls
@@ -201,8 +202,8 @@ take queued inputs → render Sections + History → ModelCall → ToolCall for 
 ### Settings
 
 - Every plugin reads its configuration only through `Settings`; plugins take no options of their own.
-- `settings` keeps settings in `settings.json` in the global and project folders the host's `Directories` names, `~/.liminal/` and `<project>/.liminal/` in the CLI; project values win.
-- A settings screen lists every section from `SettingsSections`.
+- `settings` keeps settings in `settings.json` in the global and project folders `directories` names, `~/.liminal/` and `<workspace>/.liminal/`; project values win.
+- A settings screen lists every setting in `DeclaredSettings`.
 - Credentials are not settings; `accounts` keeps them.
 
 ### One-off model calls and structured output
@@ -282,9 +283,9 @@ An embedding app is the host, so it owns its UI. It uses `client` and the sessio
 
 | Host | Composition | Frontend and connection |
 | --- | --- | --- |
-| CLI binary | Base + `session-sqlite` + `accounts` + providers + coding tools + `loader` | TUI in the same process; plain function calls |
+| CLI binary | Base + `sqlite` + `accounts` + providers + coding tools + `loader` | TUI in the same process; plain function calls |
 | Desktop app | Same as CLI, in the app's main process | Webview using `client` over the desktop shell's IPC |
-| Web server | Base + `session-postgres` + app plugins + `actors` + `http` | Browser UI using `client` over HTTP |
+| Web server | Base + `postgres` + app plugins + `actors` + `http` | Browser UI using `client` over HTTP |
 | Embedded | Whatever the embedding code imports | The embedding app's own UI |
 
 - `apps/cli` is a full command line: the TUI by default, and a print mode like Pi's and OpenCode's that runs a prompt without the TUI and writes the result to stdout.
@@ -296,22 +297,22 @@ An embedding app is the host, so it owns its UI. It uses `client` and the sessio
 
 ### Multiple processes
 
-`session-postgres` runs a session across many server processes:
+A server runs sessions across many processes sharing one Postgres database through `postgres`. It needs:
 
-- Store: event and session tables.
-- Runner: a lease row with a TTL. The process that wins the lease runs the turn in a background fiber; `send` returns once the input is appended.
-- Live deltas: Postgres `LISTEN/NOTIFY`, so viewers on any process see streaming output.
-- Shutdown: on `SIGTERM` the runner stops at a step boundary and releases the lease. A lost lease expires and another process resumes the turn.
+- Runner: one process runs a session's turn at a time; `send` returns once the input is appended.
+- Live deltas: viewers on any process see streaming output.
+- Shutdown: on `SIGTERM` the runner stops at a step boundary; another process resumes the turn.
 
-These are internals of the provider, not contracts.
+How `session` does these over `SqlClient` is open.
 
 ## Plugins
 
 | Group | Plugin | Does | Mechanism | Previous code in `archive/packages/plugins/` |
 | --- | --- | --- | --- | --- |
-| Base | `settings` | `Settings` over the global and project settings files, `SettingsSections` | base | `settings` |
+| Base | `directories` | `Directories`: the global, workspace and project folders | base | `archive/packages/sdk/src/core/directories.ts` |
+| Base | `settings` | `Settings` over the global and project settings files, `Setting`, `DeclaredSettings` | base | `settings` |
 | Base | `model` | Message types, providers, `ModelCall`, `Models.generate` | base | `models`, `decisions` |
-| Base | `session` | `SessionLog` contract, inbox, `Send`, `Commands`, event kinds | base | `session-log`, `inbox`, `notices` |
+| Base | `session` | The session log over `SqlClient`, inbox, `Send`, `Commands`, event kinds | base | `session-log`, `inbox`, `notices` |
 | Base | `tools` | Tool registry, `ToolCall`, tool guidance section | base | `tools` |
 | Base | `context` | `Sections`, `History` | base | `context` |
 | Base | `loop` | The turn, `TurnEnd`, cancel | base | `agent-loop`, `cancel` |
@@ -319,7 +320,7 @@ These are internals of the provider, not contracts.
 | Providers | `model-scripted` | Scripted replies for tests | Add | `model-scripted` |
 | Providers | `model-catalog` | Names, limits, prices from models.dev | base service | `model-catalog` |
 | Providers | `accounts` | Credentials, login methods, `liminal connect` and `/connect` | Add | `logins`, `credential-store` |
-| Storage | `session-sqlite`, `session-postgres` | The whole `SessionLog`: events, live updates, runner | Replace | `session-store` |
+| Storage | `sqlite`, `postgres` | The database: Effect's `SqlClient`; plugins that keep state own their tables | Replace | `session-store`, `credential-store` |
 | Tools | `tools-files` | `read`, `edit`, `write`, `@` file tags | Add | `files`, `tools-read`, `tools-edit` |
 | Tools | `tools-shell` | `shell`, command runner, shell safety, background processes | Add | `tools-shell`, `command-runner`, `shell-safety`, `processes` |
 | Tools | `tools-web` | `websearch`, `webfetch` | Add | `tools-web` |
@@ -345,7 +346,7 @@ These are internals of the provider, not contracts.
 A Deno/Fresh app on AWS Fargate embeds Liminal on its server. People reach the agent two ways: by @mentioning it in a work order chat thread, and through a multiplayer agent panel. Each thread the agent is pulled into is its own session.
 
 ```ts
-compose([...agent(), sessionPostgres, modelAnthropic,
+compose([...agent(), postgres, modelAnthropic,
          actors, approvals, workOrders, workOrderThreads, http])
 ```
 
@@ -372,7 +373,7 @@ All packages publish to npm as ESM JavaScript with type declarations, so Node, B
 | Package | Holds |
 | --- | --- |
 | `@liminal/core` | Core |
-| `@liminal/settings`, `@liminal/model`, `@liminal/session`, `@liminal/tools`, `@liminal/context`, `@liminal/loop` | Base plugins with their contracts |
+| `@liminal/directories`, `@liminal/settings`, `@liminal/model`, `@liminal/session`, `@liminal/tools`, `@liminal/context`, `@liminal/loop` | Base plugins with their contracts |
 | `@liminal/agent` | `agent()`: the base plugin list, for embedding in one import |
 | `@liminal/<plugin>` | Providers and features |
 | `@liminal/client` | Client and session view |
@@ -421,3 +422,4 @@ A bundle is the distribution unit for external plugins: an npm, git or local pac
 ## Open
 
 - How `loader` installs bundles from npm and git.
+- How `session` runs one turn at a time and streams live deltas across server processes over `SqlClient`.
