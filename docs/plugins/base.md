@@ -34,6 +34,7 @@ Models.generate({ model: "small", prompt, schema })
 ## `session`
 
 - `SessionLog`: `open`, `append`, `read`, `page`, `live`, `publish`, stored through `SqlClient`; live updates within one process.
+- RPC group: `live(id, after?)`, saved events after a seq, then new ones.
 - `defineEvent` for stored events and deltas.
 - Event kinds: `session/message` holds `Part[]`; `session/notice` holds a level and text and has no converter, so the model never sees it.
 - `page` returns 100 events.
@@ -86,8 +87,9 @@ Models.generate({ model: "small", prompt, schema })
 ## `accounts`
 
 - Credentials in its own table through `SqlClient`: API keys; OAuth tokens, refreshed inside a write transaction so one process refreshes; and commands whose output is the key, run once per process. With nothing saved, a provider reads its environment variable.
-- A login method is an API key or a flow the provider runs. A flow reaches the user through actions each frontend supplies: open a URL, show a code, ask, ask for a secret, show waiting, tell, and sign in through the browser.
-- `LoginMethods` registry that providers add to; `liminal connect` and the TUI's `/connect` run them.
+- A login method is an API key or a flow the provider runs. A flow is written against fixed actions: open a URL, show a code, ask, ask for a secret, show waiting, tell, and sign in through the browser.
+- `LoginMethods` registry that providers add to.
+- RPC group: the login methods, a sign-in stream that turns each action into a step for the screen, and `answer` for what the user types. `liminal connect` and the TUI's `/connect` show the steps.
 - Previous code: `logins`, `credential-store`.
 
 ```ts
@@ -111,12 +113,15 @@ LoginMethods.add({ provider: "anthropic", kind: "oauth", run: anthropicOAuth })
 
 ## `packages/client`
 
-- `send`, `page`, `live`, `call` over plain function calls; no dependencies, types from contracts through `import type`; trusts the server's JSON.
+- `host.client(Group)`: a client for a plugin's RPC group over Effect's in-memory client; IPC and HTTP come with the desktop app and `http`.
+- Imports `effect`, core and plugin contracts.
 - Previous code: `archive/packages/frontend`.
 
 ## `apps/cli`
 
 - Composes the base plugins, `sqlite`, `accounts`, `model-catalog` and every provider, plus a few-line plugin of its own that hands in `BunServices.layer`: files, paths, processes and the terminal.
 - Command line with `effect/cli`.
-- `liminal connect`: interactive prompts pick a provider, then a login method, then take an API key or run the OAuth flow; credentials go to `accounts`.
-- Print mode over `client`: `-p` streams the reply to stdout, `--json` writes session events as JSON lines, `--approve` lets questions and approvals pass.
+- `liminal connect` over `client`: interactive prompts pick a provider and a login method, then show the sign-in steps from `accounts` and send back what the user types.
+- Print mode over `client`, using `send` and `live`: `-p` writes the final reply when the turn ends, with errors and notices on stderr; `--json` writes saved events and deltas as JSON lines from the input to the turn's end; piped stdin joins the prompt. Print mode reads the events it needs itself and always starts a new session.
+- Exit codes: 0 answered, 1 failed or cancelled, 2 bad flags, 130 Ctrl-C after cancelling the turn.
+- Bare `liminal` prints help.

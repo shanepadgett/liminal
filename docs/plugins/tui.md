@@ -20,7 +20,8 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 - Composer: OpenTUI `Textarea`, `@` file tags as extmarks, stashes, slash commands from `Commands`.
 - `@` completion: `fuzzysort` over `git ls-files`.
 - `EventRenderer` is a registry keyed by event kind.
-- Saved sessions: `SessionLog` gains the session list with titles; the chat screen opens a saved session.
+- Saved sessions: `SessionLog` gains the session list with titles; the chat screen opens a saved session; print mode gains `--session <id>`.
+- RPC groups gain `session`'s `page` and `loop`'s `pullBack` and `queue`.
 - Previous code: `chat`, `inbox` (composer).
 
 ```ts
@@ -37,6 +38,11 @@ export const EventRenderer: Registry<{ kind: string; component: Component<{ even
 
 - Theme tokens the UI kit reads; theme switching.
 - Previous code: `theme`.
+
+## Model picker
+
+- The `model` TUI entry: picks the session's model, filtered with `fuzzysort`.
+- Print mode gains `--model provider/model`.
 
 ## `/connect` in the TUI
 

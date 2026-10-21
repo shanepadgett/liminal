@@ -25,12 +25,12 @@ base plugins              directories · settings · model · session · tools �
   ↑
 providers & features      model-anthropic, sqlite, tools-files, approvals, memory, …
   ↑
-frontend kit              client (framework-free) · tui (OpenTUI + slots)
+frontend kit              client (framework-free, Effect RPC) · tui (OpenTUI + slots)
   ↑
 hosts                     apps/cli · apps/desktop · an embedding app
 ```
 
-- Core and base plugins use only `effect` and standard JavaScript, so they run on Bun, Node and Deno. `client` has no dependencies and imports only types. Fallow boundaries enforce the layers; oxlint bans runtime imports and globals in core, base plugins and `client`. Bun APIs and drivers live in other plugins and hosts.
+- Core and base plugins use only `effect` and standard JavaScript, so they run on Bun, Node and Deno. `client` uses only `effect` and plugin contracts, so it also runs in a browser. Fallow boundaries enforce the layers; oxlint bans runtime imports and globals in core, base plugins and `client`. Bun APIs and drivers live in other plugins and hosts.
 
 ## Stack
 
@@ -67,7 +67,7 @@ Versions are pinned in `package.json`; [reference/copies/index.md](reference/cop
 ```text
 packages/
   core/                     plugin, compose, Registry, Pipeline, Attribute
-  client/                   send/page/live over function calls, IPC or HTTP; session view store
+  client/                   host.client(Group) over in-memory RPC, IPC or HTTP; session view store
   tui/                      OpenTUI renderer, slot tree, UI kit
   plugins/<name>/           one package per plugin
 apps/
@@ -84,7 +84,7 @@ docs/
 plugins/approvals/
   package.json        exports ".", "./contract", "./tui", "./web"; "liminal": { "plugins": ["./src/plugin.ts"] }
   src/
-    contract.ts       tags, event kinds, schemas, slot handles others import
+    contract.ts       tags, event kinds, schemas, slot handles, the RPC group its screens call
     plugin.ts         definePlugin(...): the server side
     tui.tsx           TUI slot registrations (optional)
     web.tsx           desktop webview slot registrations (optional)
@@ -102,6 +102,7 @@ export default definePlugin({
 
 - A server never imports frontend entries. A frontend loads its entry of every plugin in the composition.
 - A plugin imports other plugins only through their `./contract` export.
+- A plugin's `tui` and `web` entries reach its server side only through the RPC group in its contract.
 - An entry that grows becomes a folder with an `index` file.
 
 ## Core
@@ -169,7 +170,7 @@ interface SessionLog {
   append(id, events): Effect<SessionEvent[]>  // seq is assigned inside the write
   read(id, after?): Effect<SessionEvent[]>    // the whole log, for History
   page(id, before?): Effect<SessionEvent[]>   // latest events, or the page before a seq
-  live(id): Stream<SessionEvent | Delta>      // latest page, deltas since the last append, then new events and deltas
+  live(id, after?): Stream<SessionEvent | Delta> // saved events after a seq, deltas since the last append, then new events and deltas
   publish(id, delta): Effect<void>
 }
 
@@ -261,7 +262,7 @@ Multiplayer needs no extra mechanism beyond the session rules:
 Three layers, each usable without the next:
 
 ```text
-client         send / page / live / call over function calls, IPC or HTTP      any JS, no framework
+client         host.client(Group): plugins' RPC groups in memory, over IPC or HTTP   any JS with Effect, no framework
 session view   folds events into state: messages, streaming text,
                pending questions, who's acting, turn status                   any JS, no framework
 frontend       components                                                      TUI, desktop, an embedding app
@@ -275,6 +276,10 @@ view.send(input)
 view.answer(questionId, value)
 view.loadOlder()
 ```
+
+- Each plugin's contract declares the functions its screens may call as an Effect RPC group: names, input and output schemas, one-shot calls or streams. `session` declares `page` and `live`; `loop` declares `send`, `pullBack` and `queue`; `accounts` declares the login methods, the sign-in stream and `answer`.
+- The code behind a group's functions is an ordinary service in the plugin's layer. RPC calls go from screen to plugin only, so a plugin reaches a screen by streaming, as sign-in does.
+- A frontend gets a client for a group with `host.client(Group)`. The host picks the connection: Effect's in-memory client in the same process, the desktop shell's IPC, or HTTP through `http`. A plugin's screen code is the same in every host.
 
 ### Slots: TUI and desktop
 
@@ -307,17 +312,17 @@ An embedding app is the host, so it owns its UI. It uses `client` and the sessio
 
 | Host | Composition | Frontend and connection |
 | --- | --- | --- |
-| CLI binary | Base + `sqlite` + `accounts` + providers + coding tools + `loader` | TUI in the same process; plain function calls |
+| CLI binary | Base + `sqlite` + `accounts` + providers + coding tools + `loader` | TUI in the same process; in-memory RPC |
 | Desktop app | Same as CLI, in the app's main process | Webview using `client` over the desktop shell's IPC |
 | Web server | Base + `postgres` + app plugins + `actors` + `http` | Browser UI using `client` over HTTP |
 | Embedded | Whatever the embedding code imports | The embedding app's own UI |
 
 - `apps/cli` is a full command line: the TUI by default, and a print mode like Pi's and OpenCode's that runs a prompt without the TUI and writes the result to stdout.
 - `liminal connect` saves a provider's credentials: pick a provider, then a login method, then enter an API key or finish an OAuth flow. The TUI's `/connect` and the desktop app use the same login methods and credentials file.
-- Print mode is a frontend over `client`. `-p` writes the final reply; `--json` writes session events as JSON lines. Questions and approvals are denied unless `--approve` is passed. There is no RPC mode; `http` covers remote control.
+- Print mode is a frontend over `client`. `-p` writes the final reply when the turn ends; `--json` writes saved events and deltas as JSON lines. Questions and approvals are denied unless `--approve` is passed. There is no RPC mode over stdin; `http` covers remote control.
 - No host runs a server unless it composes `http`. A CLI that composes `http` lets a second client attach to a running session.
-- `http` routes: `POST /sessions/:id/inputs`, `GET /sessions/:id/live` (Server-Sent Events: latest page, then new events), `GET /sessions/:id/events?before=<id>` (older page).
-- `client` is plain JavaScript with no Effect dependency, small enough for a browser island.
+- `http` serves every plugin's RPC group over HTTP; `actors` supplies the caller through RPC middleware.
+- `client` depends on Effect, so a browser island that uses it loads Effect.
 
 ### Multiple processes
 
@@ -364,7 +369,7 @@ How `session` does these over `SqlClient` is open.
 | Features | `checks`, `commit` | Project checks, `/commit` | Wrap, Add | same names |
 | Hosting | `loader` | Plugin folders, `plugins.json`, trust, reload | host level | `trust`, `archive/packages/kernel` |
 | Hosting | `actors` | Who sent each input | Attach, Wrap | none |
-| Hosting | `http` | HTTP routes for send, page and live | none | `archive/packages/kernel/src/server` |
+| Hosting | `http` | Serves plugins' RPC groups over HTTP | none | `archive/packages/kernel/src/server` |
 | TUI | `chat` | Chat screen, composer, the session slots | Add (slots) | `chat`, `inbox` (composer) |
 | TUI | `palette`, `theme`, `attention` | Command palette, theme, sounds | Add (slots) | same names |
 
@@ -452,4 +457,5 @@ A bundle is the distribution unit for external plugins: an npm, git or local pac
 ## Open
 
 - How `loader` installs bundles from npm and git.
+- Who may call which plugin RPC on a shared server: a policy middleware in `actors`, so a person connected over `http` cannot reach every declared function, such as logins.
 - How `loop` runs one turn per session and keeps its queue, and how `session` streams live deltas, across processes over `SqlClient`: two apps sharing `liminal.db`, or a server.

@@ -37,7 +37,7 @@ scan folders → read package.json "liminal".plugins → filter by plugins.json 
 
 ### `http`
 
-- Routes: `POST /sessions/:id/inputs`, `GET /sessions/:id/live` (SSE), `GET /sessions/:id/events?before=<id>`.
+- Serves every plugin's RPC group over HTTP.
 - A plain `Request → Response` handler a Fresh route can mount; the host supplies the actor.
 - Previous code: `archive/packages/kernel/src/server`.
 

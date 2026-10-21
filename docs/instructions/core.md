@@ -9,4 +9,4 @@
 ## Checked
 
 - Core, base plugins and `client` use only `effect` and standard JavaScript: no Bun, Node, OpenTUI, Solid or driver imports, no `Bun`, `process`, `window` or `document`. (`no-restricted-imports`, `no-restricted-globals`)
-- Each layer imports only the layers below it; `client` imports packages with `import type` only. (fallow boundaries)
+- Each layer imports only the layers below it; `client` imports core and plugin contracts only. (fallow boundaries, `liminal/plugin-imports`)

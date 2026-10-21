@@ -65,12 +65,21 @@ testRule("plugin-imports", pluginImports, {
     { filename: tui, code: 'import { Panel } from "@shanepadgett/liminal-tui";' },
     { filename: web, code: 'import { connect } from "@shanepadgett/liminal-client";' },
     {
+      filename: "packages/client/src/host.ts",
+      code: 'import { SessionRpc } from "@shanepadgett/liminal-session/contract";',
+    },
+    {
       filename: "apps/cli/src/main.ts",
       code: 'import session from "@shanepadgett/liminal-session";',
     },
   ],
   invalid: [
     { filename: plugin, code: 'import session from "@shanepadgett/liminal-session";', errors: 1 },
+    {
+      filename: "packages/client/src/host.ts",
+      code: 'import session from "@shanepadgett/liminal-session";',
+      errors: 1,
+    },
     { filename: tui, code: 'import { View } from "@shanepadgett/liminal-chat/tui";', errors: 1 },
     {
       filename: contract,

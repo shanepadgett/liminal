@@ -47,6 +47,7 @@ Sections.add({ name: "agents-files", order: 20, render: () => readAgentsFiles(cw
 - Wraps `ToolCall`: a policy, then the small model's verdict, then the user.
 - Asking the user is a `question` event; the answer is an input.
 - `tui` entry renders the question as a card through `EventRenderer`.
+- Print mode's `--approve` lets questions and approvals pass; without it they are denied.
 - Previous code: `approval`.
 
 ```ts

@@ -39,7 +39,7 @@
       { "from": "core", "allow": [] },
       { "from": "base", "allow": ["core"] },
       { "from": "plugins", "allow": ["core", "base", "tui"] },
-      { "from": "client", "allow": [], "allowTypeOnly": ["core", "base", "plugins"] },
+      { "from": "client", "allow": ["core", "base", "plugins"] },
       { "from": "tui", "allow": ["core", "client"], "allowTypeOnly": ["base", "plugins"] },
       { "from": "apps", "allow": ["core", "base", "plugins", "client", "tui"] },
       { "from": "tools", "allow": [] },

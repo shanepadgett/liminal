@@ -81,7 +81,7 @@ export const contractNoSideEffects = defineRule({
   },
 });
 
-/** A plugin reaches another plugin only through its `/contract` export. */
+/** A plugin or `packages/client` reaches a plugin only through its `/contract` export. */
 export const pluginImports = defineRule({
   meta: {
     type: "problem",
@@ -91,7 +91,8 @@ export const pluginImports = defineRule({
     },
   },
   create(context) {
-    if (locate(repoPath(context.cwd, context.filename)) === undefined) return {};
+    const path = repoPath(context.cwd, context.filename);
+    if (locate(path) === undefined && !path.startsWith("packages/client/")) return {};
 
     return visitSources(({ specifier, node }) => {
       const target = liminalPackage(specifier);

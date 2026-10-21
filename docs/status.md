@@ -16,7 +16,7 @@ Milestone 1. The stack is settled in [architecture.md](architecture.md#stack).
 
 ## Next
 
-1. Plan milestone 1's plugins from [plugins/base.md](plugins/base.md) in [plans/base.md](plans/base.md), in rounds, before building any of them. Rounds 1–6 are in its Decisions: storage, folders, settings, credentials, retries, choosing models, types, model details, `session`, the turn with its plugins, and accounts with the providers. Round 7 is in its [Open](plans/base.md#open) section: `client` and `apps/cli`.
+1. Milestone 1's plugins from [plugins/base.md](plugins/base.md) are planned in [plans/base.md](plans/base.md). Rounds 1–7 are in its Decisions: storage, folders, settings, credentials, retries, choosing models, types, model details, `session`, the turn with its plugins, accounts with the providers, and `client` with `apps/cli`.
 2. Build the rest of milestone 1. `packages/core` is built: `import { definePlugin, compose, Registry, Pipeline, Attribute } from "@shanepadgett/liminal-core"`. Each new base plugin joins the fallow base zone and the oxlint overrides.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
@@ -31,8 +31,8 @@ Work: [plugins/base.md](plugins/base.md)
 - [ ] Base plugins: `directories`, `settings`, `model`, `session`, `tools`, `tool-definitions`, `system-prompt`, `persona`, `history`, `loop`
 - [ ] `sqlite`, `accounts`
 - [ ] `model-catalog`, `model-anthropic`, `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go`
-- [ ] `packages/client` over function calls
-- [ ] `apps/cli`: `liminal connect` saves credentials; print mode streams a reply with them
+- [ ] `packages/client`: `host.client(Group)` over in-memory RPC
+- [ ] `apps/cli`: `liminal connect` saves credentials; print mode writes a reply with them
 
 ### 2. TUI
 
@@ -41,6 +41,7 @@ Work: [plugins/tui.md](plugins/tui.md)
 - [ ] Session view in `packages/client`
 - [ ] `packages/tui`: renderer, slot tree, UI kit
 - [ ] `chat`, `palette`, `theme`
+- [ ] Model picker and print mode `--model`
 - [ ] `/connect` in the TUI
 - [ ] Daily chat in the TUI with saved sessions
 
@@ -101,6 +102,5 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 
 ## Open
 
-- Milestone 1's remaining contracts: round 7 of [plans/base.md](plans/base.md#open).
 - Electrobun 2.x ships its SDK through the Hutch devkit, not npm; the npm package is only a bootstrap. Whether the desktop app stays on Electrobun.
 - File search tools (`grep`, `find`): whether they belong in `tools-files`, and whether they use a system `rg` or ship one.

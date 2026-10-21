@@ -9,7 +9,7 @@ The base plugins, storage, accounts, providers, `client` and `apps/cli` from [pl
 | `packages/plugins/{directories,settings,model,session,tools,tool-definitions,system-prompt,persona,history,loop}` | Adds the base plugins: contracts and the behavior every host shares |
 | `packages/plugins/{sqlite,accounts}` | Adds the database and credentials |
 | `packages/plugins/model-*`, `model-catalog` | Adds the five archived providers and the models.dev catalog |
-| `packages/client` | Adds `send`, `page`, `live`, `call` over function calls |
+| `packages/client` | Adds `host.client(Group)` over Effect RPC, in memory |
 | `apps/cli` | Adds `liminal connect` and print mode |
 
 ## Storage today
@@ -66,13 +66,21 @@ Prior art: Pi keeps `auth.json` at `0600` and takes a lock file around each OAut
 - Milestone 1 has the contract shapes: `deferred` on a tool, the tools a result loads, and the add and remove records. Provider wire work and the search tool come with `tools-search` in milestone 5.
 - `history` builds the messages each model call sends from the log. Each plugin adds a converter for its own event kinds, which turns those events into messages; a kind with no converter, such as a notice, never reaches the model.
 - Credential kinds: an API key; OAuth tokens (access, refresh, expiry and extras such as an account id); and a command whose output is the key, such as `op read op://Private/Anthropic/credential` or `security find-generic-password -ws anthropic`, run once per process and kept in memory, as in Pi. With nothing saved, a provider reads its environment variable: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `OPENCODE_API_KEY`.
-- Login methods: an API key method, which `accounts` asks for and saves, or a flow, which the provider runs and `accounts` saves the result of. A flow offers one or more ways to finish, such as browser, device code or copying a code. It reaches the user through a fixed set of actions each frontend supplies: open a URL, show a code, ask, ask for a secret, show waiting, tell, and sign in through the browser with a local callback and a pasted address as fallback.
+- Login methods: an API key method, which `accounts` asks for and saves, or a flow, which the provider runs and `accounts` saves the result of. A flow offers one or more ways to finish, such as browser, device code or copying a code. It is written against a fixed set of actions: open a URL, show a code, ask, ask for a secret, show waiting, tell, and sign in through the browser with a local callback and a pasted address as fallback. `accounts` turns each action into a step it streams to the screen; the screen shows the step and sends what the user types back with `answer`.
 - Claude subscription login: `model-anthropic` keeps it, signing in and sending requests as Claude Code, as the archive and Pi do. It adds Claude Code's identity line to each subscription request on the way out; the line is never logged and never a section.
 - ChatGPT plan login: `model-codex` signs in by browser or device code and sends requests to `chatgpt.com/backend-api/codex`, as the archive did.
 - Wire code: the Anthropic Messages, OpenAI Responses and Chat Completions code the providers share lives in `@shanepadgett/liminal-model-wire`, a library providers import, so `model` depends on no provider package.
 - Packages are named `@shanepadgett/liminal-<name>`.
 - The session list and titles come in milestone 2 with saved sessions. Queries across sessions come with `memory` in milestone 5, if it needs them.
-
-## Open
-
-- Round 7, `client` and `apps/cli`: send, page and watch over function calls; print mode output, `--json` and `--approve`.
+- Where the agent runs: in each app's own process, the CLI and TUI in the CLI process and the desktop app in its main process. A server runs only when a host composes `http`. Multiplayer is the server host: each browser connects over HTTP.
+- Screens reach plugins through Effect RPC. Each plugin's contract declares an RPC group: the functions its screens may call, with schemas, as one-shot calls or streams. `session` declares `page` and `live`; `loop` declares `send`, `pullBack` and `queue`. A frontend gets a client with `host.client(Group)`, and the host picks the connection: Effect's in-memory client in the same process, the desktop shell's IPC, or `http`. `client` depends on Effect.
+- Print mode uses only `send` and `live`. `-p` writes the final reply when the turn ends; errors and notices go to stderr. `--json` writes one JSON line per item `live` sends, saved events and deltas, from the input to the turn's end. Piped stdin joins the prompt.
+- Exit codes: 0 when the turn answered, 1 when it failed or was cancelled, 2 for bad flags, 130 for Ctrl-C, which cancels the turn first.
+- Bare `liminal` prints help until the TUI arrives in milestone 2.
+- `--approve` comes with `approvals` and `questions` in milestone 3; `--model` comes with the model picker in milestone 2. Until then print mode uses the `main` role.
+- The code behind a plugin's RPC functions is an ordinary service in the plugin's own layer. `host.client(Group)` in the same process finds it there, so core adds nothing. A list of every group arrives with the desktop app and `http`, the first to serve groups over a connection.
+- RPC calls go from screen to plugin only, so a plugin reaches a screen by streaming. `accounts` declares the login methods, the sign-in stream and `answer`. `liminal connect` and the TUI's `/connect` show the same steps through `client`.
+- `SessionLog.live(id, after?)` sends the saved events after a seq, then new ones, so a screen that reads and then watches neither misses nor repeats an event.
+- Milestone 1's RPC groups hold what its screens call: `session`'s `live`, `loop`'s `send`, and `accounts`' functions. `page`, `pullBack` and `queue` come with the TUI in milestone 2.
+- Print mode always starts a new session; `--session <id>` comes with saved sessions in milestone 2.
+- Print mode reads the few events it needs itself: the final reply at the turn's end, and notices and errors for stderr. The session view comes with the TUI in milestone 2.
