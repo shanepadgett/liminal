@@ -7,7 +7,7 @@ import {
 import { testRule } from "./rule-tester.ts";
 
 const contract = "packages/plugins/demo/src/contract.ts";
-const plugin = "packages/plugins/demo/src/plugin.ts";
+const plugin = "packages/plugins/demo/src/index.ts";
 const tui = "packages/plugins/demo/src/tui.tsx";
 const web = "packages/plugins/demo/src/web.tsx";
 
@@ -28,7 +28,7 @@ testRule("contract-imports", contractImports, {
   ],
   invalid: [
     { filename: contract, code: 'import { readFile } from "node:fs";', errors: 1 },
-    { filename: contract, code: 'export { x } from "./plugin.ts";', errors: 1 },
+    { filename: contract, code: 'export { x } from "./index.ts";', errors: 1 },
     { filename: contract, code: 'import { x } from "@shanepadgett/liminal-other";', errors: 1 },
     { filename: contract, code: 'import { x } from "@shanepadgett/liminal-other/tui";', errors: 1 },
     { filename: contract, code: 'import { x } from "@shanepadgett/liminal-client";', errors: 1 },
@@ -83,7 +83,7 @@ testRule("plugin-imports", pluginImports, {
     { filename: tui, code: 'import { View } from "@shanepadgett/liminal-chat/tui";', errors: 1 },
     {
       filename: contract,
-      code: 'export * from "@shanepadgett/liminal-model/src/plugin.ts";',
+      code: 'export * from "@shanepadgett/liminal-model/src/index.ts";',
       errors: 1,
     },
   ],
@@ -93,13 +93,15 @@ testRule("entry-isolation", entryIsolation, {
   valid: [
     { filename: plugin, code: 'import { Demo } from "./contract.ts";' },
     { filename: plugin, code: 'const tui = () => import("./tui.tsx");' },
-    { filename: "packages/plugins/demo/src/plugin/store.ts", code: 'import "../plugin.ts";' },
+    { filename: "packages/plugins/demo/src/store.ts", code: 'import "./index.ts";' },
+    { filename: "packages/plugins/demo/src/store/rows.ts", code: 'import "../store.ts";' },
     { filename: "packages/plugins/demo/src/tui/view.tsx", code: 'import "../contract.ts";' },
   ],
   invalid: [
     { filename: plugin, code: 'import { View } from "./tui.tsx";', errors: 1 },
     { filename: plugin, code: 'import { View } from "./web/view.tsx";', errors: 1 },
-    { filename: tui, code: 'import { store } from "./plugin/store.ts";', errors: 1 },
+    { filename: tui, code: 'import { store } from "./store.ts";', errors: 1 },
+    { filename: tui, code: 'import { rows } from "./store/rows.ts";', errors: 1 },
     { filename: tui, code: 'const web = () => import("./web.tsx");', errors: 1 },
     {
       filename: "packages/plugins/demo/src/web/view.tsx",

@@ -10,7 +10,6 @@
     "@effect/ai-openrouter": "4.0.5",
     "@effect/platform-bun": "4.0.5",
     "@effect/sql-pg": "4.0.5",
-    "@effect/sql-sqlite-bun": "4.0.5",
     "@opencode/codemode": "2.1.2",
     "@opentui/core": "0.6.6",
     "@opentui/keymap": "0.6.6",
@@ -19,7 +18,6 @@
     "diff": "9.0.0",
     "electrobun": "2.0.4",
     "fuzzysort": "4.0.2",
-    "jsonc-parser": "3.3.1",
     "partial-json": "0.1.7",
     "solid-js": "1.9.12",
     "unbash": "6.0.1"

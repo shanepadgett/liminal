@@ -12,20 +12,10 @@ import { jsonReader, type Problem, report } from "./problem.ts";
 
 /** Each export a plugin may have, and the file it must point to. */
 const entryFiles = new Map([
-  [".", "./src/plugin.ts"],
+  [".", "./src/index.ts"],
   ["./contract", "./src/contract.ts"],
   ["./tui", "./src/tui.tsx"],
   ["./web", "./src/web.tsx"],
-]);
-
-const allowedSrcEntries = new Set([
-  "contract.ts",
-  "plugin.ts",
-  "plugin",
-  "tui.tsx",
-  "tui",
-  "web.tsx",
-  "web",
 ]);
 
 const Dependencies = Schema.optional(Schema.Record(Schema.String, Schema.String));
@@ -49,7 +39,7 @@ const checkExports = (dir: string, manifest: Manifest): Problem[] => {
   const problems: Problem[] = [];
 
   if (!exports.some(([key]) => key === "."))
-    problems.push({ path, message: `exports must include "." pointing to ./src/plugin.ts` });
+    problems.push({ path, message: `exports must include "." pointing to ./src/index.ts` });
 
   for (const [key, target] of exports) {
     const expected = entryFiles.get(key);
@@ -80,8 +70,8 @@ const checkIdentity = (dir: string, name: string, manifest: Manifest): Problem[]
   if (manifest.private === true)
     problems.push({ path, message: "plugin packages are published; remove private" });
 
-  if (JSON.stringify(manifest.liminal?.plugins) !== JSON.stringify(["./src/plugin.ts"]))
-    problems.push({ path, message: `liminal.plugins must be ["./src/plugin.ts"]` });
+  if (JSON.stringify(manifest.liminal?.plugins) !== JSON.stringify(["./src/index.ts"]))
+    problems.push({ path, message: `liminal.plugins must be ["./src/index.ts"]` });
 
   return problems;
 };
@@ -104,18 +94,6 @@ const checkDependencies = (dir: string, manifest: Manifest): Problem[] => {
   );
 };
 
-const srcLayout =
-  "src/ holds only contract.ts, plugin.ts or plugin/, tui.tsx or tui/, web.tsx or web/";
-
-const checkSrc = (dir: string): Problem[] => {
-  const srcDir = join(dir, "src");
-  const entries = existsSync(srcDir) ? readdirSync(srcDir) : [];
-
-  return entries.flatMap((entry) =>
-    allowedSrcEntries.has(entry) ? [] : [{ path: join(srcDir, entry), message: srcLayout }],
-  );
-};
-
 const checkPlugin = (dir: string, name: string): Problem[] => {
   const manifest = readManifest(join(dir, "package.json"));
 
@@ -125,7 +103,6 @@ const checkPlugin = (dir: string, name: string): Problem[] => {
   return checkIdentity(dir, name, manifest).concat(
     checkExports(dir, manifest),
     checkDependencies(dir, manifest),
-    checkSrc(dir),
   );
 };
 

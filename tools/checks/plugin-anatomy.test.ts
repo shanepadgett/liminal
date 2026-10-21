@@ -21,11 +21,10 @@ test("a broken plugin reports each anatomy problem", () => {
     `${demo}/package.json: effect is supplied by the host; declare it in peerDependencies`,
     `${demo}/package.json: export "./server" is not one of ., ./contract, ./tui, ./web`,
     `${demo}/package.json: export "./web" must point to ./src/web.tsx`,
-    `${demo}/package.json: exports must include "." pointing to ./src/plugin.ts`,
-    `${demo}/package.json: liminal.plugins must be ["./src/plugin.ts"]`,
+    `${demo}/package.json: exports must include "." pointing to ./src/index.ts`,
+    `${demo}/package.json: liminal.plugins must be ["./src/index.ts"]`,
     `${demo}/package.json: name must be @shanepadgett/liminal-demo, after its folder`,
     `${demo}/package.json: plugin packages are published; remove private`,
-    `${demo}/src/helpers.ts: src/ holds only contract.ts, plugin.ts or plugin/, tui.tsx or tui/, web.tsx or web/`,
     "broken/packages/plugins/missing/src/tui.tsx: exported but missing",
   ]);
 });

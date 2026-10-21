@@ -8,10 +8,9 @@ export interface PluginLocation {
   readonly entry: PluginEntry;
 }
 
-/** Exact files that start an entry. */
+/** Exact files that start an entry other than the plugin entry. */
 const entryFiles = new Map<string, PluginEntry>([
   ["src/contract.ts", "contract"],
-  ["src/plugin.ts", "plugin"],
   ["src/tui.tsx", "tui"],
   ["src/web.tsx", "web"],
 ]);
@@ -19,11 +18,11 @@ const entryFiles = new Map<string, PluginEntry>([
 /** Folders whose whole subtree belongs to one entry. */
 const entryFolders = new Map<string, PluginEntry>([
   ["test", "test"],
-  ["src/plugin", "plugin"],
   ["src/tui", "tui"],
   ["src/web", "web"],
 ]);
 
+/** Any other file under `src/` belongs to the plugin entry, which starts at `src/index.ts`. */
 const entryOf = (rest: readonly string[]): PluginEntry => {
   const file = entryFiles.get(rest.join("/"));
   if (file !== undefined) return file;
@@ -33,7 +32,7 @@ const entryOf = (rest: readonly string[]): PluginEntry => {
     if (folder !== undefined && rest.length > depth) return folder;
   }
 
-  return "other";
+  return rest[0] === "src" && rest.length > 1 ? "plugin" : "other";
 };
 
 /** Locates a repository-relative path inside `packages/plugins/<name>/`, or returns undefined. */

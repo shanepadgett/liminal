@@ -2,7 +2,7 @@
   "name": "@shanepadgett/liminal-demo",
   "type": "module",
   "exports": {
-    ".": "./src/plugin.ts",
+    ".": "./src/index.ts",
     "./contract": "./src/contract.ts",
     "./tui": "./src/tui.tsx"
   },
@@ -16,7 +16,7 @@
   },
   "liminal": {
     "plugins": [
-      "./src/plugin.ts"
+      "./src/index.ts"
     ]
   }
 }
