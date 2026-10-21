@@ -6,13 +6,13 @@ import { locate, type PluginEntry, repoPath, resolveRelative } from "./plugin-en
 
 const isEffect = (specifier: string) => specifier === "effect" || specifier.startsWith("effect/");
 
-const isCore = (specifier: string) => specifier === "@liminal/core";
+const isCore = (specifier: string) => specifier === "@shanepadgett/liminal-core";
 
 /** Liminal packages that are not plugins, so their root export is public. */
 const nonPluginPackages = new Set(["core", "client", "tui"]);
 
 const liminalPackage = (specifier: string): { name: string; subpath: string } | undefined => {
-  const match = /^@liminal\/([^/]+)(\/.*)?$/.exec(specifier);
+  const match = /^@shanepadgett\/liminal-([^/]+)(\/.*)?$/.exec(specifier);
   if (match?.[1] === undefined) return undefined;
 
   return { name: match[1], subpath: match[2] ?? "" };
@@ -29,7 +29,8 @@ export const contractImports = defineRule({
   meta: {
     type: "problem",
     messages: {
-      banned: "A contract imports only effect, @liminal/core and contracts, not '{{specifier}}'.",
+      banned:
+        "A contract imports only effect, @shanepadgett/liminal-core and contracts, not '{{specifier}}'.",
     },
   },
   create(context) {
@@ -85,7 +86,8 @@ export const pluginImports = defineRule({
   meta: {
     type: "problem",
     messages: {
-      banned: "Import another plugin only through its contract: '@liminal/{{name}}/contract'.",
+      banned:
+        "Import another plugin only through its contract: '@shanepadgett/liminal-{{name}}/contract'.",
     },
   },
   create(context) {

@@ -9,7 +9,7 @@
     "tools/reference/check.ts",
   ],
   // Published APIs: core, the frontend kit and every plugin's contract.
-  "publicPackages": ["@liminal/*"],
+  "publicPackages": ["@shanepadgett/liminal-*"],
   "rules": {
     "unused-dev-dependencies": "error",
     "unused-optional-dependencies": "error",

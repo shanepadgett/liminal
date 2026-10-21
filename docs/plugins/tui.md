@@ -20,6 +20,7 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 - Composer: OpenTUI `Textarea`, `@` file tags as extmarks, stashes, slash commands from `Commands`.
 - `@` completion: `fuzzysort` over `git ls-files`.
 - `EventRenderer` is a registry keyed by event kind.
+- Saved sessions: `SessionLog` gains the session list with titles; the chat screen opens a saved session.
 - Previous code: `chat`, `inbox` (composer).
 
 ```ts

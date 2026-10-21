@@ -1,5 +1,5 @@
 {
-  "name": "@liminal/missing",
+  "name": "@shanepadgett/liminal-missing",
   "type": "module",
   "exports": {
     ".": "./src/plugin.ts",

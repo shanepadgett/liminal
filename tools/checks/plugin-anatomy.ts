@@ -71,8 +71,11 @@ const checkIdentity = (dir: string, name: string, manifest: Manifest): Problem[]
   const path = join(dir, "package.json");
   const problems: Problem[] = [];
 
-  if (manifest.name !== `@liminal/${name}`)
-    problems.push({ path, message: `name must be @liminal/${name}, after its folder` });
+  if (manifest.name !== `@shanepadgett/liminal-${name}`)
+    problems.push({
+      path,
+      message: `name must be @shanepadgett/liminal-${name}, after its folder`,
+    });
 
   if (manifest.private === true)
     problems.push({ path, message: "plugin packages are published; remove private" });
@@ -88,7 +91,7 @@ const isHostSupplied = (name: string) =>
   name === "effect"
   || name === "solid-js"
   || name.startsWith("@opentui/")
-  || name.startsWith("@liminal/");
+  || name.startsWith("@shanepadgett/liminal-");
 
 const checkDependencies = (dir: string, manifest: Manifest): Problem[] => {
   const path = join(dir, "package.json");

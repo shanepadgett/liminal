@@ -15,18 +15,28 @@ testRule("contract-imports", contractImports, {
   valid: [
     { filename: contract, code: 'import { Context } from "effect";' },
     { filename: contract, code: 'import * as Schema from "effect/Schema";' },
-    { filename: contract, code: 'import type { Registry } from "@liminal/core";' },
-    { filename: contract, code: 'import type { Other } from "@liminal/other/contract";' },
-    { filename: contract, code: 'export type { Other } from "@liminal/other/contract";' },
+    { filename: contract, code: 'import type { Registry } from "@shanepadgett/liminal-core";' },
+    {
+      filename: contract,
+      code: 'import type { Other } from "@shanepadgett/liminal-other/contract";',
+    },
+    {
+      filename: contract,
+      code: 'export type { Other } from "@shanepadgett/liminal-other/contract";',
+    },
     { filename: plugin, code: 'import { readFile } from "node:fs";' },
   ],
   invalid: [
     { filename: contract, code: 'import { readFile } from "node:fs";', errors: 1 },
     { filename: contract, code: 'export { x } from "./plugin.ts";', errors: 1 },
-    { filename: contract, code: 'import { x } from "@liminal/other";', errors: 1 },
-    { filename: contract, code: 'import { x } from "@liminal/other/tui";', errors: 1 },
-    { filename: contract, code: 'import { x } from "@liminal/client";', errors: 1 },
-    { filename: contract, code: 'const m = import("@liminal/other/contract");', errors: 1 },
+    { filename: contract, code: 'import { x } from "@shanepadgett/liminal-other";', errors: 1 },
+    { filename: contract, code: 'import { x } from "@shanepadgett/liminal-other/tui";', errors: 1 },
+    { filename: contract, code: 'import { x } from "@shanepadgett/liminal-client";', errors: 1 },
+    {
+      filename: contract,
+      code: 'const m = import("@shanepadgett/liminal-other/contract");',
+      errors: 1,
+    },
     { filename: contract, code: 'const m = import("zod");', errors: 1 },
   ],
 });
@@ -47,16 +57,26 @@ testRule("contract-no-side-effects", contractNoSideEffects, {
 
 testRule("plugin-imports", pluginImports, {
   valid: [
-    { filename: plugin, code: 'import { definePlugin } from "@liminal/core";' },
-    { filename: plugin, code: 'import { SessionLog } from "@liminal/session/contract";' },
-    { filename: tui, code: 'import { Panel } from "@liminal/tui";' },
-    { filename: web, code: 'import { connect } from "@liminal/client";' },
-    { filename: "apps/cli/src/main.ts", code: 'import session from "@liminal/session";' },
+    { filename: plugin, code: 'import { definePlugin } from "@shanepadgett/liminal-core";' },
+    {
+      filename: plugin,
+      code: 'import { SessionLog } from "@shanepadgett/liminal-session/contract";',
+    },
+    { filename: tui, code: 'import { Panel } from "@shanepadgett/liminal-tui";' },
+    { filename: web, code: 'import { connect } from "@shanepadgett/liminal-client";' },
+    {
+      filename: "apps/cli/src/main.ts",
+      code: 'import session from "@shanepadgett/liminal-session";',
+    },
   ],
   invalid: [
-    { filename: plugin, code: 'import session from "@liminal/session";', errors: 1 },
-    { filename: tui, code: 'import { View } from "@liminal/chat/tui";', errors: 1 },
-    { filename: contract, code: 'export * from "@liminal/model/src/plugin.ts";', errors: 1 },
+    { filename: plugin, code: 'import session from "@shanepadgett/liminal-session";', errors: 1 },
+    { filename: tui, code: 'import { View } from "@shanepadgett/liminal-chat/tui";', errors: 1 },
+    {
+      filename: contract,
+      code: 'export * from "@shanepadgett/liminal-model/src/plugin.ts";',
+      errors: 1,
+    },
   ],
 });
 

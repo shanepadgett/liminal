@@ -11,7 +11,7 @@
   "experimentalOperatorPosition": "start",
   "jsdoc": true,
   "sortImports": {
-    "internalPattern": ["@liminal/"],
+    "internalPattern": ["@shanepadgett/liminal-"],
     "groups": [
       "builtin",
       "external",

@@ -6,6 +6,7 @@ Work for [status.md](../status.md) milestone 5.
 
 - Keeps long sessions inside the context window: checkpoints and notes as events.
 - Wraps `History` to project from the latest checkpoint; wraps `ModelCall` to checkpoint before the window fills.
+- Adds queries across sessions to `SessionLog` if it needs them.
 - Previous code: `memory`.
 
 ```ts

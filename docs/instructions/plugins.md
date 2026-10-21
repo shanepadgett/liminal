@@ -32,6 +32,6 @@
 ## Checked
 
 - Another plugin is imported only through its `/contract` export. (`liminal/plugin-imports`)
-- A contract imports only `effect`, `@liminal/core` and other contracts, and runs no statements. (`liminal/contract-imports`, `liminal/contract-no-side-effects`)
+- A contract imports only `effect`, `@shanepadgett/liminal-core` and other contracts, and runs no statements. (`liminal/contract-imports`, `liminal/contract-no-side-effects`)
 - The plugin, tui and web entries never import each other; the plugin entry loads UI entries with `import()`. (`liminal/entry-isolation`)
 - Package name, exports, `liminal.plugins`, `src/` layout and peer dependencies. (`mise run check:anatomy`)

@@ -21,7 +21,7 @@ Each layer imports only from the layers above it.
 ```text
 core                      definePlugin, compose, Registry, Pipeline, Attribute     knows nothing about agents
   ↑
-base plugins              directories · settings · model · session · tools · context · loop      "an agent"
+base plugins              directories · settings · model · session · tools · tool-definitions · system-prompt · persona · history · loop      "an agent"
   ↑
 providers & features      model-anthropic, sqlite, tools-files, approvals, memory, …
   ↑
@@ -160,42 +160,62 @@ Models.generate(options: {
 }): Effect<Message>
 Models.generate<T>(options: { ...; schema: Schema<T> }): Effect<T>   // structured output
 
-// session: the log, the inbox and commands
-type SessionEvent = { id; seq: number; at: Date; kind: string; data: Schema.Json; attributes: Attributes }
-defineEvent(kind, schema, { modelVisible })    // a typed codec for one kind's data, like an Attribute
+// session: the log
+type SessionEvent = { session: SessionId; seq: Seq; at: Date; kind: string; data: Schema.Json; attributes: Attributes }
+type Delta = { kind: string; data: Schema.Json }   // streamed to viewers, never stored
+defineEvent(kind, schema)                      // a typed codec for one kind's data, like an Attribute; deltas use it too
 interface SessionLog {
   open(attributes): Effect<SessionId>
-  append(id, events, expectedSeq): Effect<Seq, Conflict>
-  page(id, before?): Effect<SessionEvent[]>   // latest events, or the page before an event
-  live(id): Stream<SessionEvent | Delta>      // latest page, then new events and streaming deltas
+  append(id, events): Effect<SessionEvent[]>  // seq is assigned inside the write
+  read(id, after?): Effect<SessionEvent[]>    // the whole log, for History
+  page(id, before?): Effect<SessionEvent[]>   // latest events, or the page before a seq
+  live(id): Stream<SessionEvent | Delta>      // latest page, deltas since the last append, then new events and deltas
+  publish(id, delta): Effect<void>
 }
-interface Inbox { send(id, input: Input): Effect<void> }   // input: event kind + parts + attributes
-Send: Pipeline<Input, void>
-Commands: Registry<Command>                  // slash commands, run on the agent side
 
 // tools
-interface Tool<I, O> { name; description; input: Schema<I>; run(input: I, ctx: ToolContext): Effect<O> }
+interface Tool<I, O> { name; description; guidance?; deferred?; sequential?; input: Schema<I>; run(input: I, ctx: ToolContext): Effect<O> }
+// a deferred tool shows by name only until a ToolResult lists it in `loads`
 Tools: Registry<Tool>
 ToolCall: Pipeline<ToolCallRequest, ToolResult>
 
-// context
-Sections: Registry<Section>                  // rendered into each request
-History: Pipeline<SessionEvent[], Message[]> // projection of the log into model messages
+// tool-definitions: what the model is told about each tool
+ToolDefinitions: Pipeline<Tool, ToolDefinition>   // name, description, input shape; wrap to change a description
+// tools added or removed mid-session are logged; a removed tool is still sent, with a note, until the next fold
 
-// loop
+// system-prompt: the system prompt, built from sections
+Sections: Registry<Section>
+SystemPrompt.fold(): Effect<void>            // logs a new system prompt built from the current sections
+
+// history: the messages each model call sends
+Converters: Registry<Converter>              // one per event kind; a kind with no converter never reaches the model
+History: Pipeline<SessionEvent[], Message[]> // the log, through the converters, into model messages
+
+// loop: the turn, the inbox and commands
+interface Inbox {
+  send(id, input: Input, mode: "steer" | "follow-up"): Effect<void>   // input: event kind + data + attributes
+  pullBack(id, queued): Effect<Option<Input>>
+  queue(id): Stream<Queued[]>
+}
+Send: Pipeline<Input, void>
+Commands: Registry<Command>                  // slash commands, run on the agent side as soon as they are sent
+BeforeCall: Registry<Hook>                    // records logged before each model call: change notes, reminders
 TurnEnd: Registry<Hook>
 ```
 
 The loop runs one turn:
 
 ```text
-take queued inputs → render Sections + History → ModelCall → ToolCall for each call
+take queued inputs → log steers and before-call records → system prompt + tool definitions + History → ModelCall → ToolCall for each call
 → append events → repeat while tools owe a result or new input arrived → TurnEnd hooks
 ```
 
 - Each step carries the attributes of the latest input it consumed; tool calls read them from `ToolContext` and log them.
-- The loop logs a section's rendered text only when it differs from the last logged text.
-- Cancel is an input the loop handles.
+- The system prompt and tool definitions are logged at session start and never change in place. A change is logged as a note before the next model call; a fold logs them anew.
+- Cancel is an input the loop handles: the partial reply is logged marked interrupted and never reaches the model, unfinished tool calls get cancelled results, and queued inputs go back to the input box.
+- Deltas are published as they arrive; each viewer limits its own rate.
+- Tool calls in one reply run at the same time unless one is marked `sequential`; results are logged in the order asked.
+- A turn left unfinished by a crash is closed when the session next opens: interrupted results, a notice, and no restart.
 - Shared provider code, such as an OpenAI-compatible wire format, is a library the provider plugins import, not a contract.
 - The session log stores Liminal's own `Message` and `Part` schema, so saved sessions outlive Effect AI changes. Base `model` converts them to and from Effect AI's types in one place. The live reply stream and errors are Effect AI's `Response` parts and `AiError`, since nothing stores them.
 - Each provider lists the models it offers; `model-catalog` adds their details from models.dev: name, context window, output limit, prices, thinking levels, image input.
@@ -221,8 +241,10 @@ take queued inputs → render Sections + History → ModelCall → ToolCall for 
 - Event kinds declare whether the model sees them. Notices are events the model never sees.
 - Live streaming deltas are not stored. A finished assistant message is committed as one event.
 - Every way into a session is an input through `Inbox.send`: a user message, an answer to a question, a notification, chat history, a cancel, a command.
-- An input sent during a turn joins at the next step. An input sent to an idle session starts a turn.
-- One runner per session. `append` with `expectedSeq` rejects a second writer. The session store decides how a runner is chosen: a lock in one process, a lease across processes.
+- An input sent during a turn is a steer or a follow-up. A steer joins before the turn's next model call. A follow-up waits until the turn would end, then continues it. A queued input can be pulled back until the turn takes it. An input sent to an idle session starts a turn.
+- Queued inputs live in memory. An input is logged when a turn takes it, so the log holds what the model saw, in order.
+- A command runs as soon as it is sent and never queues; the log records it. A command that changes the log, such as `/compact`, waits for the running turn to end.
+- One runner per session: within one process, `loop` runs one turn per session at a time.
 - Recovery is per turn. After a crash or shutdown, an unfinished turn gets an `interrupted` event and continues from the log.
 
 ### Multiplayer
@@ -314,10 +336,13 @@ How `session` does these over `SqlClient` is open.
 | Base | `directories` | `Directories`: the global, workspace and project folders | base | `archive/packages/sdk/src/core/directories.ts` |
 | Base | `settings` | `Settings` over the global and project settings files, `Setting`, `DeclaredSettings` | base | `settings` |
 | Base | `model` | Message types, providers, `ModelCall`, `Models.generate` | base | `models`, `decisions` |
-| Base | `session` | The session log over `SqlClient`, inbox, `Send`, `Commands`, event kinds | base | `session-log`, `inbox`, `notices` |
-| Base | `tools` | Tool registry, `ToolCall`, tool guidance section | base | `tools` |
-| Base | `context` | `Sections`, `History` | base | `context` |
-| Base | `loop` | The turn, `TurnEnd`, cancel | base | `agent-loop`, `cancel` |
+| Base | `session` | The session log over `SqlClient`, event kinds, deltas | base | `session-log`, `session-store`, `notices` |
+| Base | `tools` | Tool registry, `ToolCall` | base | `tools` |
+| Base | `tool-definitions` | `ToolDefinitions`, tool guidance section | base | `tools` |
+| Base | `system-prompt` | `Sections`, the logged system prompt, change notes, fold | base | `context` |
+| Base | `persona` | Who the agent is and how it talks, as a section | base | `context` |
+| Base | `history` | `Converters`, `History` | base | `context` |
+| Base | `loop` | The turn, the inbox, `Send`, `Commands`, `BeforeCall`, `TurnEnd`, cancel | base | `agent-loop`, `cancel`, `inbox` |
 | Providers | `model-anthropic`, `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go` | Model providers and their logins | Add | same names |
 | Providers | `model-scripted` | Scripted replies for tests | Add | `model-scripted` |
 | Providers | `model-catalog` | Names, limits, prices from models.dev | base service | `model-catalog` |
@@ -374,12 +399,15 @@ All packages publish to npm as ESM JavaScript with type declarations, so Node, B
 
 | Package | Holds |
 | --- | --- |
-| `@liminal/core` | Core |
-| `@liminal/directories`, `@liminal/settings`, `@liminal/model`, `@liminal/session`, `@liminal/tools`, `@liminal/context`, `@liminal/loop` | Base plugins with their contracts |
-| `@liminal/agent` | `agent()`: the base plugin list, for embedding in one import |
-| `@liminal/<plugin>` | Providers and features |
-| `@liminal/client` | Client and session view |
-| `@liminal/tui` | TUI frontend and the UI kit for `tui` entries |
+| `@shanepadgett/liminal-core` | Core |
+| `@shanepadgett/liminal-directories`, `-settings`, `-model`, `-session`, `-tools`, `-tool-definitions`, `-system-prompt`, `-persona`, `-history`, `-loop` | Base plugins with their contracts |
+| `@shanepadgett/liminal-agent` | `agent()`: the base plugin list, for embedding in one import |
+| `@shanepadgett/liminal-<plugin>` | Providers and features |
+| `@shanepadgett/liminal-model-wire` | The Anthropic Messages, OpenAI Responses and Chat Completions wire code providers share; a library, not a plugin |
+| `@shanepadgett/liminal-client` | Client and session view |
+| `@shanepadgett/liminal-tui` | TUI frontend and the UI kit for `tui` entries |
+
+- Every package is named `@shanepadgett/liminal-<name>`.
 
 - Every workspace package shares one version.
 - Core, base plugins and `client` run on any runtime; see [Layers](#layers).
@@ -398,7 +426,7 @@ All packages publish to npm as ESM JavaScript with type declarations, so Node, B
 
 ### Embedding
 
-- An app installs `@liminal/agent` and the plugins it wants, composes them in code, and serves them with `http` or calls them directly.
+- An app installs `@shanepadgett/liminal-agent` and the plugins it wants, composes them in code, and serves them with `http` or calls them directly.
 - Embedded compositions import plugins statically. They need no loader, no plugin folders and no reload.
 
 ## External plugins
@@ -410,12 +438,12 @@ A bundle is the distribution unit for external plugins: an npm, git or local pac
   "name": "@acme/liminal-jira",
   "type": "module",
   "exports": { ".": "./dist/plugin.js", "./contract": "./dist/contract.js" },
-  "peerDependencies": { "@liminal/core": "x.y.z", "@liminal/tools": "x.y.z", "effect": "x.y.z" },
+  "peerDependencies": { "@shanepadgett/liminal-core": "x.y.z", "@shanepadgett/liminal-tools": "x.y.z", "effect": "x.y.z" },
   "liminal": { "plugins": ["./dist/plugin.js"] }
 }
 ```
 
-- A bundle depends on `@liminal/core`, `effect` and the contracts it extends as peer dependencies.
+- A bundle depends on `@shanepadgett/liminal-core`, `effect` and the contracts it extends as peer dependencies.
 - A bundle exports its contract separately, so other bundles can extend it without loading its implementation.
 - Embedding apps use a bundle by importing it. The CLI and desktop use a bundle by installing it into a plugin folder, where `loader` finds it through the `liminal` key.
 - Loaded bundles get the host's copy of core, Effect, OpenTUI and every contract, so service tags and schemas match. `loader` does this with OpenTUI's runtime plugin support, whose module map points those imports at the host's instances, including inside a compiled binary.
@@ -424,4 +452,4 @@ A bundle is the distribution unit for external plugins: an npm, git or local pac
 ## Open
 
 - How `loader` installs bundles from npm and git.
-- How `session` runs one turn at a time and streams live deltas across server processes over `SqlClient`.
+- How `loop` runs one turn per session and keeps its queue, and how `session` streams live deltas, across processes over `SqlClient`: two apps sharing `liminal.db`, or a server.

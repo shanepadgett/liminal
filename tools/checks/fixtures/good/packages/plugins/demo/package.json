@@ -1,5 +1,5 @@
 {
-  "name": "@liminal/demo",
+  "name": "@shanepadgett/liminal-demo",
   "type": "module",
   "exports": {
     ".": "./src/plugin.ts",
@@ -10,8 +10,8 @@
     "diff": "9.0.0"
   },
   "peerDependencies": {
-    "@liminal/core": "*",
-    "@liminal/session": "*",
+    "@shanepadgett/liminal-core": "*",
+    "@shanepadgett/liminal-session": "*",
     "effect": "*"
   },
   "liminal": {

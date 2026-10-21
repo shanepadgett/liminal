@@ -8,7 +8,7 @@ Work for [status.md](../status.md) milestones 6 and 8. Hosts and distribution ar
 
 - Host level, CLI and desktop only.
 - Scans `~/.liminal/` and `<project>/.liminal/` for bundles, reads `plugins.json`, loads a project's bundles and settings only in a trusted workspace.
-- Imports bundles after installing OpenTUI's runtime plugin support with a module map for `effect`, `@liminal/*` contracts and OpenTUI.
+- Imports bundles after installing OpenTUI's runtime plugin support with a module map for `effect`, `@shanepadgett/liminal-*` contracts and OpenTUI.
 - Reload restarts the app and reopens the current session from its log. Nothing is rebuilt in-process and no supervisor process runs.
   - TUI: a `/reload` command.
   - Desktop: a banner when a bundle or `plugins.json` changes.
@@ -48,7 +48,7 @@ scan folders → read package.json "liminal".plugins → filter by plugins.json 
 
 ### Packages
 
-- `client` over HTTP; `@liminal/agent` exporting `agent()`; npm publishing as ESM with types.
+- `client` over HTTP; `@shanepadgett/liminal-agent` exporting `agent()`; npm publishing as ESM with types.
 
 ### Work order agent
 

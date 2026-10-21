@@ -1,5 +1,5 @@
 {
-  "name": "@liminal/other",
+  "name": "@shanepadgett/liminal-other",
   "private": true,
   "type": "module",
   "exports": {
@@ -8,7 +8,7 @@
     "./web": "./web.tsx"
   },
   "dependencies": {
-    "@liminal/core": "workspace:*",
+    "@shanepadgett/liminal-core": "workspace:*",
     "effect": "4.0.5"
   }
 }
