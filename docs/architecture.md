@@ -70,6 +70,7 @@ packages/
   client/                   host.client(Group) over in-memory RPC, IPC or HTTP; session view store
   tui/                      OpenTUI renderer, slot tree, UI kit
   plugins/<name>/           one package per plugin
+  <concept>/                a library: pure code shared by plugins, named for one concept
 apps/
   cli/                      compose + TUI, compiled with bun build --compile
   desktop/                  compose in the main process + webview using client over IPC
@@ -82,13 +83,16 @@ docs/
 
 ```text
 plugins/approvals/
-  package.json        exports ".", "./contract", "./tui", "./web"; "liminal": { "plugins": ["./src/plugin.ts"] }
+  package.json        exports ".", "./contract", "./tui", "./web"; "liminal": { "plugins": ["./src/index.ts"] }
+  README.md           what it provides and requires, how to use or replace it
   src/
+    index.ts          definePlugin(...): the server side
     contract.ts       tags, event kinds, schemas, slot handles, the RPC group its screens call
-    plugin.ts         definePlugin(...): the server side
     tui.tsx           TUI slot registrations (optional)
     web.tsx           desktop webview slot registrations (optional)
 ```
+
+- `contract.ts`, `tui.tsx` or `tui/`, and `web.tsx` or `web/` are fixed. Every other file under `src/` is server side, laid out freely.
 
 ```ts
 export default definePlugin({
@@ -103,7 +107,8 @@ export default definePlugin({
 - A server never imports frontend entries. A frontend loads its entry of every plugin in the composition.
 - A plugin imports other plugins only through their `./contract` export.
 - A plugin's `tui` and `web` entries reach its server side only through the RPC group in its contract.
-- An entry that grows becomes a folder with an `index` file.
+- A `tui` or `web` entry that grows becomes a folder with an `index` file.
+- Code shared by plugins is Effect or standard JavaScript first. Pure code a second plugin needs moves to a library package named for one concept, never a grab-bag. It becomes a plugin only when it needs swapping, state or runtime services.
 
 ## Core
 
@@ -140,7 +145,7 @@ Each base plugin owns a contract that other plugins import.
 
 ```ts
 // settings: each plugin owns one key in settings.json
-Setting.make<T>(key, schema): Setting<T>                           // the schema holds the defaults
+Setting.make<T>(key, schema): Setting<T>                           // an object schema holding the defaults; a missing key reads as {}
 DeclaredSettings: Registry<Setting>                                // the settings screen lists these
 Settings.get<T>(setting): Effect<T, SettingsInvalid>               // read on each call
 Settings.write(scope: "global" | "project", path, value): Effect<void>

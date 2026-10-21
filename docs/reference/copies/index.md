@@ -96,7 +96,7 @@ Bun layers for Effect's platform services: FileSystem, Path, ChildProcess, runti
 SQLite client for effect/sql on bun:sqlite: SqliteClient layer and SqliteMigrator. SqlClient, Migrator and SqlError come from effect/sql. The default session store driver.
 
 - Docs: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/` (1 file: README.md)
-- API (source): `tools/planned/node_modules/@effect/sql-sqlite-bun/src/`, modules: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/api-index/@effect-sql-sqlite-bun-src.md`
+- API (source): `packages/plugins/sqlite/node_modules/@effect/sql-sqlite-bun/src/`, modules: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/api-index/@effect-sql-sqlite-bun-src.md`
 
 ## @effect/sql-pg 4.0.5
 
@@ -175,7 +175,7 @@ Desktop shell: Bun main process, system webviews, typed RPC, menus, tray, update
 Parses JSON with comments and edits it in place: parse, modify and applyEdits keep comments and formatting. For settings files.
 
 - Docs: `docs/reference/copies/jsonc-parser/3.3.1/` (1 file: README.md)
-- API (types): `tools/planned/node_modules/jsonc-parser/lib/umd/main.d.ts`
+- API (types): `packages/plugins/settings/node_modules/jsonc-parser/lib/umd/main.d.ts`
 
 ## @opencode/codemode 2.1.2
 

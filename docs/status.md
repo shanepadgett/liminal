@@ -17,7 +17,7 @@ Milestone 1. The stack is settled in [architecture.md](architecture.md#stack).
 ## Next
 
 1. Milestone 1's plugins from [plugins/base.md](plugins/base.md) are planned in [plans/base.md](plans/base.md). Rounds 1–7 are in its Decisions: storage, folders, settings, credentials, retries, choosing models, types, model details, `session`, the turn with its plugins, accounts with the providers, and `client` with `apps/cli`.
-2. Build the rest of milestone 1. `packages/core` is built: `import { definePlugin, compose, Registry, Pipeline, Attribute } from "@shanepadgett/liminal-core"`. Each new base plugin joins the fallow base zone and the oxlint overrides.
+2. Build the rest of milestone 1 as one path to a first reply, then widen: `session`; `model`, `model-wire` and `model-anthropic` with an API key; `tools`, `tool-definitions`, `system-prompt`, `persona`, `history`; `loop`; `client` and print mode. Then `accounts` with `liminal connect`, the other providers, `model-catalog`, `--json` and exit codes. Built: `packages/core` (`definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`), `directories`, `settings`, `sqlite`. A host composes a plugin of its own that provides Effect's runtime services, such as `Path` and `FileSystem`.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
 

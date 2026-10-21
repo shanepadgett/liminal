@@ -2,21 +2,6 @@
 
 Work for [status.md](../status.md) milestone 1. Contracts are in [architecture.md](../architecture.md#base-plugins-the-agent).
 
-## `directories`
-
-- `Directories`: `global` (`~/.liminal`), `workspace` (the folder Liminal works in), `project` (`<workspace>/.liminal`).
-- `HOME` through Effect's `Config`, the working folder through `Path.resolve(".")`; the host supplies `Path`.
-- Plugins that store files require it. A harness that keeps files elsewhere composes its own plugin that provides `Directories`.
-- Previous code: `archive/packages/sdk/src/core/directories.ts`.
-
-## `settings`
-
-- A setting is one plugin's key in `settings.json`: `Setting.make(key, schema)`; the schema holds the defaults.
-- `DeclaredSettings` registry: each plugin adds its setting. `Settings.get(setting)` reads on each call; `Settings.write(scope, path, value)`.
-- `settings.json` in the global and project folders from `directories`, JSONC through `jsonc-parser`; project values win. `write` keeps comments and formatting.
-- Plugins take no options of their own.
-- Previous code: `settings`.
-
 ## `model`
 
 - Message and part types, `Model`, `Models` registry, `ModelCall` pipeline, `Models.generate`.
@@ -77,12 +62,6 @@ Models.generate({ model: "small", prompt, schema })
 - A command runs as soon as it is sent and is logged as `session/command`; one that changes the log waits for the running turn to end.
 - Steer and follow-up: input sent during a turn either joins before the next model call or waits until the turn would end. A queued input can be pulled back until the turn takes it.
 - Previous code: `agent-loop`, `cancel`, `inbox`.
-
-## `sqlite`
-
-- Opens `liminal.db` in the global folder from `directories`, mode `0600`, in WAL mode so the CLI, TUI and desktop app share it.
-- Provides Effect's `SqlClient` over `@effect/sql-sqlite-bun`. Every plugin that keeps state requires it and owns its tables and migrations.
-- Previous code: `session-store`, `credential-store`.
 
 ## `accounts`
 
