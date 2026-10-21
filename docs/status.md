@@ -16,7 +16,7 @@ Milestone 1. The stack is settled in [architecture.md](architecture.md#stack).
 
 ## Next
 
-1. Plan milestone 1's plugins from [plugins/base.md](plugins/base.md) in `plans/base.md`, in rounds, before building them. Round 1 settles where base plugins end and storage plugins begin (see Open). `packages/core` is built: `import { definePlugin, compose, Registry, Pipeline, Attribute } from "@liminal/core"`.
+1. Plan milestone 1's plugins from [plugins/base.md](plugins/base.md) in `plans/base.md`, in rounds, before building them. Round 1 settles where base plugins end and storage plugins begin. `packages/core` is built: `import { definePlugin, compose, Registry, Pipeline, Attribute } from "@liminal/core"`.
 2. Build the rest of milestone 1.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
@@ -29,7 +29,7 @@ Work: [plugins/base.md](plugins/base.md)
 
 - [x] `packages/core`: `definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`
 - [ ] Base plugins: `settings`, `model`, `session`, `tools`, `context`, `loop`
-- [ ] `session-sqlite`, `settings-files`, `accounts`
+- [ ] `session-sqlite`, `accounts`
 - [ ] `model-catalog`, `model-anthropic`, `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go`
 - [ ] `packages/client` over function calls
 - [ ] `apps/cli`: `liminal connect` saves credentials; print mode streams a reply with them
@@ -99,7 +99,7 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 
 ## Open
 
-- Where base plugins end and storage plugins begin: `session-sqlite` provides the whole `SessionLog`, or a store under logic the base `session` plugin owns. The same question for `settings-files` and `accounts`.
+- Where base plugins end and storage plugins begin: round 1 of [plans/base.md](plans/base.md#open).
 
 - Electrobun 2.x ships its SDK through the Hutch devkit, not npm; the npm package is only a bootstrap. Whether the desktop app stays on Electrobun.
 - File search tools (`grep`, `find`): whether they belong in `tools-files`, and whether they use a system `rg` or ship one.

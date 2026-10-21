@@ -6,6 +6,7 @@ Work for [status.md](../status.md) milestone 1. Contracts are in [architecture.m
 
 - `SettingsSections` registry: each plugin adds its section name and Schema; the Schema holds the defaults.
 - `Settings.section(name, schema)` reads on use; `Settings.write(scope, path, value)`.
+- `settings.json` in the global and project folders from `Directories`, JSONC through `jsonc-parser`; project values win. `write` keeps comments and formatting.
 - Plugins take no options of their own.
 - Previous code: `settings`.
 
@@ -23,7 +24,7 @@ Models.generate({ model: "small", prompt, schema })
 
 ## `session`
 
-- `SessionLog` with `open`, `append`, `page`, `live`.
+- The `SessionLog` contract: `open`, `append`, `page`, `live`. A storage plugin provides it.
 - `Inbox.send`, `Send` pipeline, `Commands` registry, `defineEvent`.
 - Notices are an event kind with `modelVisible: false`.
 - Previous code: `session-log`, `inbox`, `notices`.
@@ -45,20 +46,14 @@ Models.generate({ model: "small", prompt, schema })
 
 ## `session-sqlite`
 
-- Sessions in SQLite under `~/.liminal/`.
+- Provides the whole `SessionLog` from SQLite under `~/.liminal/`: events, pages, live updates and the runner.
 - Queries through `SqlClient`; the host supplies `@effect/sql-sqlite-bun`.
 - Runner is an in-process lock.
 - Previous code: `session-store`.
 
-## `settings-files`
-
-- `~/.liminal/settings.json` and `<project>/.liminal/settings.json`, JSONC through `jsonc-parser`; project values win.
-- `write` keeps comments and formatting.
-- Previous code: `settings`.
-
 ## `accounts`
 
-- Credentials in a `0600` JSON file under `~/.liminal/`: API keys, and OAuth tokens refreshed under a lock.
+- Credentials in SQLite at `~/.liminal/credentials.db`, mode `0600`: API keys, and OAuth tokens refreshed inside a write transaction so one process refreshes.
 - `LoginMethods` registry that providers add to; `liminal connect` and the TUI's `/connect` run them.
 - Previous code: `logins`, `credential-store`.
 
@@ -87,7 +82,7 @@ LoginMethods.add({ provider: "anthropic", kind: "oauth", run: anthropicOAuth })
 
 ## `apps/cli`
 
-- Composes the base plugins, `session-sqlite`, `settings-files`, `accounts`, `model-catalog` and every provider.
+- Composes the base plugins, `session-sqlite`, `accounts`, `model-catalog` and every provider.
 - Command line with `effect/cli`.
 - `liminal connect`: interactive prompts pick a provider, then a login method, then take an API key or run the OAuth flow; credentials go to `accounts`.
 - Print mode over `client`: `-p` streams the reply to stdout, `--json` writes session events as JSON lines, `--approve` lets questions and approvals pass.

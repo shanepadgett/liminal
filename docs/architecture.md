@@ -201,7 +201,7 @@ take queued inputs → render Sections + History → ModelCall → ToolCall for 
 ### Settings
 
 - Every plugin reads its configuration only through `Settings`; plugins take no options of their own.
-- `settings-files` keeps settings in `~/.liminal/settings.json` and `<project>/.liminal/settings.json`; project values win.
+- `settings` keeps settings in `settings.json` in the global and project folders the host's `Directories` names, `~/.liminal/` and `<project>/.liminal/` in the CLI; project values win.
 - A settings screen lists every section from `SettingsSections`.
 - Credentials are not settings; `accounts` keeps them.
 
@@ -282,7 +282,7 @@ An embedding app is the host, so it owns its UI. It uses `client` and the sessio
 
 | Host | Composition | Frontend and connection |
 | --- | --- | --- |
-| CLI binary | Base + `session-sqlite` + `settings-files` + `accounts` + providers + coding tools + `loader` | TUI in the same process; plain function calls |
+| CLI binary | Base + `session-sqlite` + `accounts` + providers + coding tools + `loader` | TUI in the same process; plain function calls |
 | Desktop app | Same as CLI, in the app's main process | Webview using `client` over the desktop shell's IPC |
 | Web server | Base + `session-postgres` + app plugins + `actors` + `http` | Browser UI using `client` over HTTP |
 | Embedded | Whatever the embedding code imports | The embedding app's own UI |
@@ -309,9 +309,9 @@ These are internals of the provider, not contracts.
 
 | Group | Plugin | Does | Mechanism | Previous code in `archive/packages/plugins/` |
 | --- | --- | --- | --- | --- |
-| Base | `settings` | `Settings`, `SettingsSections` | base | `settings` |
+| Base | `settings` | `Settings` over the global and project settings files, `SettingsSections` | base | `settings` |
 | Base | `model` | Message types, providers, `ModelCall`, `Models.generate` | base | `models`, `decisions` |
-| Base | `session` | Log, inbox, `Send`, `Commands`, event kinds | base | `session-log`, `inbox`, `notices` |
+| Base | `session` | `SessionLog` contract, inbox, `Send`, `Commands`, event kinds | base | `session-log`, `inbox`, `notices` |
 | Base | `tools` | Tool registry, `ToolCall`, tool guidance section | base | `tools` |
 | Base | `context` | `Sections`, `History` | base | `context` |
 | Base | `loop` | The turn, `TurnEnd`, cancel | base | `agent-loop`, `cancel` |
@@ -319,8 +319,7 @@ These are internals of the provider, not contracts.
 | Providers | `model-scripted` | Scripted replies for tests | Add | `model-scripted` |
 | Providers | `model-catalog` | Names, limits, prices from models.dev | base service | `model-catalog` |
 | Providers | `accounts` | Credentials, login methods, `liminal connect` and `/connect` | Add | `logins`, `credential-store` |
-| Storage | `session-sqlite`, `session-postgres` | Session stores | Replace | `session-store` |
-| Storage | `settings-files` | Global and project settings files | Replace | `settings` |
+| Storage | `session-sqlite`, `session-postgres` | The whole `SessionLog`: events, live updates, runner | Replace | `session-store` |
 | Tools | `tools-files` | `read`, `edit`, `write`, `@` file tags | Add | `files`, `tools-read`, `tools-edit` |
 | Tools | `tools-shell` | `shell`, command runner, shell safety, background processes | Add | `tools-shell`, `command-runner`, `shell-safety`, `processes` |
 | Tools | `tools-web` | `websearch`, `webfetch` | Add | `tools-web` |
