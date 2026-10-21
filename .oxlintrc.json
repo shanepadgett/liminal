@@ -5,7 +5,7 @@
   "jsPlugins": ["./tools/lint/liminal-plugin.ts"],
   "options": { "typeAware": true, "reportUnusedDisableDirectives": "error" },
   "categories": { "correctness": "error", "suspicious": "error", "perf": "error" },
-  "ignorePatterns": ["tools/**/fixtures/**", "docs/reference/copies/**"],
+  "ignorePatterns": ["tools/**/fixtures/**", "docs/reference/copies/**", "archive/**"],
   "rules": {
     "typescript/no-floating-promises": "error",
     "typescript/no-misused-promises": "error",

@@ -11,26 +11,12 @@ Effect 4: typed effects, services and layers, Schema, Stream, errors. Read the e
 - Docs: `docs/reference/copies/effect/4.0.5/` (81 files: README.md, ai-docs/, AGENTS.md)
 - API (source): `node_modules/effect/src/`, modules: `docs/reference/copies/effect/4.0.5/api-index/effect-src.md`
 
-## @effect/platform-bun 4.0.5
-
-Bun layers for Effect's platform services: FileSystem, Path, runtime entry. Its ai-docs duplicate Effect's, so only the README is copied.
-
-- Docs: `docs/reference/copies/@effect/platform-bun/4.0.5/` (1 file: README.md)
-- API (source): `apps/cli/node_modules/@effect/platform-bun/src/`, modules: `docs/reference/copies/@effect/platform-bun/4.0.5/api-index/@effect-platform-bun-src.md`
-
-## @effect/sql-sqlite-bun 4.0.5
-
-SQLite client for effect/sql on bun:sqlite: SqliteClient layer and SqliteMigrator. SqlClient, Migrator and SqlError come from effect/sql.
-
-- Docs: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/` (1 file: README.md)
-- API (source): `packages/plugins/credential-store/node_modules/@effect/sql-sqlite-bun/src/`, modules: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/api-index/@effect-sql-sqlite-bun-src.md`
-
-## @effect/tsgo 0.53.1
+## @effect/tsgo 0.56.0
 
 Effect diagnostics for the TypeScript 7 compiler and Oxlint: rule names, severities, presets and tsconfig options.
 
-- Docs: `docs/reference/copies/@effect/tsgo/0.53.1/` (132 files: docs/, README.md)
-- From: https://github.com/Effect-TS/tsgo.git, tag @effect/tsgo@0.53.1, commit cb4c4a75630e
+- Docs: `docs/reference/copies/@effect/tsgo/0.56.0/` (135 files: docs/, README.md)
+- From: https://github.com/Effect-TS/tsgo.git, tag @effect/tsgo@0.56.0, commit 13dc02a99f8a
 - API (schema): `node_modules/@effect/tsgo/schema.json`
 - API (schema): `node_modules/@effect/tsgo/oxlint-schema.json`
 
@@ -47,19 +33,19 @@ Type definitions for Bun's APIs. The declarations are the API reference.
 - Docs: `docs/reference/copies/@types/bun/1.4.3/` (1 file: README.md)
 - API (types): `node_modules/.bun/@types+bun@1.4.3/node_modules/bun-types/`, modules: `docs/reference/copies/@types/bun/1.4.3/api-index/bun-types.md`
 
-## oxlint 1.88.0
+## oxlint 1.89.0
 
 Linter: configuration, rules and their options, and the JS plugin guide. The website pages are unversioned.
 
-- Docs: `docs/reference/copies/oxlint/1.88.0/` (896 files: README.md, src/)
-- From: https://github.com/oxc-project/website.git, branch main, commit d59e8f15204d (not pinned to the installed version)
+- Docs: `docs/reference/copies/oxlint/1.89.0/` (896 files: README.md, src/)
+- From: https://github.com/oxc-project/website.git, branch main, commit d479491e311a (not pinned to the installed version)
 - API (schema): `node_modules/oxlint/configuration_schema.json`
 
-## @oxlint/plugins 1.88.0
+## @oxlint/plugins 1.89.0
 
 Types for writing Oxlint JS plugins: rules, the AST, `context` and `sourceCode`.
 
-- Docs: `docs/reference/copies/@oxlint/plugins/1.88.0/` (1 file: README.md)
+- Docs: `docs/reference/copies/@oxlint/plugins/1.89.0/` (1 file: README.md)
 - API (types): `node_modules/@oxlint/plugins/index.d.ts`
 
 ## oxlint-tsgolint 7.0.2004
@@ -68,19 +54,19 @@ Type-aware lint rules for Oxlint.
 
 - Docs: `docs/reference/copies/oxlint-tsgolint/7.0.2004/` (1 file: README.md)
 
-## oxfmt 0.73.0
+## oxfmt 0.74.0
 
 Formatter: options, ignore files and supported languages. The website pages are unversioned.
 
-- Docs: `docs/reference/copies/oxfmt/0.73.0/` (17 files: README.md, src/)
-- From: https://github.com/oxc-project/website.git, branch main, commit d59e8f15204d (not pinned to the installed version)
+- Docs: `docs/reference/copies/oxfmt/0.74.0/` (18 files: README.md, src/)
+- From: https://github.com/oxc-project/website.git, branch main, commit d479491e311a (not pinned to the installed version)
 - API (schema): `node_modules/oxfmt/configuration_schema.json`
 
-## fallow 3.33.1
+## fallow 3.34.1
 
 Dead code, duplication and import boundaries: CLI, issue types, patterns and gotchas.
 
-- Docs: `docs/reference/copies/fallow/3.33.1/` (9 files: README.md, skills/)
+- Docs: `docs/reference/copies/fallow/3.34.1/` (9 files: README.md, skills/)
 - API (schema): `node_modules/fallow/schema.json`
 - API (schema): `node_modules/fallow/capabilities.json`
 
@@ -98,96 +84,140 @@ Node.js API docs. Prefer Bun's built-ins and Effect; use `node:` modules where B
 - Docs: `docs/reference/copies/node/24.22.0/` (68 files: doc/)
 - From: https://github.com/nodejs/node.git, tag v24.22.0, commit f14cd3aa7bf9
 
-## @opentui/core 0.6.6
+## @effect/platform-bun 4.0.5
 
-Terminal UI renderer with a native core: renderables (box, text, scrollbox), layout, colors (`RGBA`, `TextAttributes`), border styles, keyboard input, terminal palette queries (`renderer.getPalette`). Backs the gallery.
+Bun layers for Effect's platform services: FileSystem, Path, ChildProcess, runtime entry. Hosts use it; core and base plugins stay on `effect`. Its ai-docs duplicate Effect's, so only the README is copied.
 
-- Docs: `docs/reference/copies/@opentui/core/0.6.6/` (110 files: README.md, packages/)
-- From: https://github.com/anomalyco/opentui.git, tag v0.6.6, commit 212eb27da4ad
-- API (types): `apps/cli/node_modules/@opentui/core/`, modules: `docs/reference/copies/@opentui/core/0.6.6/api-index/@opentui-core.md`
+- Docs: `docs/reference/copies/@effect/platform-bun/4.0.5/` (1 file: README.md)
+- API (source): `tools/planned/node_modules/@effect/platform-bun/src/`, modules: `docs/reference/copies/@effect/platform-bun/4.0.5/api-index/@effect-platform-bun-src.md`
 
-## @opentui/solid 0.6.6
+## @effect/sql-sqlite-bun 4.0.5
 
-Solid renderer for OpenTUI: `render`, `testRender`, hooks such as `useKeyboard`, `useRenderer` and `useTerminalDimensions`, and the JSX elements. Needs the `@opentui/solid/preload` Bun preload to run `.tsx` from source.
+SQLite client for effect/sql on bun:sqlite: SqliteClient layer and SqliteMigrator. SqlClient, Migrator and SqlError come from effect/sql. The default session store driver.
 
-- Docs: `docs/reference/copies/@opentui/solid/0.6.6/` (1 file: README.md)
-- API (types): `node_modules/@opentui/solid/`, modules: `docs/reference/copies/@opentui/solid/0.6.6/api-index/@opentui-solid.md`
+- Docs: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/` (1 file: README.md)
+- API (source): `tools/planned/node_modules/@effect/sql-sqlite-bun/src/`, modules: `docs/reference/copies/@effect/sql-sqlite-bun/4.0.5/api-index/@effect-sql-sqlite-bun-src.md`
 
-## @opentui/keymap 0.6.6
+## @effect/sql-pg 4.0.5
 
-Layered key bindings and named commands for OpenTUI: `createDefaultOpenTuiKeymap`, `KeymapProvider`, `useBindings`, `useKeymapSelector`, `getActiveKeys`, binding `desc` metadata. Its guides live in the @opentui/core copy under `packages/web/src/content/docs/keymap/`.
+PostgreSQL client for effect/sql: PgClient and PgPool layers, PgMigrator. The session-postgres driver for multi-process hosting.
 
-- Docs: `docs/reference/copies/@opentui/keymap/0.6.6/` (1 file: README.md)
-- API (types): `apps/cli/node_modules/@opentui/keymap/`, modules: `docs/reference/copies/@opentui/keymap/0.6.6/api-index/@opentui-keymap.md`
-
-## solid-js 1.9.12
-
-Fine-grained reactivity behind the OpenTUI Solid renderer: signals, memos, effects, control flow (`For`, `Show`), stores in `solid-js/store`.
-
-- Docs: `docs/reference/copies/solid-js/1.9.12/` (1 file: README.md)
-- API (types): `node_modules/solid-js/types/`, modules: `docs/reference/copies/solid-js/1.9.12/api-index/solid-js-types.md`
-
-## @effect/ai-openai 4.0.5
-
-OpenAI provider for effect/ai: OpenAiClient (apiUrl, transformClient) and OpenAiLanguageModel on the Responses API. The SDK's ai/responses stream uses it for model-openai, model-codex and model-opencode-go.
-
-- Docs: `docs/reference/copies/@effect/ai-openai/4.0.5/` (1 file: README.md)
-- API (source): `packages/plugins/model-codex/node_modules/@effect/ai-openai/src/`, modules: `docs/reference/copies/@effect/ai-openai/4.0.5/api-index/@effect-ai-openai-src.md`
+- Docs: `docs/reference/copies/@effect/sql-pg/4.0.5/` (1 file: README.md)
+- API (source): `tools/planned/node_modules/@effect/sql-pg/src/`, modules: `docs/reference/copies/@effect/sql-pg/4.0.5/api-index/@effect-sql-pg-src.md`
 
 ## @effect/ai-anthropic 4.0.5
 
-Anthropic provider for effect/ai: AnthropicClient (apiKey, apiUrl, transformClient) and AnthropicLanguageModel on the Messages API. The SDK's ai/messages stream uses it for model-anthropic and model-opencode-go.
+Anthropic provider for effect/ai: AnthropicClient (apiKey, apiUrl, transformClient) and AnthropicLanguageModel on the Messages API.
 
 - Docs: `docs/reference/copies/@effect/ai-anthropic/4.0.5/` (1 file: README.md)
-- API (source): `packages/plugins/model-anthropic/node_modules/@effect/ai-anthropic/src/`, modules: `docs/reference/copies/@effect/ai-anthropic/4.0.5/api-index/@effect-ai-anthropic-src.md`
+- API (source): `tools/planned/node_modules/@effect/ai-anthropic/src/`, modules: `docs/reference/copies/@effect/ai-anthropic/4.0.5/api-index/@effect-ai-anthropic-src.md`
+
+## @effect/ai-openai 4.0.5
+
+OpenAI provider for effect/ai: OpenAiClient (apiUrl, transformClient) and OpenAiLanguageModel on the Responses API.
+
+- Docs: `docs/reference/copies/@effect/ai-openai/4.0.5/` (1 file: README.md)
+- API (source): `tools/planned/node_modules/@effect/ai-openai/src/`, modules: `docs/reference/copies/@effect/ai-openai/4.0.5/api-index/@effect-ai-openai-src.md`
 
 ## @effect/ai-openai-compat 4.0.5
 
-Chat Completions provider for effect/ai: OpenAiClient (apiKey, apiUrl, transformClient) posting /chat/completions and OpenAiLanguageModel with a Responses-shaped config. The SDK's ai/chat stream uses it for model-opencode-go.
+Chat Completions provider for effect/ai: OpenAiClient (apiKey, apiUrl, transformClient) posting /chat/completions, for OpenAI-compatible servers.
 
 - Docs: `docs/reference/copies/@effect/ai-openai-compat/4.0.5/` (1 file: README.md)
-- API (source): `packages/plugins/model-opencode-go/node_modules/@effect/ai-openai-compat/src/`, modules: `docs/reference/copies/@effect/ai-openai-compat/4.0.5/api-index/@effect-ai-openai-compat-src.md`
+- API (source): `tools/planned/node_modules/@effect/ai-openai-compat/src/`, modules: `docs/reference/copies/@effect/ai-openai-compat/4.0.5/api-index/@effect-ai-openai-compat-src.md`
 
 ## @effect/ai-openrouter 4.0.5
 
-OpenRouter provider for effect/ai: OpenRouterClient (apiKey, apiUrl, transformClient) and OpenRouterLanguageModel on Chat Completions, with reasoning config and reasoning_details round trips. The model-openrouter plugin uses it.
+OpenRouter provider for effect/ai: OpenRouterClient (apiKey, apiUrl, transformClient) and OpenRouterLanguageModel on Chat Completions, with reasoning config and reasoning_details round trips.
 
 - Docs: `docs/reference/copies/@effect/ai-openrouter/4.0.5/` (1 file: README.md)
-- API (source): `packages/plugins/model-openrouter/node_modules/@effect/ai-openrouter/src/`, modules: `docs/reference/copies/@effect/ai-openrouter/4.0.5/api-index/@effect-ai-openrouter-src.md`
+- API (source): `tools/planned/node_modules/@effect/ai-openrouter/src/`, modules: `docs/reference/copies/@effect/ai-openrouter/4.0.5/api-index/@effect-ai-openrouter-src.md`
+
+## @opentui/core 0.6.6
+
+Terminal UI renderer with a native core: renderables (box, text, scrollbox), layout, colors (`RGBA`, `TextAttributes`), border styles, keyboard input, terminal palette queries. The site docs include the Solid renderer, plugin slots and keymap guides.
+
+- Docs: `docs/reference/copies/@opentui/core/0.6.6/` (110 files: README.md, packages/)
+- From: https://github.com/anomalyco/opentui.git, tag v0.6.6, commit 212eb27da4ad
+- API (types): `tools/planned/node_modules/@opentui/core/`, modules: `docs/reference/copies/@opentui/core/0.6.6/api-index/@opentui-core.md`
+
+## @opentui/solid 0.6.6
+
+Solid renderer for OpenTUI: `render`, `testRender`, hooks (`useKeyboard`, `useRenderer`, `useTerminalDimensions`), JSX elements, plugin slots (`createSolidSlotRegistry`, `<Slot>`) and runtime plugin support. Needs the `@opentui/solid/preload` Bun preload to run `.tsx` from source.
+
+- Docs: `docs/reference/copies/@opentui/solid/0.6.6/` (1 file: README.md)
+- API (types): `tools/planned/node_modules/@opentui/solid/`, modules: `docs/reference/copies/@opentui/solid/0.6.6/api-index/@opentui-solid.md`
+
+## @opentui/keymap 0.6.6
+
+Layered key bindings and named commands for OpenTUI: `createDefaultOpenTuiKeymap`, `KeymapProvider`, `useBindings`, `useKeymapSelector`, `getActiveKeys`. Its guides live in the @opentui/core copy under `packages/web/src/content/docs/keymap/`.
+
+- Docs: `docs/reference/copies/@opentui/keymap/0.6.6/` (1 file: README.md)
+- API (types): `tools/planned/node_modules/@opentui/keymap/`, modules: `docs/reference/copies/@opentui/keymap/0.6.6/api-index/@opentui-keymap.md`
+
+## solid-js 1.9.12
+
+Solid 1.x reactivity behind the OpenTUI Solid renderer: signals, memos, effects, control flow (`For`, `Show`), stores in `solid-js/store`. The docs site pages are unversioned and track the latest 1.x.
+
+- Docs: `docs/reference/copies/solid-js/1.9.12/` (118 files: README.md, src/)
+- From: https://github.com/solidjs/solid-docs.git, branch main, commit dadb1f193443 (not pinned to the installed version)
+- API (types): `tools/planned/node_modules/solid-js/types/`, modules: `docs/reference/copies/solid-js/1.9.12/api-index/solid-js-types.md`
+
+## electrobun 2.0.4
+
+Desktop shell: Bun main process, system webviews, typed RPC, menus, tray, updater. The 2.x npm package is only a bootstrap for the Hutch toolchain, so the docs and the main and browser SDK source come from the git tag.
+
+- Docs: `docs/reference/copies/electrobun/2.0.4/` (138 files: docs/, README.md, package/)
+- From: https://github.com/blackboardsh/electrobun.git, tag v2.0.4, commit c54c0c148764
 
 ## jsonc-parser 3.3.1
 
-Parses JSON with comments and edits it in place: parse, modify and applyEdits keep comments and formatting. The settings plugin uses it.
+Parses JSON with comments and edits it in place: parse, modify and applyEdits keep comments and formatting. For settings files.
 
 - Docs: `docs/reference/copies/jsonc-parser/3.3.1/` (1 file: README.md)
-- API (types): `packages/sdk/node_modules/jsonc-parser/lib/umd/main.d.ts`
+- API (types): `tools/planned/node_modules/jsonc-parser/lib/umd/main.d.ts`
 
-## @opencode/codemode 2.0.32
+## @opencode/codemode 2.1.2
 
-Confined interpreter for a JavaScript subset whose only reach is host tools: CodeMode.execute({ code, tools, limits }) returns a Result of value, logs and warnings or a diagnostic; Tool.make takes an Effect Schema or a render-only JSON Schema; search finds tools by path and description. tools-execute runs its scripts with it.
+Confined interpreter for a JavaScript subset whose only reach is host tools: CodeMode.execute({ code, tools, limits }) returns a Result of value, logs and warnings or a diagnostic; Tool.make takes an Effect Schema or a render-only JSON Schema; search finds tools by path and description.
 
-- Docs: `docs/reference/copies/@opencode/codemode/2.0.32/` (1 file: README.md)
-- API (types): `packages/plugins/tools-execute/node_modules/@opencode/codemode/dist/index.d.ts`
-- API (types): `packages/plugins/tools-execute/node_modules/@opencode/codemode/dist/codemode.d.ts`
-- API (types): `packages/plugins/tools-execute/node_modules/@opencode/codemode/dist/tool.d.ts`
+- Docs: `docs/reference/copies/@opencode/codemode/2.1.2/` (1 file: README.md)
+- API (types): `tools/planned/node_modules/@opencode/codemode/dist/index.d.ts`
+- API (types): `tools/planned/node_modules/@opencode/codemode/dist/codemode.d.ts`
+- API (types): `tools/planned/node_modules/@opencode/codemode/dist/tool.d.ts`
 
-## unbash 6.0.0
+## unbash 6.0.1
 
-Bash parser with no dependencies: parse gives a ParsedScript of statements, pipelines, and/or lists, commands, words with typed parts, and redirects; forEachChild visits a node's direct children. shell-safety walks it.
+Bash parser with no dependencies: parse gives a ParsedScript of statements, pipelines, and/or lists, commands, words with typed parts, and redirects; forEachChild visits a node's direct children. For shell safety checks.
 
-- Docs: `docs/reference/copies/unbash/6.0.0/` (1 file: README.md)
-- API (types): `packages/plugins/shell-safety/node_modules/unbash/dist/types.d.ts`
+- Docs: `docs/reference/copies/unbash/6.0.1/` (1 file: README.md)
+- API (types): `tools/planned/node_modules/unbash/dist/types.d.ts`
+- API (types): `tools/planned/node_modules/unbash/dist/parser.d.ts`
 
 ## diff 9.0.0
 
-jsdiff: line diffs and unified patches. structuredPatch and formatPatch with OMIT_HEADERS give hunks only; the SDK's unifiedDiff uses them.
+jsdiff: line diffs and unified patches. structuredPatch and formatPatch with OMIT_HEADERS give hunks only.
 
 - Docs: `docs/reference/copies/diff/9.0.0/` (1 file: README.md)
-- API (types): `packages/sdk/node_modules/diff/libesm/index.d.ts`
+- API (types): `tools/planned/node_modules/diff/libesm/index.d.ts`
 
 ## beautiful-mermaid 1.1.3
 
-Renders Mermaid diagrams as Unicode box-drawing text: renderMermaidASCII(source, options) returns a string, throwing on a diagram it cannot parse. The SDK's Markdown draws mermaid fences with it.
+Renders Mermaid diagrams as Unicode box-drawing text: renderMermaidASCII(source, options) returns a string, throwing on a diagram it cannot parse.
 
 - Docs: `docs/reference/copies/beautiful-mermaid/1.1.3/` (1 file: README.md)
-- API (types): `packages/sdk/node_modules/beautiful-mermaid/dist/index.d.ts`
+- API (types): `tools/planned/node_modules/beautiful-mermaid/dist/index.d.ts`
+
+## fuzzysort 4.0.2
+
+Fuzzy search with ranking and match highlighting: `go(search, targets, { key, keys, limit, threshold })`, `prepare` for cached targets, `result.highlight`. For the palette and `@` completion.
+
+- Docs: `docs/reference/copies/fuzzysort/4.0.2/` (1 file: README.md)
+- API (types): `tools/planned/node_modules/fuzzysort/index.d.ts`
+
+## partial-json 0.1.7
+
+Parses incomplete JSON from a stream: `parse(text, Allow)` returns what is complete so far; `Allow` picks which types may be partial. For streaming tool arguments.
+
+- Docs: `docs/reference/copies/partial-json/0.1.7/` (1 file: README.md)
+- API (types): `tools/planned/node_modules/partial-json/dist/index.d.ts`

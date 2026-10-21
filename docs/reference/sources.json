@@ -14,20 +14,6 @@
       "api": [{ "kind": "source", "path": "src" }]
     },
     {
-      "package": "@effect/platform-bun",
-      "versionSource": "lock",
-      "summary": "Bun layers for Effect's platform services: FileSystem, Path, runtime entry. Its ai-docs duplicate Effect's, so only the README is copied.",
-      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
-      "api": [{ "kind": "source", "path": "src" }]
-    },
-    {
-      "package": "@effect/sql-sqlite-bun",
-      "versionSource": "lock",
-      "summary": "SQLite client for effect/sql on bun:sqlite: SqliteClient layer and SqliteMigrator. SqlClient, Migrator and SqlError come from effect/sql.",
-      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
-      "api": [{ "kind": "source", "path": "src" }]
-    },
-    {
       "package": "@effect/tsgo",
       "versionSource": "lock",
       "summary": "Effect diagnostics for the TypeScript 7 compiler and Oxlint: rule names, severities, presets and tsconfig options.",
@@ -157,9 +143,58 @@
       "api": []
     },
     {
+      "package": "@effect/platform-bun",
+      "versionSource": "lock",
+      "summary": "Bun layers for Effect's platform services: FileSystem, Path, ChildProcess, runtime entry. Hosts use it; core and base plugins stay on `effect`. Its ai-docs duplicate Effect's, so only the README is copied.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "source", "path": "src" }]
+    },
+    {
+      "package": "@effect/sql-sqlite-bun",
+      "versionSource": "lock",
+      "summary": "SQLite client for effect/sql on bun:sqlite: SqliteClient layer and SqliteMigrator. SqlClient, Migrator and SqlError come from effect/sql. The default session store driver.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "source", "path": "src" }]
+    },
+    {
+      "package": "@effect/sql-pg",
+      "versionSource": "lock",
+      "summary": "PostgreSQL client for effect/sql: PgClient and PgPool layers, PgMigrator. The session-postgres driver for multi-process hosting.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "source", "path": "src" }]
+    },
+    {
+      "package": "@effect/ai-anthropic",
+      "versionSource": "lock",
+      "summary": "Anthropic provider for effect/ai: AnthropicClient (apiKey, apiUrl, transformClient) and AnthropicLanguageModel on the Messages API.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "source", "path": "src" }]
+    },
+    {
+      "package": "@effect/ai-openai",
+      "versionSource": "lock",
+      "summary": "OpenAI provider for effect/ai: OpenAiClient (apiUrl, transformClient) and OpenAiLanguageModel on the Responses API.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "source", "path": "src" }]
+    },
+    {
+      "package": "@effect/ai-openai-compat",
+      "versionSource": "lock",
+      "summary": "Chat Completions provider for effect/ai: OpenAiClient (apiKey, apiUrl, transformClient) posting /chat/completions, for OpenAI-compatible servers.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "source", "path": "src" }]
+    },
+    {
+      "package": "@effect/ai-openrouter",
+      "versionSource": "lock",
+      "summary": "OpenRouter provider for effect/ai: OpenRouterClient (apiKey, apiUrl, transformClient) and OpenRouterLanguageModel on Chat Completions, with reasoning config and reasoning_details round trips.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "source", "path": "src" }]
+    },
+    {
       "package": "@opentui/core",
       "versionSource": "lock",
-      "summary": "Terminal UI renderer with a native core: renderables (box, text, scrollbox), layout, colors (`RGBA`, `TextAttributes`), border styles, keyboard input, terminal palette queries (`renderer.getPalette`). Backs the gallery.",
+      "summary": "Terminal UI renderer with a native core: renderables (box, text, scrollbox), layout, colors (`RGBA`, `TextAttributes`), border styles, keyboard input, terminal palette queries. The site docs include the Solid renderer, plugin slots and keymap guides.",
       "docs": [
         { "origin": { "kind": "installed" }, "files": ["README.md"] },
         {
@@ -179,63 +214,77 @@
     {
       "package": "@opentui/solid",
       "versionSource": "lock",
-      "summary": "Solid renderer for OpenTUI: `render`, `testRender`, hooks such as `useKeyboard`, `useRenderer` and `useTerminalDimensions`, and the JSX elements. Needs the `@opentui/solid/preload` Bun preload to run `.tsx` from source.",
+      "summary": "Solid renderer for OpenTUI: `render`, `testRender`, hooks (`useKeyboard`, `useRenderer`, `useTerminalDimensions`), JSX elements, plugin slots (`createSolidSlotRegistry`, `<Slot>`) and runtime plugin support. Needs the `@opentui/solid/preload` Bun preload to run `.tsx` from source.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
       "api": [{ "kind": "types", "path": "" }]
     },
     {
       "package": "@opentui/keymap",
       "versionSource": "lock",
-      "summary": "Layered key bindings and named commands for OpenTUI: `createDefaultOpenTuiKeymap`, `KeymapProvider`, `useBindings`, `useKeymapSelector`, `getActiveKeys`, binding `desc` metadata. Its guides live in the @opentui/core copy under `packages/web/src/content/docs/keymap/`.",
+      "summary": "Layered key bindings and named commands for OpenTUI: `createDefaultOpenTuiKeymap`, `KeymapProvider`, `useBindings`, `useKeymapSelector`, `getActiveKeys`. Its guides live in the @opentui/core copy under `packages/web/src/content/docs/keymap/`.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
       "api": [{ "kind": "types", "path": "" }]
     },
     {
       "package": "solid-js",
       "versionSource": "lock",
-      "summary": "Fine-grained reactivity behind the OpenTUI Solid renderer: signals, memos, effects, control flow (`For`, `Show`), stores in `solid-js/store`.",
-      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "summary": "Solid 1.x reactivity behind the OpenTUI Solid renderer: signals, memos, effects, control flow (`For`, `Show`), stores in `solid-js/store`. The docs site pages are unversioned and track the latest 1.x.",
+      "docs": [
+        { "origin": { "kind": "installed" }, "files": ["README.md"] },
+        {
+          "origin": {
+            "kind": "git",
+            "repository": "https://github.com/solidjs/solid-docs.git",
+            "ref": { "branch": "main" }
+          },
+          "files": ["src/routes/**/*.mdx"],
+          "exclude": [
+            "src/routes/solid-start/**",
+            "src/routes/solid-router/**",
+            "src/routes/solid-meta/**"
+          ]
+        }
+      ],
       "api": [{ "kind": "types", "path": "types" }]
     },
     {
-      "package": "@effect/ai-openai",
+      "package": "electrobun",
       "versionSource": "lock",
-      "summary": "OpenAI provider for effect/ai: OpenAiClient (apiUrl, transformClient) and OpenAiLanguageModel on the Responses API. The SDK's ai/responses stream uses it for model-openai, model-codex and model-opencode-go.",
-      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
-      "api": [{ "kind": "source", "path": "src" }]
-    },
-    {
-      "package": "@effect/ai-anthropic",
-      "versionSource": "lock",
-      "summary": "Anthropic provider for effect/ai: AnthropicClient (apiKey, apiUrl, transformClient) and AnthropicLanguageModel on the Messages API. The SDK's ai/messages stream uses it for model-anthropic and model-opencode-go.",
-      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
-      "api": [{ "kind": "source", "path": "src" }]
-    },
-    {
-      "package": "@effect/ai-openai-compat",
-      "versionSource": "lock",
-      "summary": "Chat Completions provider for effect/ai: OpenAiClient (apiKey, apiUrl, transformClient) posting /chat/completions and OpenAiLanguageModel with a Responses-shaped config. The SDK's ai/chat stream uses it for model-opencode-go.",
-      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
-      "api": [{ "kind": "source", "path": "src" }]
-    },
-    {
-      "package": "@effect/ai-openrouter",
-      "versionSource": "lock",
-      "summary": "OpenRouter provider for effect/ai: OpenRouterClient (apiKey, apiUrl, transformClient) and OpenRouterLanguageModel on Chat Completions, with reasoning config and reasoning_details round trips. The model-openrouter plugin uses it.",
-      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
-      "api": [{ "kind": "source", "path": "src" }]
+      "summary": "Desktop shell: Bun main process, system webviews, typed RPC, menus, tray, updater. The 2.x npm package is only a bootstrap for the Hutch toolchain, so the docs and the main and browser SDK source come from the git tag.",
+      "docs": [
+        { "origin": { "kind": "installed" }, "files": ["README.md"] },
+        {
+          "origin": {
+            "kind": "git",
+            "repository": "https://github.com/blackboardsh/electrobun.git",
+            "ref": { "tag": "v{version}" }
+          },
+          "files": [
+            "docs/src/content/docs/electrobun/**/*.mdx",
+            "package/src/sdks/main/**/*.ts",
+            "package/src/browser/**/*.ts"
+          ],
+          "exclude": [
+            "docs/src/content/docs/electrobun/guides/changelog/v1-*.mdx",
+            "docs/src/content/docs/electrobun/guides/hello-world-{go,odin,rust,zig}.mdx",
+            "package/src/**/__tests__/**",
+            "package/src/**/*.test.ts"
+          ]
+        }
+      ],
+      "api": []
     },
     {
       "package": "jsonc-parser",
       "versionSource": "lock",
-      "summary": "Parses JSON with comments and edits it in place: parse, modify and applyEdits keep comments and formatting. The settings plugin uses it.",
+      "summary": "Parses JSON with comments and edits it in place: parse, modify and applyEdits keep comments and formatting. For settings files.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
       "api": [{ "kind": "types", "path": "lib/umd/main.d.ts" }]
     },
     {
       "package": "@opencode/codemode",
       "versionSource": "lock",
-      "summary": "Confined interpreter for a JavaScript subset whose only reach is host tools: CodeMode.execute({ code, tools, limits }) returns a Result of value, logs and warnings or a diagnostic; Tool.make takes an Effect Schema or a render-only JSON Schema; search finds tools by path and description. tools-execute runs its scripts with it.",
+      "summary": "Confined interpreter for a JavaScript subset whose only reach is host tools: CodeMode.execute({ code, tools, limits }) returns a Result of value, logs and warnings or a diagnostic; Tool.make takes an Effect Schema or a render-only JSON Schema; search finds tools by path and description.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
       "api": [
         { "kind": "types", "path": "dist/index.d.ts" },
@@ -246,21 +295,38 @@
     {
       "package": "unbash",
       "versionSource": "lock",
-      "summary": "Bash parser with no dependencies: parse gives a ParsedScript of statements, pipelines, and/or lists, commands, words with typed parts, and redirects; forEachChild visits a node's direct children. shell-safety walks it.",
+      "summary": "Bash parser with no dependencies: parse gives a ParsedScript of statements, pipelines, and/or lists, commands, words with typed parts, and redirects; forEachChild visits a node's direct children. For shell safety checks.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
-      "api": [{ "kind": "types", "path": "dist/types.d.ts" }]
+      "api": [
+        { "kind": "types", "path": "dist/types.d.ts" },
+        { "kind": "types", "path": "dist/parser.d.ts" }
+      ]
     },
     {
       "package": "diff",
       "versionSource": "lock",
-      "summary": "jsdiff: line diffs and unified patches. structuredPatch and formatPatch with OMIT_HEADERS give hunks only; the SDK's unifiedDiff uses them.",
+      "summary": "jsdiff: line diffs and unified patches. structuredPatch and formatPatch with OMIT_HEADERS give hunks only.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
       "api": [{ "kind": "types", "path": "libesm/index.d.ts" }]
     },
     {
       "package": "beautiful-mermaid",
       "versionSource": "lock",
-      "summary": "Renders Mermaid diagrams as Unicode box-drawing text: renderMermaidASCII(source, options) returns a string, throwing on a diagram it cannot parse. The SDK's Markdown draws mermaid fences with it.",
+      "summary": "Renders Mermaid diagrams as Unicode box-drawing text: renderMermaidASCII(source, options) returns a string, throwing on a diagram it cannot parse.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "types", "path": "dist/index.d.ts" }]
+    },
+    {
+      "package": "fuzzysort",
+      "versionSource": "lock",
+      "summary": "Fuzzy search with ranking and match highlighting: `go(search, targets, { key, keys, limit, threshold })`, `prepare` for cached targets, `result.highlight`. For the palette and `@` completion.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "types", "path": "index.d.ts" }]
+    },
+    {
+      "package": "partial-json",
+      "versionSource": "lock",
+      "summary": "Parses incomplete JSON from a stream: `parse(text, Allow)` returns what is complete so far; `Allow` picks which types may be partial. For streaming tool arguments.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
       "api": [{ "kind": "types", "path": "dist/index.d.ts" }]
     }

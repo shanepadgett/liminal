@@ -20,5 +20,5 @@
     "plugins": [{ "name": "@effect/language-service", "diagnostics": false }]
   },
   "include": ["apps", "packages", "tools"],
-  "exclude": ["**/node_modules", "tools/**/fixtures"]
+  "exclude": ["**/node_modules", "tools/**/fixtures", "archive"]
 }

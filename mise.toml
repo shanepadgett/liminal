@@ -52,20 +52,6 @@ run = "bunx --bun --no-install oxlint --type-aware --deny-warnings --disable-nes
 description = "Types and Effect diagnostics with the patched compiler"
 run = "bunx --bun --no-install tsc --noEmit"
 
-[tasks.gallery]
-description = "Open the gallery, where Liminal's tokens, primitives, components and screens are designed"
-# The gallery reads the terminal's keys, so it gets the terminal directly.
-raw = true
-dir = "{{config_root}}/apps/gallery"
-# watch.ts restarts the gallery on each save; --hot misses files the Solid plugin loads.
-run = "bun src/watch.ts"
-
-[tasks.dev]
-description = "Run Liminal from the repo; plugin edits reload at turn end, other edits restart it"
-# The TUI reads the terminal's keys, so it gets the terminal directly.
-raw = true
-run = "bun apps/cli/src/supervisor.ts"
-
 [tasks.docs]
 description = "Copy version-matched dependency docs into docs/reference/copies/ and rebuild the index"
 run = "bun tools/reference/sync.ts"
@@ -77,11 +63,6 @@ run = "bun tools/reference/check.ts"
 [tasks."check:anatomy"]
 description = "Plugin package anatomy"
 run = "bun tools/checks/plugin-anatomy.ts"
-
-# Opt-in: pass a database path; omitted from the repository-wide check task.
-[tasks."check:session-history"]
-description = "Audit saved entry data read-only: mise run check:session-history -- <sessions.db>"
-run = "bun apps/cli/src/audit-history.ts"
 
 [tasks."check:versions"]
 description = "Every workspace package has the root package's version"
@@ -96,8 +77,8 @@ description = "Duplicated code"
 run = "bun tools/quiet.ts bunx --bun --no-install fallow dupes --fail-on-issues"
 
 [tasks.test]
-description = "Workspace and tool tests under Bun"
-run = "bun tools/quiet.ts bun test ./apps ./packages ./tools/checks ./tools/reference --pass-with-no-tests --only-failures"
+description = "Tool tests under Bun"
+run = "bun tools/quiet.ts bun test ./tools/checks ./tools/reference --pass-with-no-tests --only-failures"
 
 [tasks."test:tools"]
 description = "Lint rule tests under Node; oxlint's RuleTester does not run under Bun"

@@ -1,0 +1,407 @@
+# Liminal architecture
+
+Liminal is an agent harness where everything is a plugin. A tiny core composes plugins. The agent itself (model calls, tools, the turn loop, sessions) is a base set of plugins. Products are compositions: a terminal app, a desktop app, a web server, or a library embedded in someone else's app.
+
+This file is the intended design. Once something is built and settled, its how-to moves into `guides/`.
+
+## Goals
+
+- Clear seams: every behavior sits behind a contract that another plugin can extend or replace.
+- The simplest implementation that keeps those seams. No mechanism exists until a plugin needs it.
+- Long-term health over speed: no shortcut that bends a seam to get something working.
+- Solve the common case. No mechanism, option or special case for an edge case few users hit.
+- One harness for every host: TUI binary, desktop app, web server, embedded SDK.
+- Multiplayer sessions: many people watch and steer one session.
+- External authors build plugins with the same tools as built-in plugins.
+
+## Layers
+
+Each layer imports only from the layers above it.
+
+```text
+core                      definePlugin, compose, Registry, Pipeline, Attribute     knows nothing about agents
+  ↑
+base plugins              model · session · tools · context · loop                 "an agent"
+  ↑
+providers & features      model-anthropic, session-sqlite, tools-files, approvals, memory, …
+  ↑
+frontend kit              client (framework-free) · tui (OpenTUI + slots)
+  ↑
+hosts                     apps/cli · apps/desktop · an embedding app
+```
+
+- Core, base plugins and `client` use only `effect` and standard JavaScript, so they run on Bun, Node and Deno. A lint boundary enforces it. Bun APIs and drivers live in other plugins and hosts.
+
+## Stack
+
+Versions are pinned in `package.json`; [reference/copies/index.md](reference/copies/index.md) has each dependency's docs.
+
+| Need | Technology |
+| --- | --- |
+| Runtime, package manager, binary | Bun |
+| Plugins, services, streams, schemas | Effect 4 |
+| Model calls, structured output | `effect/ai` with `@effect/ai-anthropic`, `-openai`, `-openai-compat`, `-openrouter` |
+| Command line | `effect/cli` |
+| Processes | `effect/process` |
+| Storage | `effect/sql` `SqlClient`; the host supplies the driver layer: `@effect/sql-sqlite-bun`, later `@effect/sql-pg` |
+| TUI | OpenTUI (`@opentui/core`, `@opentui/solid`, `@opentui/keymap`) on Solid 1.x |
+| Desktop | Electrobun: Bun main process and a system webview |
+| Tooling | TypeScript 7, `@effect/tsgo`, oxlint, oxfmt, fallow, mise |
+
+- `effect/ai`, `effect/cli` and `effect/process` are marked unstable; they stay behind Liminal's contracts.
+- Every dependency has a source in `reference/sources.json`. Dependencies of plugins not yet built are pinned in `tools/planned/package.json` for their docs, and move into the plugin's package when it is built.
+- Prefer what OpenTUI, Bun and Effect already provide over a new library.
+
+| Library | Used by |
+| --- | --- |
+| `fuzzysort` | `palette`, `chat` (`@` file tags), model picker |
+| `diff` | `tools-files` edit patches |
+| `partial-json` | `tools-files` TUI part, only if Effect AI gives no partial tool arguments |
+| `unbash` | `tools-shell` safety rules |
+| `@opencode/codemode` | `tools-execute` |
+| `jsonc-parser` | Settings files with comments |
+| `beautiful-mermaid` | Mermaid diagrams in TUI markdown |
+
+## Folder structure
+
+```text
+packages/
+  core/                     plugin, compose, Registry, Pipeline, Attribute
+  client/                   send/page/live over function calls, IPC or HTTP; session view store
+  tui/                      OpenTUI renderer, slot tree, UI kit
+  plugins/<name>/           one package per plugin
+apps/
+  cli/                      compose + TUI, compiled with bun build --compile
+  desktop/                  compose in the main process + webview using client over IPC
+tools/                      lint rules and repository checks
+archive/                    the previous implementation, read-only reference
+docs/
+```
+
+## Plugin anatomy
+
+```text
+plugins/approvals/
+  package.json        exports ".", "./contract", "./tui", "./web"; "liminal": { "plugins": ["./src/plugin.ts"] }
+  src/
+    contract.ts       tags, event kinds, schemas, slot handles others import
+    plugin.ts         definePlugin(...): the server side
+    tui.tsx           TUI slot registrations (optional)
+    web.tsx           desktop webview slot registrations (optional)
+```
+
+```ts
+export default definePlugin({
+  name: "approvals",
+  provides: [Approvals],
+  requires: [ToolCall, Inbox, Models],
+  layer: ApprovalsLive,
+  parts: { tui: () => import("./tui.tsx"), web: () => import("./web.tsx") },
+});
+```
+
+- A server never imports frontend parts. A frontend loads its part of every plugin in the composition.
+- A plugin imports other plugins only through their `./contract` export.
+- A part that grows becomes a folder with an `index` entry.
+
+## Core
+
+Core is the mechanism that lets plugins plug into each other. It runs on any JavaScript runtime and depends only on Effect.
+
+```ts
+definePlugin({ name, provides, requires, layer, parts })   // a plugin is an Effect Layer
+compose(plugins): Effect<Services, CompositionError, Scope>
+Registry<T>          // a collection others add to; ordered by explicit `order`
+Pipeline<In, Out>    // an operation others wrap with middleware calling next()
+Attribute<T>         // a typed key for data attached to sessions, inputs and events
+```
+
+- `provides` and `requires` are Effect service tags. `compose` checks the graph, builds plugins in dependency order, and ties every registration to the plugin's scope.
+- A missing requirement, a cycle or two providers of one tag is a `CompositionError` naming the plugins.
+- Core holds no sessions, messages, transports or loaders.
+- Test: core can compose a program that is not an agent.
+
+## Extension mechanisms
+
+Every extension uses one of four mechanisms; [extension-basics.md](extension-basics.md) walks through each with examples. When a feature can only be built by editing a base plugin, that base plugin is missing an extension point.
+
+| Mechanism | Use | Example |
+| --- | --- | --- |
+| Add | Contribute to a `Registry` | A tool, a prompt section, a model provider, a slash command, a UI component |
+| Wrap | Middleware on a `Pipeline` | Approval before a tool call, retry around a model call |
+| Attach | Set an `Attribute` on a session, input or event | The actor who sent an input, the work order a session belongs to |
+| Replace | Provide the same contract | `session-postgres` in place of the in-memory store |
+
+## Base plugins: the agent
+
+Each base plugin owns a contract that other plugins import.
+
+```ts
+// model: the LLM vocabulary, providers and one-off calls
+type Part = Text | Image | Reasoning | ToolCall | ToolResult
+type Message = { role: "user" | "assistant" | "tool"; parts: Part[] }
+interface Model {
+  capabilities: { tools; images; reasoning; caching; structuredOutput }
+  stream(req: ModelRequest): Stream<ModelDelta>
+}
+Models: Registry<ModelProvider>
+ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>
+Models.generate<T>(options: {
+  model?: "main" | "small" | ModelId        // roles come from settings
+  prompt: Part[]
+  history?: SessionId                        // start from the session's projected history
+  schema?: Schema<T>                         // structured output
+}): Effect<T | Message>
+
+// session: the log, the inbox and commands
+type SessionEvent = { id; seq: number; at: Date; kind: string; data: unknown; attributes: Attributes }
+defineEvent(kind, schema, { modelVisible })    // plugins declare their own event kinds
+interface SessionLog {
+  open(attributes): Effect<SessionId>
+  append(id, events, expectedSeq): Effect<Seq, Conflict>
+  page(id, before?): Effect<SessionEvent[]>   // latest events, or the page before an event
+  live(id): Stream<SessionEvent | Delta>      // latest page, then new events and streaming deltas
+}
+interface Inbox { send(id, input: Input): Effect<void> }   // input: event kind + parts + attributes
+Send: Pipeline<Input, void>
+Commands: Registry<Command>                  // slash commands, run on the agent side
+
+// tools
+interface Tool<I, O> { name; description; input: Schema<I>; run(input: I, ctx: ToolContext): Effect<O> }
+Tools: Registry<Tool>
+ToolCall: Pipeline<ToolCallRequest, ToolResult>
+
+// context
+Sections: Registry<Section>                  // rendered into each request
+History: Pipeline<SessionEvent[], Message[]> // projection of the log into model messages
+
+// loop
+TurnEnd: Registry<Hook>
+```
+
+The loop runs one turn:
+
+```text
+take queued inputs → render Sections + History → ModelCall → ToolCall for each call
+→ append events → repeat while tools owe a result or new input arrived → TurnEnd hooks
+```
+
+- Each step carries the attributes of the latest input it consumed; tool calls read them from `ToolContext` and log them.
+- The loop logs a section's rendered text only when it differs from the last logged text.
+- Cancel is an input the loop handles.
+- Shared provider code, such as an OpenAI-compatible wire format, is a library the provider plugins import, not a contract.
+- The session log stores Liminal's own `Message` and `Part` schema. Providers convert to and from Effect AI's types at their edge, so saved sessions outlive library changes.
+
+### One-off model calls and structured output
+
+- `Models.generate` makes a single model call outside the turn loop, through the `ModelCall` pipeline, so usage and cache hints apply.
+- With `schema`, the result is decoded through the schema. A model with `structuredOutput` gets the provider's native JSON schema output; only a model without it gets a forced tool call. Effect AI's `LanguageModel.generateObject` already makes this choice per provider.
+- With `history`, the request starts with the session's projected history, the same prefix as its last turn, so it hits the provider's cache. The prompt goes at the end and the result is not appended to the session. A side question over the current chat ("by the way") is this call.
+- Commit grouping, approval verdicts and session names are `Models.generate` with a schema on the `small` model.
+
+## Sessions
+
+- The session log is the source of truth. Everything the model sees is logged; model context is a projection of the log.
+- Event kinds declare whether the model sees them. Notices are events the model never sees.
+- Live streaming deltas are not stored. A finished assistant message is committed as one event.
+- Every way into a session is an input through `Inbox.send`: a user message, an answer to a question, a notification, chat history, a cancel, a command.
+- An input sent during a turn joins at the next step. An input sent to an idle session starts a turn.
+- One runner per session. `append` with `expectedSeq` rejects a second writer. The session provider decides how a runner is chosen: a lock in one process, a lease across processes.
+- Recovery is per turn. After a crash or shutdown, an unfinished turn gets an `interrupted` event and continues from the log.
+
+### Multiplayer
+
+Multiplayer needs no extra mechanism beyond the session rules:
+
+- Many viewers: opening a session shows the latest events and keeps updating; scrolling back loads older pages. Nothing tracks what a viewer has seen.
+- Many senders: inputs queue in the session.
+- Acting on behalf of someone: the `actors` plugin attaches an `Actor` attribute to every input through `Send` middleware. Tool calls run with the actor of the latest consumed input, and the log records it.
+- Questions and approvals are events. Answers are inputs. A policy middleware decides who may answer.
+
+## UI
+
+Three layers, each usable without the next:
+
+```text
+client         send / page / live / call over function calls, IPC or HTTP      any JS, no framework
+session view   folds events into state: messages, streaming text,
+               pending questions, who's acting, turn status                   any JS, no framework
+frontend       components                                                      TUI, desktop, an embedding app
+```
+
+```ts
+const view = SessionView.open(client, sessionId)
+view.state      // { messages, streaming, questions, status: "idle" | "running", actors }
+view.subscribe(listener)
+view.send(input)
+view.answer(questionId, value)
+view.loadOlder()
+```
+
+### Slots: TUI and desktop
+
+A slot is a named region of the screen that plugins fill from their `tui` and `web` parts. The TUI uses OpenTUI's plugin slots (`createSolidSlotRegistry`, `<Slot>`).
+
+| Slot mode | Mechanism | Example |
+| --- | --- | --- |
+| `append` | Add | Status bar items, sidebar sections |
+| `replace`, `single_winner` | Replace | The whole composer, the message list, the root layout |
+
+How an event renders is not a slot: `EventRenderer` is a registry keyed by event kind.
+
+```ts
+// chat plugin owns the screen, its slots and the event renderers
+type ChatSlots = { sidebar: { session: SessionId }; composer: { session: SessionId } }
+export const EventRenderer: Registry<{ kind: string; component: Component<{ event: SessionEvent }> }>
+
+// approvals tui part
+EventRenderer.add({ kind: "question", component: QuestionCard })
+```
+
+- An event kind with no renderer gets a generic view.
+- The TUI and the desktop webview both use Solid 1.x. The session view and state code are shared. Components and the slot registry are not: OpenTUI's need its native core, so the desktop gets its own small slot registry with the same slot names.
+
+### Embedding apps
+
+An embedding app is the host, so it owns its UI. It uses `client` and the session view and renders with its own components. A plain map from event kind to component plays the role of the `EventRenderer` slot. Plugin `tui` and `web` parts are for Liminal's own frontends.
+
+## Hosts
+
+| Host | Composition | Frontend and connection |
+| --- | --- | --- |
+| CLI binary | Base + `session-sqlite` + coding tools + `loader` | TUI in the same process; plain function calls |
+| Desktop app | Same as CLI, in the app's main process | Webview using `client` over the desktop shell's IPC |
+| Web server | Base + `session-postgres` + app plugins + `actors` + `http` | Browser UI using `client` over HTTP |
+| Embedded | Whatever the embedding code imports | The embedding app's own UI |
+
+- `apps/cli` is a full command line: the TUI by default, and a print mode like Pi's and OpenCode's that runs a prompt without the TUI and writes the result to stdout.
+- Print mode is a frontend over `client`. `-p` writes the final reply; `--json` writes session events as JSON lines. Questions and approvals are denied unless `--approve` is passed. There is no RPC mode; `http` covers remote control.
+- No host runs a server unless it composes `http`. A CLI that composes `http` lets a second client attach to a running session.
+- `http` routes: `POST /sessions/:id/inputs`, `GET /sessions/:id/live` (Server-Sent Events: latest page, then new events), `GET /sessions/:id/events?before=<id>` (older page).
+- `client` is plain JavaScript with no Effect dependency, small enough for a browser island.
+
+### Multiple processes
+
+`session-postgres` runs a session across many server processes:
+
+- Store: event and session tables.
+- Runner: a lease row with a TTL. The process that wins the lease runs the turn in a background fiber; `send` returns once the input is appended.
+- Live deltas: Postgres `LISTEN/NOTIFY`, so viewers on any process see streaming output.
+- Shutdown: on `SIGTERM` the runner stops at a step boundary and releases the lease. A lost lease expires and another process resumes the turn.
+
+These are internals of the provider, not contracts.
+
+## Plugins
+
+| Group | Plugin | Does | Mechanism | Previous code in `archive/packages/plugins/` |
+| --- | --- | --- | --- | --- |
+| Base | `model` | Message types, providers, `ModelCall`, `Models.generate` | base | `models`, `decisions` |
+| Base | `session` | Log, inbox, `Send`, `Commands`, event kinds, in-memory store | base | `session-log`, `inbox`, `notices` |
+| Base | `tools` | Tool registry, `ToolCall`, tool guidance section | base | `tools` |
+| Base | `context` | `Sections`, `History` | base | `context` |
+| Base | `loop` | The turn, `TurnEnd`, cancel | base | `agent-loop`, `cancel` |
+| Providers | `model-anthropic`, `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go` | Model providers and their logins | Add | same names |
+| Providers | `model-scripted` | Scripted replies for development | Add | `model-scripted` |
+| Providers | `model-catalog` | Names, limits, prices from models.dev | base service | `model-catalog` |
+| Providers | `accounts` | Credentials, login methods, `/connect` | Add | `logins`, `credential-store` |
+| Storage | `session-sqlite`, `session-postgres` | Session stores | Replace | `session-store` |
+| Tools | `tools-files` | `read`, `edit`, `write`, `@` file tags | Add | `files`, `tools-read`, `tools-edit` |
+| Tools | `tools-shell` | `shell`, command runner, shell safety, background processes | Add | `tools-shell`, `command-runner`, `shell-safety`, `processes` |
+| Tools | `tools-web` | `websearch`, `webfetch` | Add | `tools-web` |
+| Tools | `tools-execute` | Code mode | Add | `tools-execute` |
+| Tools | `tools-search` | Deferred tools | Add, Wrap | `tools-search` |
+| Tools | `tool-output` | Output limits | Wrap | `tool-output` |
+| Context | `instructions` | Base prompt, `AGENTS.md`, `.liminal/instructions/` | Add | `system-prompt`, `agents-files`, `instruction-files` |
+| Context | `environment` | Workspace facts | Add | `environment` |
+| Context | `skills`, `references`, `vocabulary` | Skill folders, reference repos, project terms | Add | same names |
+| Features | `approvals` | Tool call gate: decision model, reviewer, user | Wrap | `approval` |
+| Features | `questions` | `ask_question`, `/qna` | Add | `questions` |
+| Features | `memory` | Checkpoints, notes, context window | Wrap | `memory` |
+| Features | `session-name`, `usage`, `cache-hints` | Naming, cost, cache marks | Add, Attach, Wrap | same names |
+| Features | `checks`, `commit` | Project checks, `/commit` | Wrap, Add | same names |
+| Hosting | `loader` | Plugin folders, `plugins.json`, trust, hot reload | host level | `trust`, `reload`, `archive/packages/kernel` |
+| Hosting | `actors` | Who sent each input | Attach, Wrap | none |
+| Hosting | `http` | HTTP routes for send, page and live | none | `archive/packages/kernel/src/server` |
+| TUI | `chat` | Chat screen, composer, the session slots | Add (slots) | `chat`, `inbox` (composer) |
+| TUI | `palette`, `theme`, `attention` | Command palette, theme, sounds | Add (slots) | same names |
+
+## Example: the work order agent
+
+A Deno/Fresh app on AWS Fargate embeds Liminal on its server. People reach the agent two ways: by @mentioning it in a work order chat thread, and through a multiplayer agent panel. Each thread the agent is pulled into is its own session.
+
+```ts
+compose([...agent(), sessionPostgres, modelAnthropic,
+         actors, approvals, workOrders, workOrderThreads, http])
+```
+
+| Need | Plugin | Mechanism |
+| --- | --- | --- |
+| Session per thread | `work-order-threads` | Session `Subject` attribute plus its own thread-to-session table |
+| Chat history on @mention | `work-order-threads` | The app's save-message code calls `mention({ threadId, message, actor })`, which sends a chat-history input with the messages since the agent's last read, then the mention |
+| Reply in the thread | `work-order-threads` | `TurnEnd` hook inserts the reply into the app's thread table, so the existing thread UI shows it |
+| Work order context | `work-orders` | Adds a `Section` |
+| Work order tools | `work-orders` | Adds `Tools` that call the app's API with the actor's permissions |
+| Multiplayer panel | `http` + `client` | A Preact island uses the session view and its own components |
+| Acting for whoever steered | `actors` | `Actor` attribute on inputs |
+
+- The Fresh route mounts the `http` handler and the app's auth supplies the actor.
+- @mention UI is the app's: Agent as a mentionable participant, an optional working indicator, approvals as a message with buttons or a link to the panel.
+- An agent reply can link to the panel, which opens the thread's session.
+
+## Distribution
+
+### Packages
+
+All packages publish to npm as ESM JavaScript with type declarations, so Node, Bun and Deno (through `npm:` specifiers) consume them the same way.
+
+| Package | Holds |
+| --- | --- |
+| `@liminal/core` | Core |
+| `@liminal/model`, `@liminal/session`, `@liminal/tools`, `@liminal/context`, `@liminal/loop` | Base plugins with their contracts |
+| `@liminal/agent` | `agent()`: the base plugin list, for embedding in one import |
+| `@liminal/<plugin>` | Providers and features |
+| `@liminal/client` | Client and session view |
+| `@liminal/tui` | TUI frontend and the UI kit for `tui` parts |
+
+- Every workspace package shares one version.
+- Core, base plugins and `client` run on any runtime; see [Layers](#layers).
+
+### CLI binary
+
+- `apps/cli` compiles with `bun build --compile` into one `liminal` executable per platform.
+- The binary contains core, the built-in plugins, the TUI and `loader`.
+- `loader` reads `~/.liminal/` and `<project>/.liminal/` for installed annexes and `plugins.json`, imports them at runtime, and rebuilds the composition between turns when they change.
+
+### Desktop app
+
+- `apps/desktop` runs the same composition as the CLI in a Bun main process and renders a webview frontend connected through `client` over IPC.
+- It installs and loads annexes from the same folders as the CLI.
+
+### Embedding
+
+- An app installs `@liminal/agent` and the plugins it wants, composes them in code, and serves them with `http` or calls them directly.
+- Embedded compositions import plugins statically. They need no loader, no plugin folders and no hot reload.
+
+## External plugins
+
+An annex is the distribution unit for external plugins: an npm, git or local package containing one or more plugins.
+
+```json
+{
+  "name": "@acme/liminal-jira",
+  "type": "module",
+  "exports": { ".": "./dist/plugin.js", "./contract": "./dist/contract.js" },
+  "peerDependencies": { "@liminal/core": "x.y.z", "@liminal/tools": "x.y.z", "effect": "x.y.z" },
+  "liminal": { "plugins": ["./dist/plugin.js"] }
+}
+```
+
+- An annex depends on `@liminal/core`, `effect` and the contracts it extends as peer dependencies.
+- An annex exports its contract separately, so other annexes can extend it without loading its implementation.
+- Embedding apps use an annex by importing it. The CLI and desktop use an annex by installing it into a plugin folder, where `loader` finds it through the `liminal` key.
+- Loaded annexes get the host's copy of core, Effect, OpenTUI and every contract, so service tags and schemas match. `loader` does this with OpenTUI's runtime plugin support, whose module map points those imports at the host's instances, including inside a compiled binary.
+- A project's annexes and `plugins.json` load only in a trusted workspace.
+
+## Open
+
+- How `loader` installs annexes from npm and git.

@@ -1,25 +1,15 @@
 {
   "$schema": "./node_modules/fallow/schema.json",
   // Fallow owns dead code, workspace dependency hygiene, cycles, import boundaries and duplicates.
-  "ignorePatterns": ["tools/**/fixtures/**", "docs/reference/copies/**"],
+  "ignorePatterns": ["tools/**/fixtures/**", "docs/reference/copies/**", "archive/**"],
   "entry": [
     "tools/quiet.ts",
     "tools/checks/plugin-anatomy.ts",
     "tools/reference/sync.ts",
     "tools/reference/check.ts",
-    // The supervisor runs it as a child process by path.
-    "apps/cli/src/main.ts",
-    // The opt-in history audit runs without starting the app.
-    "apps/cli/src/audit-history.ts",
-    // The processes plugin starts its holder program by path.
-    "packages/plugins/processes/src/server/holder/main.ts",
-    "apps/gallery/src/main.tsx",
-    "apps/gallery/src/watch.ts",
-    // The kernel loads test plugins by folder.
-    "apps/cli/test/plugins/*/plugin.ts",
   ],
-  // Published APIs: the SDK for plugin authors, and every plugin's manifest and contract.
-  "publicPackages": ["@liminal/sdk", "@liminal/*"],
+  // Published APIs: core, the frontend kit and every plugin's contract.
+  "publicPackages": ["@liminal/*"],
   "rules": {
     "unused-dev-dependencies": "error",
     "unused-optional-dependencies": "error",
@@ -31,47 +21,4 @@
     "policy-violation": "error",
   },
   "duplicates": { "mode": "mild", "minTokens": 50, "minLines": 5, "minOccurrences": 2 },
-  "boundaries": {
-    "zones": [
-      { "name": "apps", "patterns": ["apps/**"] },
-      { "name": "kernel", "patterns": ["packages/kernel/**"] },
-      // The renderer-free frontend host; renderers in apps/ build on it.
-      { "name": "frontend", "patterns": ["packages/frontend/**"] },
-      // The SDK's subpaths: core is the root export; ai, testing, tui and desktop build on it.
-      { "name": "sdk-core", "patterns": ["packages/sdk/src/core/**"] },
-      { "name": "sdk-ai", "patterns": ["packages/sdk/src/ai/**"] },
-      { "name": "sdk-testing", "patterns": ["packages/sdk/src/testing/**"] },
-      { "name": "sdk-tui", "patterns": ["packages/sdk/src/tui/**"] },
-      { "name": "sdk-desktop", "patterns": ["packages/sdk/src/desktop/**"] },
-      { "name": "plugins", "patterns": ["packages/plugins/**"] },
-      { "name": "tools", "patterns": ["tools/**"] },
-    ],
-    "rules": [
-      // sdk-testing serves only test files; the liminal/testing-imports lint rule enforces that.
-      {
-        "from": "apps",
-        "allow": [
-          "kernel",
-          "frontend",
-          "sdk-core",
-          "sdk-testing",
-          "sdk-tui",
-          "sdk-desktop",
-          "plugins",
-        ],
-      },
-      { "from": "kernel", "allow": ["sdk-core", "sdk-testing"] },
-      { "from": "frontend", "allow": ["sdk-core", "sdk-testing"] },
-      { "from": "sdk-core", "allow": [] },
-      { "from": "sdk-ai", "allow": ["sdk-core"] },
-      { "from": "sdk-testing", "allow": ["sdk-core"] },
-      { "from": "sdk-tui", "allow": ["sdk-core"] },
-      { "from": "sdk-desktop", "allow": ["sdk-core"] },
-      {
-        "from": "plugins",
-        "allow": ["sdk-core", "sdk-ai", "sdk-testing", "sdk-tui", "sdk-desktop", "plugins"],
-      },
-      { "from": "tools", "allow": [] },
-    ],
-  },
 }

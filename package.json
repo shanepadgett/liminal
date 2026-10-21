@@ -5,7 +5,8 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    "packages/plugins/*"
+    "packages/plugins/*",
+    "tools/planned"
   ],
   "type": "module",
   "scripts": {
@@ -15,15 +16,13 @@
     "effect": "4.0.5"
   },
   "devDependencies": {
-    "@effect/tsgo": "0.53.1",
-    "@opentui/solid": "0.6.6",
-    "@oxlint/plugins": "1.88.0",
+    "@effect/tsgo": "0.56.0",
+    "@oxlint/plugins": "1.89.0",
     "@types/bun": "1.4.3",
-    "fallow": "3.33.1",
-    "oxfmt": "0.73.0",
-    "oxlint": "1.88.0",
+    "fallow": "3.34.1",
+    "oxfmt": "0.74.0",
+    "oxlint": "1.89.0",
     "oxlint-tsgolint": "7.0.2004",
-    "solid-js": "1.9.12",
     "typescript": "7.0.2"
   },
   "overrides": {

@@ -1,0 +1,63 @@
+---
+title: Derived signals
+category: Concepts / Derived Values
+order: 1
+use_cases: >-
+  computed values, reactive calculations, dependent state, dynamic values from
+  signals
+tags:
+  - signals
+  - reactivity
+  - derived
+  - computed
+  - state
+version: "1.0"
+description: >-
+  Derive values from signals with plain functions and use them in tracking
+  scopes to keep dependent computations up to date.
+---
+
+Derived signals are functions that rely on one or more [signals](/concepts/signals) to produce a value.
+
+A derived signal is a plain function: it runs when you call it, not automatically when a signal changes.
+Each call reads the current signal values and calculates a new result.
+
+```js
+const double = () => count() * 2;
+```
+
+Calling `double()` reads `count()` and returns twice its current value.
+Changing `count` alone does not call `double`.
+If you call `double()` inside a tracking scope, such as an effect or a JSX expression, that scope tracks the `count()` read and runs again when `count` changes.
+
+```js
+import { createEffect, createSignal } from "solid-js";
+
+const [count, setCount] = createSignal(1);
+const double = () => count() * 2;
+
+console.log(double());
+createEffect(() => console.log(double()));
+
+setCount(2);
+```
+
+The first `console.log(double())` is a one-time read that prints `2`.
+The effect tracks the `count()` read inside `double()`, so it runs again and prints `4` when `setCount(2)` updates the signal.
+The first `console.log` does not run again.
+
+Similarly you can create a derived signal that relies on a store value because stores use signals under the hood.
+To learn more about how stores work, [you can visit the stores section](/concepts/stores).
+
+```js
+const fullName = () => store.firstName + " " + store.lastName;
+```
+
+Derived signals do not store or cache their results.
+Calling one multiple times repeats the calculation each time.
+Reading one at the top level of a component is a one-time read, since components do not re-run when signals change.
+Use it inside JSX or another tracking scope when the result needs to stay up to date.
+
+For a cached derived value, use [`createMemo`](/reference/basic-reactivity/create-memo).
+A memo tracks its own dependencies and reuses its result until those dependencies change.
+To dive deeper into how memos work, [check out the memos section](/concepts/derived-values/memos).
