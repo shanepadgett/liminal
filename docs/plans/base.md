@@ -39,6 +39,12 @@ Prior art: Pi keeps `auth.json` at `0600` and takes a lock file around each OAut
 - Credentials: one `accounts` plugin holds the `Credentials` and `LoginMethods` contract and the store. Providers import its contract. A host that keeps credentials elsewhere provides `Credentials` from its own plugin when that host is built.
 - Credentials: `accounts` keeps its table in `liminal.db`. The CLI, TUI and desktop app can refresh the same expired token at once; a write transaction makes one of them do it. Pi locks a JSON file for the same reason.
 
+- Retries: base `model` retries every model call, turns and one-off calls alike, when `AiError` says the error is retryable, waiting `retryAfter` when given. The user sees "Anthropic is overloaded, retrying in 4s (2/5)"; a reply that fails partway is cleared and restarts under that line. Out of attempts, the turn ends with a notice and the input stays. Esc cancels at any point, the wait included. Every attempt counts toward usage. The attempt limit is part of `model`'s setting.
+- Choosing models: a model is named `provider/model`, such as `anthropic/claude-opus-5-5`, with an optional thinking level. `model`'s setting holds two roles, `main` for turns and `small` for side calls. Each provider names its default `main` and `small`; `liminal connect` writes them into settings when the roles are unset, so print mode works right after connecting.
+
+- Types: `Message` and `Part` are Liminal's schemas, since the log stores them; base `model` converts them to and from Effect AI's types in one place, about 200 lines. The live reply stream and errors are Effect AI's `Response` parts and `AiError`. Effect AI marks its prompt types unstable, so storing them would mean migrations that each need a copy of the old schema.
+- Model details: each provider says which models it offers, from `model-catalog`'s list for that provider and, for subscriptions, filtered to the account's plan. `model-catalog` supplies details from models.dev: name, context window, output limit, prices, thinking levels, image input. `Models.list` returns them merged, so `usage` computes cost from the same data.
+
 ## Open
 
-Round 3: `model`.
+Round 4: to be chosen.

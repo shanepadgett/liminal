@@ -20,8 +20,10 @@ Work for [status.md](../status.md) milestone 1. Contracts are in [architecture.m
 ## `model`
 
 - Message and part types, `Model`, `Models` registry, `ModelCall` pipeline, `Models.generate`.
-- Roles `main` and `small` resolve to model ids from settings.
-- Owns the `Message` and `Part` schema the log stores; providers convert at their edge.
+- A model is named `provider/model`, such as `anthropic/claude-opus-5-5`, with an optional thinking level. `model`'s setting holds the roles `main` (turns) and `small` (side calls). Each provider names its default for both; `liminal connect` writes them when the roles are unset.
+- Retries every model call whose `AiError` is retryable, waiting `retryAfter` when given; the attempt limit is in `model`'s setting. Viewers see a retry status, and a reply that fails partway is cleared and restarts. Out of attempts, the turn ends with a notice and the input stays. Every attempt counts toward usage.
+- Owns the `Message` and `Part` schema the log stores and converts them to and from Effect AI's types in one place. The live reply stream and errors are Effect AI's `Response` parts and `AiError`.
+- `Models.list` merges each provider's offered models with `model-catalog`'s details.
 - Previous code: `models`, `decisions`.
 
 ```ts
@@ -71,7 +73,7 @@ LoginMethods.add({ provider: "anthropic", kind: "oauth", run: anthropicOAuth })
 
 ## `model-catalog`
 
-- Model names, context limits and prices from models.dev; providers read it, and `usage` in milestone 4.
+- Model details from models.dev: name, context window, output limit, prices, thinking levels, image input. Providers read its list for their models; `usage` reads prices in milestone 4.
 - Previous code: `model-catalog`.
 
 ## Model providers

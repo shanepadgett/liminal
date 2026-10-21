@@ -197,7 +197,8 @@ take queued inputs → render Sections + History → ModelCall → ToolCall for 
 - The loop logs a section's rendered text only when it differs from the last logged text.
 - Cancel is an input the loop handles.
 - Shared provider code, such as an OpenAI-compatible wire format, is a library the provider plugins import, not a contract.
-- The session log stores Liminal's own `Message` and `Part` schema. Providers convert to and from Effect AI's types at their edge, so saved sessions outlive library changes.
+- The session log stores Liminal's own `Message` and `Part` schema, so saved sessions outlive Effect AI changes. Base `model` converts them to and from Effect AI's types in one place. The live reply stream and errors are Effect AI's `Response` parts and `AiError`, since nothing stores them.
+- Each provider lists the models it offers; `model-catalog` adds their details from models.dev: name, context window, output limit, prices, thinking levels, image input.
 
 ### Settings
 
@@ -209,6 +210,7 @@ take queued inputs → render Sections + History → ModelCall → ToolCall for 
 ### One-off model calls and structured output
 
 - `Models.generate` makes a single model call outside the turn loop, through the `ModelCall` pipeline, so usage and cache hints apply.
+- `model` retries a call whose `AiError` is retryable, turns and one-off calls alike. Viewers see "retrying in 4s (2/5)"; a reply that fails partway is cleared and restarts. Out of attempts, the turn ends with a notice and the input stays.
 - With `schema`, the result is decoded through the schema. A model with `structuredOutput` gets the provider's native JSON schema output; only a model without it gets a forced tool call. Effect AI's `LanguageModel.generateObject` already makes this choice per provider.
 - With `history`, the request starts with the session's projected history, the same prefix as its last turn, so it hits the provider's cache. The prompt goes at the end and the result is not appended to the session. A side question over the current chat ("by the way") is this call.
 - Commit grouping, approval verdicts and session names are `Models.generate` with a schema on the `small` model.
