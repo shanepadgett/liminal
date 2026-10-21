@@ -22,10 +22,10 @@ Tools.add({
 });
 
 // a prompt section
-Sections.add({
-  order: 50,
-  render: () => "Today is " + new Date().toDateString(),
-});
+Sections.add(
+  { render: () => "Today is " + new Date().toDateString() },
+  { order: 50 },
+);
 
 // a model provider
 Models.add(anthropicProvider);
@@ -92,7 +92,7 @@ Everything in a session is an event in the log: a user message, an assistant mes
 
 ```ts
 // a plugin defines a key once
-const Actor = Attribute.define("actor", { id: string, name: string });
+const Actor = Attribute.make("actor", { id: string, name: string });
 
 // your web route stamps who sent the input
 Inbox.send(sessionId, {

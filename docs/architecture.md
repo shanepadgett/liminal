@@ -110,14 +110,15 @@ Core is the mechanism that lets plugins plug into each other. It runs on any Jav
 
 ```ts
 definePlugin({ name, provides, requires, layer, entries })   // a plugin is an Effect Layer
-compose(plugins): Effect<Services, CompositionError, Scope>
-Registry<T>          // a collection others add to; ordered by explicit `order`
-Pipeline<In, Out>    // an operation others wrap with middleware calling next()
+compose(plugins): Layer<Services, CompositionError>
+Registry<T>          // a collection others add to; ordered by `order`
+Pipeline<In, Out, E> // an operation others wrap with middleware calling next(input)
 Attribute<T>         // a typed key for data attached to sessions, inputs and events
 ```
 
 - `provides` and `requires` are Effect service tags. `compose` checks the graph, builds plugins in dependency order, and ties every registration to the plugin's scope.
-- A missing requirement, a cycle or two providers of one tag is a `CompositionError` naming the plugins.
+- A missing requirement, a cycle, two providers of one tag or a layer that fails to build is a `CompositionError` naming the plugins.
+- Host services, such as a SQL driver, enter the composition as plugins.
 - Core holds no sessions, messages, transports or loaders.
 - Test: core can compose a program that is not an agent.
 

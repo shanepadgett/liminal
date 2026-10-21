@@ -14,7 +14,7 @@ Milestone 1. The stack is settled in [architecture.md](architecture.md#stack).
 
 ## Next
 
-1. Plan `packages/core` in [plans/core.md](plans/core.md), then build it. Round 1 is in the plan; round 2 is its Open section.
+1. Plan the base plugins from [plugins/base.md](plugins/base.md) in `plans/base.md`, in rounds, before building them. `packages/core` is built: `import { definePlugin, compose, Registry, Pipeline, Attribute } from "@liminal/core"`.
 2. Build the rest of milestone 1.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
@@ -25,7 +25,7 @@ Planned dependencies are pinned in `tools/planned/package.json` so their docs ar
 
 Work: [plugins/base.md](plugins/base.md)
 
-- [ ] `packages/core`: `definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`
+- [x] `packages/core`: `definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`
 - [ ] Base plugins: `settings`, `model`, `session`, `tools`, `context`, `loop`
 - [ ] `model-anthropic`, `model-scripted`
 - [ ] `apps/cli` print mode: streams a reply to a prompt and runs one tool

@@ -2,13 +2,6 @@
 
 Work for [status.md](../status.md) milestone 1. Contracts are in [architecture.md](../architecture.md#base-plugins-the-agent).
 
-## `packages/core`
-
-- `definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute` as in [architecture.md](../architecture.md#core).
-- `Registry.add` and `Pipeline.wrap` return a registration tied to the calling plugin's scope.
-- Depends only on `effect`.
-- Previous code: `archive/packages/kernel/src/graph`, `archive/packages/sdk`.
-
 ## `settings`
 
 - `SettingsSections` registry: each plugin adds its section name and Schema; the Schema holds the defaults.
