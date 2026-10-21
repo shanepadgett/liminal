@@ -27,7 +27,9 @@
       { "name": "core", "patterns": ["packages/core/**"] },
       {
         "name": "base",
-        "patterns": ["packages/plugins/{settings,model,session,tools,context,loop}/**"],
+        "patterns": [
+          "packages/plugins/{directories,settings,model,session,tools,tool-definitions,system-prompt,persona,history,loop}/**",
+        ],
       },
       { "name": "plugins", "patterns": ["packages/plugins/**"] },
       { "name": "client", "patterns": ["packages/client/**"] },

@@ -90,11 +90,15 @@
     {
       "files": [
         "packages/core/**",
+        "packages/plugins/directories/**",
         "packages/plugins/settings/**",
         "packages/plugins/model/**",
         "packages/plugins/session/**",
         "packages/plugins/tools/**",
-        "packages/plugins/context/**",
+        "packages/plugins/tool-definitions/**",
+        "packages/plugins/system-prompt/**",
+        "packages/plugins/persona/**",
+        "packages/plugins/history/**",
         "packages/plugins/loop/**",
         "packages/client/**"
       ],
@@ -114,23 +118,6 @@
               {
                 "regex": "^(bun|bun:.+|node:.+|@effect/platform-.+|@effect/sql-.+|@opentui/.+|solid-js|solid-js/.+|electrobun|electrobun/.+)$",
                 "message": "Core, base plugins and client use only effect and standard JavaScript; runtime APIs live in other plugins and hosts."
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "files": ["packages/client/**"],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "patterns": [
-              {
-                "regex": "^[^.]",
-                "allowTypeImports": true,
-                "message": "client has no dependencies; import packages with import type only."
               }
             ]
           }

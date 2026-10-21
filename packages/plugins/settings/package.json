@@ -1,0 +1,22 @@
+{
+  "name": "@shanepadgett/liminal-settings",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "dependencies": {
+    "jsonc-parser": "3.3.1"
+  },
+  "peerDependencies": {
+    "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-directories": "workspace:*",
+    "effect": "*"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/index.ts"
+    ]
+  }
+}

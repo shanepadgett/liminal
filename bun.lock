@@ -25,6 +25,38 @@
         "effect": "4.0.5",
       },
     },
+    "packages/plugins/directories": {
+      "name": "@shanepadgett/liminal-directories",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/settings": {
+      "name": "@shanepadgett/liminal-settings",
+      "version": "0.1.0",
+      "dependencies": {
+        "jsonc-parser": "3.3.1",
+      },
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/sqlite": {
+      "name": "@shanepadgett/liminal-sqlite",
+      "version": "0.1.0",
+      "dependencies": {
+        "@effect/sql-sqlite-bun": "4.0.5",
+      },
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "effect": "*",
+      },
+    },
     "tools/planned": {
       "name": "@shanepadgett/liminal-planned",
       "version": "0.1.0",
@@ -35,7 +67,6 @@
         "@effect/ai-openrouter": "4.0.5",
         "@effect/platform-bun": "4.0.5",
         "@effect/sql-pg": "4.0.5",
-        "@effect/sql-sqlite-bun": "4.0.5",
         "@opencode/codemode": "2.1.2",
         "@opentui/core": "0.6.6",
         "@opentui/keymap": "0.6.6",
@@ -44,7 +75,6 @@
         "diff": "9.0.0",
         "electrobun": "2.0.4",
         "fuzzysort": "4.0.2",
-        "jsonc-parser": "3.3.1",
         "partial-json": "0.1.7",
         "solid-js": "1.9.12",
         "unbash": "6.0.1",
@@ -285,7 +315,13 @@
 
     "@shanepadgett/liminal-core": ["@shanepadgett/liminal-core@workspace:packages/core"],
 
+    "@shanepadgett/liminal-directories": ["@shanepadgett/liminal-directories@workspace:packages/plugins/directories"],
+
     "@shanepadgett/liminal-planned": ["@shanepadgett/liminal-planned@workspace:tools/planned"],
+
+    "@shanepadgett/liminal-settings": ["@shanepadgett/liminal-settings@workspace:packages/plugins/settings"],
+
+    "@shanepadgett/liminal-sqlite": ["@shanepadgett/liminal-sqlite@workspace:packages/plugins/sqlite"],
 
     "@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
 

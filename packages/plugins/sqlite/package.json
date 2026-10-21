@@ -1,0 +1,21 @@
+{
+  "name": "@shanepadgett/liminal-sqlite",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@effect/sql-sqlite-bun": "4.0.5"
+  },
+  "peerDependencies": {
+    "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-directories": "workspace:*",
+    "effect": "*"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/index.ts"
+    ]
+  }
+}
