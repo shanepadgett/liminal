@@ -3,7 +3,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "target": "ESNext",
-    // Solid's JSX element type names DOM types such as Node, so the gallery's .tsx needs DOM.
+    // Solid's JSX element type names DOM types such as Node, so tui entries need DOM types.
     "lib": ["ESNext", "DOM"],
     "types": ["bun"],
     "strict": true,

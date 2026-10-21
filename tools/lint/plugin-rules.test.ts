@@ -1,37 +1,33 @@
 import {
-  conformanceImports,
   contractImports,
   contractNoSideEffects,
-  manifestImports,
-  partIsolation,
-  serverImports,
-  testingImports,
+  entryIsolation,
+  pluginImports,
 } from "./plugin-rules.ts";
 import { testRule } from "./rule-tester.ts";
 
 const contract = "packages/plugins/demo/src/contract.ts";
-const manifest = "packages/plugins/demo/plugin.ts";
+const plugin = "packages/plugins/demo/src/plugin.ts";
+const tui = "packages/plugins/demo/src/tui.tsx";
+const web = "packages/plugins/demo/src/web.tsx";
 
 testRule("contract-imports", contractImports, {
   valid: [
     { filename: contract, code: 'import { Context } from "effect";' },
     { filename: contract, code: 'import * as Schema from "effect/Schema";' },
-    { filename: contract, code: 'import type { Sdk } from "@liminal/sdk";' },
+    { filename: contract, code: 'import type { Registry } from "@liminal/core";' },
     { filename: contract, code: 'import type { Other } from "@liminal/other/contract";' },
     { filename: contract, code: 'export type { Other } from "@liminal/other/contract";' },
-    {
-      filename: "packages/plugins/demo/src/server.ts",
-      code: 'import { readFile } from "node:fs";',
-    },
+    { filename: plugin, code: 'import { readFile } from "node:fs";' },
   ],
   invalid: [
     { filename: contract, code: 'import { readFile } from "node:fs";', errors: 1 },
-    { filename: contract, code: 'export { x } from "./server.ts";', errors: 1 },
-    { filename: contract, code: 'import { x } from "@liminal/other/server";', errors: 1 },
+    { filename: contract, code: 'export { x } from "./plugin.ts";', errors: 1 },
     { filename: contract, code: 'import { x } from "@liminal/other";', errors: 1 },
+    { filename: contract, code: 'import { x } from "@liminal/other/tui";', errors: 1 },
+    { filename: contract, code: 'import { x } from "@liminal/client";', errors: 1 },
     { filename: contract, code: 'const m = import("@liminal/other/contract");', errors: 1 },
     { filename: contract, code: 'const m = import("zod");', errors: 1 },
-    { filename: contract, code: 'import { effectTest } from "@liminal/sdk/testing";', errors: 1 },
   ],
 });
 
@@ -41,7 +37,7 @@ testRule("contract-no-side-effects", contractNoSideEffects, {
       filename: contract,
       code: 'import { Context } from "effect";\nexport interface Thing { readonly id: string }\nexport const limit = 3;',
     },
-    { filename: "packages/plugins/demo/src/server.ts", code: 'console.log("ok");' },
+    { filename: plugin, code: 'console.log("ok");' },
   ],
   invalid: [
     { filename: contract, code: 'console.log("loaded");', errors: 1 },
@@ -49,99 +45,36 @@ testRule("contract-no-side-effects", contractNoSideEffects, {
   ],
 });
 
-testRule("manifest-imports", manifestImports, {
+testRule("plugin-imports", pluginImports, {
   valid: [
-    { filename: manifest, code: 'import { definePlugin } from "@liminal/sdk";' },
-    { filename: manifest, code: 'import { Demo } from "./src/contract.ts";' },
-    { filename: manifest, code: 'import { Log } from "@liminal/session-log/contract";' },
-    { filename: manifest, code: 'const load = () => import("./src/server.ts");' },
+    { filename: plugin, code: 'import { definePlugin } from "@liminal/core";' },
+    { filename: plugin, code: 'import { SessionLog } from "@liminal/session/contract";' },
+    { filename: tui, code: 'import { Panel } from "@liminal/tui";' },
+    { filename: web, code: 'import { connect } from "@liminal/client";' },
+    { filename: "apps/cli/src/main.ts", code: 'import session from "@liminal/session";' },
   ],
   invalid: [
-    { filename: manifest, code: 'import { serve } from "./src/server.ts";', errors: 1 },
-    { filename: manifest, code: 'import { kernel } from "@liminal/kernel";', errors: 1 },
-    { filename: manifest, code: 'import { Effect } from "effect";', errors: 1 },
-    { filename: manifest, code: 'import { Theme } from "@liminal/sdk/tui";', errors: 1 },
+    { filename: plugin, code: 'import session from "@liminal/session";', errors: 1 },
+    { filename: tui, code: 'import { View } from "@liminal/chat/tui";', errors: 1 },
+    { filename: contract, code: 'export * from "@liminal/model/src/plugin.ts";', errors: 1 },
   ],
 });
 
-const server = "packages/plugins/demo/src/server.ts";
-
-testRule("server-imports", serverImports, {
+testRule("entry-isolation", entryIsolation, {
   valid: [
-    { filename: server, code: 'import { Registry } from "@liminal/sdk";' },
-    {
-      filename: "packages/plugins/demo/src/tui.tsx",
-      code: 'import { Box } from "@opentui/solid";',
-    },
+    { filename: plugin, code: 'import { Demo } from "./contract.ts";' },
+    { filename: plugin, code: 'const tui = () => import("./tui.tsx");' },
+    { filename: "packages/plugins/demo/src/plugin/store.ts", code: 'import "../plugin.ts";' },
+    { filename: "packages/plugins/demo/src/tui/view.tsx", code: 'import "../contract.ts";' },
   ],
   invalid: [
-    { filename: server, code: 'import { Theme } from "@liminal/sdk/tui";', errors: 1 },
-    { filename: server, code: 'import { Window } from "@liminal/sdk/desktop";', errors: 1 },
+    { filename: plugin, code: 'import { View } from "./tui.tsx";', errors: 1 },
+    { filename: plugin, code: 'import { View } from "./web/view.tsx";', errors: 1 },
+    { filename: tui, code: 'import { store } from "./plugin/store.ts";', errors: 1 },
+    { filename: tui, code: 'const web = () => import("./web.tsx");', errors: 1 },
     {
-      filename: "packages/plugins/demo/src/server/view.ts",
-      code: 'import "@opentui/core";',
-      errors: 1,
-    },
-  ],
-});
-
-const testing = 'import { effectTest } from "@liminal/sdk/testing";';
-
-testRule("testing-imports", testingImports, {
-  valid: [
-    { filename: "packages/plugins/demo/test/demo.test.ts", code: testing },
-    { filename: "packages/kernel/test/host.test.ts", code: testing },
-    { filename: "packages/kernel/src/host/host.test.ts", code: testing },
-  ],
-  invalid: [
-    { filename: server, code: testing, errors: 1 },
-    { filename: "packages/kernel/src/host/host.ts", code: testing, errors: 1 },
-  ],
-});
-
-const conformance = 'import { storeConformance } from "@liminal/session-store/conformance";';
-
-testRule("conformance-imports", conformanceImports, {
-  valid: [
-    { filename: "packages/plugins/demo/test/store.test.ts", code: conformance },
-    { filename: server, code: 'import { Store } from "@liminal/session-store/contract";' },
-  ],
-  invalid: [
-    { filename: server, code: conformance, errors: 1 },
-    { filename: manifest, code: conformance, errors: 1 },
-    { filename: "packages/kernel/src/host/host.ts", code: conformance, errors: 1 },
-  ],
-});
-
-testRule("part-isolation", partIsolation, {
-  valid: [
-    {
-      filename: "packages/plugins/demo/src/server.ts",
-      code: 'import { Demo } from "./contract.ts";',
-    },
-    {
-      filename: "packages/plugins/demo/src/server/store.ts",
-      code: 'import { serve } from "../server.ts";',
-    },
-    {
-      filename: "packages/plugins/demo/src/tui/view.tsx",
-      code: 'import { Demo } from "../contract.ts";',
-    },
-  ],
-  invalid: [
-    {
-      filename: "packages/plugins/demo/src/server.ts",
-      code: 'import { View } from "./tui.tsx";',
-      errors: 1,
-    },
-    {
-      filename: "packages/plugins/demo/src/tui.tsx",
-      code: 'import { serve } from "./server/store.ts";',
-      errors: 1,
-    },
-    {
-      filename: "packages/plugins/demo/src/tui/view.tsx",
-      code: 'export * from "../server.ts";',
+      filename: "packages/plugins/demo/src/web/view.tsx",
+      code: 'export * from "../tui.tsx";',
       errors: 1,
     },
   ],

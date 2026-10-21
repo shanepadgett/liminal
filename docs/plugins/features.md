@@ -49,6 +49,6 @@ Commands.add({ name: "commit", run: (ctx) =>
 
 ## `attention`
 
-- Sounds or notifications when a turn ends or a question waits; TUI part only.
+- Sounds or notifications when a turn ends or a question waits; `tui` entry only.
 - OpenTUI's `Audio` and `triggerNotification`; no other dependency.
 - Previous code: `attention`.

@@ -1,7 +1,3 @@
----
-read-when: writing or changing code in `apps/`, `packages/` or `tools/`
----
-
 # Code
 
 ## Design
@@ -16,6 +12,7 @@ read-when: writing or changing code in `apps/`, `packages/` or `tools/`
 
 ## Naming
 
+- Use the product vocabulary for domain names: turn, step, entry, session store.
 - Name by domain meaning, not type or mechanism: `pendingToolCalls`, not `list`.
 - One word per concept. Check how the repo already names it.
 - Functions are verbs that state the outcome. Booleans read as questions: `isIdle`, `hasCredentials`.

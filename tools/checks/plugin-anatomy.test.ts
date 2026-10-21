@@ -14,15 +14,18 @@ test("a broken plugin reports each anatomy problem", () => {
     (problem) => `${problem.path.slice(fixtures.length + 1)}: ${problem.message}`,
   );
 
+  const demo = "broken/packages/plugins/demo";
+
   expect(messages.toSorted()).toEqual([
-    "broken/packages/plugins/demo/package.json: @liminal/sdk is supplied by the host; declare it in peerDependencies",
-    "broken/packages/plugins/demo/package.json: dependencies cannot include @liminal/kernel",
-    'broken/packages/plugins/demo/package.json: exports must be exactly {".":"./plugin.ts","./contract":"./src/contract.ts"} and optionally {"./conformance":"./test/conformance.ts"}',
-    "broken/packages/plugins/demo/src/contract.ts: missing",
-    "broken/packages/plugins/demo/src/helpers.ts: src/ holds only contract.ts, server.ts or server/, tui.tsx or tui/",
-    "broken/packages/plugins/demo/test: missing test directory",
-    "broken/packages/plugins/suite/package.json: @liminal/session-log is another plugin, supplied by the host; declare it in peerDependencies",
-    "broken/packages/plugins/suite/package.json: plugin packages are published; remove private",
-    "broken/packages/plugins/suite/test/conformance.ts: exported but missing",
+    `${demo}/package.json: @liminal/core is supplied by the host; declare it in peerDependencies`,
+    `${demo}/package.json: effect is supplied by the host; declare it in peerDependencies`,
+    `${demo}/package.json: export "./server" is not one of ., ./contract, ./tui, ./web`,
+    `${demo}/package.json: export "./web" must point to ./src/web.tsx`,
+    `${demo}/package.json: exports must include "." pointing to ./src/plugin.ts`,
+    `${demo}/package.json: liminal.plugins must be ["./src/plugin.ts"]`,
+    `${demo}/package.json: name must be @liminal/demo, after its folder`,
+    `${demo}/package.json: plugin packages are published; remove private`,
+    `${demo}/src/helpers.ts: src/ holds only contract.ts, plugin.ts or plugin/, tui.tsx or tui/, web.tsx or web/`,
+    "broken/packages/plugins/missing/src/tui.tsx: exported but missing",
   ]);
 });

@@ -57,7 +57,7 @@
               "command": "mise run check:types",
               "details": "Types and Effect diagnostics",
               "timeoutMs": 300000,
-              "includeGlobs": ["**/*.ts", "**/*.tsx", "tsconfig.json", "**/package.json"]
+              "includeGlobs": ["**/*.ts", "**/*.tsx", "**/tsconfig.json", "**/package.json"]
             },
             {
               "name": "lint",

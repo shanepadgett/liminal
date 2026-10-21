@@ -14,9 +14,15 @@ Milestone 1. The stack is settled in [architecture.md](architecture.md#stack).
 
 ## Next
 
-1. Scaffold: add the `packages/core` workspace and the lint boundary that keeps core, base plugins and `client` on `effect` only. Rewrite `tools/checks/plugin-anatomy.ts` for the new plugin anatomy when the first plugin is built.
-2. Agree the `packages/core` API in [plugins/base.md](plugins/base.md), then build it.
-3. Build the rest of milestone 1.
+1. Plan `packages/core` in `docs/plans/core.md`, then build it.
+   - Research first: `archive/packages/kernel/src/graph`, `archive/packages/sdk`, and the plugin systems in the `mastra` and `pi` reference repositories.
+   - Round 1 decisions:
+     - `definePlugin` shape: explicit `provides`/`requires` tags or read from the layer's types; how `tui` and `web` entries attach.
+     - How plugins reach a `Registry` or `Pipeline`: a core helper such as `Registry.make<T>(name)`, or plain `Context.Tag` in a contract.
+     - Ordering: `Registry` items by `order`; the ordering rule for `Pipeline` middleware.
+     - Scope: `Registry.add` and `Pipeline.wrap` return a registration tied to the plugin's scope, so removing a plugin removes its items (milestone 6 reload needs this).
+     - `Attribute`: where values live on sessions, inputs and events, and how the log stores them.
+2. Build the rest of milestone 1.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
 
@@ -27,7 +33,7 @@ Planned dependencies are pinned in `tools/planned/package.json` so their docs ar
 Work: [plugins/base.md](plugins/base.md)
 
 - [ ] `packages/core`: `definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`
-- [ ] Base plugins: `model`, `session`, `tools`, `context`, `loop`
+- [ ] Base plugins: `settings`, `model`, `session`, `tools`, `context`, `loop`
 - [ ] `model-anthropic`, `model-scripted`
 - [ ] `apps/cli` print mode: streams a reply to a prompt and runs one tool
 
@@ -38,7 +44,7 @@ Work: [plugins/tui.md](plugins/tui.md)
 - [ ] `packages/client` with the session view
 - [ ] `packages/tui`: renderer, slot tree, UI kit
 - [ ] `chat`, `palette`, `theme`
-- [ ] `session-sqlite`, `accounts`
+- [ ] `session-sqlite`, `settings-files`, `accounts`
 - [ ] Daily chat in the TUI with saved sessions
 
 ### 3. Coding agent
@@ -47,6 +53,7 @@ Work: [plugins/coding.md](plugins/coding.md)
 
 - [ ] `tools-files`, `tools-shell`, `tools-web`, `tool-output`
 - [ ] `instructions`, `environment`
+- [ ] Recreate `.liminal/`; move `docs/instructions/` to `.liminal/instructions/` with `read-when` front matter
 - [ ] `approvals`, `questions`
 - [ ] Liminal works on its own repository
 
@@ -66,17 +73,17 @@ Work: [plugins/features.md](plugins/features.md)
 - [ ] `checks`, `commit`
 - [ ] `tools-search`, `tools-execute`, `attention`
 
-### 6. Annexes and the binary
+### 6. Bundles and the binary
 
 Work: [plugins/hosting.md](plugins/hosting.md)
 
 - [ ] `loader`: plugin folders, `plugins.json`, trust, hot reload
-- [ ] `bun build --compile` binary that loads annexes
+- [ ] `bun build --compile` binary that loads bundles
 - [ ] Plugin author guides in `guides/`
 
 ### 7. Desktop
 
-- [ ] `apps/desktop` on Electrobun with `web` parts for `chat`, `palette`, `theme`
+- [ ] `apps/desktop` on Electrobun with `web` entries for `chat`, `palette`, `theme`
 - [ ] A web slot registry with the TUI's slot names; web libraries for markdown, highlighting and diffs
 
 ### 8. Server and embedding

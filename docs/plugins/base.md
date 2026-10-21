@@ -9,6 +9,13 @@ Work for [status.md](../status.md) milestone 1. Contracts are in [architecture.m
 - Depends only on `effect`.
 - Previous code: `archive/packages/kernel/src/graph`, `archive/packages/sdk`.
 
+## `settings`
+
+- `SettingsSections` registry: each plugin adds its section name and Schema; the Schema holds the defaults.
+- `Settings.section(name, schema)` reads on use; `Settings.write(scope, path, value)`.
+- In-memory settings take values in code: `settings({ model: { main: "…" } })`. Plugins take no options of their own.
+- Previous code: `settings`.
+
 ## `model`
 
 - Message and part types, `Model`, `Models` registry, `ModelCall` pipeline, `Models.generate`.
@@ -59,7 +66,3 @@ Models.generate({ model: "small", prompt, schema })
 - Composes the base plugins, `model-anthropic` and one tool.
 - Command line with `effect/cli`.
 - Print mode over `client`: `-p` streams the reply to stdout, `--json` writes session events as JSON lines, `--approve` lets questions and approvals pass.
-
-## Open
-
-- Where settings live: a base service, part of `session`, or its own plugin (previous code: `settings`).

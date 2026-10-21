@@ -1,7 +1,7 @@
 /**
- * Checks every package under packages/plugins/ has the plugin anatomy: plugin.ts, src/contract.ts,
- * test/, exports limited to the manifest, contract and an optional conformance suite, published
- * (not private), host-supplied packages and other plugins as peers, and no kernel.
+ * Checks every package under packages/plugins/ has the plugin anatomy: named after its folder,
+ * published, exports limited to the plugin, contract, tui and web entries, the plugin entry listed
+ * under `liminal.plugins`, and host-supplied packages and other plugins as peers.
  */
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -10,146 +10,119 @@ import { Schema } from "effect";
 
 import { jsonReader, type Problem, report } from "./problem.ts";
 
-const requiredExports = { ".": "./plugin.ts", "./contract": "./src/contract.ts" };
-const allowedSrcEntries = new Set(["contract.ts", "server.ts", "server", "tui.tsx", "tui"]);
+/** Each export a plugin may have, and the file it must point to. */
+const entryFiles = new Map([
+  [".", "./src/plugin.ts"],
+  ["./contract", "./src/contract.ts"],
+  ["./tui", "./src/tui.tsx"],
+  ["./web", "./src/web.tsx"],
+]);
 
-const hostPeers = new Set([
-  "@liminal/sdk",
-  "effect",
-  "@opentui/core",
-  "@opentui/solid",
-  "solid-js",
+const allowedSrcEntries = new Set([
+  "contract.ts",
+  "plugin.ts",
+  "plugin",
+  "tui.tsx",
+  "tui",
+  "web.tsx",
+  "web",
 ]);
 
 const Dependencies = Schema.optional(Schema.Record(Schema.String, Schema.String));
 
 const Manifest = Schema.Struct({
+  name: Schema.optional(Schema.String),
   private: Schema.optional(Schema.Boolean),
   exports: Schema.optional(Schema.Record(Schema.String, Schema.String)),
+  liminal: Schema.optional(Schema.Struct({ plugins: Schema.Array(Schema.String) })),
   dependencies: Dependencies,
-  devDependencies: Dependencies,
-  peerDependencies: Dependencies,
   optionalDependencies: Dependencies,
 });
 
 type Manifest = typeof Manifest.Type;
 
-const dependencyFields = [
-  "dependencies",
-  "devDependencies",
-  "peerDependencies",
-  "optionalDependencies",
-] as const;
-
 const readManifest = jsonReader(Manifest);
-
-const conformanceExport = { "./conformance": "./test/conformance.ts" };
 
 const checkExports = (dir: string, manifest: Manifest): Problem[] => {
   const path = join(dir, "package.json");
-  const { "./conformance": conformance, ...rest } = manifest.exports ?? {};
+  const exports = Object.entries(manifest.exports ?? {});
+  const problems: Problem[] = [];
 
-  if (JSON.stringify(rest) !== JSON.stringify(requiredExports)) {
-    const allowed = `${JSON.stringify(requiredExports)} and optionally ${JSON.stringify(conformanceExport)}`;
+  if (!exports.some(([key]) => key === "."))
+    problems.push({ path, message: `exports must include "." pointing to ./src/plugin.ts` });
 
-    return [{ path, message: `exports must be exactly ${allowed}` }];
+  for (const [key, target] of exports) {
+    const expected = entryFiles.get(key);
+
+    if (expected === undefined) {
+      const allowed = [...entryFiles.keys()].join(", ");
+      problems.push({ path, message: `export "${key}" is not one of ${allowed}` });
+    } else if (target !== expected) {
+      problems.push({ path, message: `export "${key}" must point to ${expected}` });
+    } else if (!existsSync(join(dir, expected))) {
+      problems.push({ path: join(dir, expected), message: "exported but missing" });
+    }
   }
 
-  if (conformance === undefined) return [];
-
-  if (conformance !== conformanceExport["./conformance"])
-    return [{ path, message: `./conformance must point to ./test/conformance.ts` }];
-
-  if (!existsSync(join(dir, "test/conformance.ts")))
-    return [{ path: join(dir, "test/conformance.ts"), message: "exported but missing" }];
-
-  return [];
+  return problems;
 };
 
-/** Fields whose packages the plugin installs itself, rather than taking from the host. */
-const installedFields = new Set(["dependencies", "optionalDependencies"]);
-
-/** Why `name` cannot be installed by the plugin itself; none when it can. */
-const installedProblem = (name: string): string | undefined => {
-  if (hostPeers.has(name)) return `${name} is supplied by the host; declare it in peerDependencies`;
-
-  if (name.startsWith("@liminal/"))
-    return `${name} is another plugin, supplied by the host; declare it in peerDependencies`;
-
-  return undefined;
-};
-
-const checkDependencies = (dir: string, manifest: Manifest): Problem[] => {
+const checkIdentity = (dir: string, name: string, manifest: Manifest): Problem[] => {
   const path = join(dir, "package.json");
   const problems: Problem[] = [];
 
-  for (const field of dependencyFields) {
-    const names = Object.keys(manifest[field] ?? {});
+  if (manifest.name !== `@liminal/${name}`)
+    problems.push({ path, message: `name must be @liminal/${name}, after its folder` });
 
-    if (names.includes("@liminal/kernel")) {
-      problems.push({ path, message: `${field} cannot include @liminal/kernel` });
-    }
+  if (manifest.private === true)
+    problems.push({ path, message: "plugin packages are published; remove private" });
 
-    if (!installedFields.has(field)) continue;
-
-    for (const name of names) {
-      const message = name === "@liminal/kernel" ? undefined : installedProblem(name);
-      if (message !== undefined) problems.push({ path, message });
-    }
-  }
+  if (JSON.stringify(manifest.liminal?.plugins) !== JSON.stringify(["./src/plugin.ts"]))
+    problems.push({ path, message: `liminal.plugins must be ["./src/plugin.ts"]` });
 
   return problems;
 };
 
-const checkFiles = (dir: string): Problem[] => {
-  const problems: Problem[] = [];
+/** Packages the host supplies, so a plugin declares them as peers instead of installing them. */
+const isHostSupplied = (name: string) =>
+  name === "effect"
+  || name === "solid-js"
+  || name.startsWith("@opentui/")
+  || name.startsWith("@liminal/");
 
-  for (const required of ["plugin.ts", "src/contract.ts"]) {
-    if (!existsSync(join(dir, required)))
-      problems.push({ path: join(dir, required), message: "missing" });
-  }
+const checkDependencies = (dir: string, manifest: Manifest): Problem[] => {
+  const path = join(dir, "package.json");
+  const installed = { ...manifest.dependencies, ...manifest.optionalDependencies };
 
-  const testDir = join(dir, "test");
+  return Object.keys(installed).flatMap((name) =>
+    isHostSupplied(name)
+      ? [{ path, message: `${name} is supplied by the host; declare it in peerDependencies` }]
+      : [],
+  );
+};
 
-  if (!existsSync(testDir) || !statSync(testDir).isDirectory()) {
-    problems.push({ path: testDir, message: "missing test directory" });
-  }
+const srcLayout =
+  "src/ holds only contract.ts, plugin.ts or plugin/, tui.tsx or tui/, web.tsx or web/";
 
+const checkSrc = (dir: string): Problem[] => {
   const srcDir = join(dir, "src");
   const entries = existsSync(srcDir) ? readdirSync(srcDir) : [];
 
-  for (const entry of entries) {
-    if (allowedSrcEntries.has(entry)) continue;
-
-    problems.push({
-      path: join(srcDir, entry),
-      message: "src/ holds only contract.ts, server.ts or server/, tui.tsx or tui/",
-    });
-  }
-
-  return problems;
+  return entries.flatMap((entry) =>
+    allowedSrcEntries.has(entry) ? [] : [{ path: join(srcDir, entry), message: srcLayout }],
+  );
 };
 
-const checkPlugin = (dir: string): Problem[] => {
+const checkPlugin = (dir: string, name: string): Problem[] => {
   const manifest = readManifest(join(dir, "package.json"));
 
   if (manifest === undefined)
     return [{ path: join(dir, "package.json"), message: "missing or invalid" }];
 
-  const published: Problem[] =
-    manifest.private === true
-      ? [
-          {
-            path: join(dir, "package.json"),
-            message: "plugin packages are published; remove private",
-          },
-        ]
-      : [];
-
-  return checkFiles(dir).concat(
-    published,
+  return checkIdentity(dir, name, manifest).concat(
     checkExports(dir, manifest),
     checkDependencies(dir, manifest),
+    checkSrc(dir),
   );
 };
 
@@ -161,7 +134,7 @@ export const checkPlugins = (root: string): Problem[] => {
   return readdirSync(pluginsDir).flatMap((name) => {
     const dir = join(pluginsDir, name);
 
-    return statSync(dir).isDirectory() ? checkPlugin(dir) : [];
+    return statSync(dir).isDirectory() ? checkPlugin(dir, name) : [];
   });
 };
 

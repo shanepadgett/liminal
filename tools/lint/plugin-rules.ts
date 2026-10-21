@@ -1,48 +1,43 @@
-/** Rules that keep plugin parts inside their boundaries. */
+/** Rules that keep plugin entries inside their boundaries. */
 import { defineRule } from "@oxlint/plugins";
 
 import { visitSources } from "./module-sources.ts";
-import { locate, repoPath, resolveRelative } from "./plugin-parts.ts";
+import { locate, type PluginEntry, repoPath, resolveRelative } from "./plugin-entries.ts";
 
 const isEffect = (specifier: string) => specifier === "effect" || specifier.startsWith("effect/");
 
-/**
- * Only the SDK root: its subpaths carry model, test, terminal or desktop code a manifest must not
- * load.
- */
-const isSdkRoot = (specifier: string) => specifier === "@liminal/sdk";
+const isCore = (specifier: string) => specifier === "@liminal/core";
 
-const isUiOnly = (specifier: string) =>
-  specifier === "@liminal/sdk/tui"
-  || specifier === "@liminal/sdk/desktop"
-  || specifier.startsWith("@opentui/");
+/** Liminal packages that are not plugins, so their root export is public. */
+const nonPluginPackages = new Set(["core", "client", "tui"]);
 
-const isConformance = (specifier: string) =>
-  /^(@[^/]+\/)?[^/@.][^/]*\/conformance$/.test(specifier);
+const liminalPackage = (specifier: string): { name: string; subpath: string } | undefined => {
+  const match = /^@liminal\/([^/]+)(\/.*)?$/.exec(specifier);
+  if (match?.[1] === undefined) return undefined;
 
-/** Test files: a plugin's test/ part, and test folders or files elsewhere in the repository. */
-const isTestFile = (path: string) =>
-  locate(path)?.part === "test" || /(^|\/)test\//.test(path) || /\.test\.tsx?$/.test(path);
+  return { name: match[1], subpath: match[2] ?? "" };
+};
 
-const isOwnContract = (specifier: string) => /^\.\/src\/contract(\.ts)?$/.test(specifier);
+const isPluginContract = (specifier: string) => {
+  const target = liminalPackage(specifier);
 
-const isPackageContract = (specifier: string) =>
-  /^(@[^/]+\/)?[^/@.][^/]*\/contract$/.test(specifier);
+  return target !== undefined && target.subpath === "/contract";
+};
 
-/** `src/contract.ts` statically imports only Effect, the SDK and other plugins' contracts. */
+/** `src/contract.ts` statically imports only Effect, core and other plugins' contracts. */
 export const contractImports = defineRule({
   meta: {
     type: "problem",
     messages: {
-      banned: "A contract imports only Effect, @liminal/sdk and contracts, not '{{specifier}}'.",
+      banned: "A contract imports only effect, @liminal/core and contracts, not '{{specifier}}'.",
     },
   },
   create(context) {
-    if (locate(repoPath(context.cwd, context.filename))?.part !== "contract") return {};
+    if (locate(repoPath(context.cwd, context.filename))?.entry !== "contract") return {};
 
     return visitSources(({ specifier, node, dynamic }) => {
       const isAllowed =
-        isEffect(specifier) || isSdkRoot(specifier) || (!dynamic && isPackageContract(specifier));
+        !dynamic && (isEffect(specifier) || isCore(specifier) || isPluginContract(specifier));
 
       if (isAllowed) return;
       context.report({ node, messageId: "banned", data: { specifier } });
@@ -72,7 +67,7 @@ export const contractNoSideEffects = defineRule({
     messages: { statement: "A contract only declares; move this statement out of the contract." },
   },
   create(context) {
-    if (locate(repoPath(context.cwd, context.filename))?.part !== "contract") return {};
+    if (locate(repoPath(context.cwd, context.filename))?.entry !== "contract") return {};
 
     return {
       Program(program) {
@@ -85,86 +80,46 @@ export const contractNoSideEffects = defineRule({
   },
 });
 
-/** `plugin.ts` statically imports only the SDK and contracts. */
-export const manifestImports = defineRule({
+/** A plugin reaches another plugin only through its `/contract` export. */
+export const pluginImports = defineRule({
   meta: {
     type: "problem",
-    messages: { banned: "plugin.ts imports only @liminal/sdk and contracts, not '{{specifier}}'." },
+    messages: {
+      banned: "Import another plugin only through its contract: '@liminal/{{name}}/contract'.",
+    },
   },
   create(context) {
-    if (locate(repoPath(context.cwd, context.filename))?.part !== "manifest") return {};
-
-    return visitSources(({ specifier, node, dynamic }) => {
-      const isAllowed =
-        dynamic || isSdkRoot(specifier) || isOwnContract(specifier) || isPackageContract(specifier);
-
-      if (isAllowed) return;
-      context.report({ node, messageId: "banned", data: { specifier } });
-    });
-  },
-});
-
-/** The server part runs headless, so it never loads terminal or desktop code. */
-export const serverImports = defineRule({
-  meta: {
-    type: "problem",
-    messages: { banned: "The server part cannot import '{{specifier}}'; it runs without a UI." },
-  },
-  create(context) {
-    if (locate(repoPath(context.cwd, context.filename))?.part !== "server") return {};
+    if (locate(repoPath(context.cwd, context.filename)) === undefined) return {};
 
     return visitSources(({ specifier, node }) => {
-      if (isUiOnly(specifier)) context.report({ node, messageId: "banned", data: { specifier } });
+      const target = liminalPackage(specifier);
+      if (target === undefined || nonPluginPackages.has(target.name)) return;
+      if (target.subpath === "/contract") return;
+      context.report({ node, messageId: "banned", data: { name: target.name } });
     });
   },
 });
 
-/** `@liminal/sdk/testing` is for tests only. */
-export const testingImports = defineRule({
-  meta: { type: "problem", messages: { banned: "Only test files import @liminal/sdk/testing." } },
-  create(context) {
-    if (isTestFile(repoPath(context.cwd, context.filename))) return {};
+/** Entries that load in different processes, so none of them imports another. */
+const isolatedEntries = new Set<PluginEntry>(["plugin", "tui", "web"]);
 
-    return visitSources(({ specifier, node }) => {
-      if (specifier === "@liminal/sdk/testing") context.report({ node, messageId: "banned" });
-    });
-  },
-});
-
-/** A contract's conformance suite is imported only from other plugins' test/ folders. */
-export const conformanceImports = defineRule({
+/** The plugin, tui and web entries never import each other; the plugin entry loads UI lazily. */
+export const entryIsolation = defineRule({
   meta: {
     type: "problem",
-    messages: { banned: "Only a plugin's test/ folder imports '{{specifier}}'." },
-  },
-  create(context) {
-    if (locate(repoPath(context.cwd, context.filename))?.part === "test") return {};
-
-    return visitSources(({ specifier, node }) => {
-      if (isConformance(specifier))
-        context.report({ node, messageId: "banned", data: { specifier } });
-    });
-  },
-});
-
-const isolatedParts = new Set(["server", "tui"]);
-
-/** The server and tui parts of a plugin never import each other. */
-export const partIsolation = defineRule({
-  meta: {
-    type: "problem",
-    messages: { crossing: "The {{from}} part cannot import the {{to}} part." },
+    messages: { crossing: "The {{from}} entry cannot import the {{to}} entry." },
   },
   create(context) {
     const path = repoPath(context.cwd, context.filename);
     const from = locate(path);
-    if (from === undefined || !isolatedParts.has(from.part)) return {};
+    if (from === undefined || !isolatedEntries.has(from.entry)) return {};
 
-    return visitSources(({ specifier, node }) => {
+    return visitSources(({ specifier, node, dynamic }) => {
       const target = resolveRelative(path, specifier);
       const to = target === undefined ? undefined : locate(target);
-      if (to === undefined || !isolatedParts.has(to.part) || to.part === from.part) return;
-      context.report({ node, messageId: "crossing", data: { from: from.part, to: to.part } });
+      if (to === undefined || !isolatedEntries.has(to.entry) || to.entry === from.entry) return;
+      if (dynamic && from.entry === "plugin") return;
+      context.report({ node, messageId: "crossing", data: { from: from.entry, to: to.entry } });
     });
   },
 });

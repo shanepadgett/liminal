@@ -4,15 +4,15 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 
 ## `packages/client`
 
-- `send`, `page`, `live`, `call` over plain function calls; no Effect dependency.
+- `send`, `page`, `live`, `call` over plain function calls; no dependencies, types from contracts through `import type`; trusts the server's JSON.
 - Session view: folds events into `{ messages, streaming, questions, status, actors }`.
 - Previous code: `archive/packages/frontend`.
 
 ## `packages/tui`
 
-- OpenTUI renderer with Solid 1.x, OpenTUI's plugin slots, the UI kit for `tui` parts.
+- OpenTUI renderer with Solid 1.x, OpenTUI's plugin slots, the UI kit for `tui` entries.
 - UI kit builds on OpenTUI's `Markdown`, `Code`, `Diff`, `Select`, `TextTable`, `Image` and clipboard.
-- Loads the `tui` part of every plugin in the composition.
+- Loads the `tui` entry of every plugin in the composition.
 - Previous code: `archive/packages/frontend`, `archive/apps/gallery`.
 
 ## `chat`
@@ -44,6 +44,12 @@ export const EventRenderer: Registry<{ kind: string; component: Component<{ even
 - Queries through `SqlClient`; the host supplies `@effect/sql-sqlite-bun`.
 - Runner is an in-process lock.
 - Previous code: `session-store`.
+
+## `settings-files`
+
+- Replaces the in-memory settings provider: `~/.liminal/settings.json` and `<project>/.liminal/settings.json`, JSONC through `jsonc-parser`; project values win.
+- `write` keeps comments and formatting.
+- Previous code: `settings`.
 
 ## `accounts`
 

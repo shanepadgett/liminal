@@ -56,11 +56,8 @@
     "oxc/no-accumulating-spread": "error",
     "liminal/contract-imports": "error",
     "liminal/contract-no-side-effects": "error",
-    "liminal/manifest-imports": "error",
-    "liminal/part-isolation": "error",
-    "liminal/server-imports": "error",
-    "liminal/testing-imports": "error",
-    "liminal/conformance-imports": "error",
+    "liminal/entry-isolation": "error",
+    "liminal/plugin-imports": "error",
     "liminal/no-unknown-parameters": "error",
     "liminal/no-unknown-returns": "error",
     "liminal/no-unknown-type-aliases": "error",
@@ -90,6 +87,56 @@
   "overrides": [
     { "files": ["packages/**", "apps/**"], "rules": { "liminal/no-runtime-typeof": "error" } },
     { "files": ["packages/**"], "rules": { "liminal/no-effect-run": "error" } },
+    {
+      "files": [
+        "packages/core/**",
+        "packages/plugins/settings/**",
+        "packages/plugins/model/**",
+        "packages/plugins/session/**",
+        "packages/plugins/tools/**",
+        "packages/plugins/context/**",
+        "packages/plugins/loop/**",
+        "packages/client/**"
+      ],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          { "name": "Bun", "message": "Core, base plugins and client run on any runtime." },
+          { "name": "Deno", "message": "Core, base plugins and client run on any runtime." },
+          { "name": "process", "message": "Core, base plugins and client run on any runtime." },
+          { "name": "window", "message": "Core, base plugins and client run on any runtime." },
+          { "name": "document", "message": "Core, base plugins and client run on any runtime." }
+        ],
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^(bun|bun:.+|node:.+|@effect/platform-.+|@effect/sql-.+|@opentui/.+|solid-js|solid-js/.+|electrobun|electrobun/.+)$",
+                "message": "Core, base plugins and client use only effect and standard JavaScript; runtime APIs live in other plugins and hosts."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/client/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^[^.]",
+                "allowTypeImports": true,
+                "message": "client has no dependencies; import packages with import type only."
+              }
+            ]
+          }
+        ]
+      }
+    },
     {
       "files": ["**/test/**", "**/*.test.ts", "**/*.test.tsx"],
       "rules": { "liminal/no-effect-run": "off", "max-lines-per-function": "off" }

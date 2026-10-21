@@ -1,34 +1,35 @@
-/** Where a file sits in a plugin package: which plugin, and which part of it. */
+/** Where a file sits in a plugin package: which plugin, and which of its entries. */
 import { dirname, isAbsolute, join, normalize, relative, sep } from "node:path";
 
-export type PluginPart = "manifest" | "contract" | "server" | "tui" | "test" | "other";
+export type PluginEntry = "contract" | "plugin" | "tui" | "web" | "test" | "other";
 
 export interface PluginLocation {
   readonly plugin: string;
-  readonly part: PluginPart;
+  readonly entry: PluginEntry;
 }
 
-/** Exact files that are a part on their own. */
-const partFiles = new Map<string, PluginPart>([
-  ["plugin.ts", "manifest"],
+/** Exact files that start an entry. */
+const entryFiles = new Map<string, PluginEntry>([
   ["src/contract.ts", "contract"],
-  ["src/server.ts", "server"],
+  ["src/plugin.ts", "plugin"],
   ["src/tui.tsx", "tui"],
+  ["src/web.tsx", "web"],
 ]);
 
-/** Folders whose whole subtree belongs to one part. */
-const partFolders = new Map<string, PluginPart>([
+/** Folders whose whole subtree belongs to one entry. */
+const entryFolders = new Map<string, PluginEntry>([
   ["test", "test"],
-  ["src/server", "server"],
+  ["src/plugin", "plugin"],
   ["src/tui", "tui"],
+  ["src/web", "web"],
 ]);
 
-const partOf = (rest: readonly string[]): PluginPart => {
-  const file = partFiles.get(rest.join("/"));
+const entryOf = (rest: readonly string[]): PluginEntry => {
+  const file = entryFiles.get(rest.join("/"));
   if (file !== undefined) return file;
 
   for (const depth of [1, 2]) {
-    const folder = partFolders.get(rest.slice(0, depth).join("/"));
+    const folder = entryFolders.get(rest.slice(0, depth).join("/"));
     if (folder !== undefined && rest.length > depth) return folder;
   }
 
@@ -43,7 +44,7 @@ export const locate = (path: string): PluginLocation | undefined => {
   if (root !== "packages" || area !== "plugins" || plugin === undefined || rest.length === 0)
     return undefined;
 
-  return { plugin, part: partOf(rest) };
+  return { plugin, entry: entryOf(rest) };
 };
 
 /** The repository-relative path of the linted file. */

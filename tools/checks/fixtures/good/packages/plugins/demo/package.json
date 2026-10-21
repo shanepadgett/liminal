@@ -2,13 +2,21 @@
   "name": "@liminal/demo",
   "type": "module",
   "exports": {
-    ".": "./plugin.ts",
+    ".": "./src/plugin.ts",
     "./contract": "./src/contract.ts",
-    "./conformance": "./test/conformance.ts"
+    "./tui": "./src/tui.tsx"
+  },
+  "dependencies": {
+    "diff": "9.0.0"
   },
   "peerDependencies": {
-    "@liminal/sdk": "*",
-    "@liminal/session-log": "*",
+    "@liminal/core": "*",
+    "@liminal/session": "*",
     "effect": "*"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/plugin.ts"
+    ]
   }
 }

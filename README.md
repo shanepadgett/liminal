@@ -16,8 +16,7 @@ Coding agents have become noisy: too many modes, too many knobs, too much ceremo
 ## Getting started
 
 ```bash
-bun install
-bun run dev
+mise run setup
 ```
 
 ## License

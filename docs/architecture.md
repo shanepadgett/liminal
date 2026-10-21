@@ -21,7 +21,7 @@ Each layer imports only from the layers above it.
 ```text
 core                      definePlugin, compose, Registry, Pipeline, Attribute     knows nothing about agents
   ↑
-base plugins              model · session · tools · context · loop                 "an agent"
+base plugins              settings · model · session · tools · context · loop      "an agent"
   ↑
 providers & features      model-anthropic, session-sqlite, tools-files, approvals, memory, …
   ↑
@@ -30,7 +30,7 @@ frontend kit              client (framework-free) · tui (OpenTUI + slots)
 hosts                     apps/cli · apps/desktop · an embedding app
 ```
 
-- Core, base plugins and `client` use only `effect` and standard JavaScript, so they run on Bun, Node and Deno. A lint boundary enforces it. Bun APIs and drivers live in other plugins and hosts.
+- Core and base plugins use only `effect` and standard JavaScript, so they run on Bun, Node and Deno. `client` has no dependencies and imports only types. Fallow boundaries enforce the layers; oxlint bans runtime imports and globals in core, base plugins and `client`. Bun APIs and drivers live in other plugins and hosts.
 
 ## Stack
 
@@ -56,7 +56,7 @@ Versions are pinned in `package.json`; [reference/copies/index.md](reference/cop
 | --- | --- |
 | `fuzzysort` | `palette`, `chat` (`@` file tags), model picker |
 | `diff` | `tools-files` edit patches |
-| `partial-json` | `tools-files` TUI part, only if Effect AI gives no partial tool arguments |
+| `partial-json` | `tools-files` `tui` entry, only if Effect AI gives no partial tool arguments |
 | `unbash` | `tools-shell` safety rules |
 | `@opencode/codemode` | `tools-execute` |
 | `jsonc-parser` | Settings files with comments |
@@ -96,20 +96,20 @@ export default definePlugin({
   provides: [Approvals],
   requires: [ToolCall, Inbox, Models],
   layer: ApprovalsLive,
-  parts: { tui: () => import("./tui.tsx"), web: () => import("./web.tsx") },
+  entries: { tui: () => import("./tui.tsx"), web: () => import("./web.tsx") },
 });
 ```
 
-- A server never imports frontend parts. A frontend loads its part of every plugin in the composition.
+- A server never imports frontend entries. A frontend loads its entry of every plugin in the composition.
 - A plugin imports other plugins only through their `./contract` export.
-- A part that grows becomes a folder with an `index` entry.
+- An entry that grows becomes a folder with an `index` file.
 
 ## Core
 
 Core is the mechanism that lets plugins plug into each other. It runs on any JavaScript runtime and depends only on Effect.
 
 ```ts
-definePlugin({ name, provides, requires, layer, parts })   // a plugin is an Effect Layer
+definePlugin({ name, provides, requires, layer, entries })   // a plugin is an Effect Layer
 compose(plugins): Effect<Services, CompositionError, Scope>
 Registry<T>          // a collection others add to; ordered by explicit `order`
 Pipeline<In, Out>    // an operation others wrap with middleware calling next()
@@ -137,6 +137,11 @@ Every extension uses one of four mechanisms; [extension-basics.md](extension-bas
 Each base plugin owns a contract that other plugins import.
 
 ```ts
+// settings: one section per plugin
+SettingsSections: Registry<{ name: string; schema: Schema<T> }>   // the Schema holds the defaults
+Settings.section<T>(name, schema): Effect<T, SettingsInvalid>      // read on use
+Settings.write(scope: "global" | "project", path, value): Effect<void>
+
 // model: the LLM vocabulary, providers and one-off calls
 type Part = Text | Image | Reasoning | ToolCall | ToolResult
 type Message = { role: "user" | "assistant" | "tool"; parts: Part[] }
@@ -192,6 +197,13 @@ take queued inputs → render Sections + History → ModelCall → ToolCall for 
 - Shared provider code, such as an OpenAI-compatible wire format, is a library the provider plugins import, not a contract.
 - The session log stores Liminal's own `Message` and `Part` schema. Providers convert to and from Effect AI's types at their edge, so saved sessions outlive library changes.
 
+### Settings
+
+- Every plugin reads its configuration only through `Settings`; plugins take no options of their own.
+- The base `settings` plugin holds values given in code: `settings({ approvals: { mode: "ask" } })`. `settings-files` replaces it in the CLI and desktop with `~/.liminal/settings.json` and `<project>/.liminal/settings.json`; project values win.
+- A settings screen lists every section from `SettingsSections`.
+- Credentials are not settings; `accounts` keeps them.
+
 ### One-off model calls and structured output
 
 - `Models.generate` makes a single model call outside the turn loop, through the `ModelCall` pipeline, so usage and cache hints apply.
@@ -206,7 +218,7 @@ take queued inputs → render Sections + History → ModelCall → ToolCall for 
 - Live streaming deltas are not stored. A finished assistant message is committed as one event.
 - Every way into a session is an input through `Inbox.send`: a user message, an answer to a question, a notification, chat history, a cancel, a command.
 - An input sent during a turn joins at the next step. An input sent to an idle session starts a turn.
-- One runner per session. `append` with `expectedSeq` rejects a second writer. The session provider decides how a runner is chosen: a lock in one process, a lease across processes.
+- One runner per session. `append` with `expectedSeq` rejects a second writer. The session store decides how a runner is chosen: a lock in one process, a lease across processes.
 - Recovery is per turn. After a crash or shutdown, an unfinished turn gets an `interrupted` event and continues from the log.
 
 ### Multiplayer
@@ -240,7 +252,7 @@ view.loadOlder()
 
 ### Slots: TUI and desktop
 
-A slot is a named region of the screen that plugins fill from their `tui` and `web` parts. The TUI uses OpenTUI's plugin slots (`createSolidSlotRegistry`, `<Slot>`).
+A slot is a named region of the screen that plugins fill from their `tui` and `web` entries. The TUI uses OpenTUI's plugin slots (`createSolidSlotRegistry`, `<Slot>`).
 
 | Slot mode | Mechanism | Example |
 | --- | --- | --- |
@@ -254,7 +266,7 @@ How an event renders is not a slot: `EventRenderer` is a registry keyed by event
 type ChatSlots = { sidebar: { session: SessionId }; composer: { session: SessionId } }
 export const EventRenderer: Registry<{ kind: string; component: Component<{ event: SessionEvent }> }>
 
-// approvals tui part
+// approvals tui entry
 EventRenderer.add({ kind: "question", component: QuestionCard })
 ```
 
@@ -263,13 +275,13 @@ EventRenderer.add({ kind: "question", component: QuestionCard })
 
 ### Embedding apps
 
-An embedding app is the host, so it owns its UI. It uses `client` and the session view and renders with its own components. A plain map from event kind to component plays the role of the `EventRenderer` slot. Plugin `tui` and `web` parts are for Liminal's own frontends.
+An embedding app is the host, so it owns its UI. It uses `client` and the session view and renders with its own components. A plain map from event kind to component plays the role of the `EventRenderer` slot. Plugin `tui` and `web` entries are for Liminal's own frontends.
 
 ## Hosts
 
 | Host | Composition | Frontend and connection |
 | --- | --- | --- |
-| CLI binary | Base + `session-sqlite` + coding tools + `loader` | TUI in the same process; plain function calls |
+| CLI binary | Base + `session-sqlite` + `settings-files` + coding tools + `loader` | TUI in the same process; plain function calls |
 | Desktop app | Same as CLI, in the app's main process | Webview using `client` over the desktop shell's IPC |
 | Web server | Base + `session-postgres` + app plugins + `actors` + `http` | Browser UI using `client` over HTTP |
 | Embedded | Whatever the embedding code imports | The embedding app's own UI |
@@ -295,6 +307,7 @@ These are internals of the provider, not contracts.
 
 | Group | Plugin | Does | Mechanism | Previous code in `archive/packages/plugins/` |
 | --- | --- | --- | --- | --- |
+| Base | `settings` | `Settings`, `SettingsSections`, in-memory values | base | `settings` |
 | Base | `model` | Message types, providers, `ModelCall`, `Models.generate` | base | `models`, `decisions` |
 | Base | `session` | Log, inbox, `Send`, `Commands`, event kinds, in-memory store | base | `session-log`, `inbox`, `notices` |
 | Base | `tools` | Tool registry, `ToolCall`, tool guidance section | base | `tools` |
@@ -305,6 +318,7 @@ These are internals of the provider, not contracts.
 | Providers | `model-catalog` | Names, limits, prices from models.dev | base service | `model-catalog` |
 | Providers | `accounts` | Credentials, login methods, `/connect` | Add | `logins`, `credential-store` |
 | Storage | `session-sqlite`, `session-postgres` | Session stores | Replace | `session-store` |
+| Storage | `settings-files` | Global and project settings files | Replace | `settings` |
 | Tools | `tools-files` | `read`, `edit`, `write`, `@` file tags | Add | `files`, `tools-read`, `tools-edit` |
 | Tools | `tools-shell` | `shell`, command runner, shell safety, background processes | Add | `tools-shell`, `command-runner`, `shell-safety`, `processes` |
 | Tools | `tools-web` | `websearch`, `webfetch` | Add | `tools-web` |
@@ -357,11 +371,11 @@ All packages publish to npm as ESM JavaScript with type declarations, so Node, B
 | Package | Holds |
 | --- | --- |
 | `@liminal/core` | Core |
-| `@liminal/model`, `@liminal/session`, `@liminal/tools`, `@liminal/context`, `@liminal/loop` | Base plugins with their contracts |
+| `@liminal/settings`, `@liminal/model`, `@liminal/session`, `@liminal/tools`, `@liminal/context`, `@liminal/loop` | Base plugins with their contracts |
 | `@liminal/agent` | `agent()`: the base plugin list, for embedding in one import |
 | `@liminal/<plugin>` | Providers and features |
 | `@liminal/client` | Client and session view |
-| `@liminal/tui` | TUI frontend and the UI kit for `tui` parts |
+| `@liminal/tui` | TUI frontend and the UI kit for `tui` entries |
 
 - Every workspace package shares one version.
 - Core, base plugins and `client` run on any runtime; see [Layers](#layers).
@@ -370,12 +384,12 @@ All packages publish to npm as ESM JavaScript with type declarations, so Node, B
 
 - `apps/cli` compiles with `bun build --compile` into one `liminal` executable per platform.
 - The binary contains core, the built-in plugins, the TUI and `loader`.
-- `loader` reads `~/.liminal/` and `<project>/.liminal/` for installed annexes and `plugins.json`, imports them at runtime, and rebuilds the composition between turns when they change.
+- `loader` reads `~/.liminal/` and `<project>/.liminal/` for installed bundles and `plugins.json`, imports them at runtime, and rebuilds the composition between turns when they change.
 
 ### Desktop app
 
 - `apps/desktop` runs the same composition as the CLI in a Bun main process and renders a webview frontend connected through `client` over IPC.
-- It installs and loads annexes from the same folders as the CLI.
+- It installs and loads bundles from the same folders as the CLI.
 
 ### Embedding
 
@@ -384,7 +398,7 @@ All packages publish to npm as ESM JavaScript with type declarations, so Node, B
 
 ## External plugins
 
-An annex is the distribution unit for external plugins: an npm, git or local package containing one or more plugins.
+A bundle is the distribution unit for external plugins: an npm, git or local package containing one or more plugins.
 
 ```json
 {
@@ -396,12 +410,12 @@ An annex is the distribution unit for external plugins: an npm, git or local pac
 }
 ```
 
-- An annex depends on `@liminal/core`, `effect` and the contracts it extends as peer dependencies.
-- An annex exports its contract separately, so other annexes can extend it without loading its implementation.
-- Embedding apps use an annex by importing it. The CLI and desktop use an annex by installing it into a plugin folder, where `loader` finds it through the `liminal` key.
-- Loaded annexes get the host's copy of core, Effect, OpenTUI and every contract, so service tags and schemas match. `loader` does this with OpenTUI's runtime plugin support, whose module map points those imports at the host's instances, including inside a compiled binary.
-- A project's annexes and `plugins.json` load only in a trusted workspace.
+- A bundle depends on `@liminal/core`, `effect` and the contracts it extends as peer dependencies.
+- A bundle exports its contract separately, so other bundles can extend it without loading its implementation.
+- Embedding apps use a bundle by importing it. The CLI and desktop use a bundle by installing it into a plugin folder, where `loader` finds it through the `liminal` key.
+- Loaded bundles get the host's copy of core, Effect, OpenTUI and every contract, so service tags and schemas match. `loader` does this with OpenTUI's runtime plugin support, whose module map points those imports at the host's instances, including inside a compiled binary.
+- A project's bundles and `plugins.json` load only in a trusted workspace.
 
 ## Open
 
-- How `loader` installs annexes from npm and git.
+- How `loader` installs bundles from npm and git.

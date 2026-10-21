@@ -1,12 +1,160 @@
 {
 	"terms": [
 		{
-			"term": "annex",
+			"term": "actor",
+			"definition": "Whoever sent an input; a multiplayer session has many."
+		},
+		{
+			"term": "attribute",
+			"definition": "Typed data attached to a session, an input or an event."
+		},
+		{
+			"term": "base plugins",
+			"definition": "The six plugins that make an agent: settings, model, session, tools, context and loop."
+		},
+		{
+			"term": "bundle",
 			"definition": "The unit Liminal plugins are distributed in: an npm, git, or local package containing one or more plugins."
+		},
+		{
+			"term": "command",
+			"definition": "A slash command that runs on the agent side."
+		},
+		{
+			"term": "composition",
+			"definition": "The set of plugins a host runs together, checked and built by compose."
+		},
+		{
+			"term": "context",
+			"definition": "What the model receives on a step: prompt sections plus history projected from the session log."
+		},
+		{
+			"term": "contract",
+			"definition": "What a plugin lets other plugins import: service tags, event kinds, attribute keys, schemas and slot handles."
+		},
+		{
+			"term": "core",
+			"definition": "The small mechanism that composes plugins: definePlugin, compose, registry, pipeline and attribute. It knows nothing about agents."
+		},
+		{
+			"term": "entry",
+			"definition": "One of a plugin's export entries: contract, plugin, tui or web."
+		},
+		{
+			"term": "event",
+			"definition": "One entry in a session log, with a kind, data and attributes; its kind says whether the model sees it."
+		},
+		{
+			"term": "extension point",
+			"definition": "A registry, pipeline or attribute a contract exposes for other plugins to extend."
+		},
+		{
+			"term": "frontend",
+			"definition": "A way to see and drive sessions: the TUI, the desktop webview, print mode or a browser."
+		},
+		{
+			"term": "host",
+			"definition": "The program that runs a composition: the CLI, the desktop app, a web server or an embedding app."
+		},
+		{
+			"term": "input",
+			"definition": "Anything sent into a session: a user message, an answer, a notification, a cancel or a command."
 		},
 		{
 			"term": "instructions",
 			"definition": "Markdown rules an agent reads only when doing the work they cover."
+		},
+		{
+			"term": "message",
+			"definition": "A user, assistant or tool entry in model context, made of parts."
+		},
+		{
+			"term": "model",
+			"definition": "An LLM the agent calls, with known capabilities."
+		},
+		{
+			"term": "model role",
+			"definition": "Which model a call uses, main or small, chosen in settings."
+		},
+		{
+			"term": "notice",
+			"definition": "An event the model never sees."
+		},
+		{
+			"term": "part",
+			"definition": "A piece of a message: text, an image, reasoning, a tool call or a tool result."
+		},
+		{
+			"term": "pipeline",
+			"definition": "An operation plugins wrap with middleware, such as a model call or a tool call."
+		},
+		{
+			"term": "plugin",
+			"definition": "One unit of behavior, built with definePlugin as an Effect layer, that adds to, wraps, attaches to or replaces other plugins."
+		},
+		{
+			"term": "print mode",
+			"definition": "The CLI running without the TUI, writing the reply or events to stdout."
+		},
+		{
+			"term": "prompt section",
+			"definition": "Text a plugin contributes to every model request."
+		},
+		{
+			"term": "provider",
+			"definition": "A plugin that supplies models from one vendor."
+		},
+		{
+			"term": "registry",
+			"definition": "A list plugins add items to, such as tools, commands or event renderers."
+		},
+		{
+			"term": "runner",
+			"definition": "The one process running a session's loop at a time."
+		},
+		{
+			"term": "session",
+			"definition": "One conversation with an agent, stored as an append-only log of events."
+		},
+		{
+			"term": "session store",
+			"definition": "The plugin that stores session logs, such as in memory, SQLite or Postgres."
+		},
+		{
+			"term": "session view",
+			"definition": "Frontend state folded from a session's events."
+		},
+		{
+			"term": "settings",
+			"definition": "Configuration every plugin reads through Settings; plugins take no options of their own."
+		},
+		{
+			"term": "settings section",
+			"definition": "One plugin's block of settings, with a schema that holds its defaults."
+		},
+		{
+			"term": "slot",
+			"definition": "A named screen region plugins fill from their tui and web entries."
+		},
+		{
+			"term": "step",
+			"definition": "One model call plus the tool calls it asks for. New input joins at the next step."
+		},
+		{
+			"term": "tool",
+			"definition": "A named action the model can call, with an input schema."
+		},
+		{
+			"term": "tool call",
+			"definition": "One request from the model to run a tool, and its result."
+		},
+		{
+			"term": "trusted workspace",
+			"definition": "A project folder whose own settings and bundles may load."
+		},
+		{
+			"term": "turn",
+			"definition": "The loop's work from taking queued inputs until no tool owes a result and no new input arrived, ending with turn-end hooks."
 		}
 	]
 }

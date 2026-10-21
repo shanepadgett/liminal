@@ -1,12 +1,14 @@
 {
-  "name": "@liminal/demo",
+  "name": "@liminal/other",
+  "private": true,
   "type": "module",
   "exports": {
-    ".": "./plugin.ts",
-    "./server": "./src/server.ts"
+    "./contract": "./src/contract.ts",
+    "./server": "./src/server.ts",
+    "./web": "./web.tsx"
   },
   "dependencies": {
-    "@liminal/kernel": "workspace:*",
-    "@liminal/sdk": "workspace:*"
+    "@liminal/core": "workspace:*",
+    "effect": "4.0.5"
   }
 }

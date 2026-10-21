@@ -1,0 +1,13 @@
+{
+  "name": "@liminal/missing",
+  "type": "module",
+  "exports": {
+    ".": "./src/plugin.ts",
+    "./tui": "./src/tui.tsx"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/plugin.ts"
+    ]
+  }
+}
