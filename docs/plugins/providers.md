@@ -1,17 +1,6 @@
-# Milestone 4: providers and cost
+# Milestone 4: cost and naming
 
 Work for [status.md](../status.md) milestone 4.
-
-## Model providers
-
-- `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go`: each adds a `ModelProvider` to `Models` and its logins to `LoginMethods`.
-- OpenAI-compatible wire code is a shared library, not a contract.
-- Previous code: same names.
-
-## `model-catalog`
-
-- Model names, context limits and prices from models.dev; providers and `usage` read it.
-- Previous code: `model-catalog`.
 
 ## `usage`
 

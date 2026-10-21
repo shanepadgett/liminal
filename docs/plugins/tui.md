@@ -2,10 +2,9 @@
 
 Work for [status.md](../status.md) milestone 2. UI layers and slots are in [architecture.md](../architecture.md#ui).
 
-## `packages/client`
+## Session view in `packages/client`
 
-- `send`, `page`, `live`, `call` over plain function calls; no dependencies, types from contracts through `import type`; trusts the server's JSON.
-- Session view: folds events into `{ messages, streaming, questions, status, actors }`.
+- Folds events into `{ messages, streaming, questions, status, actors }`.
 - Previous code: `archive/packages/frontend`.
 
 ## `packages/tui`
@@ -38,26 +37,7 @@ export const EventRenderer: Registry<{ kind: string; component: Component<{ even
 - Theme tokens the UI kit reads; theme switching.
 - Previous code: `theme`.
 
-## `session-sqlite`
+## `/connect` in the TUI
 
-- Replaces the in-memory `SessionLog` with SQLite under `~/.liminal/`.
-- Queries through `SqlClient`; the host supplies `@effect/sql-sqlite-bun`.
-- Runner is an in-process lock.
-- Previous code: `session-store`.
-
-## `settings-files`
-
-- Replaces the in-memory settings provider: `~/.liminal/settings.json` and `<project>/.liminal/settings.json`, JSONC through `jsonc-parser`; project values win.
-- `write` keeps comments and formatting.
-- Previous code: `settings`.
-
-## `accounts`
-
-- Credentials in a `0600` JSON file under `~/.liminal/`, `LoginMethods` registry that providers add to, `/connect` command.
-- Previous code: `logins`, `credential-store`.
-
-```ts
-// model-anthropic adds its logins
-LoginMethods.add({ provider: "anthropic", kind: "api-key" })
-LoginMethods.add({ provider: "anthropic", kind: "oauth", run: anthropicOAuth })
-```
+- The `accounts` TUI entry: `/connect` runs the same login methods and saves to the same credentials file as `liminal connect`.
+- Previous code: `logins`.

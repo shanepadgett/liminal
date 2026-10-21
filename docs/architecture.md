@@ -131,7 +131,7 @@ Every extension uses one of four mechanisms; [extension-basics.md](extension-bas
 | Add | Contribute to a `Registry` | A tool, a prompt section, a model provider, a slash command, a UI component |
 | Wrap | Middleware on a `Pipeline` | Approval before a tool call, retry around a model call |
 | Attach | Set an `Attribute` on a session, input or event | The actor who sent an input, the work order a session belongs to |
-| Replace | Provide the same contract | `session-postgres` in place of the in-memory store |
+| Replace | Provide the same contract | `session-postgres` in place of `session-sqlite` on a server |
 
 ## Base plugins: the agent
 
@@ -152,16 +152,16 @@ interface Model {
 }
 Models: Registry<ModelProvider>
 ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>
-Models.generate<T>(options: {
+Models.generate(options: {
   model?: "main" | "small" | ModelId        // roles come from settings
   prompt: Part[]
   history?: SessionId                        // start from the session's projected history
-  schema?: Schema<T>                         // structured output
-}): Effect<T | Message>
+}): Effect<Message>
+Models.generate<T>(options: { ...; schema: Schema<T> }): Effect<T>   // structured output
 
 // session: the log, the inbox and commands
-type SessionEvent = { id; seq: number; at: Date; kind: string; data: unknown; attributes: Attributes }
-defineEvent(kind, schema, { modelVisible })    // plugins declare their own event kinds
+type SessionEvent = { id; seq: number; at: Date; kind: string; data: Schema.Json; attributes: Attributes }
+defineEvent(kind, schema, { modelVisible })    // a typed codec for one kind's data, like an Attribute
 interface SessionLog {
   open(attributes): Effect<SessionId>
   append(id, events, expectedSeq): Effect<Seq, Conflict>
@@ -201,7 +201,7 @@ take queued inputs → render Sections + History → ModelCall → ToolCall for 
 ### Settings
 
 - Every plugin reads its configuration only through `Settings`; plugins take no options of their own.
-- The base `settings` plugin holds values given in code: `settings({ approvals: { mode: "ask" } })`. `settings-files` replaces it in the CLI and desktop with `~/.liminal/settings.json` and `<project>/.liminal/settings.json`; project values win.
+- `settings-files` keeps settings in `~/.liminal/settings.json` and `<project>/.liminal/settings.json`; project values win.
 - A settings screen lists every section from `SettingsSections`.
 - Credentials are not settings; `accounts` keeps them.
 
@@ -282,12 +282,13 @@ An embedding app is the host, so it owns its UI. It uses `client` and the sessio
 
 | Host | Composition | Frontend and connection |
 | --- | --- | --- |
-| CLI binary | Base + `session-sqlite` + `settings-files` + coding tools + `loader` | TUI in the same process; plain function calls |
+| CLI binary | Base + `session-sqlite` + `settings-files` + `accounts` + providers + coding tools + `loader` | TUI in the same process; plain function calls |
 | Desktop app | Same as CLI, in the app's main process | Webview using `client` over the desktop shell's IPC |
 | Web server | Base + `session-postgres` + app plugins + `actors` + `http` | Browser UI using `client` over HTTP |
 | Embedded | Whatever the embedding code imports | The embedding app's own UI |
 
 - `apps/cli` is a full command line: the TUI by default, and a print mode like Pi's and OpenCode's that runs a prompt without the TUI and writes the result to stdout.
+- `liminal connect` saves a provider's credentials: pick a provider, then a login method, then enter an API key or finish an OAuth flow. The TUI's `/connect` and the desktop app use the same login methods and credentials file.
 - Print mode is a frontend over `client`. `-p` writes the final reply; `--json` writes session events as JSON lines. Questions and approvals are denied unless `--approve` is passed. There is no RPC mode; `http` covers remote control.
 - No host runs a server unless it composes `http`. A CLI that composes `http` lets a second client attach to a running session.
 - `http` routes: `POST /sessions/:id/inputs`, `GET /sessions/:id/live` (Server-Sent Events: latest page, then new events), `GET /sessions/:id/events?before=<id>` (older page).
@@ -308,16 +309,16 @@ These are internals of the provider, not contracts.
 
 | Group | Plugin | Does | Mechanism | Previous code in `archive/packages/plugins/` |
 | --- | --- | --- | --- | --- |
-| Base | `settings` | `Settings`, `SettingsSections`, in-memory values | base | `settings` |
+| Base | `settings` | `Settings`, `SettingsSections` | base | `settings` |
 | Base | `model` | Message types, providers, `ModelCall`, `Models.generate` | base | `models`, `decisions` |
-| Base | `session` | Log, inbox, `Send`, `Commands`, event kinds, in-memory store | base | `session-log`, `inbox`, `notices` |
+| Base | `session` | Log, inbox, `Send`, `Commands`, event kinds | base | `session-log`, `inbox`, `notices` |
 | Base | `tools` | Tool registry, `ToolCall`, tool guidance section | base | `tools` |
 | Base | `context` | `Sections`, `History` | base | `context` |
 | Base | `loop` | The turn, `TurnEnd`, cancel | base | `agent-loop`, `cancel` |
 | Providers | `model-anthropic`, `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go` | Model providers and their logins | Add | same names |
-| Providers | `model-scripted` | Scripted replies for development | Add | `model-scripted` |
+| Providers | `model-scripted` | Scripted replies for tests | Add | `model-scripted` |
 | Providers | `model-catalog` | Names, limits, prices from models.dev | base service | `model-catalog` |
-| Providers | `accounts` | Credentials, login methods, `/connect` | Add | `logins`, `credential-store` |
+| Providers | `accounts` | Credentials, login methods, `liminal connect` and `/connect` | Add | `logins`, `credential-store` |
 | Storage | `session-sqlite`, `session-postgres` | Session stores | Replace | `session-store` |
 | Storage | `settings-files` | Global and project settings files | Replace | `settings` |
 | Tools | `tools-files` | `read`, `edit`, `write`, `@` file tags | Add | `files`, `tools-read`, `tools-edit` |

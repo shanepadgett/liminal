@@ -5,6 +5,8 @@ What we are building, in order. Each milestone groups the work that ships togeth
 ## Scope
 
 - Build only what a milestone lists. Anything else goes under Later until the user asks for it.
+- Build only final code: no stand-in for something a later milestone builds. When work needs a later piece, move that piece earlier or defer the work.
+- No in-memory or placeholder defaults. Each host composes its real plugins; a composition missing one fails with `MissingProvider`. Later milestones add plugins, never replace one built earlier.
 - The simplest implementation that keeps the seams in [architecture.md](architecture.md).
 - No tests until the test milestone.
 
@@ -14,30 +16,32 @@ Milestone 1. The stack is settled in [architecture.md](architecture.md#stack).
 
 ## Next
 
-1. Plan the base plugins from [plugins/base.md](plugins/base.md) in `plans/base.md`, in rounds, before building them. `packages/core` is built: `import { definePlugin, compose, Registry, Pipeline, Attribute } from "@liminal/core"`.
+1. Plan milestone 1's plugins from [plugins/base.md](plugins/base.md) in `plans/base.md`, in rounds, before building them. Round 1 settles where base plugins end and storage plugins begin (see Open). `packages/core` is built: `import { definePlugin, compose, Registry, Pipeline, Attribute } from "@liminal/core"`.
 2. Build the rest of milestone 1.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
 
 ## Milestones
 
-### 1. Core and a turn
+### 1. Core and the CLI
 
 Work: [plugins/base.md](plugins/base.md)
 
 - [x] `packages/core`: `definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`
 - [ ] Base plugins: `settings`, `model`, `session`, `tools`, `context`, `loop`
-- [ ] `model-anthropic`, `model-scripted`
-- [ ] `apps/cli` print mode: streams a reply to a prompt and runs one tool
+- [ ] `session-sqlite`, `settings-files`, `accounts`
+- [ ] `model-catalog`, `model-anthropic`, `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go`
+- [ ] `packages/client` over function calls
+- [ ] `apps/cli`: `liminal connect` saves credentials; print mode streams a reply with them
 
 ### 2. TUI
 
 Work: [plugins/tui.md](plugins/tui.md)
 
-- [ ] `packages/client` with the session view
+- [ ] Session view in `packages/client`
 - [ ] `packages/tui`: renderer, slot tree, UI kit
 - [ ] `chat`, `palette`, `theme`
-- [ ] `session-sqlite`, `settings-files`, `accounts`
+- [ ] `/connect` in the TUI
 - [ ] Daily chat in the TUI with saved sessions
 
 ### 3. Coding agent
@@ -50,12 +54,11 @@ Work: [plugins/coding.md](plugins/coding.md)
 - [ ] `approvals`, `questions`
 - [ ] Liminal works on its own repository
 
-### 4. Providers and cost
+### 4. Cost and naming
 
 Work: [plugins/providers.md](plugins/providers.md)
 
-- [ ] `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go`
-- [ ] `model-catalog`, `usage`, `cache-hints`, `session-name`
+- [ ] `usage`, `cache-hints`, `session-name`
 
 ### 5. Long sessions and project features
 
@@ -90,10 +93,13 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 ### 9. Tests
 
 - [ ] Test backfill, starting from the contracts
+- [ ] `model-scripted`: a provider that replays scripted replies, including tool calls, for tests. Previous code: `archive/packages/plugins/model-scripted`.
 
 ## Later
 
 ## Open
+
+- Where base plugins end and storage plugins begin: `session-sqlite` provides the whole `SessionLog`, or a store under logic the base `session` plugin owns. The same question for `settings-files` and `accounts`.
 
 - Electrobun 2.x ships its SDK through the Hutch devkit, not npm; the npm package is only a bootstrap. Whether the desktop app stays on Electrobun.
 - File search tools (`grep`, `find`): whether they belong in `tools-files`, and whether they use a system `rg` or ship one.

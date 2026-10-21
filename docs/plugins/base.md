@@ -1,4 +1,4 @@
-# Milestone 1: core and a turn
+# Milestone 1: core and the CLI
 
 Work for [status.md](../status.md) milestone 1. Contracts are in [architecture.md](../architecture.md#base-plugins-the-agent).
 
@@ -6,7 +6,7 @@ Work for [status.md](../status.md) milestone 1. Contracts are in [architecture.m
 
 - `SettingsSections` registry: each plugin adds its section name and Schema; the Schema holds the defaults.
 - `Settings.section(name, schema)` reads on use; `Settings.write(scope, path, value)`.
-- In-memory settings take values in code: `settings({ model: { main: "…" } })`. Plugins take no options of their own.
+- Plugins take no options of their own.
 - Previous code: `settings`.
 
 ## `model`
@@ -23,7 +23,7 @@ Models.generate({ model: "small", prompt, schema })
 
 ## `session`
 
-- `SessionLog` with `open`, `append`, `page`, `live`; in-memory store.
+- `SessionLog` with `open`, `append`, `page`, `live`.
 - `Inbox.send`, `Send` pipeline, `Commands` registry, `defineEvent`.
 - Notices are an event kind with `modelVisible: false`.
 - Previous code: `session-log`, `inbox`, `notices`.
@@ -43,19 +43,51 @@ Models.generate({ model: "small", prompt, schema })
 - One turn as in [architecture.md](../architecture.md#base-plugins-the-agent); `TurnEnd` registry; cancel input.
 - Previous code: `agent-loop`, `cancel`.
 
-## `model-anthropic`
+## `session-sqlite`
 
-- Adds an Anthropic `ModelProvider` to `Models`, built on Effect AI's Anthropic provider.
-- API key from the environment until `accounts` exists.
-- Previous code: `model-anthropic`.
+- Sessions in SQLite under `~/.liminal/`.
+- Queries through `SqlClient`; the host supplies `@effect/sql-sqlite-bun`.
+- Runner is an in-process lock.
+- Previous code: `session-store`.
 
-## `model-scripted`
+## `settings-files`
 
-- Adds a provider that replays scripted replies, including tool calls.
-- Previous code: `model-scripted`.
+- `~/.liminal/settings.json` and `<project>/.liminal/settings.json`, JSONC through `jsonc-parser`; project values win.
+- `write` keeps comments and formatting.
+- Previous code: `settings`.
+
+## `accounts`
+
+- Credentials in a `0600` JSON file under `~/.liminal/`: API keys, and OAuth tokens refreshed under a lock.
+- `LoginMethods` registry that providers add to; `liminal connect` and the TUI's `/connect` run them.
+- Previous code: `logins`, `credential-store`.
+
+```ts
+// model-anthropic adds its logins
+LoginMethods.add({ provider: "anthropic", kind: "api-key" })
+LoginMethods.add({ provider: "anthropic", kind: "oauth", run: anthropicOAuth })
+```
+
+## `model-catalog`
+
+- Model names, context limits and prices from models.dev; providers read it, and `usage` in milestone 4.
+- Previous code: `model-catalog`.
+
+## Model providers
+
+- `model-anthropic`, `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go`: each adds a `ModelProvider` to `Models` and its logins to `LoginMethods`.
+- `model-anthropic` is built on Effect AI's Anthropic provider.
+- OpenAI-compatible wire code is a shared library, not a contract.
+- Previous code: same names.
+
+## `packages/client`
+
+- `send`, `page`, `live`, `call` over plain function calls; no dependencies, types from contracts through `import type`; trusts the server's JSON.
+- Previous code: `archive/packages/frontend`.
 
 ## `apps/cli`
 
-- Composes the base plugins, `model-anthropic` and one tool.
+- Composes the base plugins, `session-sqlite`, `settings-files`, `accounts`, `model-catalog` and every provider.
 - Command line with `effect/cli`.
+- `liminal connect`: interactive prompts pick a provider, then a login method, then take an API key or run the OAuth flow; credentials go to `accounts`.
 - Print mode over `client`: `-p` streams the reply to stdout, `--json` writes session events as JSON lines, `--approve` lets questions and approvals pass.

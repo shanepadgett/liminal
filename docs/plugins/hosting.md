@@ -43,7 +43,7 @@ scan folders → read package.json "liminal".plugins → filter by plugins.json 
 
 ### `session-postgres`
 
-- Replaces `SessionLog`: event and session tables, lease row runner, `LISTEN/NOTIFY` for live deltas, lease release on `SIGTERM`.
+- Provides `SessionLog` on servers: event and session tables, lease row runner, `LISTEN/NOTIFY` for live deltas, lease release on `SIGTERM`.
 
 ### Packages
 
