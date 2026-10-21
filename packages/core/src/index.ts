@@ -1,5 +1,5 @@
 /** Liminal core: plugins, their composition and the mechanisms they extend each other with. */
-export { Attribute, AttributeInvalid, type Attributes } from "./attribute.ts";
+export { Attribute, AttributeInvalid, Attributes } from "./attribute.ts";
 export { compose, type ProvidedBy } from "./compose.ts";
 export { CompositionError } from "./composition-error.ts";
 export { type Middleware, Pipeline } from "./pipeline.ts";

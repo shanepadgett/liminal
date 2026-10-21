@@ -150,7 +150,7 @@ DeclaredSettings: Registry<Setting>                                // the settin
 Settings.get<T>(setting): Effect<T, SettingsInvalid>               // read on each call
 Settings.write(scope: "global" | "project", path, value): Effect<void>
 
-// model: the LLM vocabulary, providers and one-off calls
+// model: the LLM vocabulary, providers and one-off calls; knows nothing of sessions
 type Part = Text | Image | Reasoning | ToolCall | ToolResult
 type Message = { role: "user" | "assistant" | "tool"; parts: Part[] }
 interface Model {
@@ -162,17 +162,20 @@ ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>
 Models.generate(options: {
   model?: "main" | "small" | ModelId        // roles come from settings
   prompt: Part[]
-  history?: SessionId                        // start from the session's projected history
+  prefix?: ModelRequest                      // start from this request, such as Turns.request(id)
 }): Effect<Message>
 Models.generate<T>(options: { ...; schema: Schema<T> }): Effect<T>   // structured output
 
 // session: the log
 type SessionEvent = { session: SessionId; seq: Seq; at: Date; kind: string; data: Schema.Json; attributes: Attributes }
+type NewEvent = { kind: string; data: Schema.Json; attributes: Attributes }
 type Delta = { kind: string; data: Schema.Json }   // streamed to viewers, never stored
-defineEvent(kind, schema)                      // a typed codec for one kind's data, like an Attribute; deltas use it too
+defineEvent(kind, schema): { make(data, attributes?): Effect<NewEvent>; decode(item): Effect<Option<T>> } // deltas use it too
+Message                                        // session/message: model's Message, role and parts
+Notice                                         // session/notice: level and text; the model never sees it
 interface SessionLog {
-  open(attributes): Effect<SessionId>
-  append(id, events): Effect<SessionEvent[]>  // seq is assigned inside the write
+  open(attributes?): Effect<SessionId>
+  append(id, events: NewEvent[]): Effect<SessionEvent[]>  // seq is assigned inside the write
   read(id, after?): Effect<SessionEvent[]>    // the whole log, for History
   page(id, before?): Effect<SessionEvent[]>   // latest events, or the page before a seq
   live(id, after?): Stream<SessionEvent | Delta> // saved events after a seq, deltas since the last append, then new events and deltas
@@ -206,6 +209,7 @@ interface Inbox {
 Send: Pipeline<Input, void>
 Commands: Registry<Command>                  // slash commands, run on the agent side as soon as they are sent
 BeforeCall: Registry<Hook>                    // records logged before each model call: change notes, reminders
+Turns.request(id): Effect<ModelRequest>      // system prompt + tool definitions + History, as the next model call sends them
 TurnEnd: Registry<Hook>
 ```
 
@@ -238,7 +242,7 @@ take queued inputs → log steers and before-call records → system prompt + to
 - `Models.generate` makes a single model call outside the turn loop, through the `ModelCall` pipeline, so usage and cache hints apply.
 - `model` retries a call whose `AiError` is retryable, turns and one-off calls alike. Viewers see "retrying in 4s (2/5)"; a reply that fails partway is cleared and restarts. Out of attempts, the turn ends with a notice and the input stays.
 - With `schema`, the result is decoded through the schema. A model with `structuredOutput` gets the provider's native JSON schema output; only a model without it gets a forced tool call. Effect AI's `LanguageModel.generateObject` already makes this choice per provider.
-- With `history`, the request starts with the session's projected history, the same prefix as its last turn, so it hits the provider's cache. The prompt goes at the end and the result is not appended to the session. A side question over the current chat ("by the way") is this call.
+- With `prefix`, the request starts from another request. `Turns.request(id)` gives the session's next request: its system prompt, tool definitions and history, the same prefix as its last turn, so the call hits the provider's cache. The prompt goes at the end and the result is not appended to the session. A side question over the current chat ("by the way") is this call.
 - Commit grouping, approval verdicts and session names are `Models.generate` with a schema on the `small` model.
 
 ## Sessions

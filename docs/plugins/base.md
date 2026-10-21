@@ -12,18 +12,14 @@ Work for [status.md](../status.md) milestone 1. Contracts are in [architecture.m
 - Previous code: `models`, `decisions`.
 
 ```ts
-Models.generate({ model: "small", prompt, schema })
-  → resolve role → ModelCall.run(request) → schema ? decode : collect message
+Models.generate({ model: "small", prefix?, prompt, schema })
+  → resolve role → prefix + prompt → ModelCall.run(request) → schema ? decode : collect message
 ```
 
 ## `session`
 
-- `SessionLog`: `open`, `append`, `read`, `page`, `live`, `publish`, stored through `SqlClient`; live updates within one process.
-- RPC group: `live(id, after?)`, saved events after a seq, then new ones.
-- `defineEvent` for stored events and deltas.
-- Event kinds: `session/message` holds `Part[]`; `session/notice` holds a level and text and has no converter, so the model never sees it.
-- `page` returns 100 events.
-- Previous code: `session-log`, `session-store`, `notices`.
+- Event kind `session/message` holds `model`'s `Message`, role and parts; add it in the `model` step. Built: the log, `defineEvent`, `Notice` and the `live` RPC group.
+- Previous code: `session-log`.
 
 ## `tools`
 
@@ -56,6 +52,7 @@ Models.generate({ model: "small", prompt, schema })
 
 ## `loop`
 
+- `Turns.request(id)`: the session's next model request, for side calls that share its cache.
 - One turn as in [architecture.md](../architecture.md#base-plugins-the-agent); `BeforeCall` registry, whose hooks log records before each model call, such as change notes and reminders; `TurnEnd` registry; cancel input.
 - Tool calls in one reply run at the same time unless one is marked `sequential`. Cancel logs the partial reply marked interrupted, gives unfinished tool calls cancelled results and returns queued inputs to the input box. A turn left unfinished by a crash is closed when the session next opens, with interrupted results and a notice.
 - `Inbox`, `Send` pipeline, `Commands` registry. Each session's queue lives in memory.

@@ -11,7 +11,8 @@ export interface Attribute<T> {
 }
 
 /** Schema-encoded values by attribute key. */
-export type Attributes = { readonly [key: string]: Schema.Json };
+export const Attributes = Schema.Record(Schema.String, Schema.Json);
+export type Attributes = typeof Attributes.Type;
 
 export class AttributeInvalid extends Schema.TaggedError<
   AttributeInvalid,

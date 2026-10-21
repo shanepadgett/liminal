@@ -33,6 +33,14 @@
         "effect": "*",
       },
     },
+    "packages/plugins/session": {
+      "name": "@shanepadgett/liminal-session",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "effect": "*",
+      },
+    },
     "packages/plugins/settings": {
       "name": "@shanepadgett/liminal-settings",
       "version": "0.1.0",
@@ -318,6 +326,8 @@
     "@shanepadgett/liminal-directories": ["@shanepadgett/liminal-directories@workspace:packages/plugins/directories"],
 
     "@shanepadgett/liminal-planned": ["@shanepadgett/liminal-planned@workspace:tools/planned"],
+
+    "@shanepadgett/liminal-session": ["@shanepadgett/liminal-session@workspace:packages/plugins/session"],
 
     "@shanepadgett/liminal-settings": ["@shanepadgett/liminal-settings@workspace:packages/plugins/settings"],
 

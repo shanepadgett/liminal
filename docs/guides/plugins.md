@@ -104,9 +104,36 @@ const { greeting = "Hello" } = yield* (yield* Settings).get(GreeterSetting);
 
 ## Store data
 
-Require `SqlClient.SqlClient` from `effect/sql`. Your plugin owns its tables; name them after it.
+Require `SqlClient.SqlClient` from `effect/sql`. Your plugin owns its tables; name them after it. Run your migrations when the layer builds, with a migrations table of your own.
 
 ```ts
-const sql = yield* SqlClient.SqlClient;
-yield* sql`create table if not exists greeter_names (name text not null)`;
+const createNames = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+  yield* sql`CREATE TABLE greeter_names (name TEXT NOT NULL)`;
+});
+
+yield* Migrator.make({})({
+  loader: Migrator.fromRecord({ "0001_create_names": createNames }),
+  table: "greeter_migrations",
+});
 ```
+
+## Log to a session
+
+State that must survive a restart is a session event. Define each kind once with `defineEvent`; its schema encodes to JSON.
+
+```ts
+const Greeted = defineEvent("greeter/greeted", Schema.Struct({ name: Schema.String }));
+
+const log = yield* SessionLog;
+yield* log.append(session, [yield* Greeted.make({ name: "sam" })]);
+
+for (const event of yield* log.read(session)) {
+  const greeted = yield* Greeted.decode(event); // none for other kinds
+}
+```
+
+- `append` numbers the events with `seq` inside the write.
+- `publish` streams a delta, such as text as it arrives, to viewers. Nothing saves it. Make one with the same `defineEvent`.
+- `live(session, after?)` streams the saved events after `after`, the deltas since the last append, then everything new.
+- `Notice` is a message for the user that the model never sees.

@@ -53,7 +53,8 @@ Sections.add({ name: "agents-files", order: 20, render: () => readAgentsFiles(cw
 ```ts
 ToolCall.wrap((req, next) =>
   policy(req) === "allow" ? next(req)
-  : Models.generate({ model: "small", history: req.session, prompt: review(req), schema: Verdict })
+  : Turns.request(req.session).pipe(Effect.flatMap(prefix =>
+      Models.generate({ model: "small", prefix, prompt: review(req), schema: Verdict })))
       .pipe(Effect.flatMap(v => v.safe ? next(req) : Questions.ask(req.session, approvalQuestion(req))
       .pipe(Effect.flatMap(a => a.approved ? next(req) : Effect.succeed(denied(a)))))))
 ```
