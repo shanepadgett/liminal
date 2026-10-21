@@ -47,4 +47,7 @@ Prior art: Pi keeps `auth.json` at `0600` and takes a lock file around each OAut
 
 ## Open
 
-Round 4: to be chosen.
+- Round 4, `session`: event kinds and `defineEvent`, the inbox, `Send`, `Commands`, paging, live updates, one runner per session, crash recovery.
+- Round 5, the turn (`tools`, `context`, `loop`): what the model sees, how tool calls run, when a turn ends, cancel.
+- Round 6, `accounts` and the providers: `Credentials` and `LoginMethods`, the `liminal connect` flow, Claude and Codex subscription logins, the five providers.
+- Round 7, `client` and `apps/cli`: send, page and watch over function calls; print mode output, `--json` and `--approve`.

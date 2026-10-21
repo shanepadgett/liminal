@@ -16,8 +16,8 @@ Milestone 1. The stack is settled in [architecture.md](architecture.md#stack).
 
 ## Next
 
-1. Plan milestone 1's plugins from [plugins/base.md](plugins/base.md) in `plans/base.md`, in rounds, before building them. Round 1 settles where base plugins end and storage plugins begin. `packages/core` is built: `import { definePlugin, compose, Registry, Pipeline, Attribute } from "@liminal/core"`.
-2. Build the rest of milestone 1.
+1. Plan milestone 1's plugins from [plugins/base.md](plugins/base.md) in [plans/base.md](plans/base.md), in rounds, before building any of them. Rounds 1–3 are in its Decisions: storage, folders, settings, credentials, retries, choosing models, types and model details. Rounds 4–7 are in its [Open](plans/base.md#open) section; start with round 4, `session`.
+2. Build the rest of milestone 1. `packages/core` is built: `import { definePlugin, compose, Registry, Pipeline, Attribute } from "@liminal/core"`. Each new base plugin joins the fallow base zone and the oxlint overrides.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
 
@@ -99,7 +99,6 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 
 ## Open
 
-- Where base plugins end and storage plugins begin: round 1 of [plans/base.md](plans/base.md#open).
-
+- Milestone 1's remaining contracts: rounds 4–7 of [plans/base.md](plans/base.md#open).
 - Electrobun 2.x ships its SDK through the Hutch devkit, not npm; the npm package is only a bootstrap. Whether the desktop app stays on Electrobun.
 - File search tools (`grep`, `find`): whether they belong in `tools-files`, and whether they use a system `rg` or ship one.
