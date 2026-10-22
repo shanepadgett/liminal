@@ -1,7 +1,7 @@
 /**
  * The chat screen: the landing until the first send opens a session, then the session's transcript,
  * built from its view. `ctrl+c` quits, after the composer declines it; `ctrl+b` opens the sidebar
- * drawer on a small screen.
+ * drawer on a small screen, and the composer's hints name it while the drawer is closed.
  */
 
 import { useBindings } from "@opentui/keymap/solid";
@@ -26,7 +26,7 @@ import { kit, SlotView, useRun, useSessionView } from "@shanepadgett/liminal-tui
 import { buildTranscript, isWriting, type Turn as TurnData } from "../view/index.ts";
 import { Header } from "./Header.tsx";
 import { Landing } from "./Landing.tsx";
-import { Layout } from "./Layout.tsx";
+import { Layout, useSidebarPlace } from "./Layout.tsx";
 import { composer, type ItemRenderer, sidebar } from "./slots.ts";
 import { Prompt, type Renderers, Turn } from "./Turn.tsx";
 
@@ -56,6 +56,8 @@ const cancel = (session: SessionId) =>
     yield* loop["loop/cancel"]({ session });
   }).pipe(Effect.scoped);
 
+const SIDEBAR_HINTS = [{ keys: "ctrl+b", label: "sidebar" }];
+
 /** The turns of the session on screen, keeping each turn's and item's identity across updates. */
 const useTurns = (state: Parameters<typeof buildTranscript>[0], renderers: Accessor<Renderers>) => {
   const [turns, setTurns] = createStore<{ list: TurnData[] }>({ list: [] });
@@ -73,12 +75,17 @@ function SessionScreen(props: {
   readonly session: SessionId;
   readonly renderers: Accessor<Renderers>;
   readonly isSidebarOpen: boolean;
+  readonly closeSidebar: () => void;
   readonly send: (text: string, mode?: SendMode) => void;
 }) {
   const run = useRun();
   const view = useSessionView(props.session);
   const turns = useTurns(view.state, props.renderers);
   const lastIndex = () => turns().length - 1;
+  const place = useSidebarPlace();
+
+  const screenHints = () =>
+    place().kind === "drawer" && !props.isSidebarOpen ? SIDEBAR_HINTS : [];
 
   return (
     <Layout
@@ -110,6 +117,7 @@ function SessionScreen(props: {
           cancel={() => {
             run(cancel(props.session));
           }}
+          screenHints={screenHints()}
         />
       }
       sidebar={
@@ -118,6 +126,24 @@ function SessionScreen(props: {
         </box>
       }
       isSidebarOpen={props.isSidebarOpen}
+      closeSidebar={props.closeSidebar}
+    />
+  );
+}
+
+function LandingScreen(props: { readonly send: (text: string, mode?: SendMode) => void }) {
+  return (
+    <Layout
+      transcript={<Landing />}
+      composer={
+        <SlotView
+          slot={composer}
+          running={false}
+          send={props.send}
+          cancel={() => {}}
+          screenHints={[]}
+        />
+      }
     />
   );
 }
@@ -184,15 +210,15 @@ export function ChatScreen(props: {
               session={open}
               renderers={renderers}
               isSidebarOpen={isSidebarOpen()}
+              closeSidebar={() => {
+                setSidebarOpen(false);
+              }}
               send={send}
             />
           )}
         </Match>
         <Match when={session() === undefined}>
-          <Layout
-            transcript={<Landing />}
-            composer={<SlotView slot={composer} running={false} send={send} cancel={() => {}} />}
-          />
+          <LandingScreen send={send} />
         </Match>
       </Switch>
     </box>

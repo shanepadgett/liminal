@@ -128,7 +128,9 @@ export function Composer(props: ComposerProps) {
         />
       </box>
       <box flexDirection="row" justifyContent="flex-end" marginTop={1}>
-        <kit.Hints hints={props.running ? WORKING_HINTS : IDLE_HINTS} />
+        <kit.Hints
+          hints={[...(props.running ? WORKING_HINTS : IDLE_HINTS), ...props.screenHints]}
+        />
       </box>
     </box>
   );

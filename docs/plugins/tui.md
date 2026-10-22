@@ -36,7 +36,10 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 // view/index.ts
 export const buildTranscript: (state: ViewState, drawn: ReadonlySet<string>) => ReadonlyArray<Turn>
 // tui/index.tsx
-type ChatSlots = { sidebar: { session: SessionId }; composer: { session: SessionId } }
+type ChatSlots = {
+  sidebar: { session: SessionId; state: ViewState }
+  composer: { running: boolean; send(text, mode?): void; cancel(): void; screenHints: readonly Hint[] }
+}
 export const ItemRenderer: Registry<{ kind: string; component: (props: { event: SessionEvent }) => JSX.Element }>
 ```
 

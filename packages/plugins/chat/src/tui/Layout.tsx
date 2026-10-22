@@ -1,12 +1,13 @@
 /**
  * The chat screen's layout: a column with the header on top once the session starts, then the
  * transcript and the composer. The sidebar sits beside the whole column, wider on a large screen;
- * on a small one it is a drawer over the right edge, shown only when opened, that dims the rest.
- * The latest turn's input stays pinned above the transcript while it scrolls.
+ * on a small one it is a drawer over the right edge, shown only when opened, that dims the rest and
+ * closes on `escape`. The latest turn's input stays pinned above the transcript while it scrolls.
  */
 
-import type { JSX } from "@opentui/solid";
-import { createSignal, Show } from "solid-js";
+import { useBindings } from "@opentui/keymap/solid";
+import { type JSX, useTerminalDimensions } from "@opentui/solid";
+import { Show } from "solid-js";
 
 import { kit, useColor } from "@shanepadgett/liminal-tui";
 
@@ -26,6 +27,13 @@ const sidebarPlaceOf = (screenColumns: number): SidebarPlace => {
   const step = DOCKED_STEPS.find((each) => screenColumns >= each.from);
 
   return step === undefined ? { kind: "drawer" } : { kind: "docked", columns: step.columns };
+};
+
+/** Where the sidebar goes at the terminal's width now. */
+export const useSidebarPlace = () => {
+  const screen = useTerminalDimensions();
+
+  return () => sidebarPlaceOf(screen().width);
 };
 
 /** The transcript under its pinned input; it opens at the bottom and follows new lines. */
@@ -50,8 +58,15 @@ function Transcript(props: { readonly pinned?: JSX.Element; readonly transcript:
   );
 }
 
-function Drawer(props: { readonly children: JSX.Element }) {
+function Drawer(props: { readonly close: () => void; readonly children: JSX.Element }) {
   const color = useColor();
+
+  // Above the composer's `escape`, which stops a running turn.
+  useBindings(() => ({
+    priority: 1,
+    commands: [{ name: "chat.sidebar.close", title: "Close sidebar", run: props.close }],
+    bindings: [{ key: "escape", cmd: "chat.sidebar.close" }],
+  }));
 
   return (
     <kit.Overlay kind="drawer">
@@ -77,9 +92,9 @@ export function Layout(props: {
   readonly sidebar?: JSX.Element;
   /** Whether the drawer is open, on a screen too small to keep the sidebar beside the column. */
   readonly isSidebarOpen?: boolean;
+  readonly closeSidebar?: () => void;
 }) {
-  const [columns, setColumns] = createSignal(0);
-  const place = () => sidebarPlaceOf(columns());
+  const place = useSidebarPlace();
 
   const docked = () => {
     const now = place();
@@ -88,15 +103,7 @@ export function Layout(props: {
   };
 
   return (
-    <box
-      width="100%"
-      height="100%"
-      paddingTop={1}
-      flexDirection="row"
-      onSizeChange={function () {
-        setColumns(this.width);
-      }}
-    >
+    <box width="100%" height="100%" paddingTop={1} flexDirection="row">
       <box flexGrow={1} paddingBottom={1} gap={1}>
         {props.header}
         <box flexGrow={1}>
@@ -112,7 +119,13 @@ export function Layout(props: {
         )}
       </Show>
       <Show when={place().kind === "drawer" && props.isSidebarOpen === true && props.sidebar}>
-        <Drawer>{props.sidebar}</Drawer>
+        <Drawer
+          close={() => {
+            props.closeSidebar?.();
+          }}
+        >
+          {props.sidebar}
+        </Drawer>
       </Show>
     </box>
   );

@@ -18,7 +18,7 @@ The chat screen: a landing until the first send opens a session, then the sessio
 | --- | --- |
 | `ItemRenderer` | A registry of `{ kind, component }`: how saved events of `kind` show in the transcript. Add to it from a `tui` entry |
 | `sidebar` | The column beside the transcript once a session starts; every fill shows, in order. Props: `session`, `state` |
-| `composer` | Where the user writes; the last fill wins. Props: `running`, `send(text, mode?)`, `cancel()` |
+| `composer` | Where the user writes; the last fill wins. Props: `running`, `send(text, mode?)`, `cancel()`, `screenHints` (keys the screen adds to the hints, such as `ctrl+b` while the sidebar is hidden) |
 
 Chat fills `sidebar` with the Session section (folder, git branch, context share) and `composer` with its own composer.
 
@@ -29,7 +29,7 @@ Keys:
 | Enter | Send; while a turn runs, steer it |
 | Shift+Enter | New line |
 | Tab | While a turn runs, send as a follow-up |
-| Esc | While a turn runs, stop it |
+| Esc | Close the open sidebar; otherwise, while a turn runs, stop it |
 | Ctrl+C | Clear the draft; with no draft, quit |
 | Ctrl+B | Open or close the sidebar, below 110 columns |
 

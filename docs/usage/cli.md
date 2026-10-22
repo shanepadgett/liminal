@@ -15,7 +15,7 @@ With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; th
 | Enter | Send; while a turn runs, steer it |
 | Shift+Enter | New line |
 | Tab | While a turn runs, send as a follow-up |
-| Esc | While a turn runs, stop it |
+| Esc | Close the open sidebar; otherwise, while a turn runs, stop it |
 | Ctrl+C | Clear the draft; with no draft, quit |
 | Ctrl+B | Open or close the sidebar, below 110 columns |
 

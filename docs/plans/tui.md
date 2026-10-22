@@ -550,7 +550,7 @@ Rpc.make("model/main", { success: Schema.Struct({ model: ModelId, contextWindow:
 ```
 
 - Context share: input tokens from the latest `loop/step-end` over `contextWindow`; no percentage without a window.
-- Sidebar and composer slots: `defineSlot<{ session: SessionId; state: ViewState }>("chat/sidebar", "append")` and `defineSlot<{ running: boolean; send(text, mode?); cancel() }>("chat/composer", "replace")`, exported from chat's `./tui`. Chat fills them with its own Session section and Composer.
+- Sidebar and composer slots: `defineSlot<{ session: SessionId; state: ViewState }>("chat/sidebar", "append")` and `defineSlot<{ running: boolean; send(text, mode?); cancel(); screenHints }>("chat/composer", "replace")`, exported from chat's `./tui`. Chat fills them with its own Session section and Composer.
 - The chat screen returns one `<box>` around its landing-or-session switch: OpenTUI's `Slot` draws a fill again from fresh state whenever the element it returns changes.
 - Spinner: under the last Turn while `running` and the last delta is not a reply text or tool-input delta.
 - Quit: chat's `ctrl+c` calls `renderer.destroy()` through `Renderer`, which `run` waits on.
