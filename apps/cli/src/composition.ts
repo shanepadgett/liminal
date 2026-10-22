@@ -21,6 +21,7 @@ import session from "@shanepadgett/liminal-session";
 import settings from "@shanepadgett/liminal-settings";
 import sqlite from "@shanepadgett/liminal-sqlite";
 import systemPrompt from "@shanepadgett/liminal-system-prompt";
+import theme from "@shanepadgett/liminal-theme";
 import toolDefinitions from "@shanepadgett/liminal-tool-definitions";
 import tools from "@shanepadgett/liminal-tools";
 
@@ -57,6 +58,7 @@ const composition = compose([
   persona,
   toolDefinitions,
   loop,
+  theme,
 ]);
 
 /** The client host, with the composition built behind it. */

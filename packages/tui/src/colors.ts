@@ -3,7 +3,7 @@ import type { SyntaxStyle } from "@opentui/core";
 import { Context } from "effect";
 import { type Accessor, createContext, useContext } from "solid-js";
 
-import type { RoleName } from "@shanepadgett/liminal-theme/contract";
+import type { RoleName } from "@shanepadgett/liminal-client";
 
 /** The hex color of a role. */
 export type RoleColor = (role: RoleName) => string;

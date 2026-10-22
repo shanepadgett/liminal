@@ -1,6 +1,6 @@
 # @shanepadgett/liminal-client
 
-How a frontend reaches plugins. Each plugin's contract declares an RPC group: the functions its screens may call. `Host.client(Group)` gives a client for one.
+How a frontend reaches plugins, and what every frontend shares. Each plugin's contract declares an RPC group: the functions its screens may call. `Host.client(Group)` gives a client for one.
 
 - `Host`: the service a frontend asks for clients.
 - `inMemory`: a `Host` layer for a frontend in the same process as the plugins. Provide it the composition; each call goes straight to the plugin's handler.
@@ -32,3 +32,7 @@ yield* view.loadOlder; // adds the page before the oldest event held
 - `running`: whether a turn runs, from `loop/state`.
 
 The view knows no event kinds beyond telling saved events from deltas; a screen decodes the kinds it draws. If a stream behind the view fails, the error is logged and the view stops updating.
+
+## Colors
+
+`RoleName` names what a color is for, such as `text.muted` or `fill.danger`. Components in every frontend name colors this way; the `theme` plugin turns each role into a color for the palette on screen.

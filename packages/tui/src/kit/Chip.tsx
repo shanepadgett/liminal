@@ -1,6 +1,6 @@
 /** A short label on a solid fill: a status, a mode or a count. */
 
-import type { RoleName } from "@shanepadgett/liminal-theme/contract";
+import type { RoleName } from "@shanepadgett/liminal-client";
 
 import { useColor } from "../colors.ts";
 

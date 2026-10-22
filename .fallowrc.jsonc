@@ -47,7 +47,7 @@
     "rules": [
       { "from": "core", "allow": [] },
       { "from": "base", "allow": ["core"] },
-      { "from": "plugins", "allow": ["core", "base", "wire", "tui"] },
+      { "from": "plugins", "allow": ["core", "base", "wire", "client", "tui"] },
       { "from": "wire", "allow": [] },
       { "from": "client", "allow": ["core", "base", "plugins"] },
       { "from": "tui", "allow": ["core", "client"], "allowTypeOnly": ["base", "plugins"] },

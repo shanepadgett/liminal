@@ -31,6 +31,7 @@ hosts                     apps/cli · apps/desktop · an embedding app
 ```
 
 - Core and base plugins use only `effect` and standard JavaScript, so they run on Bun, Node and Deno. `client` uses only `effect` and plugin contracts, so it also runs in a browser. Fallow boundaries enforce the layers; oxlint bans runtime imports and globals in core, base plugins and `client`. Bun APIs and drivers live in other plugins and hosts.
+- A plugin's `view`, `tui` and `web` entries are frontend code: they import the frontend kit, such as `Host` and the role names from `client`. The kit imports plugins only as contract types.
 
 ## Stack
 

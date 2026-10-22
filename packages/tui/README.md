@@ -30,6 +30,6 @@ Liminal's terminal UI, on OpenTUI and Solid. `run(plugins)` loads each plugin's 
 
 ## Kit
 
-`kit` holds the shared components: `Chip`, `ChoiceRow`, `Dialog`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Rule`, `Section`, `Spinner`. They read colors by role name from `@shanepadgett/liminal-theme/contract`.
+`kit` holds the shared components: `Chip`, `ChoiceRow`, `Dialog`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Rule`, `Section`, `Spinner`. They read colors by role name from `@shanepadgett/liminal-client`.
 
 Run it with Bun's `@opentui/solid/preload`, which compiles `.tsx`.

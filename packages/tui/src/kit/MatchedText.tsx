@@ -2,7 +2,7 @@
 
 import { For } from "solid-js";
 
-import type { RoleName } from "@shanepadgett/liminal-theme/contract";
+import type { RoleName } from "@shanepadgett/liminal-client";
 
 import { useColor } from "../colors.ts";
 

@@ -7,7 +7,7 @@
 import { useTimeline } from "@opentui/solid";
 import { type Accessor, createSignal, For } from "solid-js";
 
-import type { RoleName } from "@shanepadgett/liminal-theme/contract";
+import type { RoleName } from "@shanepadgett/liminal-client";
 
 import { useColor, useMix } from "../colors.ts";
 import { cellsOf } from "./Gradient.tsx";

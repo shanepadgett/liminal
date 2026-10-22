@@ -16,7 +16,6 @@
     "@shanepadgett/liminal-client": "workspace:*",
     "@shanepadgett/liminal-core": "workspace:*",
     "@shanepadgett/liminal-session": "workspace:*",
-    "@shanepadgett/liminal-theme": "workspace:*",
     "effect": "*"
   }
 }

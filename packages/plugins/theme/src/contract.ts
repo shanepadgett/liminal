@@ -1,46 +1,30 @@
 /**
- * Liminal's colors as every frontend names them. Components use role names, never ramp steps, so a
- * palette swap changes every component at once.
+ * Liminal's palettes as OKLCH ramps, and the `theme` setting frontends read and write. The role
+ * names components use live in `@shanepadgett/liminal-client`.
  */
+import { Schema } from "effect";
+import { Rpc, RpcGroup } from "effect/rpc";
 
-/** What a color is for. */
-export type RoleName =
-  | "surface.base"
-  | "surface.raised"
-  | "surface.overlay"
-  | "surface.selected"
-  | "border.subtle"
-  | "border.base"
-  | "border.focus"
-  | "text.base"
-  | "text.muted"
-  | "text.faint"
-  | "text.ghost"
-  | "text.accent"
-  /** Section titles, set in bold. */
-  | "text.heading"
-  /** Text on a solid fill, such as a chip label. */
-  | "text.inverse"
-  | "fill.accent"
-  | "fill.danger"
-  | "fill.warning"
-  | "fill.success"
-  | "fill.info"
-  | "feedback.danger"
-  | "feedback.warning"
-  | "feedback.success"
-  | "feedback.info"
-  /** Pending and secondary states that still need their hue, such as a running tool's icon. */
-  | "feedback.danger.subtle"
-  | "feedback.warning.subtle"
-  | "feedback.success.subtle"
-  | "feedback.info.subtle"
-  /** Ends of the gradient used by the wordmark, the hatching and the spinner. */
-  | "gradient.from"
-  | "gradient.to"
-  /** Hatching and prompt marks that frame things without asking to be read. */
-  | "ornament"
-  | "ornament.subtle";
+import { Setting } from "@shanepadgett/liminal-settings/contract";
+
+/** The `theme` key in `settings.json`: the palette's id. */
+export const ThemeSetting = Setting.make(
+  "theme",
+  Schema.Struct({ palette: Schema.optionalKey(Schema.String) }),
+);
+
+/** The settings files could not be read or written. */
+export class ThemeFailed extends Schema.TaggedError<
+  ThemeFailed,
+  { readonly brand: unique symbol }
+>()("ThemeFailed", { message: Schema.String }) {}
+
+export class ThemeRpc extends RpcGroup.make(
+  /** The saved palette's id, or none when the user has not picked one. */
+  Rpc.make("theme/get", { success: Schema.UndefinedOr(Schema.String), error: ThemeFailed }),
+  /** Saves the palette's id in the global settings file. */
+  Rpc.make("theme/set", { payload: { palette: Schema.String }, error: ThemeFailed }),
+) {}
 
 /** A ramp's steps, light to dark, Tailwind style. */
 export type Step = 50 | 100 | 150 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 850 | 900 | 950;

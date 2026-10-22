@@ -53,7 +53,7 @@ Prior art:
 - **Plugins add frontend exports.** Beside `./contract`, a plugin exports `./view` (no UI framework) and `./tui` (OpenTUI), later `./web`. `/contract` is importable anywhere, `/view` from `view`, `tui` and `web` code, `/tui` from `tui` code only. `contract.ts` cannot hold a tag typed with a Solid component, since servers import it.
 - **Plugins say which events make one transcript item.** `chat`'s `view.ts` holds `TranscriptRules`, after deepseek-harness's event definitions; its `tui` entry holds `ItemRenderer`, keyed by item kind. A part is one event, or one part of a `session/message`; parts with one item id make one item. An event no rule matches is its own item, of the event's kind. Streamed parts show as live items until saved.
 - **Tool rows are not grouped.** A tool call and its result make one single-line row through `TranscriptRules`; consecutive tool rows sit next to each other, as in the gallery.
-- **TUI and desktop share colors.** `theme`'s contract holds the role names, the `Palette` type, the setting and `theme/get`, `theme/set`; its `view.ts` holds the OKLCH math, ramps, palettes and the palette-to-role mapping. Its `tui` entry builds OpenTUI's `SyntaxStyle` and fills the UI kit's color context; a later `web` entry turns role colors into CSS variables. The UI kit owns `useColor` and that context and imports role names as a type. Spacing, borders, glyphs, fonts and syntax styles belong to each frontend. OpenCode keeps separate theme code for its TUI and web app, and their theme sets have drifted.
+- **TUI and desktop share colors.** `packages/client` holds the role names, so the UI kits and `theme` import them without importing each other. `theme`'s contract holds the `Palette` type, the setting and `theme/get`, `theme/set`; its `view.ts` holds the OKLCH math, ramps, palettes and the palette-to-role mapping. Its `tui` entry builds OpenTUI's `SyntaxStyle` and fills the UI kit's color context; a later `web` entry turns role colors into CSS variables. The UI kit owns `useColor` and that context. Spacing, borders, glyphs, fonts and syntax styles belong to each frontend. OpenCode keeps separate theme code for its TUI and web app, and their theme sets have drifted.
 - **Slots.** `packages/tui` has one `screen` slot (`single_winner`) that `chat` fills. `chat` has `sidebar` (`append`, sections by `order`, its own Session section first) and `composer` (`replace`). A notifications slot comes with the first plugin that fills it.
 - **Dialogs are a service, not a slot.** The UI kit's `Dialogs` is a stack with `open` and `close`, drawn above the screen with the dim. `model`, `accounts` and `palette` open their pickers through it from commands.
 - **`ctrl+b` toggles the sidebar below 110 columns.** It is a named command, "Toggle sidebar", listed in the palette; `escape` closes the drawer, and a footer hint shows while the sidebar is hidden. It takes `ctrl+b` from OpenTUI's textarea, where the arrow keys do the same. Crush binds `ctrl+b`; OpenCode binds `ctrl+x b`.
@@ -102,7 +102,7 @@ flowchart LR
 | Connect dialog | `accounts` |
 | Commands picker | `palette` |
 | `useColor` | `packages/tui` UI kit |
-| `oklch.ts`, `ramp.ts`, `palettes.ts`, `roles.ts` | `theme` `view.ts`; role names in its contract |
+| `oklch.ts`, `ramp.ts`, `palettes.ts`, `roles.ts` | `theme` `view.ts`; role names in `packages/client` |
 | `syntax.ts`, `theme.tsx` | `theme` `tui` entry |
 
 ## Build order
@@ -330,7 +330,7 @@ packages/tui/
   src/colors.ts       Colors, useColor, useSyntax, useMix
   src/kit/            primitives, Overlay, Dialog, Picker, copied from apps/gallery
 packages/plugins/theme/
-  package.json, README.md, src/contract.ts   RoleName, Palette types only; the rest in step 5
+  package.json, README.md, src/contract.ts   Palette types only; the rest in step 5
   src/index.ts        a plugin with no services, since every plugin package has one
 ```
 
@@ -357,7 +357,7 @@ class Dialogs extends Context.Service<Dialogs, {
 }>
 
 // colors.ts: provided by theme's tui entry
-type RoleColor = (role: RoleName) => string     // RoleName from liminal-theme/contract, as a type
+type RoleColor = (role: RoleName) => string     // RoleName from liminal-client
 class Colors extends Context.Service<Colors, {
   readonly color: Accessor<RoleColor>; readonly syntax: Accessor<SyntaxStyle>
   readonly mix: (from: string, to: string, amount: number) => string  // OKLCH math stays in theme
@@ -396,6 +396,57 @@ a tui entry (tui.tsx)
 - A component reaches its plugin's services through its layer's closure, and the base's through `useRun`.
 - `root` is the last plugin, so it renders after every entry fills its slots, and a composition without a theme fails to start.
 - `liminal` loads `packages/tui` with `import()` after `@opentui/solid/preload`, so `.tsx` compiles wherever it runs; that wiring comes with step 6.
+
+## Step 5: `theme`
+
+The theme plugin's server, its shared color code and its `tui` entry, which provides `Colors`.
+
+```text
+packages/plugins/theme/src/
+  contract.ts       Palette, Step, RampSpec, RampName (exist); ThemeSetting, ThemeRpc, ThemeFailed
+  index.ts          the plugin: declares the setting, serves ThemeRpc
+  view/index.ts     PALETTES, DEFAULT_PALETTE, paletteOf(id), roleColors(palette), mixHex
+  view/oklch.ts     copied from apps/gallery/src/theme/oklch.ts
+  view/ramp.ts      copied from ramp.ts, its types now from the contract
+  view/palettes.ts  copied from palettes.ts: liminal, afterhours, heure-bleue, conservatory, barbican
+  view/roles.ts     copied from roles.ts: each RoleName's ramp and step
+  tui/index.tsx     the tui entry: provides Colors
+  tui/syntax.ts     copied from syntax.ts
+```
+
+```ts
+// contract.ts
+const ThemeSetting = Setting.make("theme", Schema.Struct({ palette: Schema.optionalKey(Schema.String) }))
+class ThemeFailed extends Schema.TaggedError  // { message }: settings unreadable or unwritable
+const ThemeRpc = RpcGroup.make(
+  Rpc.make("theme/get", { success: Schema.UndefinedOr(Schema.String), error: ThemeFailed }),
+  Rpc.make("theme/set", { payload: { palette: Schema.String }, error: ThemeFailed }),  // global file
+)
+
+// view/index.ts: framework-free, shared with a later web entry
+const paletteOf: (id: string | undefined) => Palette     // unknown or missing id: DEFAULT_PALETTE
+const roleColors: (palette: Palette) => (role: RoleName) => string
+```
+
+```text
+theme plugin                      requires Settings, DeclaredSettings; serves ThemeRpc
+
+theme tui entry                   requires Host, Renderer; provides Colors
+  saved = theme/get               a failure logs a warning and uses DEFAULT_PALETTE
+  palette = signal(paletteOf(saved))
+  Colors.of({
+    color:  () => roleColors(palette()), cached per palette id
+    syntax: () => SyntaxStyle per palette id, made on first use, destroyed when the scope closes
+    mix:    mixHex
+  })
+
+apps/cli composition              gains theme, so theme/get answers once the TUI opens in step 6
+```
+
+- `RoleName` moves from theme's contract to `packages/client/src/colors.ts`. `packages/tui` imported it from theme while theme's `tui` entry imported `packages/tui`, a package cycle.
+- Plugins may import `packages/client`, so a `tui` entry reaches `Host` and the role names; `.fallowrc.jsonc` allows it.
+- The gallery keeps its theme files; `theme` copies them.
+- The theme picker comes in step 7, with the command palette and an interactive `Picker`; step 7 also settles how a pick reaches `Colors`.
 
 ## Events in the references
 
