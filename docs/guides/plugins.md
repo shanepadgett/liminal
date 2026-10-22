@@ -207,5 +207,16 @@ const verdict = yield* models.generateObject({ prompt, schema: Verdict });
 ```
 
 - With `prefix`, such as `Turns.request(id)`, the call starts from a session's request and shares its cache. The reply is not logged.
+- `classify` asks a classifier Effect AI `Decision` questions about an input. Effect AI checks the answers; the call is not retried, so set a deadline with `Effect.timeout`.
+
+```ts
+const Triage = Decision.make({
+  input: Schema.Struct({ command: Schema.String }),
+  decisions: { risky: Decision.probability({ instructions: "The command changes files" }) },
+});
+
+const { answers } = yield* models.classify(Triage, { input: { command: "rm -rf build" } });
+```
+
 - Every call goes through the `ModelCall` pipeline; wrap it to see or change each request and its deltas.
 - A provider adds a `ModelProvider` to `ModelProviders`; see the `model` README.

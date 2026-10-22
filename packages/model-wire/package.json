@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
+    "./decisions": "./src/decisions.ts",
     "./messages": "./src/messages.ts",
     "./responses": "./src/responses.ts"
   },

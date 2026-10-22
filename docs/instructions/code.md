@@ -4,7 +4,7 @@
 
 - Fix the cause. If the code resists a change (a new flag, a copied block, a special case), restructure it first.
 - Treat a duplication or lint failure that a local fix cannot settle as a sign of missing structure. Stop, work out where the shared concept belongs across the codebase, and bring the options to the user before changing a contract or moving code to pass the check.
-- Reuse before writing. Search the workspace for an existing function, type or service first.
+- Reuse before writing. Search the workspace, then the installed dependencies (`docs/reference/copies/*/api-index` for Effect, Effect AI and Bun), for an existing function, type or service first. Offer a new dependency only when it solves a hard problem.
 - Put code beside the concept it serves. No shared grab-bag modules.
 - Build for the caller in front of you. No option, hook or abstraction for a caller that does not exist.
 - Trust the types inside the boundary. Parse untrusted input once, at the edge.

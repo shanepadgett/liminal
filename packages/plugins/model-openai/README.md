@@ -1,16 +1,18 @@
 # @shanepadgett/liminal-model-openai
 
-OpenAI's models in `ModelProviders`, one provider for each way of signing in. Calls go where the login points.
+OpenAI's models in `ModelProviders`, one provider for each way of signing in, each with its own login under OpenAI in `liminal connect`. All three can be signed in at once. Model details come from the `openai` entries in the model catalog.
 
-## `codex`
+| Provider | Login | Calls go to | Defaults: `main`, `small` |
+| --- | --- | --- | --- |
+| `openai` | An API key, else `OPENAI_API_KEY` | `api.openai.com/v1` | `openai/gpt-6.1-sol`, `openai/gpt-6-luna` |
+| `chatgpt` | Sign in with ChatGPT, in the browser | `api.openai.com/v1`, on the ChatGPT plan | `chatgpt/gpt-6.1-sol`, `chatgpt/gpt-6-luna` |
+| `codex` | Codex, in the browser or with a device code | The Codex backend, signed as the Codex CLI signs | `codex/gpt-6.1-sol`, `codex/gpt-6-luna` |
 
-OpenAI's models on a ChatGPT plan (Plus, Pro, Business). Calls go to the Codex backend, signed as the Codex CLI signs them.
-
-- Adds the Codex login to `LoginMethods`, under OpenAI in `liminal connect`: through the browser, or with a code entered on another device. Tokens refresh when they near expiry.
-- A call without a saved login fails with an `AiError` that says to run `liminal connect`.
-- Defaults: `main` is `codex/gpt-6.1-sol`, `small` is `codex/gpt-6-luna`.
-- Lists the models the plan offers. Their details come from the `openai` entries in the model catalog.
-- Nothing is stored on the backend. Each call carries the whole conversation, and the session id goes along as the cache key.
+- A call without a login fails with an `AiError` that says to run `liminal connect`. OAuth tokens refresh when they near expiry.
+- `openai` lists the models the API offers that the catalog lists as chat models. `chatgpt` and `codex` list the models the plan offers.
+- `openai` offers `gpt-6-luna` as a classifier for `Models.classify`. The Decisions API takes only API keys, so `chatgpt` and `codex` offer none.
+- Sign in with ChatGPT registers Liminal as its own app on the ChatGPT account on the first login, and checks each ID token against OpenAI's published keys. It names this machine with a host id kept in `~/.liminal/host-id`.
+- Nothing is stored on OpenAI's side. Each call carries the whole conversation, and the session id goes along as the cache key.
 - Thinking: `off`, or an effort level such as `low`, `medium`, `high` or `xhigh`. Unset leaves it to the model.
 
 ```jsonc
@@ -21,4 +23,4 @@ OpenAI's models on a ChatGPT plan (Plus, Pro, Business). Calls go to the Codex b
 }
 ```
 
-Requires `ModelProviders`, `Credentials`, `LoginMethods` and `HttpClient`. To change how calls are sent, wrap `ModelCall`.
+Requires `ModelProviders`, `ModelCatalog`, `Credentials`, `LoginMethods`, `Directories`, `HttpClient`, `FileSystem`, `Path` and `Crypto`. To change how calls are sent, wrap `ModelCall`.

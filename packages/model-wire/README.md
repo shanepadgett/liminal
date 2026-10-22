@@ -18,3 +18,11 @@ OpenAI's Responses API through Effect AI's OpenAI provider.
 - `responsesModel(options, model, { thinking, cacheKey })`: an Effect AI `LanguageModel` for `model`. `options` sets the key, address and client changes. Nothing is stored on the server, so each request carries the whole conversation and its encrypted reasoning. Thinking `off` is sent as effort `none`; any other level, such as `low`, `high` or `xhigh`, is sent as the effort, with reasoning summaries. `cacheKey` is sent as `prompt_cache_key`.
 
 Requires an `HttpClient`.
+
+## `./decisions`
+
+OpenAI's Decisions API through Effect AI's OpenAI provider.
+
+- `decisionsModel(options, model)`: an Effect AI `DecisionModel` for the classifier `model`, such as `gpt-6-luna`. `options` sets the key, address and client changes. Effect AI checks each answer.
+
+Requires an `HttpClient`.

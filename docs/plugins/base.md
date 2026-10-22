@@ -12,9 +12,7 @@ Built: API keys and OAuth tokens per provider, `LoginMethods` with logins groupe
 
 ## `model`
 
-Built: chat models, roles, model details from `ModelCatalog`, `ModelCall` and `Models`. Still to build:
-
-- Classifiers, as in [architecture.md](../architecture.md#classifiers): `Question` and `Answer` schemas, `ClassifyFailed`, `classifiers` and `classify` on `ModelProvider`, `Models.classify`, and `classifier` in `model`'s setting. Built with the first provider that has a classifier.
+Built: chat models, roles, model details from `ModelCatalog`, `ModelCall`, `Models` and classifiers, as in [architecture.md](../architecture.md#classifiers).
 
 ## Model providers
 
@@ -31,13 +29,11 @@ Built: chat models, roles, model details from `ModelCatalog`, `ModelCall` and `M
   | `model-openrouter` | `openrouter/deepseek/deepseek-v4.1-flash-1017` | the same |
   | `model-opencode-go` | `opencode-go/deepseek-v4.1-flash` | the same |
 
-- The Chat Completions wire code joins `@shanepadgett/liminal-model-wire`, beside Anthropic Messages and OpenAI Responses, as do the classifier wires: System One and OpenAI Decisions. The archive's are in `archive/packages/sdk/src/ai/decisions.ts`.
-- Classifiers: `model-openrouter` lists Jev (`typesafe/jev-1.13`) over System One; `openai` lists `gpt-6-luna` over the Decisions API, which takes only API keys.
-- `model-anthropic` is built with its API key and Claude subscription logins.
-- `model-openai` is built with `codex` and its browser and device code ways.
-- `codex` lists the backend's `/models`, `chatgpt` its backend's models, and `openai` the API's.
-- `chatgpt` offers Sign in with ChatGPT: browser only, with its callback on `127.0.0.1:1455`. The first login registers a client and keeps its id in `extra`; `Authorized` gains the reply's `client_id` for it. It revokes its token on logout.
-- Previous code: same names; the archive's `model-codex` and `model-openai` hold `codex`, `chatgpt` and `openai`.
+- Built: `model-anthropic` with its API key and Claude subscription logins; `model-openai` with all three providers, and `gpt-6-luna` as `openai`'s classifier over the Decisions API, which takes only API keys.
+- The Chat Completions wire code joins `@shanepadgett/liminal-model-wire`, beside Anthropic Messages, OpenAI Responses and OpenAI Decisions.
+- `model-openrouter` lists Jev (`typesafe/jev-1.13`) as a classifier, through `@effect/ai-openrouter`'s `OpenRouterDecisionModel`.
+- Sign in with ChatGPT limits that `chatgpt` does not handle yet: the API refuses uncompressed request bodies over about 1 MiB, which OpenCode compresses with zstd, and `model` retries errors such as `subscription_sharing_usage_limit_exceeded` that retrying cannot fix.
+- Previous code: same names; the archive's `model-openrouter` and `model-opencode-go`.
 
 ## `apps/cli`
 

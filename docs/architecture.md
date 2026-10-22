@@ -163,10 +163,8 @@ interface ModelProvider {
   models: Effect<ModelInfo[]>               // ModelInfo = { id; name; details?: ModelDetails }
   languageModel(model, { thinking?, cacheKey?, details? }): Effect<LanguageModel>   // an Effect AI language model; a provider that routes its cache by key sends cacheKey
   classifiers?: Effect<ModelInfo[]>         // only those the current login can call
-  classify?(model, state: JsonObject, questions: Record<string, Question>): Effect<Record<string, Answer>, ClassifyFailed>
+  decisionModel?(model): Effect<DecisionModel>   // an Effect AI decision model for one of its classifiers
 }
-type Question = Choice { instructions; criteria: Record<string, string> } | Score { instructions; criteria } | Bool { instructions; criteria: { true; false } }
-type Answer = Choice { choice; probabilities; confidence } | Score { score; confidence } | Bool { probability }
 ModelProviders: Registry<ModelProvider>
 ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>   // retries inside; converts to Effect AI's types
 Reply.add(reply, delta) / Reply.message(reply)          // deltas into the assistant Message
@@ -178,10 +176,10 @@ Models.generate(options: {
   prefix?: ModelRequest                      // start from this request, such as Turns.request(id)
 }): Effect<Message>
 Models.generateObject<T>(options: { ...; schema: Schema<T> }): Effect<T>   // structured output
-Models.classify(options: { model?: ModelId; state; questions }): Effect<Record<string, Answer>, ClassifyFailed>
+Models.classify(definition: Decision.Definition, { model?: ModelId; input; images? }): Effect<DecideResponse, AiError | ModelNotFound>
 type ModelDetails = { contextWindow; outputLimit; thinking: string[]; images; toolCalls; structuredOutput; price?: { input; output; cacheRead?; cacheWrite? } }
 
-ModelCatalog.models(catalogId): Effect<CatalogModel[], CatalogUnavailable>   // CatalogModel = { id; name; details }; model-catalog provides it from models.dev, cached in ~/.liminal/catalog.json
+ModelCatalog.models(catalogId): Effect<CatalogModel[], CatalogUnavailable>   // CatalogModel = { id; name; kind: chat | embedding | image | realtime; details }; model-catalog provides it from models.dev, cached in ~/.liminal/catalog.json
 
 // session: the log
 type SessionEvent = { session: SessionId; seq: Seq; at: Date; kind: string; data: Schema.Json; attributes: Attributes }
@@ -276,9 +274,10 @@ log steers → sync system prompt and tool list → BeforeCall hooks → Turns.r
 
 ### Classifiers
 
-- A classifier is a model that answers typed questions about JSON state with probabilities: pick a choice, give a score, or yes or no. It does not chat. Jev and GPT-6 Luna are classifiers.
-- `Models.classify` calls the model passed in, else the `classifier` model in `model`'s setting, else fails with `ClassifyFailed` saying no classifier is set.
-- `model` finds the provider, makes one call with no retries, and checks every answer: each question answered, probabilities and scores between 0 and 1, a choice among the criteria. The caller sets the deadline with `Effect.timeout` and decides what a failure means.
+- A classifier is a model that answers typed questions about an input with probabilities: pick a label, give a rating, or a probability of yes. It does not chat. Jev and GPT-6 Luna are classifiers.
+- The questions are Effect AI's `Decision` definitions: `Decision.classify`, `Decision.rate` and `Decision.probability` over an input schema. Effect AI's decision model sends them and checks every answer.
+- `Models.classify` calls the model passed in, else the `classifier` model in `model`'s setting, else the first classifier a signed-in provider lists, else fails with `ModelNotFound` saying no classifier is connected.
+- `model` finds the provider and makes one call with no retries. The caller sets the deadline with `Effect.timeout` and decides what a failure means.
 - A provider lists only the classifiers its current login can call: `model-openai` lists `gpt-6-luna` only with an API key, since the Decisions API refuses ChatGPT sign-in tokens.
 
 ## Sessions

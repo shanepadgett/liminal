@@ -1,6 +1,6 @@
 /** The model vocabulary: messages, requests, providers, the model call and one-off calls. */
 import { Context, type Effect, Schema, type Stream } from "effect";
-import type { AiError, LanguageModel, Response } from "effect/ai";
+import type { AiError, Decision, DecisionModel, LanguageModel, Response } from "effect/ai";
 
 import { Pipeline, Registry } from "@shanepadgett/liminal-core";
 import type { SettingsInvalid } from "@shanepadgett/liminal-settings/contract";
@@ -118,10 +118,14 @@ export interface ModelInfo {
   readonly details?: ModelDetails | undefined;
 }
 
+/** What a catalog model makes: replies, embeddings, images or live audio. */
+export type ModelKind = "chat" | "embedding" | "image" | "realtime";
+
 /** One model the catalog lists, by the id its provider gives it. */
 export interface CatalogModel {
   readonly id: string;
   readonly name: string;
+  readonly kind: ModelKind;
   readonly details: ModelDetails;
 }
 
@@ -212,6 +216,12 @@ export interface ModelProvider {
     model: string,
     options: LanguageModelOptions,
   ) => Effect.Effect<LanguageModel.LanguageModel, AiError.AiError>;
+  /** The classifiers its current login can call; missing when it offers none. */
+  readonly classifiers?: Effect.Effect<ReadonlyArray<ModelInfo>, AiError.AiError> | undefined;
+  /** An Effect AI decision model for one of its classifiers, without the `provider/` prefix. */
+  readonly decisionModel?:
+    | ((model: string) => Effect.Effect<DecisionModel.DecisionModel, AiError.AiError>)
+    | undefined;
 }
 
 export class ModelProviders extends Registry.Service<ModelProviders, ModelProvider>()(
@@ -232,6 +242,13 @@ export interface GenerateOptions {
   readonly prefix?: ModelRequest | undefined;
   /** Sent as a user message after the prefix. */
   readonly prompt: ReadonlyArray<Part>;
+}
+
+export interface ClassifyOptions<
+  Input extends Schema.Constraint,
+> extends DecisionModel.DecideOptions<Input> {
+  /** A classifier's model id; missing picks one. */
+  readonly model?: ModelId | undefined;
 }
 
 /** A reply being built from its deltas, its parts in the order they started. */
@@ -352,5 +369,21 @@ export class Models extends Context.Service<
     readonly generateObject: <T>(
       options: GenerateOptions & { readonly schema: Schema.Codec<T, Schema.JsonObject> },
     ) => Effect.Effect<T, ModelCallError>;
+    /**
+     * Answers `definition`'s decisions about `input` in one call with no retries; the model is
+     * `model`, else the `classifier` setting, else the first classifier a signed-in provider
+     * lists.
+     */
+    readonly classify: <
+      Input extends Schema.Constraint,
+      Decisions extends Record<string, Decision.Any>,
+    >(
+      definition: Decision.Definition<Input, Decisions>,
+      options: ClassifyOptions<Input>,
+    ) => Effect.Effect<
+      DecisionModel.DecideResponse<Decisions>,
+      ModelCallError,
+      Input["EncodingServices"]
+    >;
   }
 >()("model/Models") {}

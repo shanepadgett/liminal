@@ -38,7 +38,7 @@ Type definitions for Bun's APIs. The declarations are the API reference.
 Linter: configuration, rules and their options, and the JS plugin guide. The website pages are unversioned.
 
 - Docs: `docs/reference/copies/oxlint/1.89.0/` (896 files: README.md, src/)
-- From: https://github.com/oxc-project/website.git, branch main, commit d479491e311a (not pinned to the installed version)
+- From: https://github.com/oxc-project/website.git, branch main, commit 5ba6e0af0a5b (not pinned to the installed version)
 - API (schema): `node_modules/oxlint/configuration_schema.json`
 
 ## @oxlint/plugins 1.89.0
@@ -59,7 +59,7 @@ Type-aware lint rules for Oxlint.
 Formatter: options, ignore files and supported languages. The website pages are unversioned.
 
 - Docs: `docs/reference/copies/oxfmt/0.74.0/` (18 files: README.md, src/)
-- From: https://github.com/oxc-project/website.git, branch main, commit d479491e311a (not pinned to the installed version)
+- From: https://github.com/oxc-project/website.git, branch main, commit 5ba6e0af0a5b (not pinned to the installed version)
 - API (schema): `node_modules/oxfmt/configuration_schema.json`
 
 ## fallow 3.34.1
@@ -169,6 +169,13 @@ Desktop shell: Bun main process, system webviews, typed RPC, menus, tray, update
 
 - Docs: `docs/reference/copies/electrobun/2.0.4/` (138 files: docs/, README.md, package/)
 - From: https://github.com/blackboardsh/electrobun.git, tag v2.0.4, commit c54c0c148764
+
+## jose 6.2.13
+
+JSON Web Tokens and keys: jwtVerify with createRemoteJWKSet checks an ID token's signature against an issuer's published keys. For Sign in with ChatGPT.
+
+- Docs: `docs/reference/copies/jose/6.2.13/` (1 file: README.md)
+- API (types): `packages/plugins/model-openai/node_modules/jose/dist/types/index.d.ts`
 
 ## jsonc-parser 3.3.1
 

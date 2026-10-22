@@ -1,5 +1,5 @@
 /** Live updates for the sessions this process writes to. */
-import { Effect, PubSub, Semaphore } from "effect";
+import { Duration, Effect, PubSub, RcMap, Semaphore } from "effect";
 
 import type { Delta, LiveItem, SessionId } from "./contract.ts";
 
@@ -12,26 +12,20 @@ export interface Watched {
   readonly deltas: Array<Delta>;
 }
 
-/** Finds or starts each session's live updates. */
-export const makeWatch = Effect.gen(function* () {
-  const watched = new Map<SessionId, Watched>();
-  const starting = yield* Semaphore.make(1);
+const lookup = (): Effect.Effect<Watched> =>
+  Effect.gen(function* () {
+    return {
+      lock: yield* Semaphore.make(1),
+      updates: yield* PubSub.unbounded<LiveItem>(),
+      deltas: [],
+    };
+  });
 
-  return (session: SessionId) =>
-    starting.withPermits(1)(
-      Effect.gen(function* () {
-        const existing = watched.get(session);
-        if (existing !== undefined) return existing;
-
-        const created: Watched = {
-          lock: yield* Semaphore.make(1),
-          updates: yield* PubSub.unbounded<LiveItem>(),
-          deltas: [],
-        };
-
-        watched.set(session, created);
-
-        return created;
-      }),
-    );
+/**
+ * Each session's live updates, held while in use. One unused for an hour is dropped, which no
+ * turn's pause between deltas comes near, so a viewer joining mid-reply still sees its deltas.
+ */
+export const makeWatched = RcMap.make<SessionId, Watched, never, never>({
+  lookup,
+  idleTimeToLive: Duration.hours(1),
 });

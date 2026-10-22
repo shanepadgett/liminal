@@ -6,6 +6,7 @@ import type { Registry } from "@shanepadgett/liminal-core";
 import type { Settings } from "@shanepadgett/liminal-settings/contract";
 
 import { detailsOf } from "./call.ts";
+import { makeClassify } from "./classify.ts";
 import {
   type GenerateOptions,
   type ModelCall,
@@ -126,5 +127,6 @@ export const make = (
     ),
     generate: (options) => Effect.map(reply(options), Reply.message),
     generateObject,
+    classify: makeClassify(providers, settings),
   });
 };

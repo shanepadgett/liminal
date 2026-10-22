@@ -69,6 +69,8 @@ export interface Authorized {
   readonly state: string;
   readonly verifier: string;
   readonly redirectUri: string;
+  /** The `client_id` the reply names, which a first sign-in that registers a client is issued. */
+  readonly clientId: string | undefined;
 }
 
 /** The actions a login method runs; each one reaches the screen as a step. */
@@ -140,6 +142,9 @@ const TokenReply = Schema.Struct({
   access_token: Schema.String,
   refresh_token: Schema.String,
   expires_in: Schema.Finite,
+  id_token: Schema.optionalKey(Schema.String),
+  /** The scopes granted, separated by spaces. */
+  scope: Schema.optionalKey(Schema.String),
 });
 
 export type TokenReply = typeof TokenReply.Type;

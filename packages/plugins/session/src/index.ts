@@ -1,5 +1,5 @@
-import { Effect, Layer, PubSub, Stream } from "effect";
 /** The session log over `SqlClient`, with live updates within this process. */
+import { Effect, Layer, PubSub, RcMap, Stream } from "effect";
 import type { NonEmptyReadonlyArray } from "effect/Array";
 import { SqlClient } from "effect/sql";
 
@@ -14,7 +14,7 @@ import {
   SessionLog,
   SessionRpc,
 } from "./contract.ts";
-import { makeWatch } from "./live.ts";
+import { makeWatched } from "./live.ts";
 import { migrate } from "./migrations.ts";
 import * as Store from "./store.ts";
 
@@ -24,7 +24,8 @@ const pageSize = 100;
 const make = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
   yield* migrate;
-  const watch = yield* makeWatch;
+  const watched = yield* makeWatched;
+  const watch = (session: SessionId) => RcMap.get(watched, session);
 
   const append = Effect.fn("SessionLog.append")(function* (
     session: SessionId,
@@ -41,7 +42,7 @@ const make = Effect.gen(function* () {
         return saved;
       }),
     );
-  });
+  }, Effect.scoped);
 
   const publish = Effect.fn("SessionLog.publish")(function* (session: SessionId, delta: Delta) {
     const { lock, updates, deltas } = yield* watch(session);
@@ -54,7 +55,7 @@ const make = Effect.gen(function* () {
         return PubSub.publish(updates, item);
       }),
     );
-  });
+  }, Effect.scoped);
 
   const live = (session: SessionId, after: Seq = 0) =>
     Stream.unwrap(

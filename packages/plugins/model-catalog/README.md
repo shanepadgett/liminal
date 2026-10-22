@@ -2,7 +2,7 @@
 
 Provides `model`'s `ModelCatalog` from [models.dev](https://models.dev).
 
-- `ModelCatalog.models(catalogId)`: the models models.dev lists under a provider id such as `anthropic`, each with its `ModelDetails`: context window, output limit, thinking levels, whether it takes images, tool calls and structured output, and price per million tokens.
+- `ModelCatalog.models(catalogId)`: the models models.dev lists under a provider id such as `anthropic`, each with its `ModelDetails`: context window, output limit, thinking levels, whether it takes images, tool calls and structured output, and price per million tokens. Each has a `kind` from models.dev's `type`; a missing `type` is `chat`.
 - The cache is `~/.liminal/catalog.json`. It holds only the provider ids asked for. A provider it lacks is fetched at once; a cache older than a day refreshes in the background.
 - With models.dev unreachable and nothing cached, `models` fails with `CatalogUnavailable` and the next call tries again.
 

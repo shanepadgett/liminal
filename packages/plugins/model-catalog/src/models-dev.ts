@@ -21,6 +21,10 @@ const ReasoningOption = Schema.Struct({
 
 const Entry = Schema.Struct({
   name: Schema.String,
+  /** Missing or null is a chat model; an entry of another type does not decode. */
+  type: Schema.optionalKey(
+    Schema.NullOr(Schema.Literals(["chat", "embedding", "image", "realtime"])),
+  ),
   reasoning: Schema.Boolean,
   reasoning_options: Schema.optionalKey(Schema.NullOr(Schema.Array(ReasoningOption))),
   tool_call: Schema.Boolean,
@@ -78,6 +82,13 @@ export const catalogModels = (
     const entry = decodeEntry(json);
 
     return Option.isSome(entry)
-      ? [{ id, name: entry.value.name, details: detailsOf(entry.value) }]
+      ? [
+          {
+            id,
+            name: entry.value.name,
+            kind: entry.value.type ?? "chat",
+            details: detailsOf(entry.value),
+          },
+        ]
       : [];
   });

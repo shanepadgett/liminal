@@ -10,6 +10,8 @@ The model vocabulary and the one path every model call takes. Knows nothing of s
 - `ModelCall`: the pipeline every call runs through. It streams `ModelDelta`s: Effect AI's reply parts, plus a `retry` delta when a retryable `AiError` is tried again. A reply that fails partway restarts.
 - `Reply.add` and `Reply.message`: turn deltas into the assistant `Message`.
 - `Models.resolve(role or id)`, `Models.list`, `Models.generate` and `Models.generateObject`: one-off calls outside the turn loop. A `prefix` request, such as `Turns.request(id)`, shares that session's cache.
+- `Models.classify(definition, { model?, input })`: asks a classifier Effect AI `Decision` questions about an input, once, without retries. It uses `model`, else the `classifier` setting, else the first classifier a signed-in provider lists, else fails with `ModelNotFound`. A provider offers classifiers with `classifiers` and an Effect AI `DecisionModel` for each from `decisionModel`.
+- `CatalogModel.kind`: `chat`, `embedding`, `image` or `realtime`, so a provider can list only chat models.
 
 Requires `Settings`, `DeclaredSettings` and `ModelCatalog`.
 
@@ -20,6 +22,7 @@ Requires `Settings`, `DeclaredSettings` and `ModelCatalog`.
   "model": {
     "main": { "model": "anthropic/claude-sonnet-5-5", "thinking": "high" },
     "attempts": 5, // tries per call, the first included
+    "classifier": "openai/gpt-6-luna", // unset picks one
   },
 }
 ```

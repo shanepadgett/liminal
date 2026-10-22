@@ -25,7 +25,7 @@
     "version": "1.89.0",
     "fingerprint": "737b4e99a6c52be8",
     "commits": [
-      "d479491e311ac3db87eca641f43aaacec82024d2"
+      "5ba6e0af0a5bbe9f280845f0cba23f6730dd49da"
     ]
   },
   "@oxlint/plugins": {
@@ -42,7 +42,7 @@
     "version": "0.74.0",
     "fingerprint": "2ffd0fc9b0a5ee96",
     "commits": [
-      "d479491e311ac3db87eca641f43aaacec82024d2"
+      "5ba6e0af0a5bbe9f280845f0cba23f6730dd49da"
     ]
   },
   "fallow": {
@@ -129,6 +129,11 @@
     "commits": [
       "c54c0c14876455d43a25af0f9cd41a4b14e21854"
     ]
+  },
+  "jose": {
+    "version": "6.2.13",
+    "fingerprint": "4fbc6d87335d1039",
+    "commits": []
   },
   "jsonc-parser": {
     "version": "3.3.1",

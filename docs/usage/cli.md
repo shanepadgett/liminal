@@ -17,9 +17,11 @@ Logins:
 | Provider | Login | Instead of a login |
 | --- | --- | --- |
 | Anthropic | Claude subscription (Pro or Max), or an API key | `ANTHROPIC_API_KEY` |
-| OpenAI | Codex (ChatGPT plan), in the browser or with a device code | none |
+| OpenAI | An API key, for `openai/` models | `OPENAI_API_KEY` |
+| OpenAI | Sign in with ChatGPT, in the browser, for `chatgpt/` models on your ChatGPT plan | none |
+| OpenAI | Codex (ChatGPT plan), in the browser or with a device code, for `codex/` models | none |
 
-A saved login wins over the environment variable.
+A saved login wins over the environment variable. Each OpenAI login is saved apart, so all three can be connected at once.
 
 ## Send one prompt
 
@@ -60,3 +62,4 @@ Set models in `~/.liminal/settings.json`, or in `.liminal/settings.json` in the 
 - `main` answers your prompts; `small` runs side calls.
 - A model is named `provider/model`. `thinking` is optional.
 - `attempts` sets how often a failing call is tried, the first try included. The default is 5.
+- `classifier` names the model plugins use to classify, such as `openai/gpt-6-luna`. Unset, it is the first classifier a connected provider offers.

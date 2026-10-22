@@ -12,6 +12,7 @@ interface Reply {
   readonly code: string | undefined;
   readonly state: string | undefined;
   readonly error: string | undefined;
+  readonly clientId: string | undefined;
 }
 
 /** The flow actions a browser sign-in uses. */
@@ -30,6 +31,7 @@ const replyOf = (params: URLSearchParams): Reply => ({
   code: params.get("code") ?? undefined,
   state: params.get("state") ?? undefined,
   error: params.get("error_description") ?? params.get("error") ?? undefined,
+  clientId: params.get("client_id") ?? undefined,
 });
 
 /** A pasted address, or the `code#state` some providers show on a page. */
@@ -40,7 +42,7 @@ const pastedReply = (pasted: string): Reply => {
 
   const [code, state] = text.split("#");
 
-  return { code: code === "" ? undefined : code, state, error: undefined };
+  return { code: code === "" ? undefined : code, state, error: undefined, clientId: undefined };
 };
 
 const randomText = Effect.map(
@@ -147,9 +149,11 @@ export const authorizeInBrowser = (steps: BrowserSteps, method: string) =>
       const pkce = yield* makePkce;
       const redirectUri = `http://${callback.host}:${callback.port}${callback.path}`;
       const url = authorizeAddress(authorization, pkce, redirectUri);
-      const code = yield* codeOf(method, yield* replyFrom(steps, callback, url), pkce.state);
+      const reply = yield* replyFrom(steps, callback, url);
+      const code = yield* codeOf(method, reply, pkce.state);
+      const { state, verifier } = pkce;
 
-      return { code, state: pkce.state, verifier: pkce.verifier, redirectUri } satisfies Authorized;
+      return { code, state, verifier, redirectUri, clientId: reply.clientId } satisfies Authorized;
     },
     Effect.catchTag("PlatformError", (error) =>
       Effect.fail(
