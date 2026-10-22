@@ -70,6 +70,7 @@ Work: [plugins/providers.md](plugins/providers.md)
 
 Work: [plugins/features.md](plugins/features.md)
 
+- [ ] `Commands` in `loop`
 - [ ] `memory`
 - [ ] `skills`, `references`, `vocabulary`
 - [ ] `checks`, `commit`

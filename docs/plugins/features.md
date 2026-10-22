@@ -2,6 +2,11 @@
 
 Work for [status.md](../status.md) milestone 5.
 
+## `Commands` in `loop`
+
+- `loop` gains the `Commands` registry for slash commands that run on the agent side, such as `/commit` and `/compact`. A command runs as soon as it is sent and is logged as `session/command`; one that changes the log waits for the running turn to end.
+- The TUI's `/` menu and palette list them beside the keymap's commands.
+
 ## `memory`
 
 - Keeps long sessions inside the context window: checkpoints and notes as events.

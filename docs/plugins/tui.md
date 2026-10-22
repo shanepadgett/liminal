@@ -25,11 +25,10 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 - Sidebar: chat's Session section, and the context share from the latest `loop/step-end` over the model's `contextWindow`. Below 110 columns it is a drawer; the "Toggle sidebar" command (`ctrl+b`, in the palette) opens it, `escape` closes it, a footer hint shows while hidden.
 - The transcript opens at the bottom: its first frame shows the latest items, with no scroll down after loading.
 - Each tool call and its result make one single-line row; consecutive tool rows sit next to each other, ungrouped.
-- Composer: OpenTUI `Textarea`, `@` tags as virtual extmarks, stashes, slash commands from `Commands`.
+- Composer: OpenTUI `Textarea`, `@` tags as virtual extmarks, stashes, a `/` menu of the keymap's commands that have a slash name, and a line under the draft with the `main` model and its thinking level, kept current through `model/role`.
 - `@` list: `tags/list` once each time it opens, ranked in the TUI by `fuzzysort` times one plus frecency, 50 rows. `tags` adds each tag's text on send; the transcript hides the parts it added.
-- Saved sessions: `SessionLog` gains the session list with titles; the chat screen opens a saved session; print mode gains `--session <id>`.
+- Saved sessions: `SessionLog` gains the session list of the workspace folder, each listed by the first line of its first user message; the header shows a title only once `session-name` sets one. The chat screen opens a saved session (`ctrl+o`) and starts a new one (`ctrl+n`, `/new`); print mode gains `--session <id>`.
 - `loop/state` gains the queued inputs, and `loop` gains `pullBack`. A queued input can be pulled back until the turn takes it.
-- `loop` gains the `Commands` registry with the first command. A command runs as soon as it is sent and is logged as `session/command`; one that changes the log waits for the running turn to end.
 - Previous code: `chat`, `inbox` (composer).
 
 ```ts
@@ -45,7 +44,7 @@ export const ItemRenderer: Registry<{ kind: string; component: (props: { event: 
 
 ## `palette`
 
-- Command palette over `@opentui/keymap` named commands and `Commands`, filtered with `fuzzysort`.
+- Command palette over the `@opentui/keymap` commands that have a category, filtered with `fuzzysort`. A command carries `title`, `category` and `slash` fields on the keymap's own `Command` (OpenCode `tui/src/context/keymap.tsx`).
 - Previous code: `palette`.
 
 ## `theme`
@@ -57,8 +56,8 @@ export const ItemRenderer: Registry<{ kind: string; component: (props: { event: 
 
 ## Model picker
 
-- The `model` TUI entry: picks the session's model, filtered with `fuzzysort`.
-- Picking a model saves it as the role's model in settings. Until a role is set, it uses the first signed-in provider's default.
+- The `model` TUI entry: picks the `main` or `small` model, filtered with `fuzzysort`.
+- Picking a model saves it as the role's model in the global settings file. Until a role is set, it uses the first signed-in provider's default.
 - Print mode gains `--model provider/model`.
 
 ## `/connect` in the TUI

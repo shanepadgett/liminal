@@ -85,14 +85,16 @@ flowchart LR
   server --> host[Host]
   host --> tui
   tui --> chat[chat tui: screen, ItemRenderer, slots]
-  tui --> others[model, accounts, palette, theme tui]
+  tui --> others[model-choice, model-favorites, accounts, palette, theme, session-picker, stash, slash, tags tui]
 ```
 
 | Gallery piece | Goes to |
 | --- | --- |
 | Primitives, `Dialog`, `Picker` | `packages/tui` UI kit |
-| Header, sidebar, composer, transcript, notifications, slash menu, landing, sessions picker | `chat` |
-| Models picker | `model` |
+| Header, sidebar, composer, transcript, notifications, draft menu, landing | `chat` |
+| Slash menu rows | `slash` |
+| Sessions picker | `session-picker` |
+| Models picker, model line | `model-choice` |
 | Connect dialog | `accounts` |
 | Commands picker | `palette` |
 | `useColor` | `packages/tui` UI kit |
@@ -101,7 +103,7 @@ flowchart LR
 
 ## Build order
 
-1. `loop` events. 2. Session view in `packages/client`. 3. Plugin anatomy: `./view`, `./tui`, `view.ts`. 4. `packages/tui`. 5. `theme`. 6. `chat`, with `liminal` opening the TUI: 6a the screen, 6b `@` tags and saving stashes. 7. `palette`, model picker, `/connect`, saved sessions, queue and pull-back, `Commands`, the stash list.
+1. `loop` events. 2. Session view in `packages/client`. 3. Plugin anatomy: `./view`, `./tui`, `view.ts`. 4. `packages/tui`. 5. `theme`. 6. `chat`, with `liminal` opening the TUI: 6a the screen, 6b `@` tags and saving stashes. 7. `palette`, model picker, `/connect`, saved sessions, queue and pull-back, the stash list.
 
 ## Step 1: `loop` events
 
@@ -444,7 +446,7 @@ apps/cli composition              gains theme, so theme/get answers once the TUI
 
 ## Step 6: `chat`
 
-Two commits. 6a: the chat screen, transcript, sidebar, a plain composer and `liminal` opening the TUI. 6b: `@` file tags with `git ls-files` completion, and stashes. Slash commands come in step 7 with `Commands`.
+Two commits. 6a: the chat screen, transcript, sidebar, a plain composer and `liminal` opening the TUI. 6b: `@` file tags with `git ls-files` completion, and stashes. Slash commands come in step 7.
 
 ```mermaid
 flowchart LR
@@ -539,7 +541,7 @@ sequenceDiagram
 ```
 
 - Screen state: `{ kind: "landing" } | { kind: "session"; session: SessionId }`.
-- Header: the wordmark and diagonals, no title until saved sessions bring titles in step 7.
+- Header: the wordmark and diagonals; a title shows once `session-name` (milestone 4) sets one.
 - Sidebar Session section: the folder, the Git branch and the context share, through two new RPCs:
 
 ```ts
@@ -660,6 +662,294 @@ export class ChatRpc extends RpcGroup.make(
 - `stashes (id, folder, text, created_at)`, unique on `(folder, text)`: stashing the same text again keeps one row (archive `stashes.ts`).
 - `ctrl+s` with a blank draft declines, so the key passes on. The draft clears only once `chat/stash` succeeds; a failure is logged and the draft stays.
 - The hints gain `ctrl+s stash`.
+
+## Step 7: commands, pickers, saved sessions, queue
+
+7a is three commits, 7b one:
+
+1. 7a-1: the four shared extension points, and moving stashes, `@` and `/` into `stash`, `tags` and `slash`.
+2. 7a-2: `model-choice` and `model-favorites`.
+3. 7a-3: the palette, `/theme`, `/connect`, `session-picker` and print mode's `--session`.
+4. 7b: queued inputs in `loop/state` and pulling one back.
+
+- TUI commands are OpenTUI keymap commands with extra fields: `title`, `category`, `slash: { name, aliases? }`. The palette and the `/` menu read `keymap.getCommandEntries()`, which gives the commands reachable now and their keys (OpenCode `tui/src/context/keymap.tsx` and `component/prompt/autocomplete.tsx`, archive `sdk/src/tui/commands.ts`).
+- `loop`'s `Commands`, slash commands that run on the agent side, waits for milestone 5, where `/commit` and `/compact` first need it. Every step 7 command is a TUI action.
+- The sessions list shows each session by the first line of its first user message, as Pi's `session-manager.ts` `firstMessage` does. The header shows no title until `session-name` sets one.
+- `packages/tui`'s base makes the keymap and provides it as a `Keymap` service; `root.tsx` uses the same one. A plugin's `tui` layer adds its commands with `keymap.registerLayer`, removed when the TUI's scope closes (archive `sdk/src/tui/commands.ts` `register`). Components keep `useBindings` for keys that belong to them.
+- The kit's `Picker` keeps its own query and selection, handles up, down and enter, and takes `onSelect`, `onMove` and `actions`, extra keys such as `ctrl+d` (archive `SelectDialog`, OpenCode `DialogSelect`).
+- Theme picker: moving the selection previews the palette, enter saves it with `theme/set`, esc puts back the one before (OpenCode `dialog-theme-list.tsx`). Switching stays inside `theme`'s `tui` entry.
+- Keys: `ctrl+p` opens the palette (OpenCode, Crush, the gallery's landing). The `/` menu opens only when `/` is the draft's first character (OpenCode `autocomplete.tsx`). `ctrl+o` opens the sessions list and `ctrl+n` starts a new session (gallery). `/model` has no key: most terminals send `ctrl+m` as enter.
+- "New session" (`ctrl+n`, `/new`) goes back to the landing screen; the next send starts a session.
+
+| Command | Added by | Gallery design |
+| --- | --- | --- |
+| Palette (`ctrl+p`) | `palette` `tui` entry | `Commands.states.tsx` |
+| `/theme` | `theme` `tui` entry | none |
+| `/model`, the model line | `model-choice` `tui` entry, new plugin | `Models.states.tsx`, `Composer.tsx` |
+| Favorites, `ctrl+f` in `/model` | `model-favorites` `tui` entry, new plugin | none |
+| `/connect` | `accounts` `tui` entry, new | `Connect.states.tsx` |
+| `/sessions` (`ctrl+o`) | `session-picker` `tui` entry, new plugin | `Sessions.states.tsx` |
+| `ctrl+s`, `/pop` | `stash` `tui` entry, new plugin, moved out of `chat` | none |
+| `/new`, Toggle sidebar | `chat` `tui` entry | none |
+| The `/` trigger | `slash` `tui` entry, new plugin | `SlashMenu.tsx` |
+| The `@` trigger | `tags` `tui` entry, moved out of `chat` | none |
+
+- Choosing a model is its own plugin, `model-choice`: the per-session pick, the default, the `/model` picker and the model line. The `main` role moves out of `model` into it as its default; `model` keeps `small` and the classifier, and loses `model/main` and `RoleModel`. `loop` builds each request's model from it the way it builds the system prompt, tool list and messages from `system-prompt`, `tool-definitions` and `history`.
+- Each session has its own model, kept as an event in the session log; a turn uses the session's latest pick (DeepSeek `session-controller/src/model-selection-projection.ts` `model/selection`, Pi `model_change`). A pick waits in `model-choice`'s `tui` entry until the next send, which carries it as a `model-choice/pick` attribute through chat's send pipeline; `model-choice` wraps `loop`'s `Send` and logs a `model-choice/pick` event before that input, then drops the attribute. Print mode's `--model` sets the same attribute. Only a send writes to the database (archive `agent-loop` `pick`, held in memory until a turn starts; DeepSeek `pending`). The model line shows the waiting pick, else the session's model.
+- `ctrl+d` in the model picker makes the selected model the default, saved at `model-choice.default` in the global settings file. Every new session starts on the default; with no default, a new session starts on the model the newest turn in any session used (archive `agent-loop` `defaults`).
+- `shift+tab` moves the session's thinking level to the next one its model takes (`ModelDetails.thinking`), as a pick that waits for the next send like a `/model` pick; the model line shows it (archive `agent-loop` `ctrl+t`). It lives in `model-choice`, because a thinking level is part of a `ModelChoice`.
+- Favorites are their own plugin, `model-favorites`, which wraps the `/model` picker's rows. `ctrl+f` in the model picker adds the selected model to `model-favorites` in the global settings file, or takes it out, and the picker stays open. Favorites sit in a Favorites section above the providers, each with its provider's name in the detail; the default model's row is tagged `default` (archive `agent-loop/src/tui/models.ts` `modelOptions`, `server/favorites.ts`).
+- A command's picker is data: the command gives its rows and what a pick does, and `packages/tui` draws the dialog (DeepSeek `ui-commands/src/client/contract.ts` `PopupSelectSpec`). Multi-step flows such as `/connect` keep their own dialog.
+- `@` and `/` share one list of draft triggers: each trigger is a character, its rows for the typed query and what a pick does; the draft menu draws whichever trigger is open (DeepSeek `ui-input-trigger`).
+- Each feature someone might drop or do differently is its own plugin: `model-choice`, `model-favorites`, `stash`, `session-picker`, `slash`, and the `@` trigger in `tags`.
+- Shared extension points that connect them:
+  - Picker rows pipeline in `packages/tui`, keyed by picker name; any plugin can wrap a picker's rows and actions to reorder, regroup or add keys.
+  - Draft trigger list in chat's `/tui` export; plugins add triggers.
+  - Chat screen service in chat's `/tui` export: the session on screen or none, showing a session, reading and inserting the draft.
+  - Send pipeline in chat's `/tui` export; plugins wrap an outgoing input to attach attributes, as `model-choice` and `tags` do.
+
+### 7a-1 code
+
+The keymap service, the picker pipeline, the draft trigger list and the chat screen service, and the three plugins that use them first: `stash`, `slash` and `tags`' `@` trigger.
+
+```text
+packages/tui/src/
+  base.ts             makes the keymap and the Pickers pipeline; provides Keymap and Pickers
+  commands.ts         Command fields (title, category, slash, hint), registerCommands, slashCommands, hints
+  pickers.ts          PickerSpec, Pickers, openPicker
+  dialogs.tsx         open remembers the focused renderable; closing focuses it again
+  root.tsx            uses Keymap from base
+  kit/Picker.tsx      keeps query and selection; up, down, enter, esc and the spec's actions
+  kit/Confirm.tsx     a question; enter confirms, esc cancels
+packages/plugins/chat/src/
+  index.ts            no layer of its own; tui entry only
+  contract.ts, migrations.ts   deleted: stashes move to stash
+  tui/screen.ts       ChatScreen service: the session on screen, show, start new, the draft
+  tui/triggers.ts     DraftTrigger, DraftTriggers registry
+  tui/draft-menu.ts   useDraftMenu: finds the open trigger's token, loads it, keys, picks
+  tui/DraftMenu.tsx   TagMenu made general: label, detail, matches, the trigger's hints
+  tui/Composer.tsx    attaches its textarea to ChatScreen; draws DraftMenu; loses ctrl+s
+  tui/ChatScreen.tsx  screen state from ChatScreen; chat.new (ctrl+n, /new)
+  tui/tags.ts, TagMenu.tsx     deleted: ranking moves to tags, the menu to DraftMenu
+packages/plugins/tags/src/
+  tui/index.tsx       adds the @ trigger
+  tui/rank.ts         fuzzysort times one plus frecency, from chat's tags.ts
+  tui/marks.ts        a picked tag becomes a virtual extmark, from chat's tags.ts
+packages/plugins/stash/   new
+  src/contract.ts     Stash, StashesFailed, StashRpc (stash/save, stash/list, stash/drop)
+  src/index.ts        stashes table per workspace folder; tui entry
+  src/migrations.ts   stash_migrations
+  src/tui/index.tsx   ctrl+s saves the draft; /pop opens the stashes picker
+packages/plugins/slash/   new, tui entry only
+  src/tui/index.tsx   adds the / trigger over slashCommands(keymap)
+apps/cli/src/composition.ts   adds stash and slash
+```
+
+```ts
+// packages/tui/src/pickers.ts
+export interface PickerAction {
+  readonly key: string; readonly label: string
+  readonly run: (row: PickerRow) => void
+  readonly keepsOpen?: boolean            // ctrl+f keeps the picker open; the rest close it
+}
+export interface PickerSpec {
+  readonly name: string                   // what a wrap matches on: "stash/stashes", "model-choice/models"
+  readonly title: string; readonly placeholder: string; readonly empty: string
+  readonly rows: Accessor<ReadonlyArray<PickerRow>>   // a wrap may derive new rows from a signal
+  readonly initial?: string
+  readonly actions: ReadonlyArray<PickerAction>
+  readonly onSelect: (row: PickerRow) => void
+  readonly onMove?: (row: PickerRow) => void
+  readonly onClose?: () => void           // closed without a pick
+}
+/** Every picker's spec passes through it before it opens; the terminal returns it as is. */
+export class Pickers extends Pipeline.Service<Pickers, PickerSpec, PickerSpec>()("tui/Pickers") {}
+export const openPicker: (spec: PickerSpec) => Effect.Effect<void, never, Pickers | Dialogs>
+
+// packages/plugins/chat/src/tui/triggers.ts
+export interface DraftToken { readonly query: string; readonly start: number; readonly end: number }
+export interface DraftRow { readonly id: string; readonly label: string; readonly detail?: string; readonly matches: ReadonlyArray<number> }
+export interface DraftKey {
+  readonly key: string; readonly label: string
+  /** Edits the draft itself: tags puts an extmark in place of the token, slash clears it. */
+  readonly run: (row: DraftRow, draft: TextareaRenderable, token: DraftToken) => void
+}
+export interface OpenTrigger {
+  readonly rows: (query: string) => ReadonlyArray<DraftRow>
+  readonly keys: ReadonlyArray<DraftKey>     // enter and tab; up, down and esc belong to the menu
+}
+export interface DraftTrigger {
+  readonly char: string
+  readonly where: "any-word" | "draft-start"  // @ anywhere a word starts; / only as the draft's first character
+  /** Called each time the menu opens; tags loads its list here. */
+  readonly open: Effect.Effect<OpenTrigger>
+}
+export class DraftTriggers extends Registry.Service<DraftTriggers, DraftTrigger>()("chat/DraftTriggers") {}
+
+// packages/plugins/chat/src/tui/screen.ts
+export class ChatScreen extends Context.Service<ChatScreen, {
+  readonly session: Accessor<SessionId | undefined>   // undefined on the landing screen
+  readonly show: (session: SessionId) => void
+  readonly startNew: () => void                       // back to landing; nothing is saved
+  readonly draft: {
+    readonly text: Accessor<string>
+    readonly insert: (text: string) => void           // after the draft, a blank line between
+    readonly clearIf: (text: string) => void          // clears only if the draft still holds text
+  }
+  /** The composer in the slot hands over its textarea; the last attach wins. */
+  readonly attach: (draft: TextareaRenderable) => void
+}>()("chat/Screen") {}
+```
+
+```mermaid
+flowchart LR
+  type["typing in the draft"] --> menu["useDraftMenu"]
+  menu --> triggers["DraftTriggers: @ from tags, / from slash"]
+  triggers --> keys["enter / tab: the trigger's DraftKey.run"]
+  ctrlS["ctrl+s"] --> stashSave["stash: ChatScreen.draft.text, stash/save, clearIf"]
+  pop["/pop"] --> open["openPicker stash/stashes"]
+  open --> pipe["Pickers pipeline: wraps"] --> dialog["kit Picker in Dialogs"]
+  dialog --> pick["enter: ChatScreen.draft.insert, stash/drop"]
+  dialog --> del["ctrl+d: Confirm, stash/drop"]
+```
+
+- `ChatScreen` is made in chat's `tui` layer with Solid signals; the screen component reads and sets the same signals, so `show` and `startNew` work from any plugin's command.
+- `ctrl+s` and `/pop` are `stash`'s commands through `registerCommands`; `ctrl+s` declines with an empty draft, so the key passes on.
+- Commands gain a `hint` field, a short label. The hints under the draft are the composer's own (`enter`, `shift+enter`), then each command reachable now that has a `hint`, in the order `keymap.getCommandEntries()` gives them: layer order, as `@opentui/keymap` `createCommandCatalogService` builds it. A hint goes away when its command cannot run.
+- A trigger's key edits the draft itself through the textarea and the token's place.
+- `stash` takes the `stashes` table from chat under its own `stash_migrations`; the local database is deleted once.
+- `fuzzysort` moves from chat to `tags` and `slash`; chat's `tags` and `model` dependencies go if nothing else uses them.
+
+### 7a code
+
+The parts below predate the `model-choice` plugin, the plugin splits and the shared extension points in Step 7, and change to match them.
+
+```text
+packages/tui/src/
+  base.ts             makes the keymap; provides Keymap; Dialogs gets the renderer
+  commands.ts         Command fields (title, category, slash), registerCommands, listed, slashCommands
+  dialogs.tsx         open remembers the focused renderable; closing focuses it again
+  root.tsx            uses Keymap from base
+  kit/Picker.tsx      keeps query and selection; onSelect, onMove, actions
+  kit/Confirm.tsx     a question with enter to confirm, esc to cancel
+  kit/SecretInput.tsx typed and pasted text drawn as dots, read with useKeyboard and usePaste
+packages/plugins/palette/            new
+  src/index.ts        plugin with no layer of its own; tui entry
+  src/tui/index.tsx   ctrl+p: Picker over `listed`, enter runs the command
+packages/plugins/theme/src/tui/
+  index.tsx           palette signal gains its setter; registers /theme
+  ThemePicker.tsx     preview on move, theme/set on enter, restore on close
+packages/plugins/model/src/
+  contract.ts         ListedModel, model/list, model/role, model/set
+  index.ts            handlers; a revision SubscriptionRef that model/set bumps
+  tui/index.tsx       registers /model
+  tui/ModelPicker.tsx Picker by provider; tab switches role
+packages/plugins/accounts/src/
+  sign-in.ts          openUrl opens the browser, then sends OpenUrl
+  tui/index.tsx       registers /connect
+  tui/Connect.tsx     vendor Picker, login Picker, SignIn dialog
+packages/plugins/session/src/
+  contract.ts         SessionSummary, SessionLog.list, session/list
+  migrations.ts       sessions.folder
+  store.ts            open stores the workspace folder; list query
+packages/plugins/chat/src/tui/
+  ChatScreen.tsx      chat.new (ctrl+n, /new), chat.sessions (ctrl+o, /sessions); categories
+  Sessions.tsx        sessions Picker: day sections, relative times
+  Stashes.tsx         /pop Picker; ctrl+d asks with Confirm, then chat/unstash
+  DraftMenu.tsx       TagMenu made general: label, detail, matches; @ and / both use it
+  slash.ts            useSlashList: the / menu's rows and keys
+  Composer.tsx        / menu; chat.pop (/pop); the model line, watching model/role main
+  Sidebar.tsx         watches model/role main
+apps/cli/src/connect.ts   loses openBrowser; OpenUrl only prints the link
+```
+
+Removed or replaced: `model/main` becomes `model/role`; `TagMenu.tsx` becomes `DraftMenu.tsx`; the kit `Picker` loses its `query` and `selected` props; `root.tsx` no longer makes the keymap.
+
+```ts
+// packages/tui/src/commands.ts
+declare module "@opentui/keymap" {
+  interface Command {
+    readonly title?: string
+    /** The palette's section; a command without one stays out of the palette. */
+    readonly category?: string
+    /** The / menu's name; a command without one stays out of the / menu. */
+    readonly slash?: { readonly name: string; readonly aliases?: ReadonlyArray<string> }
+  }
+}
+export class Keymap extends Context.Service<Keymap, OpenTuiKeymap>()("tui/Keymap") {}
+/** Adds the layer's commands and keys until the plugin's scope closes. */
+export const registerCommands: (layer: Layer) => Effect.Effect<void, never, Keymap | Scope>
+export interface Listed { readonly name: string; readonly title: string; readonly category: string; readonly keys: string }
+export const listed: (keymap: OpenTuiKeymap) => ReadonlyArray<Listed>        // reachable, with a category
+export interface Slash { readonly name: string; readonly command: string; readonly title: string }
+export const slashCommands: (keymap: OpenTuiKeymap) => ReadonlyArray<Slash>  // reachable, one row per name and alias
+
+// packages/tui/src/kit/Picker.tsx
+export interface PickerRow { id; title; detail?; section? }               // as now
+export interface PickerAction { readonly key: string; readonly label: string; readonly run: (row: PickerRow) => void }
+export function Picker(props: {
+  title: string; placeholder: string; empty: string
+  rows: ReadonlyArray<PickerRow>
+  initial?: string                       // the row selected first; else the first row
+  onSelect: (row: PickerRow) => void
+  onMove?: (row: PickerRow) => void
+  actions?: ReadonlyArray<PickerAction>  // extra keys; the hints list them
+})
+export function Confirm(props: { title: string; question: string; action: string; onConfirm: () => void })
+
+// session/contract.ts
+export const SessionSummary = Schema.Struct({
+  id: SessionId,
+  title: Schema.String,            // first line of the first user message, else "(no messages)"
+  updatedAt: Schema.DateTimeUtc,   // the latest event, else when it opened
+})
+SessionLog.list: Effect.Effect<ReadonlyArray<SessionSummary>, SessionStoreFailed>  // this folder's, latest first, 100
+Rpc.make("session/list", { success: Schema.Array(SessionSummary), error: SessionStoreFailed })
+
+// model/contract.ts
+export const ListedModel = Schema.Struct({
+  id: ModelId, name: Schema.String,
+  provider: Schema.String,                  // the provider's name, the picker's section
+  contextWindow: Schema.optional(Schema.Int),
+})
+const RoleName = Schema.Literals(["main", "small"])
+Rpc.make("model/list", { success: Schema.Array(ListedModel) })
+/** The role's model now, and again after each model/set. */
+Rpc.make("model/role", { payload: { role: RoleName }, success: RoleModel, error: Schema.Union([ModelNotFound, SettingsInvalid]), stream: true })
+/** Writes { model } at model.<role> in the global settings file. */
+Rpc.make("model/set", { payload: { role: RoleName, model: ModelId }, error: SettingsWriteFailed })
+// RoleModel gains thinking: Schema.optional(Schema.String), for the model line
+```
+
+```mermaid
+flowchart LR
+  key["ctrl+p"] --> pal["palette: listed(keymap)"]
+  pal --> pick["Picker in Dialogs"]
+  pick --> close["close: focus returns"]
+  close --> run["keymap.runCommand(name)"]
+  slash["/ at draft start"] --> menu["useSlashList: slashCommands(keymap)"]
+  menu --> enter["enter: clear draft"] --> run
+  run --> theme["/theme ThemePicker"]
+  run --> model["/model ModelPicker"]
+  run --> connect["/connect Connect"]
+  run --> chat["/new /sessions /pop"]
+```
+
+- Commands with a screen's state stay in components with `useBindings` and gain `title`, `category` and `slash`: `/new`, `/sessions`, Toggle sidebar and Quit in `ChatScreen`, `/pop` in the composer. Commands without a component, `ctrl+p`, `/theme`, `/model` and `/connect`, use `registerCommands` in their plugin's `tui` layer and run their Effects through `FiberSet.makeRuntime`, as `root.tsx` does.
+- The palette reads the commands when it opens, while the composer still has focus. A pick closes the palette first, so `/pop` finds the composer focused (OpenCode `ui/dialog.tsx` `refocus`).
+- `/` menu: open while the whole draft is `/` and a word; up and down move, enter clears the draft and runs the command, tab completes `/name`, esc closes until the text changes. Rows show `/name` and the command's title (gallery `SlashMenu.tsx`).
+- Theme picker: rows from `PALETTES`, the saved one first. `onMove` sets the palette signal; enter runs `theme/set` and closes; closing without a pick puts the saved palette back, in `onCleanup`.
+- Model picker: title `Model for main` or `Model for small`; rows from `model/list` by provider, detail the context window, `current` on the role's model; `tab` switches role; enter runs `model/set` and closes.
+- `/connect`: `accounts/methods`; a vendor Picker (detail `connected`), then a Picker of each login's ways (title the login, detail the way); a list of one is skipped, as `liminal connect` does. The SignIn dialog runs `accounts/sign-in` in a fiber the dialog owns, so esc stops it, and draws the latest step: `OpenUrl` shows the link, `ShowCode` the code and link, `c` copies either with `renderer.copyToClipboardOSC52`; `Ask` an input, or `SecretInput` when secret, whose enter sends `accounts/answer`; `Waiting` and `Told` their text; `Done` closes it. A failure shows its message in the danger color (gallery `ConnectKey`, `ConnectBrowser`).
+- Sessions picker: rows from `session/list` in sections Today, Yesterday and Earlier; detail `2h ago` today, `18:20` yesterday, `Oct 14` before (gallery `Sessions.states.tsx`). A pick shows that session.
+- Stashes picker: rows from `chat/stashes`, detail when it was saved. Enter puts the text after the draft with a blank line between, then runs `chat/unstash`; `ctrl+d` asks with `Confirm`, then runs `chat/unstash` and drops the row (archive `inbox/tui/stash.tsx`).
+- `accounts` opens the browser itself before it sends `OpenUrl`, on the machine whose local server catches the redirect (archive `logins/server/browser.ts`); a failed open sends `Told` with "Could not open the browser; open the link above." Frontends only show the link.
+- `session` stores the workspace folder from `Directories` on each `open`, and `list` shows only that folder's sessions (archive `session-store` `listSessions(workspace)`, Pi per working folder, Crush per project).
+- Model line: under the draft, left of the hints, `◇ model • thinking` from `model/role` `main`, the thinking part only when set (gallery `Composer.tsx`). `model/role` sends the role's model when asked and again after each `model/set`, through a revision `SubscriptionRef` in `model`; the sidebar's context share watches it too.
+- Print mode `--session <id>`: sends to that session instead of opening one; an id the log does not have fails with its `SessionNotFound` message and exit code 1.
+- Print mode `--model provider/model`: a `loop/model` attribute on the input; the turn that input starts uses it, read from the latest `loop/turn-start`, and later turns go back to `main`.
+- `session/list` query: `sessions` left joined to `session_events` for the latest `at`, and a subquery for the first `session/message` whose `json_extract(data, '$.role')` is `user`; ordered by the latest activity (Pi `session-manager.ts` sorts by `modified`).
+- Docs: `docs/usage/cli.md` keys and commands; READMEs of `palette`, `theme`, `model`, `accounts`, `session`, `chat`, `packages/tui`; `architecture.md` gains a `palette` row; `docs/plugins/tui.md` and `status.md` check off what 7a builds.
 
 ## Events in the references
 

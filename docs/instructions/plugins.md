@@ -5,6 +5,7 @@
 1. Read the plugin's section in its `docs/plugins/` work file.
 2. Name the mechanism for each thing the plugin does: Add, Wrap, Attach or Replace (`docs/extension-basics.md`).
 3. If no mechanism fits without editing a base plugin, stop: the base plugin is missing an extension point (`docs/instructions/core.md`).
+4. Split by feature. Anything a user might want to drop, swap or do differently is its own plugin, meeting the others through Add, Wrap, Attach or Replace. Before adding a feature to an existing plugin, say why no one would ever want it without that plugin.
 
 ## Build it
 
