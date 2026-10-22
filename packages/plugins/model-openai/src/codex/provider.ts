@@ -2,11 +2,15 @@
 import { Effect } from "effect";
 import { HttpClient } from "effect/http";
 
-import { Credentials, LoginMethods } from "@shanepadgett/liminal-accounts/contract";
+import {
+  credentialSaved,
+  Credentials,
+  LoginMethods,
+} from "@shanepadgett/liminal-accounts/contract";
 import { responsesModel } from "@shanepadgett/liminal-model-wire/responses";
 import { type LanguageModelOptions, ModelProviders } from "@shanepadgett/liminal-model/contract";
 
-import { freshTokens, loginSaved } from "../sign.ts";
+import { freshTokens } from "../sign.ts";
 import { apiUrl, codexModels, signedAs } from "./backend.ts";
 import { codexLogin } from "./logins.ts";
 import { refreshTokens } from "./tokens.ts";
@@ -41,7 +45,7 @@ export const registerCodex = Effect.gen(function* () {
     // The plan offers OpenAI's models, which the catalog lists under `openai`.
     catalogId: "openai",
     defaults: { main: { model: "codex/gpt-6.1-sol" }, small: { model: "codex/gpt-6-luna" } },
-    signedIn: loginSaved(credentials, "codex"),
+    signedIn: credentialSaved(credentials, "codex"),
     models: Effect.flatMap(tokens, (signed) => codexModels(http, signed)),
     languageModel,
   });

@@ -1,7 +1,8 @@
 /** Credentials in the `accounts` table, one row per provider. */
-import { Clock, Effect, Option, Schema } from "effect";
+import { Clock, Effect, Match, Option, Schema } from "effect";
 import { Migrator, SqlClient, SqlError } from "effect/sql";
 
+import { KeyCommands } from "./command.ts";
 import { Credential, Credentials, CredentialsFailed, OAuth } from "./contract.ts";
 
 /** Tokens are refreshed when they expire within this long. */
@@ -32,6 +33,7 @@ const failed = (provider: string) => (error: { readonly message: string }) =>
 
 export const makeStore = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
+  const commands = yield* KeyCommands;
   yield* migrate;
 
   const get = (provider: string) =>
@@ -52,6 +54,27 @@ export const makeStore = Effect.gen(function* () {
       Effect.asVoid,
       Effect.mapError(failed(provider)),
     );
+
+  const remove = (provider: string) =>
+    sql`DELETE FROM accounts WHERE provider = ${provider}`.pipe(
+      Effect.asVoid,
+      Effect.mapError(failed(provider)),
+    );
+
+  const key = (provider: string) =>
+    Effect.flatMap(get(provider), (saved) => {
+      if (Option.isNone(saved)) return Effect.succeedNone;
+
+      return Match.valueTags(saved.value, {
+        ApiKey: (apiKey) => Effect.succeedSome(apiKey.key),
+        Command: ({ command }) =>
+          commands(command).pipe(
+            Effect.asSome,
+            Effect.mapError((error) => new CredentialsFailed({ provider, message: error.message })),
+          ),
+        OAuth: () => Effect.succeedNone,
+      });
+    });
 
   const fresh = <E>(provider: string, refresh: (stale: OAuth) => Effect.Effect<OAuth, E>) =>
     Effect.gen(function* () {
@@ -77,5 +100,5 @@ export const makeStore = Effect.gen(function* () {
       Effect.catchIf(SqlError.isSqlError, (error) => Effect.fail(failed(provider)(error))),
     );
 
-  return Credentials.of({ get, set, fresh });
+  return Credentials.of({ get, set, remove, key, fresh });
 });

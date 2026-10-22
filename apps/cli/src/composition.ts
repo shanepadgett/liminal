@@ -2,6 +2,7 @@
 import { BunServices } from "@effect/platform-bun";
 import { Crypto, FileSystem, Layer, Path } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/http";
+import { ChildProcessSpawner } from "effect/process";
 
 import accounts from "@shanepadgett/liminal-accounts";
 import { inMemory } from "@shanepadgett/liminal-client";
@@ -23,10 +24,16 @@ import systemPrompt from "@shanepadgett/liminal-system-prompt";
 import toolDefinitions from "@shanepadgett/liminal-tool-definitions";
 import tools from "@shanepadgett/liminal-tools";
 
-/** Bun's files, paths, crypto and HTTP for the plugins that ask for them. */
+/** Bun's files, paths, crypto, HTTP and child processes for the plugins that ask for them. */
 const runtime = definePlugin({
   name: "runtime",
-  provides: [Path.Path, FileSystem.FileSystem, Crypto.Crypto, HttpClient.HttpClient],
+  provides: [
+    Path.Path,
+    FileSystem.FileSystem,
+    Crypto.Crypto,
+    HttpClient.HttpClient,
+    ChildProcessSpawner.ChildProcessSpawner,
+  ],
   requires: [],
   layer: Layer.mergeAll(BunServices.layer, FetchHttpClient.layer),
 });

@@ -1,12 +1,16 @@
 #!/usr/bin/env bun
-/** The `liminal` command: print mode with `-p`, `liminal connect`, and help otherwise. */
+/**
+ * The `liminal` command: print mode with `-p`, `liminal connect`, `liminal logout`, and help
+ * otherwise.
+ */
 import { BunRuntime, BunServices } from "@effect/platform-bun";
-import { Console, Effect, Option, Stdio, Stream } from "effect";
+import { Console, Effect, Option, Stdio, Stream, Terminal } from "effect";
 import { CliError, Command, Flag } from "effect/cli";
 
 import { host } from "./composition.ts";
 import { connect } from "./connect.ts";
 import { badUsage, ExitCode, failed, interrupted } from "./exit-code.ts";
+import { logout } from "./logout.ts";
 import { print } from "./print.ts";
 
 /** Piped stdin, or nothing when stdin is the terminal. */
@@ -26,17 +30,26 @@ const promptOf = Effect.fn("promptOf")(function* (flag: string) {
   return Option.match(stdin, { onNone: () => flag, onSome: (text) => `${flag}\n\n${text}` });
 });
 
-const connectCommand = Command.make("connect", {}, () =>
-  Effect.scoped(connect).pipe(
-    Effect.catchTags({
-      LoginFailed: (error) =>
+/** An interactive subcommand: quitting its prompt exits 130, and any other failure prints and exits 1. */
+const interactive = <A, E extends { readonly message: string }, R>(
+  name: string,
+  description: string,
+  run: Effect.Effect<A, E | Terminal.QuitError, R>,
+) =>
+  Command.make(name, {}, () =>
+    Effect.scoped(run).pipe(
+      Effect.catchTag("QuitError", () => new ExitCode({ code: interrupted })),
+      Effect.catch((error) =>
         Effect.andThen(Console.error(error.message), new ExitCode({ code: failed })),
-      QuitError: () => new ExitCode({ code: interrupted }),
-    }),
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- the connect command's entry point.
-    Effect.provide(host),
-  ),
-).pipe(Command.withDescription("Sign in to a model provider"));
+      ),
+      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- the subcommand's entry point.
+      Effect.provide(host),
+    ),
+  ).pipe(Command.withDescription(description));
+
+const connectCommand = interactive("connect", "Sign in to a model provider", connect);
+
+const logoutCommand = interactive("logout", "Log out of a connected model provider", logout);
 
 const liminal = Command.make(
   "liminal",
@@ -64,7 +77,7 @@ const liminal = Command.make(
   }),
 ).pipe(
   Command.withDescription("An agent harness where everything is a plugin"),
-  Command.withSubcommands([connectCommand]),
+  Command.withSubcommands([connectCommand, logoutCommand]),
 );
 
 liminal.pipe(

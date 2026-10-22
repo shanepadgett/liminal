@@ -18,7 +18,8 @@ const openBrowser = (url: string) =>
     yield* spawner.exitCode(ChildProcess.make(opener, [url]));
   }).pipe(Effect.ignore);
 
-const pick = <A>(
+/** Asks to pick one choice; a single choice is taken without asking. */
+export const pick = <A>(
   message: string,
   choices: ReadonlyArray<{ readonly title: string; readonly value: A }>,
 ) => {

@@ -2,15 +2,15 @@
  * The `openai` provider: OpenAI's API, signed with the saved API key, else the key in
  * `OPENAI_API_KEY`. It offers GPT-6 Luna as a classifier.
  */
-import { Effect, Option, type Redacted, Schema } from "effect";
+import { Effect, Schema } from "effect";
 import { AiError } from "effect/ai";
 import { HttpClient, HttpClientRequest } from "effect/http";
 
 import {
+  apiKeyLogin,
   apiKeyMethod,
   Credentials,
   LoginMethods,
-  savedOrEnvironmentKey,
 } from "@shanepadgett/liminal-accounts/contract";
 import { decisionsModel } from "@shanepadgett/liminal-model-wire/decisions";
 import { responsesModel } from "@shanepadgett/liminal-model-wire/responses";
@@ -28,16 +28,6 @@ const keyVariable = "OPENAI_API_KEY";
 export const apiUrl = "https://api.openai.com/v1";
 
 const ModelIds = Schema.Struct({ data: Schema.Array(Schema.Struct({ id: Schema.String })) });
-
-/** The key to sign a call with, read on each call so a missing one fails the call. */
-const apiKeyOf = (key: Effect.Effect<Option.Option<Redacted.Redacted>>) =>
-  Effect.flatMap(
-    key,
-    Option.match({
-      onNone: () => authFailed("OpenAI", `Run liminal connect, or set ${keyVariable}.`),
-      onSome: Effect.succeed,
-    }),
-  );
 
 /** The ids the API lists that the catalog lists as chat models, since the API says nothing of kind. */
 const chatModels = Effect.fn("OpenAI.chatModels")(function* (
@@ -72,8 +62,12 @@ export const registerOpenAi = Effect.gen(function* () {
   const withHttp = Effect.provideService(HttpClient.HttpClient, http);
   const credentials = yield* Credentials;
   const catalog = yield* ModelCatalog;
-  const key = savedOrEnvironmentKey(credentials, "openai", keyVariable);
-  const apiKey = apiKeyOf(key);
+  const login = apiKeyLogin(credentials, "openai", keyVariable);
+
+  /** The key to sign a call with, read on each call so a missing one fails the call. */
+  const apiKey = Effect.catchTag(login.key, "CredentialsFailed", (error) =>
+    authFailed("OpenAI", error.message),
+  );
 
   yield* (yield* LoginMethods).add(apiKeyMethod("openai", "OpenAI"));
 
@@ -108,7 +102,7 @@ export const registerOpenAi = Effect.gen(function* () {
     name: "OpenAI",
     catalogId: "openai",
     defaults: { main: { model: "openai/gpt-6.1-sol" }, small: { model: "openai/gpt-6-luna" } },
-    signedIn: Effect.map(key, Option.isSome),
+    signedIn: login.signedIn,
     models,
     languageModel,
     // The Decisions API takes only API keys, so `chatgpt` and `codex` offer no classifier.

@@ -2,12 +2,16 @@
 import { Crypto, Effect } from "effect";
 import { HttpClient, HttpClientRequest } from "effect/http";
 
-import { Credentials, LoginMethods } from "@shanepadgett/liminal-accounts/contract";
+import {
+  credentialSaved,
+  Credentials,
+  LoginMethods,
+} from "@shanepadgett/liminal-accounts/contract";
 import { responsesModel } from "@shanepadgett/liminal-model-wire/responses";
 import { type LanguageModelOptions, ModelProviders } from "@shanepadgett/liminal-model/contract";
 
 import { planModelInfo, planModels } from "../list.ts";
-import { freshTokens, loginSaved } from "../sign.ts";
+import { freshTokens } from "../sign.ts";
 import { refreshTokens, resource } from "./auth.ts";
 import { makeHostId } from "./host-id.ts";
 import { chatgptLogin } from "./login.ts";
@@ -56,7 +60,7 @@ export const registerChatgpt = Effect.gen(function* () {
     name: "ChatGPT",
     catalogId: "openai",
     defaults: { main: { model: "chatgpt/gpt-6.1-sol" }, small: { model: "chatgpt/gpt-6-luna" } },
-    signedIn: loginSaved(credentials, "chatgpt"),
+    signedIn: credentialSaved(credentials, "chatgpt"),
     models,
     languageModel,
   });

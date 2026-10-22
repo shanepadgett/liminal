@@ -2,7 +2,7 @@
  * The Codex login, as the Codex CLI signs in: through the browser, or with a code entered on
  * another device.
  */
-import { Duration, Effect, Schema } from "effect";
+import { Duration, Effect, Option, Schema } from "effect";
 import {
   type HttpClient,
   type HttpClientError,
@@ -15,8 +15,10 @@ import {
   LoginFlow,
   type LoginMethod,
   type LoginWay,
+  type OAuth,
 } from "@shanepadgett/liminal-accounts/contract";
 
+import { revokeFields, revoking } from "../revoke.ts";
 import { clientId, issuer, tokensFor } from "./tokens.ts";
 
 const methodId = "codex/plan";
@@ -147,6 +149,10 @@ const deviceWay = (client: HttpClient.HttpClient): LoginWay => ({
   }).pipe(Effect.catchTags({ HttpClientError: failure, SchemaError: failure })),
 });
 
+/** A revoke for the refresh token, sent where and as the Codex CLI sends it. */
+const revokeRequest = (tokens: OAuth) =>
+  Option.some(postJson(`${issuer}/oauth/revoke`, revokeFields(tokens, clientId)));
+
 /** The Codex login for a ChatGPT plan (Plus, Pro, Business), saved under `codex`. */
 export const codexLogin = (client: HttpClient.HttpClient): LoginMethod => ({
   id: methodId,
@@ -154,4 +160,5 @@ export const codexLogin = (client: HttpClient.HttpClient): LoginMethod => ({
   vendor: "OpenAI",
   title: "Codex (ChatGPT plan)",
   ways: [browserWay(client), deviceWay(client)],
+  logOut: revoking("codex", client, revokeRequest),
 });

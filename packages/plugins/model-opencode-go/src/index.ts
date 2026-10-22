@@ -2,15 +2,15 @@
  * OpenCode Go's models, signed with the saved API key, else the key in `OPENCODE_API_KEY`. Each
  * model is called through the API the catalog names for it.
  */
-import { Effect, Layer, Option, type Redacted } from "effect";
+import { Effect, Layer, type Redacted } from "effect";
 import { AiError, type LanguageModel } from "effect/ai";
 import { HttpClient, HttpClientRequest } from "effect/http";
 
 import {
+  apiKeyLogin,
   apiKeyMethod,
   Credentials,
   LoginMethods,
-  savedOrEnvironmentKey,
 } from "@shanepadgett/liminal-accounts/contract";
 import { definePlugin } from "@shanepadgett/liminal-core";
 import { chatModel } from "@shanepadgett/liminal-model-wire/chat";
@@ -71,7 +71,7 @@ const failed = (method: string, reason: AiError.AiErrorReason) =>
 const register = Effect.gen(function* () {
   const http = yield* HttpClient.HttpClient;
   const catalog = yield* ModelCatalog;
-  const key = savedOrEnvironmentKey(yield* Credentials, "opencode-go", keyVariable);
+  const login = apiKeyLogin(yield* Credentials, "opencode-go", keyVariable);
 
   yield* (yield* LoginMethods).add(apiKeyMethod("opencode-go", "OpenCode Go"));
 
@@ -100,20 +100,17 @@ const register = Effect.gen(function* () {
     model: string,
     options: LanguageModelOptions,
   ) {
-    const apiKey = yield* key;
-
-    if (Option.isNone(apiKey)) {
-      return yield* failed(
-        "sign",
-        new AiError.AuthenticationError({
-          kind: "MissingKey",
-          description: `Run liminal connect, or set ${keyVariable}.`,
-        }),
-      );
-    }
+    const apiKey = yield* login.key.pipe(
+      Effect.mapError((error) =>
+        failed(
+          "sign",
+          new AiError.AuthenticationError({ kind: "MissingKey", description: error.message }),
+        ),
+      ),
+    );
 
     const signing: Signing = {
-      apiKey: apiKey.value,
+      apiKey,
       transformClient: HttpClient.mapRequest(
         HttpClientRequest.setHeaders(headersOf(options.cacheKey)),
       ),
@@ -134,7 +131,7 @@ const register = Effect.gen(function* () {
       main: { model: "opencode-go/deepseek-v4.1-flash" },
       small: { model: "opencode-go/deepseek-v4.1-flash" },
     },
-    signedIn: Effect.map(key, Option.isSome),
+    signedIn: login.signedIn,
     models,
     languageModel,
   });

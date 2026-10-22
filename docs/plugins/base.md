@@ -6,9 +6,8 @@ Work for [status.md](../status.md) milestone 1. Contracts are in [architecture.m
 
 Built: API keys and OAuth tokens per provider, `LoginMethods` with logins grouped by vendor and their ways, `LoginFlow` and `AccountsRpc`. Still to build:
 
-- A command credential: a command whose output is the key, run once per process and kept in memory. `liminal connect` offers it as a login method that asks for the command.
-- Logout: `Credentials.remove`, an optional `logOut` on a login method (Sign in with ChatGPT revokes its token), an `accounts/logout` RPC and `liminal connect` offering it for a connected provider.
-- After connecting, `liminal connect` writes the provider's default `main` and `small` models into settings when the roles are unset, so connecting a second provider later does not change them. Until then an unset role uses the first signed-in provider's defaults.
+- A command credential: a shell command whose output is the key, run once per process and kept in memory. Every API key login offers it as a second way, Command, beside the key. Sign-in runs the command once before saving it. `Credentials.key` gives a saved key or the command's output; a provider's signed-in check never runs the command.
+- Logout: `Credentials.remove`, an optional `logOut` on a login method, an `accounts/logout` RPC that takes a provider, and `liminal logout`, which lists the connected providers. Sign in with ChatGPT and the Codex login revoke their refresh token. A failed revoke still removes the saved login, then says how to disconnect Liminal in ChatGPT settings.
 
 ## `model`
 

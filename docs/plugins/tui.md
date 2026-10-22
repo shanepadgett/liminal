@@ -43,6 +43,7 @@ export const EventRenderer: Registry<{ kind: string; component: Component<{ even
 ## Model picker
 
 - The `model` TUI entry: picks the session's model, filtered with `fuzzysort`.
+- Picking a model saves it as the role's model in settings. Until a role is set, it uses the first signed-in provider's default.
 - Print mode gains `--model provider/model`.
 
 ## `/connect` in the TUI

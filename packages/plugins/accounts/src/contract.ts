@@ -21,7 +21,11 @@ export const OAuth = Schema.TaggedStruct("OAuth", {
 
 export type OAuth = typeof OAuth.Type;
 
-export const Credential = Schema.Union([ApiKey, OAuth]);
+/** A shell command whose output is the API key, such as `op read op://Private/OpenAI/key`. */
+export const Command = Schema.TaggedStruct("Command", { command: Schema.String });
+export type Command = typeof Command.Type;
+
+export const Credential = Schema.Union([ApiKey, OAuth, Command]);
 export type Credential = typeof Credential.Type;
 
 export class CredentialsFailed extends Schema.TaggedError<
@@ -38,6 +42,14 @@ export class Credentials extends Context.Service<
       provider: string,
       credential: Credential,
     ) => Effect.Effect<void, CredentialsFailed>;
+    readonly remove: (provider: string) => Effect.Effect<void, CredentialsFailed>;
+    /**
+     * The API key saved under `provider`: a saved key, or the output of a saved command, which runs
+     * once per process. None when nothing or OAuth tokens are saved.
+     */
+    readonly key: (
+      provider: string,
+    ) => Effect.Effect<Option.Option<Redacted.Redacted>, CredentialsFailed>;
     /**
      * The provider's OAuth tokens. Within a minute of expiry, `refresh` replaces them inside one
      * write, so one process refreshes and the others read its tokens.
@@ -53,6 +65,11 @@ export class LoginFailed extends Schema.TaggedError<
   LoginFailed,
   { readonly brand: unique symbol }
 >()("LoginFailed", { method: Schema.String, message: Schema.String }) {}
+
+export class LogoutFailed extends Schema.TaggedError<
+  LogoutFailed,
+  { readonly brand: unique symbol }
+>()("LogoutFailed", { provider: Schema.String, message: Schema.String }) {}
 
 /** A sign-in through the browser with PKCE. */
 export interface BrowserAuthorization {
@@ -110,6 +127,11 @@ export interface LoginMethod {
   readonly vendor: string;
   readonly title: string;
   readonly ways: Array.NonEmptyReadonlyArray<LoginWay>;
+  /**
+   * Ends the login on the provider's side before the credential is removed, such as revoking a
+   * refresh token. It gets whatever is saved under the provider, so it checks the kind.
+   */
+  readonly logOut?: (saved: Credential) => Effect.Effect<void, LogoutFailed>;
 }
 
 /** The login methods by id; of two with one id, the one added last is used. */
@@ -117,42 +139,90 @@ export class LoginMethods extends Registry.Service<LoginMethods, LoginMethod>()(
   "accounts/LoginMethods",
 ) {}
 
-/** A login with one way, which asks for the provider's API key. */
+/** The trimmed answer; an empty one fails `method` with `nothing`. */
+const entered = (method: string, answer: string, nothing: string) => {
+  const text = answer.trim();
+
+  return text === ""
+    ? Effect.fail(new LoginFailed({ method, message: nothing }))
+    : Effect.succeed(text);
+};
+
+/** A login that asks for the provider's API key, or for a command that prints it. */
 export const apiKeyMethod = (provider: string, vendor: string): LoginMethod => {
   const id = `${provider}/api-key`;
 
-  const run = Effect.gen(function* () {
-    const key = Redacted.value(yield* (yield* LoginFlow).askSecret("API key")).trim();
+  const key = Effect.gen(function* () {
+    const answer = Redacted.value(yield* (yield* LoginFlow).askSecret("API key"));
 
-    if (key === "") return yield* new LoginFailed({ method: id, message: "No key was entered." });
-
-    return ApiKey.make({ key: Redacted.make(key) });
+    return ApiKey.make({ key: Redacted.make(yield* entered(id, answer, "No key was entered.")) });
   });
 
-  return { id, provider, vendor, title: "API key", ways: [{ id: "key", title: "API key", run }] };
+  const command = Effect.gen(function* () {
+    const answer = yield* (yield* LoginFlow).ask("Command that prints the key");
+
+    return Command.make({ command: yield* entered(id, answer, "No command was entered.") });
+  });
+
+  return {
+    id,
+    provider,
+    vendor,
+    title: "API key",
+    ways: [
+      { id: "key", title: "API key", run: key },
+      { id: "command", title: "Command that prints the key", run: command },
+    ],
+  };
 };
 
-/**
- * The API key saved under `provider`, else the one in the environment variable `variable`; a
- * failing store is logged and counts as no saved key.
- */
-export const savedOrEnvironmentKey = (
+/** Whether a credential is saved under `provider`; a failing store is logged and counts as no. */
+export const credentialSaved = (
+  credentials: Credentials["Service"],
+  provider: string,
+): Effect.Effect<boolean> =>
+  credentials.get(provider).pipe(
+    Effect.map(Option.isSome),
+    Effect.catchTag("CredentialsFailed", (error) =>
+      Effect.as(Effect.logWarning(error.message), false),
+    ),
+  );
+
+/** How a provider with an API key login reads it. */
+export interface ApiKeyLogin {
+  /** Whether a credential is saved or the variable is set; never runs a key command. */
+  readonly signedIn: Effect.Effect<boolean>;
+  /** The saved key or command's output, else the variable's key; failing says how to sign in. */
+  readonly key: Effect.Effect<Redacted.Redacted, CredentialsFailed>;
+}
+
+/** The API key login saved under `provider`, with the environment variable `variable` as fallback. */
+export const apiKeyLogin = (
   credentials: Credentials["Service"],
   provider: string,
   variable: string,
-): Effect.Effect<Option.Option<Redacted.Redacted>> =>
-  credentials.get(provider).pipe(
-    Effect.catchTag("CredentialsFailed", (error) =>
-      Effect.as(Effect.logWarning(error.message), Option.none()),
-    ),
-    Effect.flatMap((saved) => {
-      const key = Option.filter(saved, Schema.is(ApiKey));
+): ApiKeyLogin => {
+  const fromEnvironment = Effect.orDie(Config.option(Config.Redacted(variable)));
 
-      return Option.isSome(key)
-        ? Effect.succeedSome(key.value.key)
-        : Effect.orDie(Config.option(Config.Redacted(variable)));
-    }),
+  const signedIn = Effect.flatMap(credentialSaved(credentials, provider), (saved) =>
+    saved ? Effect.succeed(true) : Effect.map(fromEnvironment, Option.isSome),
   );
+
+  const key = Effect.gen(function* () {
+    const saved = yield* credentials.key(provider);
+    if (Option.isSome(saved)) return saved.value;
+
+    const environment = yield* fromEnvironment;
+    if (Option.isSome(environment)) return environment.value;
+
+    return yield* new CredentialsFailed({
+      provider,
+      message: `Run liminal connect, or set ${variable}.`,
+    });
+  });
+
+  return { signedIn, key };
+};
 
 /** An OAuth token endpoint refused a request, or did not reply with tokens. */
 export class TokensRefused extends Schema.TaggedError<
@@ -231,6 +301,8 @@ export const LoginMethodInfo = Schema.Struct({
   vendor: Schema.String,
   title: Schema.String,
   ways: Schema.Array(LoginWayInfo),
+  /** Whether a credential is saved under the method's provider. */
+  connected: Schema.Boolean,
 });
 
 /** What screens call. */
@@ -246,4 +318,5 @@ export class AccountsRpc extends RpcGroup.make(
     payload: { method: Schema.String, text: Secret },
     error: LoginFailed,
   }),
+  Rpc.make("accounts/logout", { payload: { provider: Schema.String }, error: LogoutFailed }),
 ) {}

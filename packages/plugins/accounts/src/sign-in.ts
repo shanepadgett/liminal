@@ -2,11 +2,14 @@
  * Runs a login method: its actions go out as steps on the `accounts/sign-in` stream, and the answer
  * to its open question comes back through `accounts/answer`.
  */
-import { type Cause, Crypto, Deferred, Effect, Queue, Redacted, Ref, Stream } from "effect";
+import { type Cause, Crypto, Deferred, Effect, Queue, Redacted, Ref, Schema, Stream } from "effect";
 
 import { authorizeInBrowser, type BrowserSteps } from "./browser.ts";
+import { KeyCommands } from "./command.ts";
 import {
   Ask,
+  Command,
+  type Credential,
   Credentials,
   Done,
   LoginFailed,
@@ -70,6 +73,7 @@ const flowOf = (pending: Pending, steps: Steps, method: string, crypto: Crypto.C
 };
 
 export const makeSignIn = Effect.gen(function* () {
+  const commands = yield* KeyCommands;
   const methods = yield* LoginMethods;
   const credentials = yield* Credentials;
   const crypto = yield* Crypto.Crypto;
@@ -92,15 +96,16 @@ export const makeSignIn = Effect.gen(function* () {
     return yield* new LoginFailed({ method: id, message: `The login ${id} has no way ${way}.` });
   });
 
+  /** A command is run once before it is saved, so a typo fails here and not on a model call. */
+  const checked = (credential: Credential) =>
+    Schema.is(Command)(credential) ? Effect.asVoid(commands(credential.command)) : Effect.void;
+
   const save = ({ method, way }: { readonly method: LoginMethod; readonly way: LoginWay }) =>
     Effect.flatMap(way.run, (credential) =>
-      credentials
-        .set(method.provider, credential)
-        .pipe(
-          Effect.mapError(
-            (error) => new LoginFailed({ method: method.id, message: error.message }),
-          ),
-        ),
+      checked(credential).pipe(
+        Effect.andThen(credentials.set(method.provider, credential)),
+        Effect.mapError((error) => new LoginFailed({ method: method.id, message: error.message })),
+      ),
     );
 
   /** Runs the method and saves its credential; closing the stream interrupts it. */
@@ -128,5 +133,5 @@ export const makeSignIn = Effect.gen(function* () {
     return yield* Effect.asVoid(Deferred.succeed(open, text));
   });
 
-  return { methods, signIn, answer };
+  return { signIn, answer };
 });

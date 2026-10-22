@@ -9,6 +9,7 @@ OpenAI's models in `ModelProviders`, one provider for each way of signing in, ea
 | `codex` | Codex, in the browser or with a device code | The Codex backend, signed as the Codex CLI signs | `codex/gpt-6.1-sol`, `codex/gpt-6-luna` |
 
 - A call without a login fails with an `AiError` that says to run `liminal connect`. OAuth tokens refresh when they near expiry.
+- Logging out of `chatgpt` or `codex` revokes the refresh token at OpenAI.
 - `openai` lists the models the API offers that the catalog lists as chat models. `chatgpt` and `codex` list the models the plan offers.
 - `openai` offers `gpt-6-luna` as a classifier for `Models.classify`. The Decisions API takes only API keys, so `chatgpt` and `codex` offer none.
 - Sign in with ChatGPT registers Liminal as its own app on the ChatGPT account on the first login, and checks each ID token against OpenAI's published keys. It names this machine with a host id kept in `~/.liminal/host-id`.

@@ -25,6 +25,16 @@ Logins:
 
 A saved login wins over the environment variable. Each OpenAI login is saved apart, so all three can be connected at once.
 
+An API key login can save a command that prints the key instead of the key itself, such as `op read op://Private/OpenAI/key`. Liminal runs it once at sign-in to check it, then once per run when a model call first needs the key, and keeps only its output in memory.
+
+## Log out
+
+```sh
+liminal logout
+```
+
+Pick a connected provider. Liminal removes its saved login. Sign in with ChatGPT and Codex also end the login at OpenAI. When OpenAI does not confirm that, the login is still removed here, and the message says how to disconnect Liminal in ChatGPT settings.
+
 ## Send one prompt
 
 ```sh

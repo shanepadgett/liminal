@@ -1,4 +1,4 @@
-/** What the OpenAI providers share in signing calls: their errors and the saved login. */
+/** What the OpenAI providers share in signing calls: their errors and the saved tokens. */
 import { Effect, Option } from "effect";
 import { AiError } from "effect/ai";
 
@@ -15,15 +15,6 @@ export const authFailed = (
     method: "sign",
     reason: new AiError.AuthenticationError({ kind, description }),
   });
-
-/** Whether a login is saved under `provider`; a failing store counts as signed out. */
-export const loginSaved = (credentials: Credentials["Service"], provider: string) =>
-  credentials.get(provider).pipe(
-    Effect.map(Option.isSome),
-    Effect.catchTag("CredentialsFailed", (error) =>
-      Effect.as(Effect.logWarning(error.message), false),
-    ),
-  );
 
 /** The OAuth tokens saved under `provider`, refreshed when due. */
 export const freshTokens = (

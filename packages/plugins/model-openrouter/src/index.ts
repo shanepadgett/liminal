@@ -8,15 +8,15 @@ import {
   OpenRouterDecisionModel,
   OpenRouterLanguageModel,
 } from "@effect/ai-openrouter";
-import { Effect, Layer, Option, Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
 import { AiError } from "effect/ai";
 import { HttpClient } from "effect/http";
 
 import {
+  apiKeyLogin,
   apiKeyMethod,
   Credentials,
   LoginMethods,
-  savedOrEnvironmentKey,
 } from "@shanepadgett/liminal-accounts/contract";
 import { definePlugin } from "@shanepadgett/liminal-core";
 import {
@@ -61,25 +61,22 @@ const configOf = Effect.fn("OpenRouter.configOf")(function* ({
 const register = Effect.gen(function* () {
   const http = yield* HttpClient.HttpClient;
   const catalog = yield* ModelCatalog;
-  const key = savedOrEnvironmentKey(yield* Credentials, "openrouter", keyVariable);
+  const login = apiKeyLogin(yield* Credentials, "openrouter", keyVariable);
 
   yield* (yield* LoginMethods).add(apiKeyMethod("openrouter", "OpenRouter"));
 
   /** A client signed with the key, read on each call so a missing one fails the call. */
   const client = Effect.gen(function* () {
-    const apiKey = yield* key;
+    const apiKey = yield* login.key.pipe(
+      Effect.mapError((error) =>
+        failed(
+          "sign",
+          new AiError.AuthenticationError({ kind: "MissingKey", description: error.message }),
+        ),
+      ),
+    );
 
-    if (Option.isNone(apiKey)) {
-      return yield* failed(
-        "sign",
-        new AiError.AuthenticationError({
-          kind: "MissingKey",
-          description: `Run liminal connect, or set ${keyVariable}.`,
-        }),
-      );
-    }
-
-    return yield* OpenRouterClient.make({ apiKey: apiKey.value, siteTitle: "Liminal" }).pipe(
+    return yield* OpenRouterClient.make({ apiKey, siteTitle: "Liminal" }).pipe(
       Effect.provideService(HttpClient.HttpClient, http),
     );
   });
@@ -120,7 +117,7 @@ const register = Effect.gen(function* () {
       main: { model: "openrouter/deepseek/deepseek-v4.1-flash-1017" },
       small: { model: "openrouter/deepseek/deepseek-v4.1-flash-1017" },
     },
-    signedIn: Effect.map(key, Option.isSome),
+    signedIn: login.signedIn,
     models,
     languageModel,
     classifiers: Effect.succeed([{ id: "openrouter/typesafe/jev-1.13", name: "Jev 1.13" }]),

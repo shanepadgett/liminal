@@ -4,7 +4,7 @@
  */
 import { type Crypto, Effect, Option, type PlatformError, Schema } from "effect";
 import { Base64Url } from "effect/encoding";
-import type { HttpClient } from "effect/http";
+import { type HttpClient, HttpClientRequest } from "effect/http";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
 import {
@@ -18,6 +18,7 @@ import {
   type TokenReply,
 } from "@shanepadgett/liminal-accounts/contract";
 
+import { revokeFields, revoking } from "../revoke.ts";
 import { type ChatgptExtra, extraOf, issuer, resource, tokenRequest } from "./auth.ts";
 
 const methodId = "chatgpt/sign-in";
@@ -140,6 +141,14 @@ const savedExtra = (credentials: Credentials["Service"]) =>
     Effect.mapError((error) => failed(`The ChatGPT login could not be read: ${error.message}`)),
   );
 
+/** A revoke for the refresh token, sent as the client the login registered. */
+const revokeRequest = (tokens: OAuth) =>
+  Option.map(extraOf(tokens), ({ clientId }) =>
+    HttpClientRequest.post(`${issuer}/api/accounts/oauth/revoke`).pipe(
+      HttpClientRequest.bodyUrlParams(revokeFields(tokens, clientId)),
+    ),
+  );
+
 /** What the login is made with; `hostId` reads this machine's host id. */
 interface LoginServices {
   readonly client: HttpClient.HttpClient;
@@ -175,5 +184,6 @@ export const chatgptLogin = (services: LoginServices): LoginMethod => {
     vendor: "OpenAI",
     title: "Sign in with ChatGPT",
     ways: [{ id: "browser", title: "In the browser", run }],
+    logOut: revoking("chatgpt", services.client, revokeRequest),
   };
 };
