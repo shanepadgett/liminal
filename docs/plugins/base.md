@@ -29,12 +29,11 @@ Built: chat models, roles, model details from `ModelCatalog`, `ModelCall`, `Mode
   | `model-openrouter` | `openrouter/deepseek/deepseek-v4.1-flash-1017` | the same |
   | `model-opencode-go` | `opencode-go/deepseek-v4.1-flash` | the same |
 
-- Built: `model-anthropic` with its API key and Claude subscription logins; `model-openai` with all three providers, and `gpt-6-luna` as `openai`'s classifier over the Decisions API, which takes only API keys.
-- The Chat Completions wire code joins `@shanepadgett/liminal-model-wire`, beside Anthropic Messages, OpenAI Responses and OpenAI Decisions.
-- `model-openrouter` lists Jev (`typesafe/jev-1.13`) as a classifier, through `@effect/ai-openrouter`'s `OpenRouterDecisionModel`.
+- Built: `model-anthropic` with its API key and Claude subscription logins; `model-openai` with all three providers, and `gpt-6-luna` as `openai`'s classifier over the Decisions API, which takes only API keys; `model-openrouter` with an API key, its models from the catalog, and Jev (`typesafe/jev-1.13`) as a classifier through `@effect/ai-openrouter`'s `OpenRouterDecisionModel`; `model-opencode-go` with an API key, calling each model through the wire the catalog names for it.
+- `@shanepadgett/liminal-model-wire` holds Anthropic Messages, OpenAI Responses, Chat Completions and OpenAI Decisions.
 - Sign in with ChatGPT limits that `chatgpt` does not handle yet: the API refuses uncompressed request bodies over about 1 MiB, which OpenCode compresses with zstd, and `model` retries errors such as `subscription_sharing_usage_limit_exceeded` that retrying cannot fix.
 - Previous code: same names; the archive's `model-openrouter` and `model-opencode-go`.
 
 ## `apps/cli`
 
-- Add the other providers to its composition.
+- Built: its composition holds every provider.

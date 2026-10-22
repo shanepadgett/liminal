@@ -4,8 +4,6 @@
   "private": true,
   "description": "Pins the dependencies planned plugins will use, so their reference docs exist before the plugin. A dependency moves to its plugin's package.json when the plugin is built. They are peer dependencies so nothing reports them as unused.",
   "peerDependencies": {
-    "@effect/ai-openai-compat": "4.0.5",
-    "@effect/ai-openrouter": "4.0.5",
     "@effect/sql-pg": "4.0.5",
     "@opencode/codemode": "2.1.2",
     "@opentui/core": "0.6.6",

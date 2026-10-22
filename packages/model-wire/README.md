@@ -19,6 +19,14 @@ OpenAI's Responses API through Effect AI's OpenAI provider.
 
 Requires an `HttpClient`.
 
+## `./chat`
+
+Chat Completions, the OpenAI request format most other hosts copy, through Effect AI's OpenAI-compatible provider.
+
+- `chatModel(options, model, { thinking })`: an Effect AI `LanguageModel` for `model`. `options` sets the key, address and client changes. Thinking `off` is sent as `reasoning_effort: none`; any other level is sent as the effort, which the API checks.
+
+Requires an `HttpClient`.
+
 ## `./decisions`
 
 OpenAI's Decisions API through Effect AI's OpenAI provider.

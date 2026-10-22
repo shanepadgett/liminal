@@ -121,12 +121,17 @@ export interface ModelInfo {
 /** What a catalog model makes: replies, embeddings, images or live audio. */
 export type ModelKind = "chat" | "embedding" | "image" | "realtime";
 
+/** The API a model is called through: Anthropic's Messages, OpenAI's Responses or Chat Completions. */
+export type Wire = "messages" | "responses" | "chat";
+
 /** One model the catalog lists, by the id its provider gives it. */
 export interface CatalogModel {
   readonly id: string;
   readonly name: string;
   readonly kind: ModelKind;
   readonly details: ModelDetails;
+  /** Missing when the catalog names an API none of the wires speak. */
+  readonly wire?: Wire | undefined;
 }
 
 /** The catalog could not be reached or read, and has no entries for `catalogId`. */
@@ -361,8 +366,8 @@ export class Models extends Context.Service<
     readonly resolve: (
       model: string,
     ) => Effect.Effect<ModelChoice, ModelNotFound | SettingsInvalid>;
-    /** Every composed provider's models. */
-    readonly list: Effect.Effect<ReadonlyArray<ModelInfo>, AiError.AiError>;
+    /** The models of every signed-in provider; a provider whose list fails is logged and left out. */
+    readonly list: Effect.Effect<ReadonlyArray<ModelInfo>>;
     /** One model call outside the turn loop, through `ModelCall`; the reply is not logged. */
     readonly generate: (options: GenerateOptions) => Effect.Effect<Message, ModelCallError>;
     /** `generate` whose reply is JSON that `schema` decodes; an object at the top. */

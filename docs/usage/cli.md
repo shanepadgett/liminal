@@ -20,6 +20,8 @@ Logins:
 | OpenAI | An API key, for `openai/` models | `OPENAI_API_KEY` |
 | OpenAI | Sign in with ChatGPT, in the browser, for `chatgpt/` models on your ChatGPT plan | none |
 | OpenAI | Codex (ChatGPT plan), in the browser or with a device code, for `codex/` models | none |
+| OpenRouter | An API key | `OPENROUTER_API_KEY` |
+| OpenCode Go | An API key | `OPENCODE_API_KEY` |
 
 A saved login wins over the environment variable. Each OpenAI login is saved apart, so all three can be connected at once.
 

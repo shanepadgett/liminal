@@ -4,15 +4,27 @@
  */
 import { Option, Schema } from "effect";
 
-import type { CatalogModel, ModelDetails } from "@shanepadgett/liminal-model/contract";
+import type { CatalogModel, ModelDetails, Wire } from "@shanepadgett/liminal-model/contract";
 
-/** Models.dev entries by catalog id, then by model id, each still undecoded. */
-export const ModelsDevProviders = Schema.Record(
-  Schema.String,
-  Schema.Struct({ models: Schema.Record(Schema.String, Schema.Json) }),
-);
+/** One provider: the AI SDK package its models use unless one names its own, and its entries. */
+const ModelsDevProvider = Schema.Struct({
+  npm: Schema.optionalKey(Schema.String),
+  models: Schema.Record(Schema.String, Schema.Json),
+});
+
+type ModelsDevProvider = typeof ModelsDevProvider.Type;
+
+/** Models.dev providers by catalog id, their model entries still undecoded. */
+export const ModelsDevProviders = Schema.Record(Schema.String, ModelsDevProvider);
 
 export type ModelsDevProviders = typeof ModelsDevProviders.Type;
+
+/** The wire each AI SDK package speaks; models.dev names APIs by the package that calls them. */
+const wires: Readonly<Record<string, Wire>> = {
+  "@ai-sdk/anthropic": "messages",
+  "@ai-sdk/openai": "responses",
+  "@ai-sdk/openai-compatible": "chat",
+};
 
 const ReasoningOption = Schema.Struct({
   type: Schema.String,
@@ -31,6 +43,8 @@ const Entry = Schema.Struct({
   structured_output: Schema.optionalKey(Schema.Boolean),
   modalities: Schema.optionalKey(Schema.Struct({ input: Schema.Array(Schema.String) })),
   limit: Schema.Struct({ context: Schema.Int, output: Schema.Int }),
+  /** The package for this model when it differs from its provider's. */
+  provider: Schema.optionalKey(Schema.Struct({ npm: Schema.optionalKey(Schema.String) })),
   cost: Schema.optionalKey(
     Schema.Struct({
       input: Schema.Finite,
@@ -74,21 +88,21 @@ const detailsOf = (entry: Entry): ModelDetails => ({
         },
 });
 
-/** The models among `entries`; entries that do not decode are skipped. */
-export const catalogModels = (
-  entries: Readonly<Record<string, Schema.Json>>,
-): ReadonlyArray<CatalogModel> =>
-  Object.entries(entries).flatMap(([id, json]) => {
+/** The provider's models; entries that do not decode are skipped. */
+export const catalogModels = (provider: ModelsDevProvider): ReadonlyArray<CatalogModel> =>
+  Object.entries(provider.models).flatMap(([id, json]) => {
     const entry = decodeEntry(json);
+    if (Option.isNone(entry)) return [];
 
-    return Option.isSome(entry)
-      ? [
-          {
-            id,
-            name: entry.value.name,
-            kind: entry.value.type ?? "chat",
-            details: detailsOf(entry.value),
-          },
-        ]
-      : [];
+    const npm = entry.value.provider?.npm ?? provider.npm;
+
+    return [
+      {
+        id,
+        name: entry.value.name,
+        kind: entry.value.type ?? "chat",
+        details: detailsOf(entry.value),
+        wire: npm === undefined ? undefined : wires[npm],
+      },
+    ];
   });

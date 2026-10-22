@@ -124,14 +124,14 @@ OpenAI provider for effect/ai: OpenAiClient (apiUrl, transformClient) and OpenAi
 Chat Completions provider for effect/ai: OpenAiClient (apiKey, apiUrl, transformClient) posting /chat/completions, for OpenAI-compatible servers.
 
 - Docs: `docs/reference/copies/@effect/ai-openai-compat/4.0.5/` (1 file: README.md)
-- API (source): `tools/planned/node_modules/@effect/ai-openai-compat/src/`, modules: `docs/reference/copies/@effect/ai-openai-compat/4.0.5/api-index/@effect-ai-openai-compat-src.md`
+- API (source): `packages/model-wire/node_modules/@effect/ai-openai-compat/src/`, modules: `docs/reference/copies/@effect/ai-openai-compat/4.0.5/api-index/@effect-ai-openai-compat-src.md`
 
 ## @effect/ai-openrouter 4.0.5
 
 OpenRouter provider for effect/ai: OpenRouterClient (apiKey, apiUrl, transformClient) and OpenRouterLanguageModel on Chat Completions, with reasoning config and reasoning_details round trips.
 
 - Docs: `docs/reference/copies/@effect/ai-openrouter/4.0.5/` (1 file: README.md)
-- API (source): `tools/planned/node_modules/@effect/ai-openrouter/src/`, modules: `docs/reference/copies/@effect/ai-openrouter/4.0.5/api-index/@effect-ai-openrouter-src.md`
+- API (source): `packages/plugins/model-openrouter/node_modules/@effect/ai-openrouter/src/`, modules: `docs/reference/copies/@effect/ai-openrouter/4.0.5/api-index/@effect-ai-openrouter-src.md`
 
 ## @opentui/core 0.6.6
 

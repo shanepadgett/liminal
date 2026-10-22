@@ -64,23 +64,28 @@ export const toolkitOf = (tools: ReadonlyArray<ToolDefinition>) =>
     ),
   );
 
+/** An OpenAI entry without a null `encryptedContent`, which end parts do not take. */
+const endEntry = <Entry extends { readonly encryptedContent?: string | null | undefined }>(
+  entry: Entry | null,
+) => {
+  if (entry === null) return null;
+
+  const { encryptedContent, ...rest } = entry;
+
+  return encryptedContent === null || encryptedContent === undefined
+    ? rest
+    : { ...rest, encryptedContent };
+};
+
 /** A reasoning part's metadata for its end part, where OpenAI's encrypted content is not null. */
 const reasoningEndOf = ({
   openai,
+  "openai-compat": compat,
   ...others
 }: Response.ReasoningPartMetadata): Response.ReasoningEndPartMetadata => {
-  if (openai === undefined) return others;
-  if (openai === null) return { ...others, openai };
+  const withOpenai = openai === undefined ? others : { ...others, openai: endEntry(openai) };
 
-  const { encryptedContent, ...rest } = openai;
-
-  return {
-    ...others,
-    openai:
-      encryptedContent === null || encryptedContent === undefined
-        ? rest
-        : { ...rest, encryptedContent },
-  };
+  return compat === undefined ? withOpenai : { ...withOpenai, "openai-compat": endEntry(compat) };
 };
 
 /** A whole reply's parts as the deltas a stream would have sent. */

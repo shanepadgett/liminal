@@ -78,7 +78,7 @@ const fetchMissing = (store: Store, catalogId: string) =>
     if (!(catalogId in known)) yield* refresh(store, [...Object.keys(known), catalogId]);
 
     const found = (yield* Ref.get(store.cache)).providers[catalogId];
-    if (found !== undefined) return found.models;
+    if (found !== undefined) return found;
 
     return yield* new FetchFailed({ message: `models.dev lists no provider ${catalogId}.` });
   }).pipe(
@@ -121,7 +121,7 @@ const make = Effect.gen(function* () {
   /** Cached reads never wait for a refresh or another provider's first fetch. */
   const entries = Effect.fn("ModelCatalog.entries")(function* (catalogId: string) {
     const found = (yield* Ref.get(store.cache)).providers[catalogId];
-    if (found !== undefined) return found.models;
+    if (found !== undefined) return found;
 
     return yield* fetchMissing(store, catalogId);
   });

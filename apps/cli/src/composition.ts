@@ -13,6 +13,8 @@ import model from "@shanepadgett/liminal-model";
 import modelAnthropic from "@shanepadgett/liminal-model-anthropic";
 import modelCatalog from "@shanepadgett/liminal-model-catalog";
 import modelOpenai from "@shanepadgett/liminal-model-openai";
+import modelOpencodeGo from "@shanepadgett/liminal-model-opencode-go";
+import modelOpenrouter from "@shanepadgett/liminal-model-openrouter";
 import persona from "@shanepadgett/liminal-persona";
 import session from "@shanepadgett/liminal-session";
 import settings from "@shanepadgett/liminal-settings";
@@ -40,6 +42,8 @@ const composition = compose([
   modelCatalog,
   modelAnthropic,
   modelOpenai,
+  modelOpenrouter,
+  modelOpencodeGo,
   tools,
   history,
   systemPrompt,

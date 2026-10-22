@@ -2,12 +2,7 @@
 import { Effect, Option } from "effect";
 import { AiError } from "effect/ai";
 
-import type {
-  Credentials,
-  CredentialsFailed,
-  OAuth,
-  TokensRefused,
-} from "@shanepadgett/liminal-accounts/contract";
+import type { Credentials, OAuth, TokensRefused } from "@shanepadgett/liminal-accounts/contract";
 
 /** A call `module` could not sign. */
 export const authFailed = (
@@ -21,15 +16,14 @@ export const authFailed = (
     reason: new AiError.AuthenticationError({ kind, description }),
   });
 
-/** Whether a provider is signed in; a failing store counts as signed out. */
-export const signedInOrOut = (check: Effect.Effect<boolean, CredentialsFailed>) =>
-  Effect.catchTag(check, "CredentialsFailed", (error) =>
-    Effect.as(Effect.logWarning(error.message), false),
-  );
-
-/** Whether a login is saved under `provider`. */
+/** Whether a login is saved under `provider`; a failing store counts as signed out. */
 export const loginSaved = (credentials: Credentials["Service"], provider: string) =>
-  signedInOrOut(Effect.map(credentials.get(provider), Option.isSome));
+  credentials.get(provider).pipe(
+    Effect.map(Option.isSome),
+    Effect.catchTag("CredentialsFailed", (error) =>
+      Effect.as(Effect.logWarning(error.message), false),
+    ),
+  );
 
 /** The OAuth tokens saved under `provider`, refreshed when due. */
 export const freshTokens = (

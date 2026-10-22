@@ -18,6 +18,8 @@
     "@shanepadgett/liminal-model-anthropic": "workspace:*",
     "@shanepadgett/liminal-model-catalog": "workspace:*",
     "@shanepadgett/liminal-model-openai": "workspace:*",
+    "@shanepadgett/liminal-model-opencode-go": "workspace:*",
+    "@shanepadgett/liminal-model-openrouter": "workspace:*",
     "@shanepadgett/liminal-persona": "workspace:*",
     "@shanepadgett/liminal-session": "workspace:*",
     "@shanepadgett/liminal-settings": "workspace:*",

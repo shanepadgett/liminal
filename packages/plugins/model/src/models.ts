@@ -48,9 +48,14 @@ const requestOf = (
   };
 };
 
-/** `provider`'s models with their details from the catalog. */
+/**
+ * `provider`'s models with their details from the catalog; none when it is signed out, and none,
+ * logged, when its list fails.
+ */
 const listOf = (catalog: ModelCatalog["Service"], provider: ModelProvider) =>
   Effect.gen(function* () {
+    if (!(yield* provider.signedIn)) return [];
+
     const listed = yield* provider.models;
     const details = yield* detailsOf(catalog, provider);
     const prefix = `${provider.id}/`;
@@ -60,7 +65,11 @@ const listOf = (catalog: ModelCatalog["Service"], provider: ModelProvider) =>
       name,
       details: details.get(id.slice(prefix.length)),
     }));
-  });
+  }).pipe(
+    Effect.catch((error) =>
+      Effect.as(Effect.logWarning(`Listing ${provider.name} models failed`, error), []),
+    ),
+  );
 
 const decodeOutput = <T>(schema: Schema.Codec<T, Schema.JsonObject>, text: string) =>
   Schema.decodeEffect(Schema.fromJsonString(schema))(text).pipe(
@@ -121,7 +130,7 @@ export const make = (
     resolve,
     list: Effect.flatMap(providers.list, (all) =>
       Effect.map(
-        Effect.forEach(all, (provider) => listOf(catalog, provider)),
+        Effect.forEach(all, (provider) => listOf(catalog, provider), { concurrency: "unbounded" }),
         (lists) => lists.flat(),
       ),
     ),

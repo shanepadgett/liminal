@@ -38,4 +38,4 @@ yield* methods.add({
 
 `requestTokens(client, request, extraOf?)` sends a request to an OAuth token endpoint and gives the `OAuth` credential it issued; `extraOf` reads the extras from the reply, which also holds `id_token` and `scope` when the endpoint sends them. An error status or a reply without tokens fails with `TokensRefused`.
 
-A provider reads its credential with `Credentials.get`, or `Credentials.fresh` for OAuth tokens, and falls back to its environment variable when none is saved.
+A provider reads its credential with `Credentials.get`, or `Credentials.fresh` for OAuth tokens, and falls back to its environment variable when none is saved. `savedOrEnvironmentKey(credentials, provider, variable)` does this for an API key: the saved key, else the variable's, else none. A failing store is logged and counts as no saved key.

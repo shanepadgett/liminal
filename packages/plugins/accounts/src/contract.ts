@@ -1,5 +1,5 @@
 /** Saved credentials, the login methods providers add, and the sign-in that screens show. */
-import { type Array, Clock, Context, Effect, type Option, Redacted, Schema } from "effect";
+import { type Array, Clock, Config, Context, Effect, Option, Redacted, Schema } from "effect";
 import { type HttpClient, type HttpClientRequest, HttpClientResponse } from "effect/http";
 import { Rpc, RpcGroup } from "effect/rpc";
 
@@ -131,6 +131,28 @@ export const apiKeyMethod = (provider: string, vendor: string): LoginMethod => {
 
   return { id, provider, vendor, title: "API key", ways: [{ id: "key", title: "API key", run }] };
 };
+
+/**
+ * The API key saved under `provider`, else the one in the environment variable `variable`; a
+ * failing store is logged and counts as no saved key.
+ */
+export const savedOrEnvironmentKey = (
+  credentials: Credentials["Service"],
+  provider: string,
+  variable: string,
+): Effect.Effect<Option.Option<Redacted.Redacted>> =>
+  credentials.get(provider).pipe(
+    Effect.catchTag("CredentialsFailed", (error) =>
+      Effect.as(Effect.logWarning(error.message), Option.none()),
+    ),
+    Effect.flatMap((saved) => {
+      const key = Option.filter(saved, Schema.is(ApiKey));
+
+      return Option.isSome(key)
+        ? Effect.succeedSome(key.value.key)
+        : Effect.orDie(Config.option(Config.Redacted(variable)));
+    }),
+  );
 
 /** An OAuth token endpoint refused a request, or did not reply with tokens. */
 export class TokensRefused extends Schema.TaggedError<

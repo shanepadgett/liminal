@@ -169,7 +169,7 @@ ModelProviders: Registry<ModelProvider>
 ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>   // retries inside; converts to Effect AI's types
 Reply.add(reply, delta) / Reply.message(reply)          // deltas into the assistant Message
 Models.resolve("main" | "small" | ModelId): Effect<ModelChoice>
-Models.list: Effect<ModelInfo[]>
+Models.list: Effect<ModelInfo[]>   // signed-in providers only; a provider whose list fails is logged and left out
 Models.generate(options: {
   model?: "main" | "small" | ModelId        // missing is the prefix's model, or small
   prompt: Part[]
@@ -179,7 +179,7 @@ Models.generateObject<T>(options: { ...; schema: Schema<T> }): Effect<T>   // st
 Models.classify(definition: Decision.Definition, { model?: ModelId; input; images? }): Effect<DecideResponse, AiError | ModelNotFound>
 type ModelDetails = { contextWindow; outputLimit; thinking: string[]; images; toolCalls; structuredOutput; price?: { input; output; cacheRead?; cacheWrite? } }
 
-ModelCatalog.models(catalogId): Effect<CatalogModel[], CatalogUnavailable>   // CatalogModel = { id; name; kind: chat | embedding | image | realtime; details }; model-catalog provides it from models.dev, cached in ~/.liminal/catalog.json
+ModelCatalog.models(catalogId): Effect<CatalogModel[], CatalogUnavailable>   // CatalogModel = { id; name; kind: chat | embedding | image | realtime; details; wire?: messages | responses | chat }; model-catalog provides it from models.dev, cached in ~/.liminal/catalog.json
 
 // session: the log
 type SessionEvent = { session: SessionId; seq: Seq; at: Date; kind: string; data: Schema.Json; attributes: Attributes }

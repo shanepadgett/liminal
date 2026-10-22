@@ -1,0 +1,22 @@
+{
+  "name": "@shanepadgett/liminal-model-openrouter",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@effect/ai-openrouter": "4.0.5"
+  },
+  "peerDependencies": {
+    "@shanepadgett/liminal-accounts": "workspace:*",
+    "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-model": "workspace:*",
+    "effect": "*"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/index.ts"
+    ]
+  }
+}
