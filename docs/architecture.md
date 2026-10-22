@@ -204,7 +204,7 @@ ToolCall: Pipeline<{ session; call: ToolCall; attributes }, ToolResult>   // fai
 
 // tool-definitions: what the model is told about each tool
 ToolDefinitions: Pipeline<Tool, ToolDefinition>   // name, description, input shape; wrap to change a description
-ToolList.sync(id): Effect<void>               // logs the tool list at start, then added and removed records
+ToolList.sync(id): Effect<void>               // logs the tool list at start, then a change: definitions added or changed, names removed
 ToolList.current(events): ToolDefinition[]    // a removed tool is still sent, with a note, until the next fold
 ToolList.fold(id): Effect<void>               // logs the full tool list again
 

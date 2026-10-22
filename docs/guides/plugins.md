@@ -156,6 +156,8 @@ yield* (yield* Tools).add(add);
 
 - Fail with `ToolFailed` for a failure the model should read; a crash also reaches the model as a failed result.
 - Every call goes through the `ToolCall` pipeline; wrap it to see or change each call.
+- To change what the model is told about another plugin's tool, wrap `ToolDefinitions` from `@shanepadgett/liminal-tool-definitions/contract`.
+- Tools added or removed mid-session reach the model as a note before its next call.
 - The `tools` README covers schema choices and the `deferred` and `sequential` marks.
 
 ## Add a prompt section

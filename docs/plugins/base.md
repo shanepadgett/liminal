@@ -2,14 +2,6 @@
 
 Work for [status.md](../status.md) milestone 1. Contracts are in [architecture.md](../architecture.md#base-plugins-the-agent).
 
-## `tool-definitions`
-
-- `ToolDefinitions` pipeline: each tool's name, description and input shape as the model sees them. A plugin wraps it to change a description without replacing the tool.
-- `ToolList.sync(id)`: logs the tool list at session start, then `added` and `removed` records for what changed. A changed definition is logged as `added` under its name. `ToolList.current(events)`: the list the log says the model is sent; a removed tool is still sent, with a note, until the next fold. `ToolList.fold(id)` logs the full list again.
-- Deferred tools are left out until `tools-search`.
-- Adds `history` converters that turn its notes into user messages.
-- Previous code: `tools`.
-
 ## `loop`
 
 - `Turns.request(id)`: the session's next model request, for side calls that share its cache.

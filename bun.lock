@@ -136,6 +136,18 @@
         "effect": "*",
       },
     },
+    "packages/plugins/tool-definitions": {
+      "name": "@shanepadgett/liminal-tool-definitions",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-history": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-tools": "workspace:*",
+        "effect": "*",
+      },
+    },
     "packages/plugins/tools": {
       "name": "@shanepadgett/liminal-tools",
       "version": "0.1.0",
@@ -426,6 +438,8 @@
     "@shanepadgett/liminal-sqlite": ["@shanepadgett/liminal-sqlite@workspace:packages/plugins/sqlite"],
 
     "@shanepadgett/liminal-system-prompt": ["@shanepadgett/liminal-system-prompt@workspace:packages/plugins/system-prompt"],
+
+    "@shanepadgett/liminal-tool-definitions": ["@shanepadgett/liminal-tool-definitions@workspace:packages/plugins/tool-definitions"],
 
     "@shanepadgett/liminal-tools": ["@shanepadgett/liminal-tools@workspace:packages/plugins/tools"],
 
