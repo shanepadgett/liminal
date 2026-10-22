@@ -44,8 +44,8 @@ function Working() {
 }
 
 interface ChatSample {
-  /** The session's title; none before the session starts. */
-  readonly title: string | undefined;
+  /** Left out before the session starts, when the landing's wordmark stands in for the header. */
+  readonly title?: string;
   /** A wide screen has room for the sidebar. */
   readonly width: "wide" | "narrow";
   readonly transcript: () => JSX.Element;
@@ -57,7 +57,11 @@ interface ChatSample {
 
 const chat = (sample: ChatSample) => () => (
   <Chat
-    header={<Header title={sample.title} />}
+    header={
+      sample.title === undefined ? undefined : (
+        <Header title={sample.title} isWorking={sample.isWorking ?? false} />
+      )
+    }
     transcript={sample.transcript()}
     composer={
       <Composer
@@ -90,11 +94,7 @@ export const chatStates: readonly [State, ...State[]] = [
   {
     name: "New session",
     fill: "screen",
-    view: chat({
-      title: undefined,
-      width: "narrow",
-      transcript: () => <Landing version="v0.1.0" />,
-    }),
+    view: chat({ width: "narrow", transcript: () => <Landing version="v0.1.0" /> }),
   },
   {
     name: "Conversation",

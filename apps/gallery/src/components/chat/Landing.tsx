@@ -8,7 +8,7 @@ export function Landing(props: { readonly version: string }) {
   const color = useColor();
 
   return (
-    <box flexShrink={0} gap={1} paddingTop={1}>
+    <box flexShrink={0} gap={1}>
       <Logo />
       <box flexDirection="row" justifyContent="space-between" paddingX={6}>
         <text fg={color("text.muted")}>Ask anything to start.</text>

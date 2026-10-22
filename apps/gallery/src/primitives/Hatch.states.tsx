@@ -13,5 +13,15 @@ export const hatchStates: readonly [State, ...State[]] = [
       </box>
     ),
   },
+  {
+    name: "Scanning",
+    fill: "page",
+    view: () => (
+      <box flexDirection="row" gap={1}>
+        <Gradient text="l i m i n a l" />
+        <Hatch isScanning />
+      </box>
+    ),
+  },
   { name: "Gradient", fill: "center", view: () => <Hatch width={40} /> },
 ];
