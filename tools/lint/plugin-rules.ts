@@ -8,8 +8,8 @@ const isEffect = (specifier: string) => specifier === "effect" || specifier.star
 
 const isCore = (specifier: string) => specifier === "@shanepadgett/liminal-core";
 
-/** Liminal packages that are not plugins, so their root export is public. */
-const nonPluginPackages = new Set(["core", "client", "tui"]);
+/** Liminal packages that are not plugins, so every export they declare is public. */
+const nonPluginPackages = new Set(["core", "client", "tui", "model-wire"]);
 
 const liminalPackage = (specifier: string): { name: string; subpath: string } | undefined => {
   const match = /^@shanepadgett\/liminal-([^/]+)(\/.*)?$/.exec(specifier);

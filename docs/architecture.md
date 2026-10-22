@@ -153,25 +153,36 @@ Settings.write(scope: "global" | "project", path, value): Effect<void>
 // model: the LLM vocabulary, providers and one-off calls; knows nothing of sessions
 type Part = Text | Image | Reasoning | ToolCall | ToolResult
 type Message = { role: "user" | "assistant" | "tool"; parts: Part[] }
-interface Model {
-  capabilities: { tools; images; reasoning; caching; structuredOutput }
-  stream(req: ModelRequest): Stream<ModelDelta>
+type ModelId = string                         // provider/model
+type ModelRequest = { model; thinking?; system; tools: ToolDefinition[]; messages: Message[]; toolChoice?; output?: { name; schema } }
+type ModelDelta = Response.AnyPart | Retrying  // Effect AI's reply parts, plus a retry that clears the reply so far
+interface ModelProvider {
+  id; name; defaults: { main; small }        // used when the model setting leaves a role unset
+  models: Effect<ModelInfo[]>               // ModelInfo = { id; name; details?: ModelDetails }
+  languageModel(model, thinking?): Effect<LanguageModel>   // an Effect AI language model
 }
-Models: Registry<ModelProvider>
-ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>
+ModelProviders: Registry<ModelProvider>
+ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>   // retries inside; converts to Effect AI's types
+Reply.add(reply, delta) / Reply.message(reply)          // deltas into the assistant Message
+Models.resolve("main" | "small" | ModelId): Effect<ModelChoice>
+Models.list: Effect<ModelInfo[]>
 Models.generate(options: {
-  model?: "main" | "small" | ModelId        // roles come from settings
+  model?: "main" | "small" | ModelId        // missing is the prefix's model, or small
   prompt: Part[]
   prefix?: ModelRequest                      // start from this request, such as Turns.request(id)
 }): Effect<Message>
-Models.generate<T>(options: { ...; schema: Schema<T> }): Effect<T>   // structured output
+Models.generateObject<T>(options: { ...; schema: Schema<T> }): Effect<T>   // structured output
+type ModelDetails = { contextWindow; outputLimit; thinking: string[]; images; toolCalls; structuredOutput; price?: { input; output; cacheRead?; cacheWrite? } }
+
+// model-catalog: model details from models.dev, cached in ~/.liminal/catalog.json
+ModelCatalog.models(catalogId): Effect<CatalogModel[], CatalogUnavailable>   // CatalogModel = { id; name; details }
 
 // session: the log
 type SessionEvent = { session: SessionId; seq: Seq; at: Date; kind: string; data: Schema.Json; attributes: Attributes }
 type NewEvent = { kind: string; data: Schema.Json; attributes: Attributes }
 type Delta = { kind: string; data: Schema.Json }   // streamed to viewers, never stored
 defineEvent(kind, schema): { make(data, attributes?): Effect<NewEvent>; decode(item): Effect<Option<T>> } // deltas use it too
-Message                                        // session/message: model's Message, role and parts
+MessageEvent                                   // session/message: model's Message, role and parts
 Notice                                         // session/notice: level and text; the model never sees it
 interface SessionLog {
   open(attributes?): Effect<SessionId>
@@ -228,7 +239,7 @@ take queued inputs → log steers and before-call records → system prompt + to
 - A turn left unfinished by a crash is closed when the session next opens: interrupted results, a notice, and no restart.
 - Shared provider code, such as an OpenAI-compatible wire format, is a library the provider plugins import, not a contract.
 - The session log stores Liminal's own `Message` and `Part` schema, so saved sessions outlive Effect AI changes. Base `model` converts them to and from Effect AI's types in one place. The live reply stream and errors are Effect AI's `Response` parts and `AiError`, since nothing stores them.
-- Each provider lists the models it offers; `model-catalog` adds their details from models.dev: name, context window, output limit, prices, thinking levels, image input.
+- Each provider lists the models it offers and requires `ModelCatalog` to add their details from models.dev. Without the catalog, models list without details and calls still go out.
 
 ### Settings
 
@@ -239,11 +250,11 @@ take queued inputs → log steers and before-call records → system prompt + to
 
 ### One-off model calls and structured output
 
-- `Models.generate` makes a single model call outside the turn loop, through the `ModelCall` pipeline, so usage and cache hints apply.
+- `Models.generate` and `Models.generateObject` make a single model call outside the turn loop, through the `ModelCall` pipeline, so usage and cache hints apply.
 - `model` retries a call whose `AiError` is retryable, turns and one-off calls alike. Viewers see "retrying in 4s (2/5)"; a reply that fails partway is cleared and restarts. Out of attempts, the turn ends with a notice and the input stays.
-- With `schema`, the result is decoded through the schema. A model with `structuredOutput` gets the provider's native JSON schema output; only a model without it gets a forced tool call. Effect AI's `LanguageModel.generateObject` already makes this choice per provider.
+- `generateObject` decodes the reply through its schema. Its request carries the schema as `output`, and `ModelCall` asks Effect AI's `LanguageModel.generateObject`, which picks native JSON output or a forced tool call per provider.
 - With `prefix`, the request starts from another request. `Turns.request(id)` gives the session's next request: its system prompt, tool definitions and history, the same prefix as its last turn, so the call hits the provider's cache. The prompt goes at the end and the result is not appended to the session. A side question over the current chat ("by the way") is this call.
-- Commit grouping, approval verdicts and session names are `Models.generate` with a schema on the `small` model.
+- Commit grouping, approval verdicts and session names are `Models.generateObject` on the `small` model.
 
 ## Sessions
 
@@ -349,7 +360,7 @@ How `session` does these over `SqlClient` is open.
 | --- | --- | --- | --- | --- |
 | Base | `directories` | `Directories`: the global, workspace and project folders | base | `archive/packages/sdk/src/core/directories.ts` |
 | Base | `settings` | `Settings` over the global and project settings files, `Setting`, `DeclaredSettings` | base | `settings` |
-| Base | `model` | Message types, providers, `ModelCall`, `Models.generate` | base | `models`, `decisions` |
+| Base | `model` | Message types, providers, `ModelCall`, `Models` | base | `models`, `decisions` |
 | Base | `session` | The session log over `SqlClient`, event kinds, deltas | base | `session-log`, `session-store`, `notices` |
 | Base | `tools` | Tool registry, `ToolCall` | base | `tools` |
 | Base | `tool-definitions` | `ToolDefinitions`, tool guidance section | base | `tools` |

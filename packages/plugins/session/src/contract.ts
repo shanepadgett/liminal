@@ -4,6 +4,7 @@ import type { NonEmptyReadonlyArray } from "effect/Array";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import { Attributes } from "@shanepadgett/liminal-core";
+import { Message } from "@shanepadgett/liminal-model/contract";
 
 export const SessionId = Schema.String.pipe(Schema.brand("session/SessionId"));
 export type SessionId = typeof SessionId.Type;
@@ -93,6 +94,9 @@ export const defineEvent = <T>(
         )
       : Effect.succeedNone,
 });
+
+/** A message the model sees: a user's input, a reply or tool results. */
+export const MessageEvent = defineEvent("session/message", Message);
 
 /** A message for the user that the model never sees. */
 export const Notice = defineEvent(

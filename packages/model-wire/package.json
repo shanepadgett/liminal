@@ -1,0 +1,14 @@
+{
+  "name": "@shanepadgett/liminal-model-wire",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    "./messages": "./src/messages.ts"
+  },
+  "dependencies": {
+    "@effect/ai-anthropic": "4.0.5"
+  },
+  "peerDependencies": {
+    "effect": "*"
+  }
+}

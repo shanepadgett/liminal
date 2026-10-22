@@ -19,5 +19,5 @@ Slots.add(Sidebar, { component: UsageSummary })
 
 ## `session-name`
 
-- `TurnEnd` hook names an unnamed session with `Models.generate` on the `small` model with a schema.
+- `TurnEnd` hook names an unnamed session with `Models.generateObject` on the `small` model.
 - Previous code: `session-name`.

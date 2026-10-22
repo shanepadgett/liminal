@@ -1,0 +1,20 @@
+{
+  "name": "@shanepadgett/liminal-model-catalog",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "peerDependencies": {
+    "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-directories": "workspace:*",
+    "@shanepadgett/liminal-model": "workspace:*",
+    "effect": "*"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/index.ts"
+    ]
+  }
+}

@@ -28,12 +28,12 @@ ModelCall.wrap((req, next) => nearLimit(req) ? checkpoint(req).pipe(Effect.andTh
 
 ## `commit`
 
-- Adds `/commit`: groups changed files with `Models.generate` and a schema, then commits each group.
+- Adds `/commit`: groups changed files with `Models.generateObject`, then commits each group.
 - Previous code: `commit`.
 
 ```ts
 Commands.add({ name: "commit", run: (ctx) =>
-  Models.generate({ model: "small", prompt: diffSummary(), schema: CommitGroups })
+  Models.generateObject({ model: "small", prompt: diffSummary(), schema: CommitGroups })
     .pipe(Effect.flatMap(commitEach)) })
 ```
 

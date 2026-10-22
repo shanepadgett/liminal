@@ -1,0 +1,40 @@
+# @shanepadgett/liminal-model
+
+The model vocabulary and the one path every model call takes. Knows nothing of sessions.
+
+- `Message` and `Part` (`Text`, `Image`, `Reasoning`, `ToolCall`, `ToolResult`): what the log stores and the model sees. Images hold their data in base64.
+- `ToolDefinition`: a tool's name, description and input JSON Schema, as the model is told.
+- `ModelRequest`: model, thinking level, system prompt, tool definitions, messages, tool choice and an optional structured `output`.
+- `ModelProviders`: the registry providers add to. A provider gives its models (each `ModelInfo` with optional `ModelDetails`: limits, thinking levels, capabilities and price), its defaults for the `main` and `small` roles, and an Effect AI `LanguageModel` for each model.
+- `ModelCall`: the pipeline every call runs through. It streams `ModelDelta`s: Effect AI's reply parts, plus a `retry` delta when a retryable `AiError` is tried again. A reply that fails partway restarts.
+- `Reply.add` and `Reply.message`: turn deltas into the assistant `Message`.
+- `Models.resolve(role or id)`, `Models.list`, `Models.generate` and `Models.generateObject`: one-off calls outside the turn loop. A `prefix` request, such as `Turns.request(id)`, shares that session's cache.
+
+Requires `Settings` and `DeclaredSettings`.
+
+## Settings
+
+```jsonc
+{
+  "model": {
+    "main": { "model": "anthropic/claude-opus-5-5", "thinking": "high" },
+    "attempts": 5, // tries per call, the first included
+  },
+}
+```
+
+`main` runs turns and `small` runs side calls. A role left unset uses the first provider's default.
+
+## Add a provider
+
+```ts
+yield* (yield* ModelProviders).add({
+  id: "acme",
+  name: "Acme",
+  defaults: { main: { model: "acme/large" }, small: { model: "acme/small" } },
+  models: Effect.succeed([{ id: "acme/large", name: "Acme Large" }]),
+  languageModel: (model, thinking) => makeAcmeLanguageModel(model, thinking),
+});
+```
+
+Wrap `ModelCall` to watch or change every call, such as counting usage.

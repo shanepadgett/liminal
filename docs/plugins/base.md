@@ -2,25 +2,6 @@
 
 Work for [status.md](../status.md) milestone 1. Contracts are in [architecture.md](../architecture.md#base-plugins-the-agent).
 
-## `model`
-
-- Message and part types, `Model`, `Models` registry, `ModelCall` pipeline, `Models.generate`.
-- A model is named `provider/model`, such as `anthropic/claude-opus-5-5`, with an optional thinking level. `model`'s setting holds the roles `main` (turns) and `small` (side calls). Each provider names its default for both; `liminal connect` writes them when the roles are unset.
-- Retries every model call whose `AiError` is retryable, waiting `retryAfter` when given; the attempt limit is in `model`'s setting. Viewers see a retry status, and a reply that fails partway is cleared and restarts. Out of attempts, the turn ends with a notice and the input stays. Every attempt counts toward usage.
-- Owns the `Message` and `Part` schema the log stores and converts them to and from Effect AI's types in one place. The live reply stream and errors are Effect AI's `Response` parts and `AiError`.
-- `Models.list` merges each provider's offered models with `model-catalog`'s details.
-- Previous code: `models`, `decisions`.
-
-```ts
-Models.generate({ model: "small", prefix?, prompt, schema })
-  → resolve role → prefix + prompt → ModelCall.run(request) → schema ? decode : collect message
-```
-
-## `session`
-
-- Event kind `session/message` holds `model`'s `Message`, role and parts; add it in the `model` step. Built: the log, `defineEvent`, `Notice` and the `live` RPC group.
-- Previous code: `session-log`.
-
 ## `tools`
 
 - `Tools` registry, `ToolCall` pipeline. Each tool carries a description, optional guidance, an optional `deferred` mark and an optional `sequential` mark; a tool result lists the tools it loads.
@@ -57,6 +38,7 @@ Models.generate({ model: "small", prefix?, prompt, schema })
 - Tool calls in one reply run at the same time unless one is marked `sequential`. Cancel logs the partial reply marked interrupted, gives unfinished tool calls cancelled results and returns queued inputs to the input box. A turn left unfinished by a crash is closed when the session next opens, with interrupted results and a notice.
 - `Inbox`, `Send` pipeline, `Commands` registry. Each session's queue lives in memory.
 - A command runs as soon as it is sent and is logged as `session/command`; one that changes the log waits for the running turn to end.
+- Publishes `model`'s retry deltas; out of attempts, the turn ends with a notice and the input stays.
 - Steer and follow-up: input sent during a turn either joins before the next model call or waits until the turn would end. A queued input can be pulled back until the turn takes it.
 - Previous code: `agent-loop`, `cancel`, `inbox`.
 
@@ -74,17 +56,11 @@ LoginMethods.add({ provider: "anthropic", kind: "api-key" })
 LoginMethods.add({ provider: "anthropic", kind: "oauth", run: anthropicOAuth })
 ```
 
-## `model-catalog`
-
-- Model details from models.dev: name, context window, output limit, prices, thinking levels, image input. Providers read its list for their models; `usage` reads prices in milestone 4.
-- Previous code: `model-catalog`.
-
 ## Model providers
 
-- `model-anthropic`, `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go`: each adds a `ModelProvider` to `Models` and its logins to `LoginMethods`.
-- `model-anthropic` is built on Effect AI's Anthropic provider.
-- The Anthropic Messages, OpenAI Responses and Chat Completions wire code is a shared library, `@shanepadgett/liminal-model-wire`, not a contract.
-- `model-anthropic` offers an API key and the Claude subscription login; subscription requests are sent as Claude Code, with its identity line added on the way out. `model-codex` offers the ChatGPT plan login by browser or device code.
+- `model-anthropic`, `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go`: each adds a `ModelProvider` to `ModelProviders` and its logins to `LoginMethods`.
+- The OpenAI Responses and Chat Completions wire code joins `@shanepadgett/liminal-model-wire`, beside Anthropic Messages.
+- `model-anthropic` adds its API key and Claude subscription logins to `LoginMethods`; subscription requests are sent as Claude Code, with its identity line added on the way out. `model-codex` offers the ChatGPT plan login by browser or device code.
 - Previous code: same names.
 
 ## `packages/client`

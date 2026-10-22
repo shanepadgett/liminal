@@ -110,7 +110,7 @@ PostgreSQL client for effect/sql: PgClient and PgPool layers, PgMigrator. The se
 Anthropic provider for effect/ai: AnthropicClient (apiKey, apiUrl, transformClient) and AnthropicLanguageModel on the Messages API.
 
 - Docs: `docs/reference/copies/@effect/ai-anthropic/4.0.5/` (1 file: README.md)
-- API (source): `tools/planned/node_modules/@effect/ai-anthropic/src/`, modules: `docs/reference/copies/@effect/ai-anthropic/4.0.5/api-index/@effect-ai-anthropic-src.md`
+- API (source): `packages/model-wire/node_modules/@effect/ai-anthropic/src/`, modules: `docs/reference/copies/@effect/ai-anthropic/4.0.5/api-index/@effect-ai-anthropic-src.md`
 
 ## @effect/ai-openai 4.0.5
 

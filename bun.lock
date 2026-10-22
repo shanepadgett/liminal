@@ -25,6 +25,16 @@
         "effect": "4.0.5",
       },
     },
+    "packages/model-wire": {
+      "name": "@shanepadgett/liminal-model-wire",
+      "version": "0.1.0",
+      "dependencies": {
+        "@effect/ai-anthropic": "4.0.5",
+      },
+      "peerDependencies": {
+        "effect": "*",
+      },
+    },
     "packages/plugins/directories": {
       "name": "@shanepadgett/liminal-directories",
       "version": "0.1.0",
@@ -33,11 +43,42 @@
         "effect": "*",
       },
     },
+    "packages/plugins/model": {
+      "name": "@shanepadgett/liminal-model",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-settings": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/model-anthropic": {
+      "name": "@shanepadgett/liminal-model-anthropic",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-model-catalog": "workspace:*",
+        "@shanepadgett/liminal-model-wire": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/model-catalog": {
+      "name": "@shanepadgett/liminal-model-catalog",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "effect": "*",
+      },
+    },
     "packages/plugins/session": {
       "name": "@shanepadgett/liminal-session",
       "version": "0.1.0",
       "peerDependencies": {
         "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
         "effect": "*",
       },
     },
@@ -69,7 +110,6 @@
       "name": "@shanepadgett/liminal-planned",
       "version": "0.1.0",
       "peerDependencies": {
-        "@effect/ai-anthropic": "4.0.5",
         "@effect/ai-openai": "4.0.5",
         "@effect/ai-openai-compat": "4.0.5",
         "@effect/ai-openrouter": "4.0.5",
@@ -324,6 +364,14 @@
     "@shanepadgett/liminal-core": ["@shanepadgett/liminal-core@workspace:packages/core"],
 
     "@shanepadgett/liminal-directories": ["@shanepadgett/liminal-directories@workspace:packages/plugins/directories"],
+
+    "@shanepadgett/liminal-model": ["@shanepadgett/liminal-model@workspace:packages/plugins/model"],
+
+    "@shanepadgett/liminal-model-anthropic": ["@shanepadgett/liminal-model-anthropic@workspace:packages/plugins/model-anthropic"],
+
+    "@shanepadgett/liminal-model-catalog": ["@shanepadgett/liminal-model-catalog@workspace:packages/plugins/model-catalog"],
+
+    "@shanepadgett/liminal-model-wire": ["@shanepadgett/liminal-model-wire@workspace:packages/model-wire"],
 
     "@shanepadgett/liminal-planned": ["@shanepadgett/liminal-planned@workspace:tools/planned"],
 

@@ -42,7 +42,7 @@ export default definePlugin({
 
 - Prefix service keys with the plugin's name.
 - The layer fails to type-check when it misses a `provides` tag or needs a service outside `requires`.
-- A plugin is built only from services other plugins provide. A host composes a plugin of its own that provides Effect's runtime services, such as `Path` and `FileSystem`.
+- A plugin is built only from services other plugins provide. A host composes a plugin of its own that provides Effect's runtime services, such as `Path`, `FileSystem` and `HttpClient` (Effect's `FetchHttpClient.layer` works on every runtime).
 - `compose` builds plugins in dependency order. It fails with a `CompositionError` when a service has no provider or two, or plugins require each other in a cycle.
 
 ## Add to a list
@@ -136,4 +136,21 @@ for (const event of yield* log.read(session)) {
 - `append` numbers the events with `seq` inside the write.
 - `publish` streams a delta, such as text as it arrives, to viewers. Nothing saves it. Make one with the same `defineEvent`.
 - `live(session, after?)` streams the saved events after `after`, the deltas since the last append, then everything new.
+- `MessageEvent` (`session/message`) holds a `Message` the model sees.
 - `Notice` is a message for the user that the model never sees.
+
+## Call a model
+
+`Models` from `@shanepadgett/liminal-model/contract` makes one call outside the turn loop. `model` is a role, `main` or `small`, or a `provider/model` id.
+
+```ts
+const models = yield* Models;
+const reply = yield* models.generate({ model: "small", prompt: [{ type: "text", text: "Hi" }] });
+
+const Verdict = Schema.Struct({ approve: Schema.Boolean });
+const verdict = yield* models.generateObject({ prompt, schema: Verdict });
+```
+
+- With `prefix`, such as `Turns.request(id)`, the call starts from a session's request and shares its cache. The reply is not logged.
+- Every call goes through the `ModelCall` pipeline; wrap it to see or change each request and its deltas.
+- A provider adds a `ModelProvider` to `ModelProviders`; see the `model` README.

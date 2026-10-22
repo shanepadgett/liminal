@@ -32,6 +32,7 @@
         ],
       },
       { "name": "plugins", "patterns": ["packages/plugins/**"] },
+      { "name": "wire", "patterns": ["packages/model-wire/**"] },
       { "name": "client", "patterns": ["packages/client/**"] },
       { "name": "tui", "patterns": ["packages/tui/**"] },
       { "name": "apps", "patterns": ["apps/**"] },
@@ -40,7 +41,8 @@
     "rules": [
       { "from": "core", "allow": [] },
       { "from": "base", "allow": ["core"] },
-      { "from": "plugins", "allow": ["core", "base", "tui"] },
+      { "from": "plugins", "allow": ["core", "base", "wire", "tui"] },
+      { "from": "wire", "allow": [] },
       { "from": "client", "allow": ["core", "base", "plugins"] },
       { "from": "tui", "allow": ["core", "client"], "allowTypeOnly": ["base", "plugins"] },
       { "from": "apps", "allow": ["core", "base", "plugins", "client", "tui"] },
