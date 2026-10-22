@@ -45,6 +45,7 @@
         "@shanepadgett/liminal-settings": "workspace:*",
         "@shanepadgett/liminal-sqlite": "workspace:*",
         "@shanepadgett/liminal-system-prompt": "workspace:*",
+        "@shanepadgett/liminal-tags": "workspace:*",
         "@shanepadgett/liminal-theme": "workspace:*",
         "@shanepadgett/liminal-tool-definitions": "workspace:*",
         "@shanepadgett/liminal-tools": "workspace:*",
@@ -106,6 +107,7 @@
       "version": "0.1.0",
       "dependencies": {
         "beautiful-mermaid": "1.1.3",
+        "fuzzysort": "4.0.2",
       },
       "peerDependencies": {
         "@opentui/core": "0.6.6",
@@ -117,6 +119,7 @@
         "@shanepadgett/liminal-loop": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-tags": "workspace:*",
         "@shanepadgett/liminal-tui": "workspace:*",
         "effect": "*",
         "solid-js": "1.9.12",
@@ -271,6 +274,18 @@
       "peerDependencies": {
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-history": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/tags": {
+      "name": "@shanepadgett/liminal-tags",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-loop": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-session": "workspace:*",
         "effect": "*",
@@ -616,6 +631,8 @@
     "@shanepadgett/liminal-sqlite": ["@shanepadgett/liminal-sqlite@workspace:packages/plugins/sqlite"],
 
     "@shanepadgett/liminal-system-prompt": ["@shanepadgett/liminal-system-prompt@workspace:packages/plugins/system-prompt"],
+
+    "@shanepadgett/liminal-tags": ["@shanepadgett/liminal-tags@workspace:packages/plugins/tags"],
 
     "@shanepadgett/liminal-theme": ["@shanepadgett/liminal-theme@workspace:packages/plugins/theme"],
 

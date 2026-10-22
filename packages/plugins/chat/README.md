@@ -33,4 +33,6 @@ Keys:
 | Ctrl+C | Clear the draft; with no draft, quit |
 | Ctrl+B | Open or close the sidebar, below 110 columns |
 
-The `tui` entry requires `Slots` and `Renderer`, and calls `session/*`, `loop/*`, `directories/workspace` and `model/main`.
+`@` at the start of the draft or after whitespace opens the list of tags above the draft. It loads `tags/list` once each time it opens, and ranks rows by their `fuzzysort` match times one plus their frecency, 50 at most. While it is open, Up and Down move, Enter tags the row, Tab opens a folder (and tags a file), and Esc closes it until the cursor leaves the tag. A picked tag is a virtual extmark: the cursor steps over it and Backspace removes it whole. `buildTranscript` leaves out the parts `tags` added to a message, by its `tags/attached` attribute.
+
+The `tui` entry requires `Slots` and `Renderer`, and calls `session/*`, `loop/*`, `tags/list`, `directories/workspace` and `model/main`.

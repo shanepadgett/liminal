@@ -25,8 +25,8 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 - Sidebar: chat's Session section, and the context share from the latest `loop/step-end` over the model's `contextWindow`. Below 110 columns it is a drawer; the "Toggle sidebar" command (`ctrl+b`, in the palette) opens it, `escape` closes it, a footer hint shows while hidden.
 - The transcript opens at the bottom: its first frame shows the latest items, with no scroll down after loading.
 - Each tool call and its result make one single-line row; consecutive tool rows sit next to each other, ungrouped.
-- Composer: OpenTUI `Textarea`, `@` file tags as extmarks, stashes, slash commands from `Commands`.
-- `@` completion: `fuzzysort` over `git ls-files`.
+- Composer: OpenTUI `Textarea`, `@` tags as virtual extmarks, stashes, slash commands from `Commands`.
+- `@` list: `tags/list` once each time it opens, ranked in the TUI by `fuzzysort` times one plus frecency, 50 rows. `tags` adds each tag's text on send; the transcript hides the parts it added.
 - Saved sessions: `SessionLog` gains the session list with titles; the chat screen opens a saved session; print mode gains `--session <id>`.
 - `loop/state` gains the queued inputs, and `loop` gains `pullBack`. A queued input can be pulled back until the turn takes it.
 - `loop` gains the `Commands` registry with the first command. A command runs as soon as it is sent and is logged as `session/command`; one that changes the log waits for the running turn to end.

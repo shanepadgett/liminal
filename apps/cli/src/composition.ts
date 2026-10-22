@@ -22,6 +22,7 @@ import session from "@shanepadgett/liminal-session";
 import settings from "@shanepadgett/liminal-settings";
 import sqlite from "@shanepadgett/liminal-sqlite";
 import systemPrompt from "@shanepadgett/liminal-system-prompt";
+import tags from "@shanepadgett/liminal-tags";
 import theme from "@shanepadgett/liminal-theme";
 import toolDefinitions from "@shanepadgett/liminal-tool-definitions";
 import tools from "@shanepadgett/liminal-tools";
@@ -60,6 +61,7 @@ export const plugins = [
   persona,
   toolDefinitions,
   loop,
+  tags,
   theme,
   chat,
 ] as const;

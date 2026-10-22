@@ -27,6 +27,7 @@
     "@shanepadgett/liminal-settings": "workspace:*",
     "@shanepadgett/liminal-sqlite": "workspace:*",
     "@shanepadgett/liminal-system-prompt": "workspace:*",
+    "@shanepadgett/liminal-tags": "workspace:*",
     "@shanepadgett/liminal-theme": "workspace:*",
     "@shanepadgett/liminal-tool-definitions": "workspace:*",
     "@shanepadgett/liminal-tools": "workspace:*",

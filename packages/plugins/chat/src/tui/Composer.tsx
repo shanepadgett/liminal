@@ -2,16 +2,19 @@
  * Where the user writes. No box: a gutter of marks runs down the left of the draft, the first a
  * bold chevron and the rest fading from light accent to dark. Below are the keys that apply now.
  * `enter` sends and `shift+enter` adds a line; while a turn runs, `enter` steers it, `tab` queues a
- * follow-up and `esc` stops it. `ctrl+c` clears the draft, and with none passes on, so it quits.
+ * follow-up and `esc` stops it. `ctrl+c` clears the draft, and with none passes on, so it quits. An
+ * `@` opens the list of files and folders to tag above the draft; its keys come first.
  */
 
 import { TextAttributes, type TextareaRenderable } from "@opentui/core";
 import { useBindings } from "@opentui/keymap/solid";
-import { For } from "solid-js";
+import { For, Show } from "solid-js";
 
-import { kit, useColor, useMix } from "@shanepadgett/liminal-tui";
+import { kit, useColor, useMix, useSyntax } from "@shanepadgett/liminal-tui";
 
 import type { ComposerProps } from "./slots.ts";
+import { TAG_HINTS, TagMenu } from "./TagMenu.tsx";
+import { useTagList } from "./tags.ts";
 
 const DRAFT_ROWS = 3;
 
@@ -90,7 +93,9 @@ const useComposerKeys = (props: ComposerProps, take: () => string | undefined) =
 
 export function Composer(props: ComposerProps) {
   const color = useColor();
+  const syntax = useSyntax();
   let draft: TextareaRenderable | undefined;
+  const tags = useTagList(() => draft);
 
   /** The draft's text, cleared from the textarea; nothing when it is blank. */
   const take = () => {
@@ -102,6 +107,11 @@ export function Composer(props: ComposerProps) {
 
   useComposerKeys(props, take);
 
+  const hints = () =>
+    tags.rows() === undefined
+      ? [...(props.running ? WORKING_HINTS : IDLE_HINTS), ...props.screenHints]
+      : TAG_HINTS;
+
   const submit = () => {
     const text = take();
     if (text !== undefined) props.send(text, props.running ? "steer" : undefined);
@@ -109,6 +119,7 @@ export function Composer(props: ComposerProps) {
 
   return (
     <box flexShrink={0} paddingX={2} paddingTop={1}>
+      <Show when={tags.rows()}>{(rows) => <TagMenu rows={rows()} under={tags.under()} />}</Show>
       <box flexDirection="row" height={DRAFT_ROWS}>
         <Gutter rows={DRAFT_ROWS} />
         <textarea
@@ -123,14 +134,15 @@ export function Composer(props: ComposerProps) {
           focusedTextColor={color("text.base")}
           cursorColor={color("text.accent")}
           wrapMode="word"
+          syntaxStyle={syntax()}
           keyBindings={[...DRAFT_KEYS]}
           onSubmit={submit}
+          onContentChange={tags.refresh}
+          onCursorChange={tags.refresh}
         />
       </box>
       <box flexDirection="row" justifyContent="flex-end" marginTop={1}>
-        <kit.Hints
-          hints={[...(props.running ? WORKING_HINTS : IDLE_HINTS), ...props.screenHints]}
-        />
+        <kit.Hints hints={hints()} />
       </box>
     </box>
   );

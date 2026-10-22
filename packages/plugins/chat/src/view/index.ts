@@ -23,6 +23,7 @@ import {
   Notice,
   type SessionEvent,
 } from "@shanepadgett/liminal-session/contract";
+import { attachedOf } from "@shanepadgett/liminal-tags/contract";
 
 export type ToolStatus = "running" | "done" | "failed";
 
@@ -67,8 +68,12 @@ interface Building {
   readonly items: Map<string, Item>;
 }
 
-const textOf = (message: Message) =>
-  message.parts.flatMap((part) => (part.type === "text" ? [part.text] : [])).join("\n");
+/** The text the user wrote: the parts before those its `@` tags added. */
+const textOf = (message: Message, attached: number) =>
+  message.parts
+    .slice(0, message.parts.length - attached)
+    .flatMap((part) => (part.type === "text" ? [part.text] : []))
+    .join("\n");
 
 const makeBuilder = () => {
   const turns: Building[] = [];
@@ -98,7 +103,7 @@ type Builder = ReturnType<typeof makeBuilder>;
 
 const addInput = (builder: Builder, event: SessionEvent, message: Message) => {
   const turn = builder.current();
-  const text = textOf(message);
+  const text = textOf(message, attachedOf(event.attributes));
 
   if (turn.input === undefined && turn.items.size === 0) turn.input = text;
   else builder.put({ kind: "input", id: String(event.seq), text });

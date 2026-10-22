@@ -55,7 +55,7 @@ Versions are pinned in `package.json`; [reference/copies/index.md](reference/cop
 
 | Library | Used by |
 | --- | --- |
-| `fuzzysort` | `palette`, `chat` (`@` file tags), model picker |
+| `fuzzysort` | `palette`, `chat` (the `@` list), model picker |
 | `diff` | `tools-files` edit patches |
 | `partial-json` | `tools-files` `tui` entry, only if Effect AI gives no partial tool arguments |
 | `unbash` | `tools-shell` safety rules |
@@ -407,7 +407,7 @@ How `session` does these over `SqlClient` is open.
 | Providers | `model-catalog` | Names, limits, prices from models.dev | base service | `model-catalog` |
 | Providers | `accounts` | Credentials, login methods, `liminal connect` and `/connect` | Add | `logins`, `credential-store` |
 | Storage | `sqlite`, `postgres` | The database: Effect's `SqlClient`; plugins that keep state own their tables | Replace | `session-store`, `credential-store` |
-| Tools | `tools-files` | `read`, `edit`, `write`, `@` file tags | Add | `files`, `tools-read`, `tools-edit` |
+| Tools | `tools-files` | `read`, `edit`, `write` | Add | `files`, `tools-read`, `tools-edit` |
 | Tools | `tools-shell` | `shell`, command runner, shell safety, background processes | Add | `tools-shell`, `command-runner`, `shell-safety`, `processes` |
 | Tools | `tools-web` | `websearch`, `webfetch` | Add | `tools-web` |
 | Tools | `tools-execute` | Code mode | Add | `tools-execute` |
@@ -425,6 +425,7 @@ How `session` does these over `SqlClient` is open.
 | Hosting | `actors` | Who sent each input | Attach, Wrap | none |
 | Hosting | `http` | Serves plugins' RPC groups over HTTP | none | `archive/packages/kernel/src/server` |
 | TUI | `chat` | Chat screen, composer, the session slots | Add (slots) | `chat`, `inbox` (composer) |
+| TUI | `tags` | `@` tags: `TagSources`, the workspace's files and folders, their text added on send | Add, Wrap | `files`, `inbox` (tags) |
 | TUI | `palette`, `theme`, `attention` | Command palette, theme, sounds | Add (slots) | same names |
 
 ## Example: the work order agent

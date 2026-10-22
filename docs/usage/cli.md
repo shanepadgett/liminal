@@ -19,6 +19,25 @@ With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; th
 | Ctrl+C | Clear the draft; with no draft, quit |
 | Ctrl+B | Open or close the sidebar, below 110 columns |
 
+### Tag files with `@`
+
+Type `@` at the start of the draft or after a space to list the workspace's files and folders: those Git tracks, and untracked ones it does not ignore. Keep typing to filter; files you tag often come first. Outside a Git repository the list is empty, but a typed `@path` still works.
+
+| Key | Does |
+| --- | --- |
+| Up, Down | Move through the list |
+| Enter | Tag the file or folder |
+| Tab | Open the folder, listing what is in it; on a file, tag it |
+| Esc | Close the list until the cursor leaves the tag |
+
+A tag is one unit: the cursor steps over it, and Backspace removes it whole. Write a path with spaces as `@"my file.txt"`.
+
+When you send, each tagged file's text goes with the message: the first 2000 lines or 50 KB, with a note when more is left out. A folder sends the names one level down, up to 200. A binary file or one that cannot be read sends a short note instead. The transcript shows only what you wrote. Print mode reads tags the same way:
+
+```sh
+liminal -p "Summarize @README.md"
+```
+
 `liminal --help` lists the commands and flags.
 
 ## Connect a provider

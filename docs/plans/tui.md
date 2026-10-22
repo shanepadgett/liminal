@@ -101,7 +101,7 @@ flowchart LR
 
 ## Build order
 
-1. `loop` events. 2. Session view in `packages/client`. 3. Plugin anatomy: `./view`, `./tui`, `view.ts`. 4. `packages/tui`. 5. `theme`. 6. `chat`, with `liminal` opening the TUI: 6a the screen, 6b `@` tags and stashes. 7. `palette`, model picker, `/connect`, saved sessions, queue and pull-back, `Commands`.
+1. `loop` events. 2. Session view in `packages/client`. 3. Plugin anatomy: `./view`, `./tui`, `view.ts`. 4. `packages/tui`. 5. `theme`. 6. `chat`, with `liminal` opening the TUI: 6a the screen, 6b `@` tags and saving stashes. 7. `palette`, model picker, `/connect`, saved sessions, queue and pull-back, `Commands`, the stash list.
 
 ## Step 1: `loop` events
 
@@ -566,7 +566,7 @@ Three commits: the drawer fix, `@` tags, stashes.
 - Files the user tags often and recently rank higher (OpenCode `prompt/frecency.tsx`).
 - Tag sources are a registry, so later features such as references add their own `@` rows (archive `TagSources`, deepseek-harness `InputTriggerSource`).
 - Stashes: a SQLite table with one list per workspace folder, behind chat RPCs (archive `inbox/server/stashes.ts`). `ctrl+s` stashes the draft and clears the composer.
-- The stash list opens from the palette or `/pop` in step 7; no key opens it before then. Picking a stash replaces an empty draft and is added after a draft with text, then leaves the list. `ctrl+d` deletes a stash after a confirm dialog, which the kit gains (OpenCode `dialog-stash.tsx`, archive `inbox/tui/stash.tsx`).
+- 6b builds the stash table, the chat RPCs that save, list and delete stashes, and `ctrl+s`. The stash list, picking and `ctrl+d` come in step 7 with the palette and `/pop`, the only ways to open the list. Picking a stash replaces an empty draft and is added after a draft with text, then leaves the list. `ctrl+d` deletes a stash after a confirm dialog, which the kit gains (OpenCode `dialog-stash.tsx`, archive `inbox/tui/stash.tsx`).
 - The list comes from `git ls-files --cached --others --exclude-standard`, ranked with `fuzzysort`; frecency is a SQLite table, scored as OpenCode does: uses / (1 + days since last use), multiplying the match score.
 - A new `tags` plugin owns the registry, the list RPC, frecency and the `loop/Send` step that adds file contents; workspace files are its first source. Print mode expands tags too. Chat imports `tags/contract`; stashes stay in chat.
 - A file tag sends at most 2000 lines or 50 KB, with a note such as `[lines 1-2000 of 5400 not all shown]`; milestone 3's `read` reuses the same window function. A binary file sends a one-line note. A folder tag sends a listing one level deep, at most 200 names.
@@ -585,7 +585,7 @@ packages/plugins/tags/
   src/migrations.ts   tags_migrations: 0001 tag_uses
 packages/plugins/chat/src/tui/
   TagMenu.tsx         the @ list under the composer, from the gallery's SlashMenu
-  tags.ts             tag at the cursor, ranking, keys
+  tags.ts             useTagList: tag at the cursor, ranking, keys, extmarks
   Composer.tsx        opens TagMenu on @, inserts picks as virtual extmarks
 apps/cli/src/composition.ts   adds tags
 ```
@@ -595,17 +595,19 @@ apps/cli/src/composition.ts   adds tags
 export const TagRow = Schema.Struct({
   kind: Schema.Literals(["file", "folder"]),
   tag: Schema.String,            // text after @; a folder ends in /
-  frecency: Schema.Number,       // 0 when never sent
 })
+export const ListedTag = Schema.Struct({ ...TagRow.fields, frecency: Schema.Number })  // 0 when never sent
 export interface TagSource {
   readonly rows: Effect.Effect<ReadonlyArray<TagRow>>
-  /** The text tag `tag` adds to a message; none when this source does not know it. */
+  /** The text part `tag` adds to a message; none when this source does not know it. */
   readonly attach: (tag: string) => Effect.Effect<Option.Option<string>>
 }
 export class TagSources extends Registry.Service<TagSources, TagSource>()("tags/TagSources") {}
 export class TagsRpc extends RpcGroup.make(
-  Rpc.make("tags/list", { success: Schema.Array(TagRow) }),
+  Rpc.make("tags/list", { success: Schema.Array(ListedTag) }),
 ) {}
+export const Attached: Attribute<number>                 // tags/attached: parts the tags added
+export const attachedOf: (attributes: Attributes) => number
 export const tagText: (tag: string) => string          // @path, or @"path" with spaces
 export const tagsIn: (text: string) => ReadonlyArray<string>
 export const windowOf: (content: string) => string     // 2000 lines or 50 KB, then the note
@@ -629,7 +631,9 @@ flowchart LR
 - Binary: a NUL byte in the first 8 KB, as git checks.
 - `tag_uses (folder, tag, uses, last_used)`; the Send step updates it, so frecency counts tags actually sent.
 - Composer keys while the list is open: up and down move, enter tags the row, tab opens a folder or tags anything else, esc closes the list until the cursor leaves the tag (archive `inbox/tui/tags.ts`). The list opens on `@` at the start or after whitespace (Crush `ui.go`).
-- Docs: `docs/plugins/coding.md` and the `tools-files` row in `architecture.md` lose `@` tags; the `fuzzysort` row gains `tags`.
+- The step sets `tags/attached` on the message to the number of parts it added; `buildTranscript` leaves those parts out of the shown input.
+- Folder tags add `<folder name="path/">` with one name per line, folders ending in `/`, up to 200.
+- Docs: `docs/plugins/coding.md` and the `tools-files` row in `architecture.md` lose `@` tags; `architecture.md` gains a `tags` row.
 
 ## Events in the references
 
