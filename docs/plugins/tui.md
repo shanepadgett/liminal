@@ -5,7 +5,7 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 ## Session view in `packages/client`
 
 - `SessionView.open(session)`: `{ events, streaming, running }` in a `SubscriptionRef`, and `loadOlder`.
-- `loop` gains `loop/turn-start`, saved with the input a turn takes; `loop/step-start` and `loop/step-end` around each model call, the end with the finish reason and token usage from Effect AI's `finish` part; and a `tool-input` variant of `loop/reply` with a tool call's input as it is written.
+- `loop` gains `loop/turn-start`, saved with the input a turn takes; `loop/step-start` with the model id and `loop/step-end` around each model call, every start with an end, a finished one with the finish reason and token usage from Effect AI's `finish` part; and a `tool-input` variant of `loop/reply` with a tool call's params so far, parsed from unfinished JSON.
 - Previous code: `archive/packages/frontend`.
 
 ## `packages/tui`

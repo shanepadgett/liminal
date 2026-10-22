@@ -1,5 +1,6 @@
 /** The turn: inputs into a session, the hooks that join each turn, and the session's next request. */
 import { Context, type Effect, Schema } from "effect";
+import { Response } from "effect/ai";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import { type Attributes, Pipeline, Registry } from "@shanepadgett/liminal-core";
@@ -7,6 +8,7 @@ import {
   Message,
   type ModelCallError,
   type ModelRequest,
+  ModelId,
   ToolCall,
   ToolResult,
 } from "@shanepadgett/liminal-model/contract";
@@ -81,6 +83,28 @@ export class Turns extends Context.Service<
   }
 >()("loop/Turns") {}
 
+/** A turn began; it is logged before the inputs that start it, and the model never sees it. */
+export const TurnStarted = defineEvent("loop/turn-start", Schema.Struct({}));
+
+/** One model call began. */
+export const StepStarted = defineEvent("loop/step-start", Schema.Struct({ model: ModelId }));
+
+/**
+ * How a model call ended. `finished` carries the provider's reason and token counts; `interrupted`
+ * closes a step a crash left open.
+ */
+export const StepEnded = defineEvent(
+  "loop/step-end",
+  Schema.Union([
+    Schema.Struct({
+      outcome: Schema.Literal("finished"),
+      reason: Response.FinishReason,
+      usage: Schema.toCodecJson(Response.Usage),
+    }),
+    Schema.Struct({ outcome: Schema.Literals(["failed", "cancelled", "interrupted"]) }),
+  ]),
+);
+
 /** How a turn ended; `interrupted` closes a turn a crash left unfinished. */
 export const TurnEnded = defineEvent(
   "loop/turn-end",
@@ -100,6 +124,13 @@ export const ReplyDelta = defineEvent(
       text: Schema.String,
     }),
     ToolCall,
+    /** A tool call's params so far, whole each time; `id` is the call's. */
+    Schema.Struct({
+      type: Schema.Literal("tool-input"),
+      id: Schema.String,
+      name: Schema.String,
+      params: Schema.Json,
+    }),
     Schema.Struct({
       type: Schema.Literal("retry"),
       attempt: Schema.Int,

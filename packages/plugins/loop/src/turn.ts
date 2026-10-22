@@ -1,9 +1,10 @@
 /** One turn: steps of a model call and the tool calls it asks for, until the model answers. */
-import { Cause, Effect, Exit, Fiber, Option } from "effect";
+import { Array as Arr, Cause, Effect, Exit, Fiber, Option } from "effect";
+import { Response } from "effect/ai";
 
 import type { Attributes } from "@shanepadgett/liminal-core";
 import type { History } from "@shanepadgett/liminal-history/contract";
-import type { ModelCall, Models } from "@shanepadgett/liminal-model/contract";
+import type { ModelCall, ModelRequest, Models } from "@shanepadgett/liminal-model/contract";
 import {
   MessageEvent,
   Notice,
@@ -14,7 +15,7 @@ import type { SystemPrompt } from "@shanepadgett/liminal-system-prompt/contract"
 import type { ToolList } from "@shanepadgett/liminal-tool-definitions/contract";
 import type { ToolCall, Tools } from "@shanepadgett/liminal-tools/contract";
 
-import type { BeforeCall, Turn, TurnEnd } from "./contract.ts";
+import { type BeforeCall, StepEnded, StepStarted, type Turn, type TurnEnd } from "./contract.ts";
 import { cancelUnanswered } from "./recovery.ts";
 import { streamReply } from "./reply.ts";
 import type { Outcome, Sessions } from "./sessions.ts";
@@ -55,6 +56,50 @@ const runHooks = (hooks: BeforeCall["Service"], turn: Turn) =>
     Effect.forEach(each, (hook) => hook(turn), { discard: true }),
   );
 
+type StepEnd = typeof StepEnded.schema.Type;
+
+const unreported = new Response.Usage({ inputTokens: {}, outputTokens: {} });
+
+/** A reply with no finish part ended for a reason the provider did not say. */
+const finishedStep = (finish: Option.Option<Response.FinishPart>): StepEnd => {
+  if (Option.isNone(finish)) return { outcome: "finished", reason: "unknown", usage: unreported };
+
+  const { reason, usage } = finish.value;
+
+  return { outcome: "finished", reason, usage };
+};
+
+/**
+ * Logs the step's start, then the reply with the step's end; a failed or cancelled call ends it
+ * too.
+ */
+const callModel = Effect.fn("Loop.callModel")(function* (
+  services: TurnServices,
+  turn: Turn,
+  request: ModelRequest,
+) {
+  const { log } = services;
+  const { session, attributes } = turn;
+  yield* log.append(session, [yield* StepStarted.make({ model: request.model }, attributes)]);
+
+  const logEnd = (outcome: "failed" | "cancelled") =>
+    Effect.flatMap(StepEnded.make({ outcome }, attributes), (event) =>
+      log.append(session, [event]),
+    ).pipe(Effect.ignore);
+
+  const reply = yield* streamReply(services, session, request, attributes).pipe(
+    Effect.onError((cause) => logEnd(Cause.hasInterrupts(cause) ? "cancelled" : "failed")),
+  );
+
+  const message =
+    reply.message.parts.length > 0 ? [yield* MessageEvent.make(reply.message, attributes)] : [];
+
+  const ended = yield* StepEnded.make(finishedStep(reply.finish), attributes);
+  yield* log.append(session, Arr.append(message, ended));
+
+  return reply;
+});
+
 /** One model call and the tool calls it asks for; true when the model answered without calls. */
 const makeStep = (services: TurnServices) => {
   const request = makeRequest(services);
@@ -66,12 +111,7 @@ const makeStep = (services: TurnServices) => {
     yield* toolList.sync(session);
     yield* runHooks(beforeCall, turn);
 
-    const reply = yield* streamReply(services, session, yield* request(session), attributes);
-
-    if (reply.message.parts.length > 0) {
-      yield* log.append(session, [yield* MessageEvent.make(reply.message, attributes)]);
-    }
-
+    const reply = yield* callModel(services, turn, yield* request(session));
     const calls = reply.message.parts.filter((part) => part.type === "tool-call");
 
     if (calls.length === 0) {
@@ -80,7 +120,9 @@ const makeStep = (services: TurnServices) => {
       return true;
     }
 
-    yield* reply.truncated
+    const isTruncated = Option.exists(reply.finish, ({ reason }) => reason === "length");
+
+    yield* isTruncated
       ? failTruncated(log, session, calls, attributes)
       : runCalls(services, session, calls, attributes);
 

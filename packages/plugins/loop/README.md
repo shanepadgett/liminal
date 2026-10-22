@@ -17,12 +17,17 @@ Requires `SessionLog`, `SystemPrompt`, `ToolList`, `History`, `Models`, `ModelCa
 
 | Kind | When |
 | --- | --- |
+| `loop/turn-start` | A turn began, just before the inputs that start it |
 | `session/message` | The input, each reply, and each tool result as its own message, in the order the model asked |
+| `loop/step-start` | A model call began, with the model it calls |
+| `loop/step-end` | The model call ended: `finished` with the provider's reason and token usage, `failed`, `cancelled`, or `interrupted` when Liminal stopped mid-call |
 | `loop/turn-end` | The turn ended: `answered`, `failed`, `cancelled`, or `interrupted` when Liminal stopped mid-turn |
 | `loop/interrupted` | A reply cut short by a cancel; the model never sees it |
 | `session/notice` | Why a turn failed |
 
-It publishes, without logging, `loop/reply` as the reply streams and `loop/tool-done` as each tool call finishes.
+The model never sees the `loop/` events.
+
+It publishes, without logging, `loop/reply` as the reply streams and `loop/tool-done` as each tool call finishes. `loop/reply` carries text and reasoning as written, each tool call's params so far as `tool-input` (the whole params each time, parsed from the unfinished JSON), each finished tool call, and retries.
 
 A cancelled turn logs the results of calls that finished and a cancelled result for the rest. A failed turn keeps its input in the log, so the next input continues from it.
 

@@ -25,7 +25,7 @@ How a frontend reads a session now (`apps/cli/src/print.ts`):
 | Know the turn ended | A `loop/turn-end` event |
 | Show text | Decode each item with its kind's `EventKind.decode` |
 
-Event kinds a viewer sees today: `session/message`, `session/notice`, `loop/turn-end`, `loop/interrupted`, and the records `system-prompt` and `tool-definitions` log. Deltas: `loop/reply` (text, reasoning, tool calls, retries) and `loop/tool-done`. No event marks a turn's start.
+Event kinds a viewer sees today: `session/message`, `session/notice`, `loop/turn-start`, `loop/step-start`, `loop/step-end`, `loop/turn-end`, `loop/interrupted`, and the records `system-prompt` and `tool-definitions` log. Deltas: `loop/reply` (text, reasoning, tool input, tool calls, retries) and `loop/tool-done`.
 
 Prior art:
 
@@ -41,8 +41,8 @@ Prior art:
 - **The session view is generic.** It keeps the saved events in order, the reply streaming now and whether a turn runs. Screens decode the kinds they need; `chat` builds the transcript itself, and a plugin that owns questions or actors builds those in its own `tui` entry. Plugins add event kinds, so code in `client` cannot know them all.
 - **The session view is Effect-native.** Sending, cancelling and answering stay RPC calls on `LoopRpc`. `packages/tui` turns `state.changes` into a Solid store, reconciled by `seq` so unchanged rows stay mounted.
 - **`loop/turn-start` marks a turn's start.** It is saved in the same write as the input the turn takes; the model never sees it. Any event kind can be an input, so the log alone cannot say when a turn starts.
-- **`loop/reply` streams tool input.** A `tool-input` variant carries what the model has written of a call so far, from Effect AI's `tool-params-start`, `tool-params-delta` and `tool-params-end`, so a tool row inks its input in as it is written.
-- **`loop` logs steps.** `loop/step-start` and `loop/step-end` are saved around each model call; the model never sees them.
+- **`loop/reply` streams tool input.** A `tool-input` variant carries a call's params so far, parsed from the unfinished JSON in Effect AI's `tool-params-start` and `tool-params-delta`, so a tool row draws its input as it is written with the same params shape as the finished call. Pi does the same.
+- **`loop` logs steps.** `loop/step-start` (with the model id) and `loop/step-end` are saved around each model call; the model never sees them. Every step start gets an end: `finished`, `failed`, `cancelled`, or `interrupted` when Liminal stopped, as OpenCode, deepseek-harness and Pi each close every model call.
 - **Frontend code shared by `tui` and `web` lives in `view.ts`.** A plugin's `src/view.ts` or `src/view/` uses no UI framework; its `tui` and `web` entries import it and the server never does. `chat`'s holds the code that builds the transcript, so the desktop app reuses it. The plugin anatomy check and lint rules learn the new fixed file.
 - **Plugins add frontend exports.** Beside `./contract`, a plugin exports `./view` (no UI framework) and `./tui` (OpenTUI), later `./web`. `/contract` is importable anywhere, `/view` from `view`, `tui` and `web` code, `/tui` from `tui` code only. `contract.ts` cannot hold a tag typed with a Solid component, since servers import it.
 - **Plugins say which events make one transcript item.** `chat`'s `view.ts` holds `TranscriptRules`, after deepseek-harness's event definitions; its `tui` entry holds `ItemRenderer`, keyed by item kind. A part is one event, or one part of a `session/message`; parts with one item id make one item. An event no rule matches is its own item, of the event's kind. Streamed parts show as live items until saved.
@@ -51,7 +51,7 @@ Prior art:
 - **Slots.** `packages/tui` has one `screen` slot (`single_winner`) that `chat` fills. `chat` has `sidebar` (`append`, sections by `order`, its own Session section first) and `composer` (`replace`). A notifications slot comes with the first plugin that fills it.
 - **Dialogs are a service, not a slot.** The UI kit's `Dialogs` is a stack with `open` and `close`, drawn above the screen with the dim. `model`, `accounts` and `palette` open their pickers through it from commands.
 - **`ctrl+b` toggles the sidebar below 110 columns.** It is a named command, "Toggle sidebar", listed in the palette; `escape` closes the drawer, and a footer hint shows while the sidebar is hidden. It takes `ctrl+b` from OpenTUI's textarea, where the arrow keys do the same. Crush binds `ctrl+b`; OpenCode binds `ctrl+x b`.
-- **`loop/step-end` carries token usage.** It holds the finish reason and the call's token counts from Effect AI's `finish` part. The sidebar's context share is the latest step's tokens over the model's `contextWindow` from the catalog. `usage` in milestone 4 prices step-ends instead of attaching counts.
+- **`loop/step-end` carries token usage.** A finished one holds the finish reason and the call's token counts from Effect AI's `finish` part. The sidebar's context share is the latest step's tokens over the model's `contextWindow` from the catalog. `usage` in milestone 4 prices step-ends instead of attaching counts.
 - **`tui` entries are plugins.** A plugin's `tui` module default-exports a plugin made with `definePlugin`; `packages/tui` composes them with `compose` over a base layer that provides `Host`, the renderer and the slot registry. `compose` gives the load order, missing-piece errors and cleanup, so `chat` provides `ItemRenderer` and `approvals` requires it.
 
 ```ts
@@ -99,19 +99,99 @@ flowchart LR
 | `oklch.ts`, `ramp.ts`, `palettes.ts`, `roles.ts` | `theme` `view.ts`; role names in its contract |
 | `syntax.ts`, `theme.tsx` | `theme` `tui` entry |
 
+## Build order
+
+1. `loop` events. 2. Session view in `packages/client`. 3. Plugin anatomy: `./view`, `./tui`, `view.ts`. 4. `packages/tui`. 5. `theme`. 6. `chat`, with `liminal` opening the TUI. 7. `palette`, model picker, `/connect`, saved sessions, queue and pull-back, `Commands`.
+
+## Step 1: `loop` events
+
+Print mode's `--json` shows the new events with no change to `apps/cli`.
+
+```text
+packages/plugins/loop/
+  README.md            the new events and the tool-input delta
+  src/contract.ts      TurnStarted, StepStarted, StepEnded; ReplyDelta gains tool-input
+  src/sessions.ts      a write that opens a turn puts TurnStarted first
+  src/turn.ts          logs StepStarted, then the reply with StepEnded; a failed or cancelled step's end
+  src/reply.ts         keeps the finish part and each call's input text; publishes tool-input
+  src/partial-json.ts  new: best-guess params from unfinished JSON text
+  src/recovery.ts      closes a step a crash left open
+```
+
+```ts
+// contract.ts; Response is effect/ai's
+export const TurnStarted = defineEvent("loop/turn-start", Schema.Struct({}))
+export const StepStarted = defineEvent("loop/step-start", Schema.Struct({ model: ModelId }))
+export const StepEnded = defineEvent("loop/step-end", Schema.Union([
+  Schema.Struct({ outcome: Schema.Literal("finished"), reason: Response.FinishReason, usage: Response.Usage }),
+  Schema.Struct({ outcome: Schema.Literals(["failed", "cancelled", "interrupted"]) }),
+]))
+// ReplyDelta gains; id is the tool call's id, params the input so far, whole
+Schema.Struct({ type: Schema.Literal("tool-input"), id: Schema.String, name: Schema.String, params: Schema.Json })
+
+// partial-json.ts
+export const parsePartial: (text: string) => Schema.Json  // {} until something parses
+```
+
+None of the three events has a converter, so the model never sees them.
+
+| Where a turn opens (`sessions.ts`) | Write |
+| --- | --- |
+| `send` on an idle session | `[TurnStarted, input]` |
+| `release` after `Turns.fold`, inputs waiting | `[TurnStarted, ...inputs]` |
+| `endTurn`, not answered, inputs waiting | `[TurnEnded]`, then `[TurnStarted, ...inputs]` |
+| `endTurn`, answered, inputs waiting | `[...inputs]`: the same turn goes on |
+| `takeSteers` | `[...steers]` |
+
+`take` gains `opens: boolean`, which puts `TurnStarted` first.
+
+```text
+step (turn.ts)
+  sync system prompt and tool list; run BeforeCall hooks
+  request = request(session)
+  append [StepStarted { model: request.model }]
+  reply = streamReply(request), on failure append [StepEnded failed], on interrupt [StepEnded cancelled]
+  append [message when it has parts, StepEnded finished { reason, usage }]
+  no calls: run TurnEnd hooks, answered
+  reason is length: fail the calls, else run them
+
+streamReply (reply.ts), state { reply, inputs: call id -> { name, text }, finish: Option<FinishPart> }
+  tool-params-start: inputs += id -> { name, text: "" }
+  tool-params-delta: text += delta; publish tool-input { id, name, params: parsePartial(text) }
+  finish: finish = the part
+  retry: state starts over
+  returns { message, finish }
+
+parsePartial (partial-json.ts)
+  scan text, tracking open strings, objects and arrays
+  cut a half-written key or a value with no start, and a trailing comma or colon
+  close the open string, then each open object and array, innermost first
+  JSON.parse; {} when it still fails
+
+closeUnfinished (recovery.ts)
+  a turn is open when a TurnStarted follows the last TurnEnded
+  a StepStarted after the last StepEnded since the last TurnEnded: StepEnded interrupted before the notice
+```
+
+- A reply that ends with no finish part logs `StepEnded` finished with reason `unknown` and empty usage.
+- On a cancel, `reply.ts` logs `loop/interrupted` first, then the step logs `StepEnded` cancelled.
+- `truncated` goes: it is `finish.reason === "length"`.
+- `reply.ts`'s private `fold` becomes `addDelta`, so "fold" means only `Turns.fold`.
+- Pi parses with the `partial-json` package; OpenCode keeps a 280-line copy of it. Ours covers what a tool's params need: objects, arrays, strings, numbers, `true`, `false`, `null`.
+
 ## Events in the references
 
 | Signal | Pi | OpenCode | deepseek-harness | Liminal |
 | --- | --- | --- | --- | --- |
 | Turn start and end | `turn_start`, `agent_end` | `execution.started`, `.succeeded` | `turn/start`, `turn/end` | `loop/turn-start`, `loop/turn-end` |
-| Step: one model call | `turn_start` per response | `step.started`, `.ended`, `.failed` | `step/start`, `step/end` | none |
+| Step: one model call | `turn_start` per response | `step.started`, `.ended`, `.failed` | `step/start`, `step/end` | `loop/step-start`, `loop/step-end` |
 | Text and reasoning as written | `message_update` | `text.delta`, `reasoning.delta` | `agent/assistant-stream` | `loop/reply` |
-| Tool input as written | no | `tool.input.delta` | in the stream | none: a tool call arrives whole |
+| Tool input as written | `message_update` with `toolcall_delta` | `tool.input.delta` | in the stream | `loop/reply` `tool-input` |
 | Tool output as it runs | `tool_execution_update` | `tool.progress` | no | none |
 | Retry | `auto_retry_start` | `retry.scheduled` | `assistant/attempt` | `loop/reply` retry |
 | Queue | `queue_update` | `inbox.enqueued`, `.delivered`, `.cancelled` | `agent/inbox/*` | planned `loop/queue` |
 | Model change | `model_change` | `model.selected` | no | none |
-| Usage | `usage` | `usage.updated` | `token-meter` | none; planned on `loop/step-end` |
+| Usage | `usage` | `usage.updated` | `token-meter` | `loop/step-end` |
 | Compaction, rename, fork | yes | yes | yes | milestones 4 and 5, Later |
 
 Effect AI streams tool input as `tool-params-start`, `tool-params-delta` and `tool-params-end` (`effect/ai` `Response`); `loop` drops them today.

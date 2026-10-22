@@ -14,7 +14,7 @@ import type {
   SessionStoreFailed,
 } from "@shanepadgett/liminal-session/contract";
 
-import { type Input, type SendMode, TurnEnded } from "./contract.ts";
+import { type Input, type SendMode, TurnEnded, TurnStarted } from "./contract.ts";
 import { closeUnfinished } from "./recovery.ts";
 
 interface Queued {
@@ -75,18 +75,28 @@ const claim = Effect.fn("Loop.claim")(function* (store: Store, session: SessionI
   return true;
 });
 
-/** Takes the whole queue when `all`, else only the steers, and logs what it took. */
-const take = Effect.fn("Loop.take")(function* (store: Store, session: SessionId, all: boolean) {
+/**
+ * Which waiting inputs to take: the steers before a model call, or the whole queue to go on with
+ * the same turn or to start a new one.
+ */
+type Taking = "steers" | "same-turn" | "new-turn";
+
+/** Takes the inputs `taking` names and logs them, after `loop/turn-start` for a new turn. */
+const take = Effect.fn("Loop.take")(function* (store: Store, session: SessionId, taking: Taking) {
   const { queue } = yield* stateOf(store, session);
-  const taken = queue.filter(({ mode }) => all || mode === "steer");
+  const taken = queue.filter(({ mode }) => taking !== "steers" || mode === "steer");
   const rest = queue.filter((item) => !taken.includes(item));
   yield* updateState(store, session, (state) => ({ ...state, queue: rest }));
 
   const [first, ...later] = taken.map(({ input }) => input);
   if (first === undefined) return Option.none<Attributes>();
 
-  const events: [NewEvent, ...NewEvent[]] = [first, ...later];
-  yield* store.log.append(session, events);
+  const inputs: [NewEvent, ...NewEvent[]] = [first, ...later];
+
+  yield* store.log.append(
+    session,
+    taking === "new-turn" ? [yield* TurnStarted.make({}), ...inputs] : inputs,
+  );
 
   return Option.some((later.at(-1) ?? first).attributes);
 });
@@ -100,7 +110,7 @@ const goIdle = Effect.fn("Loop.goIdle")(function* (store: Store, session: Sessio
 /** Logs `input` and claims the session when idle, returning true; else `input` waits in the queue. */
 const send = Effect.fn("Loop.send")(function* (store: Store, session: SessionId, queued: Queued) {
   if (yield* claim(store, session)) {
-    yield* store.log.append(session, [queued.input]);
+    yield* store.log.append(session, [yield* TurnStarted.make({}), queued.input]);
 
     return true;
   }
@@ -111,8 +121,8 @@ const send = Effect.fn("Loop.send")(function* (store: Store, session: SessionId,
 });
 
 /**
- * Ends the turn, or continues it when inputs wait: an answered turn takes them, any other logs its
- * end first. The attributes to continue with, or none when the session went idle.
+ * Ends the turn, or goes on when inputs wait: an answered turn takes them into the same turn, any
+ * other logs its end and starts a new one. The attributes to go on with, or none when idle.
  */
 const endTurn = Effect.fn("Loop.endTurn")(function* (
   store: Store,
@@ -127,12 +137,12 @@ const endTurn = Effect.fn("Loop.endTurn")(function* (
 
   if (!hasQueue) yield* goIdle(store, session);
 
-  return yield* take(store, session, true);
+  return yield* take(store, session, outcome === "answered" ? "same-turn" : "new-turn");
 });
 
 /** Releases a fold's claim: logs waiting inputs and returns their attributes to start a turn. */
 const release = Effect.fn("Loop.release")(function* (store: Store, session: SessionId) {
-  const taken = yield* take(store, session, true);
+  const taken = yield* take(store, session, "new-turn");
   if (Option.isNone(taken)) yield* goIdle(store, session);
 
   return taken;
@@ -177,7 +187,7 @@ export const makeSessions = Effect.fn("Loop.makeSessions")(function* (log: Sessi
     send: (session: SessionId, input: Input, mode: SendMode) =>
       lock.withPermit(send(store, session, { input, mode })),
     /** Logs the waiting steers; the attributes of the latest. */
-    takeSteers: (session: SessionId) => lock.withPermit(take(store, session, false)),
+    takeSteers: (session: SessionId) => lock.withPermit(take(store, session, "steers")),
     endTurn: (session: SessionId, outcome: Outcome) =>
       lock.withPermit(endTurn(store, session, outcome)),
     /** Waits until nothing runs in the session, then claims it, as a fold does. */
