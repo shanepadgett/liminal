@@ -138,6 +138,12 @@ export class SessionLog extends Context.Service<
 /** What screens call. */
 export class SessionRpc extends RpcGroup.make(
   Rpc.make("session/open", { success: SessionId, error: SessionStoreFailed }),
+  /** The latest 100 events, or the 100 before `before`, oldest first. */
+  Rpc.make("session/page", {
+    payload: { session: SessionId, before: Schema.optional(Seq) },
+    success: Schema.Array(SessionEvent),
+    error: Schema.Union([SessionNotFound, SessionStoreFailed]),
+  }),
   Rpc.make("session/live", {
     payload: { session: SessionId, after: Schema.optional(Seq) },
     success: LiveItem,

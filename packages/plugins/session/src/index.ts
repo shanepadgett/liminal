@@ -90,6 +90,7 @@ const rpc = SessionRpc.toLayer(
   Effect.map(SessionLog, (log) =>
     SessionRpc.of({
       "session/open": () => log.open(),
+      "session/page": ({ session, before }) => log.page(session, before),
       "session/live": ({ session, after }) => log.live(session, after),
     }),
   ),

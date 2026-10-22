@@ -11,6 +11,6 @@ The session log: each session's events in order, saved through `SqlClient`, and 
 - `defineEvent(kind, schema)`: an event or delta kind, with `make` and `decode`.
 - `MessageEvent`: the `session/message` kind, holding `model`'s `Message`.
 - `Notice`: the `session/notice` kind, a message for the user that the model never sees.
-- `SessionRpc`: the RPC group screens call; `session/live` streams `live`.
+- `SessionRpc`: the RPC group screens call: `session/open`, `session/page` for `page`, and `session/live` streaming `live`.
 
 Requires `SqlClient`. Keeps its tables, `sessions` and `session_events`, in that database.

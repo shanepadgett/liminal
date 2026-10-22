@@ -10,7 +10,7 @@ The session view, `packages/tui`, and the `tui` entries of `chat`, `palette`, `t
 | `packages/tui` | Adds the renderer, slots, the bridge between Effect and Solid, and the UI kit |
 | `packages/plugins/chat` | Adds the chat screen as a `tui` entry |
 | `packages/plugins/{palette,theme}` | Adds the command palette and theme switching |
-| `packages/plugins/{model,accounts,loop,session}` | Expands: `tui` entries for the model picker and `/connect`; RPC for paging, the queue and the session list |
+| `packages/plugins/{model,accounts,loop,session}` | Expands: `tui` entries for the model picker and `/connect`; RPC for paging, loop state with the queue, and the session list |
 | `apps/cli` | Expands: the TUI by default, `--model`, `--session` |
 
 ## Today
@@ -40,6 +40,12 @@ Prior art:
 
 - **The session view is generic.** It keeps the saved events in order, the reply streaming now and whether a turn runs. Screens decode the kinds they need; `chat` builds the transcript itself, and a plugin that owns questions or actors builds those in its own `tui` entry. Plugins add event kinds, so code in `client` cannot know them all.
 - **The session view is Effect-native.** Sending, cancelling and answering stay RPC calls on `LoopRpc`. `packages/tui` turns `state.changes` into a Solid store, reconciled by `seq` so unchanged rows stay mounted.
+- **`running` comes from `loop`.** `loop/state` streams whether a turn runs in the session, from `loop`'s own state. The events a view holds may not reach back to the turn's start, and after a crash the log shows a turn open that nothing runs. OpenCode asks the server for active sessions the same way.
+- **One `loop/state` stream.** It holds `running` now; step 7 adds the queued inputs to it instead of a separate queue RPC. Both are live state `loop` keeps per session.
+- **`streaming` is every delta since the last saved event.** The view keeps them as they come, of any kind; `chat` drops the reply items before a retry. The view stays a plain list that knows nothing of how `loop` replies.
+- **A failed live stream stops the view.** It logs the error and stops updating. Reconnecting from the last `seq` comes with the IPC and HTTP hosts, where connections drop.
+- **The view keeps what it loads.** It opens with the latest page, adds every new event, and `loadOlder` adds the page before the oldest held, back to the first. Nothing held is dropped.
+- **The transcript opens at the bottom.** Its first frame shows the latest items; it never scrolls down after loading.
 - **`loop/turn-start` marks a turn's start.** It is saved in the same write as the input the turn takes; the model never sees it. Any event kind can be an input, so the log alone cannot say when a turn starts.
 - **`loop/reply` streams tool input.** A `tool-input` variant carries a call's params so far, parsed from the unfinished JSON in Effect AI's `tool-params-start` and `tool-params-delta`, so a tool row draws its input as it is written with the same params shape as the finished call. Pi does the same.
 - **`loop` logs steps.** `loop/step-start` (with the model id) and `loop/step-end` are saved around each model call; the model never sees them. Every step start gets an end: `finished`, `failed`, `cancelled`, or `interrupted` when Liminal stopped, as OpenCode, deepseek-harness and Pi each close every model call.
@@ -58,7 +64,7 @@ Prior art:
 // packages/client
 interface ViewState {
   readonly events: ReadonlyArray<SessionEvent>   // saved, oldest first
-  readonly streaming: ReadonlyArray<ReplyDelta>  // the reply being written; cleared when saved or retried
+  readonly streaming: ReadonlyArray<Delta>       // every delta since the last saved event
   readonly running: boolean
 }
 SessionView.open(session): Effect<{ state: SubscriptionRef<ViewState>; loadOlder: Effect<void> }, E, Host | Scope>
@@ -179,6 +185,76 @@ closeUnfinished (recovery.ts)
 - `reply.ts`'s private `fold` becomes `addDelta`, so "fold" means only `Turns.fold`.
 - Pi parses with the `partial-json` package; OpenCode keeps a 280-line copy of it. Ours covers what a tool's params need: objects, arrays, strings, numbers, `true`, `false`, `null`.
 
+## Step 2: session view
+
+No screen uses it until step 4; a scratch script checks it by hand.
+
+```text
+packages/client/
+  README.md               the session view
+  src/host.ts             Host and inMemory, moved from index.ts
+  src/session-view.ts     new: open, ViewState, addItem, addOlder
+  src/index.ts            exports Host, inMemory, SessionView
+packages/plugins/session/src/{contract,index}.ts   session/page RPC
+packages/plugins/loop/src/
+  contract.ts             LoopState, Inbox.state, the loop/state RPC
+  sessions.ts             states in a SubscriptionRef; state(session) stream
+  index.ts                the loop/state handler
+```
+
+```ts
+// session contract: SessionRpc gains
+Rpc.make("session/page", {
+  payload: { session: SessionId, before: Schema.optional(Seq) },
+  success: Schema.Array(SessionEvent),
+  error: Schema.Union([SessionNotFound, SessionStoreFailed]),
+})
+
+// loop contract: LoopRpc gains; the current state first, then each change
+export const LoopState = Schema.Struct({ running: Schema.Boolean })
+Rpc.make("loop/state", { payload: { session: SessionId }, success: LoopState, stream: true })
+
+// packages/client/src/session-view.ts, exported as SessionView
+export interface ViewState {
+  readonly events: ReadonlyArray<SessionEvent>  // saved, oldest first: the latest page and older pages loaded
+  readonly streaming: ReadonlyArray<Delta>      // every delta since the last saved event
+  readonly running: boolean
+}
+export interface SessionView {
+  readonly state: SubscriptionRef<ViewState>
+  readonly loadOlder: Effect<void, SessionNotFound | SessionStoreFailed>
+}
+export const open: (session: SessionId) =>
+  Effect<SessionView, SessionNotFound | SessionStoreFailed, Host | Scope>
+```
+
+```text
+open(session)
+  sessionRpc, loopRpc = host.client(SessionRpc), host.client(LoopRpc)
+  latest = session/page { session }
+  state = SubscriptionRef { events: latest, streaming: [], running: false }
+  fork in scope: session/live { session, after: last seq or 0 }, each item: state = addItem(state, item)
+  fork in scope: loop/state { session }, each: state.running = running
+  a forked stream that fails logs the error; the view stops updating
+
+addItem(state, item)                  pure
+  saved event, seq above the last held: events += item, streaming = []
+  saved event, seq held already: state
+  delta: streaming += item
+
+loadOlder
+  first held seq is 1, or nothing held: done
+  older = session/page { session, before: first seq }
+  events = older with seq below the first held, then events
+
+loop/state (sessions.ts)
+  SubscriptionRef.changes(states), running = Option.isSome(state.running), Stream.changes
+```
+
+- `live` after the page's last `seq` catches up on events saved between the two calls, so nothing is lost.
+- `streaming` matches the deltas `session` keeps for a viewer that joins mid-reply, so a view opened late sees the same.
+- A screen knows there is more history when `events[0].seq` is above 1.
+
 ## Events in the references
 
 | Signal | Pi | OpenCode | deepseek-harness | Liminal |
@@ -189,12 +265,12 @@ closeUnfinished (recovery.ts)
 | Tool input as written | `message_update` with `toolcall_delta` | `tool.input.delta` | in the stream | `loop/reply` `tool-input` |
 | Tool output as it runs | `tool_execution_update` | `tool.progress` | no | none |
 | Retry | `auto_retry_start` | `retry.scheduled` | `assistant/attempt` | `loop/reply` retry |
-| Queue | `queue_update` | `inbox.enqueued`, `.delivered`, `.cancelled` | `agent/inbox/*` | planned `loop/queue` |
+| Queue | `queue_update` | `inbox.enqueued`, `.delivered`, `.cancelled` | `agent/inbox/*` | planned in `loop/state` |
 | Model change | `model_change` | `model.selected` | no | none |
 | Usage | `usage` | `usage.updated` | `token-meter` | `loop/step-end` |
 | Compaction, rename, fork | yes | yes | yes | milestones 4 and 5, Later |
 
-Effect AI streams tool input as `tool-params-start`, `tool-params-delta` and `tool-params-end` (`effect/ai` `Response`); `loop` drops them today.
+Effect AI streams tool input as `tool-params-start`, `tool-params-delta` and `tool-params-end` (`effect/ai` `Response`); `loop` publishes the first two as `tool-input`.
 
 ## deepseek-harness frontends
 

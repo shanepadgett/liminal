@@ -76,6 +76,7 @@ const make = Effect.gen(function* () {
     inbox: Inbox.of({
       send: (session, input, mode = "steer") => send.run({ session, input, mode }),
       cancel,
+      state: sessions.state,
     }),
     turns: Turns.of({ request: makeRequest(turnServices), fold }),
   };
@@ -92,6 +93,7 @@ const rpc = LoopRpc.toLayer(
     LoopRpc.of({
       "loop/send": ({ session, input, mode }) => inbox.send(session, input, mode),
       "loop/cancel": ({ session }) => inbox.cancel(session),
+      "loop/state": ({ session }) => inbox.state(session),
     }),
   ),
 );

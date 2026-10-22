@@ -4,12 +4,13 @@ Runs turns: an input starts one, the model is called, the tools it asks for run,
 
 - `Inbox.send(session, input, mode?)`: logs the input and starts a turn when the session is idle. During a turn the input waits in memory: a `steer` (the default) joins before the next model call, a `follow-up` waits until the turn would end.
 - `Inbox.cancel(session)`: stops the running turn and returns the inputs that were waiting.
+- `Inbox.state(session)`: whether a turn (or a fold) runs in the session now, then each change. Only `loop` knows this; the log can show a turn open that a crash left behind.
 - `Send`: the pipeline every input goes through; wrap it to attach attributes or turn inputs away.
 - `Turns.request(session)`: the session's next model request, read from its log.
 - `Turns.fold(session)`: waits for the running turn, then logs the system prompt and tool list again.
 - `BeforeCall`: hooks that run before each model call, after the system prompt and tool list sync.
 - `TurnEnd`: hooks that run when the model answers without tool calls.
-- `LoopRpc`: `loop/send` and `loop/cancel` for screens.
+- `LoopRpc`: `loop/send`, `loop/cancel` and `loop/state` for screens.
 
 Requires `SessionLog`, `SystemPrompt`, `ToolList`, `History`, `Models`, `ModelCall`, `Tools` and `ToolCall`.
 

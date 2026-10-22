@@ -230,7 +230,7 @@ interface Inbox {
   send(id, input: Input, mode: "steer" | "follow-up"): Effect<void>   // input: event kind + data + attributes
   cancel(id): Effect<Input[]>                // stops the running turn; returns the queued inputs
   pullBack(id, queued): Effect<Option<Input>>
-  queue(id): Stream<Queued[]>
+  state(id): Stream<LoopState>               // whether a turn runs and the queued inputs: now, then each change
 }
 Send: Pipeline<{ session, input, mode }, void>
 Commands: Registry<Command>                  // slash commands, run on the agent side as soon as they are sent
@@ -319,10 +319,10 @@ view.state        // SubscriptionRef<{ events, streaming, running }>
 view.loadOlder    // loads the page before the oldest event held
 ```
 
-- The view knows only `session` and `loop` kinds. A screen decodes the kinds it draws and builds what it needs from them, such as the chat transcript or pending questions.
-- `running` comes from `loop/turn-start` and `loop/turn-end`. Sending, cancelling and answering are RPC calls, not view methods.
+- The view knows no event kinds; it tells saved events from deltas. A screen decodes the kinds it draws and builds what it needs from them, such as the chat transcript or pending questions.
+- `running` comes from `loop`'s `loop/state` stream, since only `loop` knows whether a turn runs: the events a view holds may not reach back to the turn's start, and after a crash the log shows a turn open that nothing runs. Sending, cancelling and answering are RPC calls, not view methods.
 
-- Each plugin's contract declares the functions its screens may call as an Effect RPC group: names, input and output schemas, one-shot calls or streams. `session` declares `open`, `page` and `live`; `loop` declares `send`, `cancel`, `pullBack` and `queue`; `accounts` declares the login methods, the sign-in stream and `answer`.
+- Each plugin's contract declares the functions its screens may call as an Effect RPC group: names, input and output schemas, one-shot calls or streams. `session` declares `open`, `page` and `live`; `loop` declares `send`, `cancel`, `state` and `pullBack`; `accounts` declares the login methods, the sign-in stream and `answer`.
 - The code behind a group's functions is an ordinary service in the plugin's layer. RPC calls go from screen to plugin only, so a plugin reaches a screen by streaming, as sign-in does.
 - A frontend gets a client for a group with `host.client(Group)`. The host picks the connection: Effect's in-memory client in the same process, the desktop shell's IPC, or HTTP through `http`. A plugin's screen code is the same in every host.
 

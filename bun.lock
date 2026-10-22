@@ -65,6 +65,8 @@
       "name": "@shanepadgett/liminal-client",
       "version": "0.1.0",
       "peerDependencies": {
+        "@shanepadgett/liminal-loop": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
         "effect": "*",
       },
     },

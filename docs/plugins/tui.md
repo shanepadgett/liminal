@@ -4,7 +4,8 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 
 ## Session view in `packages/client`
 
-- `SessionView.open(session)`: `{ events, streaming, running }` in a `SubscriptionRef`, and `loadOlder`.
+- `SessionView.open(session)`: `{ events, streaming, running }` in a `SubscriptionRef`, and `loadOlder`. It loads the latest page, then every new event; `loadOlder` loads the page before the oldest held, and nothing held is dropped.
+- `session` gains the `session/page` RPC; `loop` gains `loop/state`, a stream of whether a turn runs, which the view's `running` follows.
 - `loop` gains `loop/turn-start`, saved with the input a turn takes; `loop/step-start` with the model id and `loop/step-end` around each model call, every start with an end, a finished one with the finish reason and token usage from Effect AI's `finish` part; and a `tool-input` variant of `loop/reply` with a tool call's params so far, parsed from unfinished JSON.
 - Previous code: `archive/packages/frontend`.
 
@@ -22,11 +23,12 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 
 - The chat screen. Owns `TranscriptRules` in `view.ts`, and `ItemRenderer` and the `sidebar` (`append`) and `composer` (`replace`) slots in its `tui` entry.
 - Sidebar: chat's Session section, and the context share from the latest `loop/step-end` over the model's `contextWindow`. Below 110 columns it is a drawer; the "Toggle sidebar" command (`ctrl+b`, in the palette) opens it, `escape` closes it, a footer hint shows while hidden.
+- The transcript opens at the bottom: its first frame shows the latest items, with no scroll down after loading.
 - Each tool call and its result make one single-line row; consecutive tool rows sit next to each other, ungrouped.
 - Composer: OpenTUI `Textarea`, `@` file tags as extmarks, stashes, slash commands from `Commands`.
 - `@` completion: `fuzzysort` over `git ls-files`.
 - Saved sessions: `SessionLog` gains the session list with titles; the chat screen opens a saved session; print mode gains `--session <id>`.
-- RPC groups gain `session`'s `page` and `loop`'s `pullBack` and `queue`. A queued input can be pulled back until the turn takes it.
+- `loop/state` gains the queued inputs, and `loop` gains `pullBack`. A queued input can be pulled back until the turn takes it.
 - `loop` gains the `Commands` registry with the first command. A command runs as soon as it is sent and is logged as `session/command`; one that changes the log waits for the running turn to end.
 - Previous code: `chat`, `inbox` (composer).
 

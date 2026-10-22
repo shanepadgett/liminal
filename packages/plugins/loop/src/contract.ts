@@ -1,5 +1,5 @@
 /** The turn: inputs into a session, the hooks that join each turn, and the session's next request. */
-import { Context, type Effect, Schema } from "effect";
+import { Context, type Effect, Schema, type Stream } from "effect";
 import { Response } from "effect/ai";
 import { Rpc, RpcGroup } from "effect/rpc";
 
@@ -53,8 +53,18 @@ export class Inbox extends Context.Service<
     ) => Effect.Effect<void, LogError>;
     /** Stops the running turn and returns the inputs that were waiting, oldest first. */
     readonly cancel: (session: SessionId) => Effect.Effect<ReadonlyArray<Input>>;
+    /** The session's state now, then each change. */
+    readonly state: (session: SessionId) => Stream.Stream<LoopState>;
   }
 >()("loop/Inbox") {}
+
+/** What `loop` holds in memory for a session; only it knows whether a turn runs. */
+export const LoopState = Schema.Struct({
+  /** A turn, or a fold of the system prompt and tool list, runs in the session. */
+  running: Schema.Boolean,
+});
+
+export type LoopState = typeof LoopState.Type;
 
 /** The turn a hook runs in. */
 export interface Turn {
@@ -151,4 +161,5 @@ export class LoopRpc extends RpcGroup.make(
     error: Schema.Union([SessionNotFound, SessionStoreFailed, EventInvalid]),
   }),
   Rpc.make("loop/cancel", { payload: { session: SessionId }, success: Schema.Array(NewEvent) }),
+  Rpc.make("loop/state", { payload: { session: SessionId }, success: LoopState, stream: true }),
 ) {}

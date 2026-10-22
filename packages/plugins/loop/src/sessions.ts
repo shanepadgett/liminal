@@ -2,7 +2,17 @@
  * Each session's queued inputs and whether something runs in it, behind one lock, so an input can
  * never slip in between a turn deciding to end and the session going idle.
  */
-import { Deferred, Effect, Exit, type Fiber, Option, Ref, Semaphore } from "effect";
+import {
+  Deferred,
+  Effect,
+  Exit,
+  type Fiber,
+  Option,
+  Ref,
+  Semaphore,
+  Stream,
+  SubscriptionRef,
+} from "effect";
 
 import type { Attributes } from "@shanepadgett/liminal-core";
 import type {
@@ -14,7 +24,7 @@ import type {
   SessionStoreFailed,
 } from "@shanepadgett/liminal-session/contract";
 
-import { type Input, type SendMode, TurnEnded, TurnStarted } from "./contract.ts";
+import { type Input, type LoopState, type SendMode, TurnEnded, TurnStarted } from "./contract.ts";
 import { closeUnfinished } from "./recovery.ts";
 
 interface Queued {
@@ -43,19 +53,26 @@ const idle: SessionState = { queue: [], running: Option.none() };
 /** The state behind the lock; every function below runs while holding it. */
 interface Store {
   readonly log: SessionLog["Service"];
-  readonly states: Ref.Ref<ReadonlyMap<SessionId, SessionState>>;
+  /** A `SubscriptionRef`, so viewers follow each session's state. */
+  readonly states: SubscriptionRef.SubscriptionRef<ReadonlyMap<SessionId, SessionState>>;
   /** Sessions checked for a turn a crash left unfinished, in this process. */
   readonly checked: Ref.Ref<ReadonlySet<SessionId>>;
 }
 
 const stateOf = (store: Store, session: SessionId) =>
-  Effect.map(Ref.get(store.states), (all) => all.get(session) ?? idle);
+  Effect.map(SubscriptionRef.get(store.states), (all) => all.get(session) ?? idle);
 
 const updateState = (
   store: Store,
   session: SessionId,
   change: (state: SessionState) => SessionState,
-) => Ref.update(store.states, (all) => new Map(all).set(session, change(all.get(session) ?? idle)));
+) =>
+  SubscriptionRef.update(store.states, (all) =>
+    new Map(all).set(session, change(all.get(session) ?? idle)),
+  );
+
+/** What viewers see of `state`. */
+const viewOf = (state: SessionState): LoopState => ({ running: Option.isSome(state.running) });
 
 const closeOnce = Effect.fn("Loop.closeOnce")(function* (store: Store, session: SessionId) {
   if ((yield* Ref.get(store.checked)).has(session)) return;
@@ -170,7 +187,7 @@ export const makeSessions = Effect.fn("Loop.makeSessions")(function* (log: Sessi
 
   const store: Store = {
     log,
-    states: yield* Ref.make<ReadonlyMap<SessionId, SessionState>>(new Map()),
+    states: yield* SubscriptionRef.make<ReadonlyMap<SessionId, SessionState>>(new Map()),
     checked: yield* Ref.make<ReadonlySet<SessionId>>(new Set()),
   };
 
@@ -199,6 +216,12 @@ export const makeSessions = Effect.fn("Loop.makeSessions")(function* (log: Sessi
         Effect.tap(Effect.forkChild(steps), (fiber) => setStep(store, session, fiber)),
       ),
     cancel: (session: SessionId) => lock.withPermit(cancel(store, session)),
+    /** The session's state now, then each change. */
+    state: (session: SessionId) =>
+      SubscriptionRef.changes(store.states).pipe(
+        Stream.map((all) => viewOf(all.get(session) ?? idle)),
+        Stream.changesWith((before, after) => before.running === after.running),
+      ),
   };
 });
 
