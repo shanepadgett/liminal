@@ -1,0 +1,24 @@
+{
+  "name": "@shanepadgett/liminal-loop",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contract": "./src/contract.ts"
+  },
+  "peerDependencies": {
+    "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-history": "workspace:*",
+    "@shanepadgett/liminal-model": "workspace:*",
+    "@shanepadgett/liminal-session": "workspace:*",
+    "@shanepadgett/liminal-system-prompt": "workspace:*",
+    "@shanepadgett/liminal-tool-definitions": "workspace:*",
+    "@shanepadgett/liminal-tools": "workspace:*",
+    "effect": "*"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/index.ts"
+    ]
+  }
+}

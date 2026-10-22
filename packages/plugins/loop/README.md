@@ -1,0 +1,42 @@
+# @shanepadgett/liminal-loop
+
+Runs turns: an input starts one, the model is called, the tools it asks for run, and the model is called again until it answers without tool calls.
+
+- `Inbox.send(session, input, mode?)`: logs the input and starts a turn when the session is idle. During a turn the input waits in memory: a `steer` (the default) joins before the next model call, a `follow-up` waits until the turn would end.
+- `Inbox.cancel(session)`: stops the running turn and returns the inputs that were waiting.
+- `Send`: the pipeline every input goes through; wrap it to attach attributes or turn inputs away.
+- `Turns.request(session)`: the session's next model request, read from its log.
+- `Turns.fold(session)`: waits for the running turn, then logs the system prompt and tool list again.
+- `BeforeCall`: hooks that run before each model call, after the system prompt and tool list sync.
+- `TurnEnd`: hooks that run when the model answers without tool calls.
+- `LoopRpc`: `loop/send` and `loop/cancel` for screens.
+
+Requires `SessionLog`, `SystemPrompt`, `ToolList`, `History`, `Models`, `ModelCall`, `Tools` and `ToolCall`.
+
+## What it logs
+
+| Kind | When |
+| --- | --- |
+| `session/message` | The input, each reply, and each tool result as its own message, in the order the model asked |
+| `loop/turn-end` | The turn ended: `answered`, `failed`, `cancelled`, or `interrupted` when Liminal stopped mid-turn |
+| `loop/interrupted` | A reply cut short by a cancel; the model never sees it |
+| `session/notice` | Why a turn failed |
+
+It publishes, without logging, `loop/reply` as the reply streams and `loop/tool-done` as each tool call finishes.
+
+A cancelled turn logs the results of calls that finished and a cancelled result for the rest. A failed turn keeps its input in the log, so the next input continues from it.
+
+## Add a hook
+
+```ts
+const inbox = yield* Inbox;
+
+// Run checks; a follow-up keeps the turn going.
+yield* (yield* TurnEnd).add((turn) => inbox.send(turn.session, followUp, "follow-up"));
+```
+
+A `BeforeCall` hook logs its own records, such as a note the model should read before its next call.
+
+## Replace it
+
+Leave out `loop` and provide `Inbox`, `Send`, `Turns`, `BeforeCall` and `TurnEnd` from your own plugin.

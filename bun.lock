@@ -53,6 +53,20 @@
         "effect": "*",
       },
     },
+    "packages/plugins/loop": {
+      "name": "@shanepadgett/liminal-loop",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-history": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-system-prompt": "workspace:*",
+        "@shanepadgett/liminal-tool-definitions": "workspace:*",
+        "@shanepadgett/liminal-tools": "workspace:*",
+        "effect": "*",
+      },
+    },
     "packages/plugins/model": {
       "name": "@shanepadgett/liminal-model",
       "version": "0.1.0",
@@ -418,6 +432,8 @@
     "@shanepadgett/liminal-directories": ["@shanepadgett/liminal-directories@workspace:packages/plugins/directories"],
 
     "@shanepadgett/liminal-history": ["@shanepadgett/liminal-history@workspace:packages/plugins/history"],
+
+    "@shanepadgett/liminal-loop": ["@shanepadgett/liminal-loop@workspace:packages/plugins/loop"],
 
     "@shanepadgett/liminal-model": ["@shanepadgett/liminal-model@workspace:packages/plugins/model"],
 

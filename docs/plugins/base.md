@@ -2,17 +2,6 @@
 
 Work for [status.md](../status.md) milestone 1. Contracts are in [architecture.md](../architecture.md#base-plugins-the-agent).
 
-## `loop`
-
-- `Turns.request(id)`: the session's next model request, for side calls that share its cache.
-- One turn as in [architecture.md](../architecture.md#base-plugins-the-agent); `BeforeCall` registry, whose hooks log records before each model call, such as change notes and reminders; `TurnEnd` registry; cancel input.
-- Tool calls in one reply run at the same time unless one is marked `sequential`. Cancel logs the partial reply marked interrupted, gives unfinished tool calls cancelled results and returns queued inputs to the input box. A turn left unfinished by a crash is closed when the session next opens, with interrupted results and a notice.
-- `Inbox`, `Send` pipeline, `Commands` registry. Each session's queue lives in memory.
-- A command runs as soon as it is sent and is logged as `session/command`; one that changes the log waits for the running turn to end.
-- Publishes `model`'s retry deltas; out of attempts, the turn ends with a notice and the input stays.
-- Steer and follow-up: input sent during a turn either joins before the next model call or waits until the turn would end. A queued input can be pulled back until the turn takes it.
-- Previous code: `agent-loop`, `cancel`, `inbox`.
-
 ## `accounts`
 
 - Credentials in its own table through `SqlClient`: API keys; OAuth tokens, refreshed inside a write transaction so one process refreshes; and commands whose output is the key, run once per process. With nothing saved, a provider reads its environment variable.

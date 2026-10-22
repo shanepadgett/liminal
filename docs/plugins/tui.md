@@ -21,7 +21,8 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 - `@` completion: `fuzzysort` over `git ls-files`.
 - `EventRenderer` is a registry keyed by event kind.
 - Saved sessions: `SessionLog` gains the session list with titles; the chat screen opens a saved session; print mode gains `--session <id>`.
-- RPC groups gain `session`'s `page` and `loop`'s `pullBack` and `queue`.
+- RPC groups gain `session`'s `page` and `loop`'s `pullBack` and `queue`. A queued input can be pulled back until the turn takes it.
+- `loop` gains the `Commands` registry with the first command. A command runs as soon as it is sent and is logged as `session/command`; one that changes the log waits for the running turn to end.
 - Previous code: `chat`, `inbox` (composer).
 
 ```ts

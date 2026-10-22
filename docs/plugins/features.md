@@ -7,6 +7,7 @@ Work for [status.md](../status.md) milestone 5.
 - Keeps long sessions inside the context window: checkpoints and notes as events.
 - Wraps `History` to project from the latest checkpoint; wraps `ModelCall` to checkpoint before the window fills.
 - Adds queries across sessions to `SessionLog` if it needs them.
+- A call that still overflows the window fails the turn; `loop` ends it with a notice. Decide whether `memory` checkpoints and retries, as OpenCode compacts and retries.
 - Previous code: `memory`.
 
 ```ts

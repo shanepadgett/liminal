@@ -53,6 +53,7 @@ Sections.add({ name: "agents-files", text: readAgentsFiles(cwd) }, { order: 20 }
 - Asking the user is a `question` event; the answer is an input.
 - `tui` entry renders the question as a card through `EventRenderer`.
 - Print mode's `--approve` lets questions and approvals pass; without it they are denied.
+- Tool calls in one reply run at the same time, so `ToolCall` wraps run at the same time too. Pi and DeepSeek run their before-call checks one at a time in the order asked; decide whether approvals asks one question at a time the same way.
 - Previous code: `approval`.
 
 ```ts

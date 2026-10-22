@@ -181,6 +181,19 @@ yield* (yield* Converters).add(
 );
 ```
 
+## Join a turn
+
+`BeforeCall` and `TurnEnd` from `@shanepadgett/liminal-loop/contract` hold hooks that take the turn's `session` and `attributes`. A `BeforeCall` hook runs before each model call and logs its own records, such as a reminder with a converter. A `TurnEnd` hook runs when the model answers without tool calls.
+
+```ts
+const inbox = yield* Inbox;
+
+yield* (yield* TurnEnd).add((turn) => inbox.send(turn.session, checkResults, "follow-up"));
+```
+
+- A follow-up sent from a `TurnEnd` hook continues the turn.
+- `Inbox.send` is how any input reaches a session; wrap `Send` to see or change every input.
+
 ## Call a model
 
 `Models` from `@shanepadgett/liminal-model/contract` makes one call outside the turn loop. `model` is a role, `main` or `small`, or a `provider/model` id.

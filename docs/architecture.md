@@ -222,10 +222,11 @@ History: Pipeline<SessionEvent[], Message[]> // the log, through the converters,
 // loop: the turn, the inbox and commands
 interface Inbox {
   send(id, input: Input, mode: "steer" | "follow-up"): Effect<void>   // input: event kind + data + attributes
+  cancel(id): Effect<Input[]>                // stops the running turn; returns the queued inputs
   pullBack(id, queued): Effect<Option<Input>>
   queue(id): Stream<Queued[]>
 }
-Send: Pipeline<Input, void>
+Send: Pipeline<{ session, input, mode }, void>
 Commands: Registry<Command>                  // slash commands, run on the agent side as soon as they are sent
 BeforeCall: Registry<Hook>                    // records logged before each model call after both syncs, such as reminders
 Turns.request(id): Effect<ModelRequest>      // system prompt + tool definitions + History, as the next model call sends them
@@ -236,15 +237,17 @@ TurnEnd: Registry<Hook>
 The loop runs one turn:
 
 ```text
-take queued inputs → log steers and before-call records → system prompt + tool definitions + History → ModelCall → ToolCall for each call
-→ append events → repeat while tools owe a result or new input arrived → TurnEnd hooks
+log steers → sync system prompt and tool list → BeforeCall hooks → Turns.request → ModelCall → log the reply
+→ ToolCall for each call, results logged in order → repeat while the reply asked for tools → TurnEnd hooks
+→ follow-ups continue the turn, else loop/turn-end
 ```
 
 - Each step carries the attributes of the latest input it consumed; tool calls read them from `ToolContext` and log them.
 - The system prompt and tool definitions are logged at session start and never change in place. A change is logged as a note before the next model call; a fold logs them anew.
-- Cancel is an input the loop handles: the partial reply is logged marked interrupted and never reaches the model, unfinished tool calls get cancelled results, and queued inputs go back to the input box.
+- `Inbox.cancel` stops the running turn: the partial reply is logged as `loop/interrupted` and never reaches the model, finished tool calls log their results, unfinished ones get cancelled results, and queued inputs go back to the input box.
+- Each turn ends with `loop/turn-end`: `answered`, `failed`, `cancelled` or `interrupted`. A failed turn logs a notice and keeps its input.
 - Deltas are published as they arrive; each viewer limits its own rate.
-- Tool calls in one reply run at the same time unless one is marked `sequential`; results are logged in the order asked.
+- Tool calls in one reply run at the same time unless one is marked `sequential`. Each result is its own tool message, logged in the order asked; each finish is published as `loop/tool-done`, and the reply streams as `loop/reply`.
 - A turn left unfinished by a crash is closed when the session next opens: interrupted results, a notice, and no restart.
 - Shared provider code, such as an OpenAI-compatible wire format, is a library the provider plugins import, not a contract.
 - The session log stores Liminal's own `Message` and `Part` schema, so saved sessions outlive Effect AI changes. Base `model` converts them to and from Effect AI's types in one place. The live reply stream and errors are Effect AI's `Response` parts and `AiError`, since nothing stores them.
@@ -270,12 +273,12 @@ take queued inputs → log steers and before-call records → system prompt + to
 - The session log is the source of truth. Everything the model sees is logged; model context is a projection of the log.
 - Event kinds declare whether the model sees them. Notices are events the model never sees.
 - Live streaming deltas are not stored. A finished assistant message is committed as one event.
-- Every way into a session is an input through `Inbox.send`: a user message, an answer to a question, a notification, chat history, a cancel, a command.
+- Every way into a session is an input through `Inbox.send`: a user message, an answer to a question, a notification, chat history, a command.
 - An input sent during a turn is a steer or a follow-up. A steer joins before the turn's next model call. A follow-up waits until the turn would end, then continues it. A queued input can be pulled back until the turn takes it. An input sent to an idle session starts a turn.
 - Queued inputs live in memory. An input is logged when a turn takes it, so the log holds what the model saw, in order.
 - A command runs as soon as it is sent and never queues; the log records it. A command that changes the log, such as `/compact`, waits for the running turn to end.
 - One runner per session: within one process, `loop` runs one turn per session at a time.
-- Recovery is per turn. After a crash or shutdown, an unfinished turn gets an `interrupted` event and continues from the log.
+- Recovery is per turn. After a crash or shutdown, an unfinished turn is closed when the session is next used: interrupted results, a notice and an `interrupted` turn end. It does not restart.
 
 ### Multiplayer
 
@@ -306,7 +309,7 @@ view.answer(questionId, value)
 view.loadOlder()
 ```
 
-- Each plugin's contract declares the functions its screens may call as an Effect RPC group: names, input and output schemas, one-shot calls or streams. `session` declares `page` and `live`; `loop` declares `send`, `pullBack` and `queue`; `accounts` declares the login methods, the sign-in stream and `answer`.
+- Each plugin's contract declares the functions its screens may call as an Effect RPC group: names, input and output schemas, one-shot calls or streams. `session` declares `page` and `live`; `loop` declares `send`, `cancel`, `pullBack` and `queue`; `accounts` declares the login methods, the sign-in stream and `answer`.
 - The code behind a group's functions is an ordinary service in the plugin's layer. RPC calls go from screen to plugin only, so a plugin reaches a screen by streaming, as sign-in does.
 - A frontend gets a client for a group with `host.client(Group)`. The host picks the connection: Effect's in-memory client in the same process, the desktop shell's IPC, or HTTP through `http`. A plugin's screen code is the same in every host.
 
