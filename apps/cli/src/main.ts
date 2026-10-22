@@ -6,6 +6,7 @@ import { CliError, Command, Flag } from "effect/cli";
 
 import { host } from "./composition.ts";
 import { connect } from "./connect.ts";
+import { badUsage, ExitCode, failed, interrupted } from "./exit-code.ts";
 import { print } from "./print.ts";
 
 /** Piped stdin, or nothing when stdin is the terminal. */
@@ -27,7 +28,11 @@ const promptOf = Effect.fn("promptOf")(function* (flag: string) {
 
 const connectCommand = Command.make("connect", {}, () =>
   Effect.scoped(connect).pipe(
-    Effect.catchTag("LoginFailed", (error) => Console.error(error.message)),
+    Effect.catchTags({
+      LoginFailed: (error) =>
+        Effect.andThen(Console.error(error.message), new ExitCode({ code: failed })),
+      QuitError: () => new ExitCode({ code: interrupted }),
+    }),
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- the connect command's entry point.
     Effect.provide(host),
   ),
@@ -41,8 +46,12 @@ const liminal = Command.make(
       Flag.withDescription("Send the prompt to a new session and print the reply"),
       Flag.optional,
     ),
+    json: Flag.Boolean("json").pipe(
+      Flag.withDescription("With -p, write every saved event and delta as a JSON line"),
+      Flag.withDefault(false),
+    ),
   },
-  Effect.fn(function* ({ print: flag }) {
+  Effect.fn(function* ({ print: flag, json }) {
     if (Option.isNone(flag)) {
       return yield* new CliError.ShowHelp({ commandPath: ["liminal"], errors: [] });
     }
@@ -51,7 +60,7 @@ const liminal = Command.make(
 
     // The plugins start only for print mode, so help never opens the session store.
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- print mode's entry point.
-    return yield* Effect.scoped(print(prompt)).pipe(Effect.provide(host));
+    return yield* Effect.scoped(print(prompt, json)).pipe(Effect.provide(host));
   }),
 ).pipe(
   Command.withDescription("An agent harness where everything is a plugin"),
@@ -60,6 +69,9 @@ const liminal = Command.make(
 
 liminal.pipe(
   Command.run({ version: "0.1.0" }),
+  Effect.catchTag("ShowHelp", (help) =>
+    help.errors.length > 0 ? new ExitCode({ code: badUsage }) : Effect.void,
+  ),
   // oxlint-disable-next-line effecttsgo/strict-effect-provide -- the program's entry point.
   Effect.provide(BunServices.layer),
   BunRuntime.runMain,

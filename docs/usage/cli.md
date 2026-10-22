@@ -31,6 +31,17 @@ git diff | liminal -p "Review this change"
 - Piped input goes after the prompt.
 - Notices, such as why a turn stopped, go to stderr.
 - Without a model in settings, it uses the default models of the first provider you are signed in to. With none, it stops with `No model provider is connected. Run liminal connect.`
+- `--json` writes, instead of the reply, one JSON line per saved event and streamed delta, from your prompt to the turn's end.
+- Ctrl-C cancels the turn, then exits.
+
+Exit codes:
+
+| Code | When |
+| --- | --- |
+| 0 | The turn answered |
+| 1 | The turn failed or was cancelled, or a sign-in failed |
+| 2 | Bad flags or arguments |
+| 130 | Ctrl-C |
 
 ## Choose models
 

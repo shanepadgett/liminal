@@ -39,5 +39,3 @@ Built: chat models, roles, `ModelCall` and `Models`. Still to build:
 ## `apps/cli`
 
 - Add the other providers to its composition.
-- Print mode `--json`: saved events and deltas as JSON lines from the input to the turn's end.
-- Exit codes: 0 answered, 1 failed or cancelled, 2 bad flags, 130 Ctrl-C after cancelling the turn.
