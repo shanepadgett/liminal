@@ -1,24 +1,34 @@
-/** A titled block: a heading in the accent, an optional note beside it, and its contents. */
+/** A titled block: the title, a rule running out to the edge with a note at its end, and contents. */
 
-import { TextAttributes } from "@opentui/core";
 import type { JSX } from "@opentui/solid";
+import { Show } from "solid-js";
 
+import type { RoleName } from "../theme/roles.ts";
 import { useColor } from "../theme/theme.tsx";
 
 export function Section(props: {
   readonly title: string;
   readonly note?: string;
-  readonly children: JSX.Element;
+  /** The note's color; faint unless the note needs attention. */
+  readonly noteRole?: RoleName;
+  readonly children?: JSX.Element;
 }) {
   const color = useColor();
 
   return (
     <box marginBottom={1}>
-      <box flexDirection="row" justifyContent="space-between">
-        <text fg={color("text.heading")} attributes={TextAttributes.BOLD}>
+      <box flexDirection="row" gap={1}>
+        <text flexShrink={0} fg={color("text.heading")}>
           {props.title}
         </text>
-        <text fg={color("text.faint")}>{props.note ?? ""}</text>
+        <box flexGrow={1} height={1} border={["bottom"]} borderColor={color("border.subtle")} />
+        <Show when={props.note}>
+          {(note) => (
+            <text flexShrink={0} fg={color(props.noteRole ?? "text.faint")}>
+              {note()}
+            </text>
+          )}
+        </Show>
       </box>
       {props.children}
     </box>

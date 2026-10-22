@@ -39,9 +39,12 @@ export const ROLES = [
   { name: "feedback.warning.subtle", ramp: "warning", step: 600 },
   { name: "feedback.success.subtle", ramp: "success", step: 600 },
   { name: "feedback.info.subtle", ramp: "info", step: 600 },
-  /** Ends of the gradient used by the signature ornament and loading animation. */
+  /** Ends of the gradient used by the wordmark, the hatching and the spinner. */
   { name: "gradient.from", ramp: "accent", step: 200 },
   { name: "gradient.to", ramp: "accent", step: 600 },
+  /** Hatching and prompt marks that frame things without asking to be read. */
+  { name: "ornament", ramp: "accent", step: 600 },
+  { name: "ornament.subtle", ramp: "accent", step: 800 },
 ] as const satisfies readonly RoleSpec[];
 
 export type RoleName = (typeof ROLES)[number]["name"];

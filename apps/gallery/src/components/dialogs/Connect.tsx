@@ -26,8 +26,8 @@ export function ConnectKey(props: {
     <Dialog title={`Connect ${props.provider}`} hints={[{ keys: "enter", label: "save" }, BACK]}>
       <text fg={color("text.muted")}>{`Paste an API key from ${props.where}.`}</text>
       <box flexDirection="row" marginTop={1}>
-        <text flexShrink={0} fg={color("text.accent")}>
-          {"› "}
+        <text flexShrink={0} fg={color("text.accent")} attributes={TextAttributes.BOLD}>
+          {"> "}
         </text>
         <text fg={color(props.apiKey === "" ? "text.ghost" : "text.base")}>
           {props.apiKey === "" ? "API key" : "•".repeat(Math.min(props.apiKey.length, KEY_DOTS))}

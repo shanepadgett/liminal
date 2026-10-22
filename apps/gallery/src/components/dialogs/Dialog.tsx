@@ -1,11 +1,16 @@
-/** A box over the screen with a title, its contents and the keys that apply. */
+/** A box over the screen: a title trailed by diagonals, its contents and the keys that apply. */
 
+import { TextAttributes } from "@opentui/core";
 import type { JSX } from "@opentui/solid";
 
+import { Hatch } from "../../primitives/Hatch.tsx";
 import { type Hint, Hints } from "../../primitives/Hints.tsx";
 import { useColor } from "../../theme/theme.tsx";
 
 const DIALOG_COLUMNS = 60;
+
+/** Two border columns and two padding columns. */
+const FRAME_COLUMNS = 4;
 
 export function Dialog(props: {
   readonly title: string;
@@ -22,11 +27,14 @@ export function Dialog(props: {
       borderStyle="rounded"
       borderColor={color("border.base")}
       backgroundColor={color("surface.overlay")}
-      title={` ${props.title} `}
-      titleColor={color("text.heading")}
       paddingX={1}
-      paddingTop={1}
     >
+      <box flexDirection="row" gap={1} marginBottom={1}>
+        <text flexShrink={0} fg={color("text.heading")} attributes={TextAttributes.BOLD}>
+          {props.title}
+        </text>
+        <Hatch width={DIALOG_COLUMNS - FRAME_COLUMNS - props.title.length - 1} />
+      </box>
       {props.children}
       <box marginTop={1}>
         <Hints hints={props.hints} />

@@ -1,4 +1,5 @@
 import type { State } from "../../entries.ts";
+import { Spinner } from "../../primitives/Spinner.tsx";
 import { Notice } from "./Notice.tsx";
 import { Reply } from "./Reply.tsx";
 import { ANSWER, QUESTION, READING, STREAMING } from "./samples.ts";
@@ -13,6 +14,15 @@ export const turnStates: readonly [State, ...State[]] = [
       <Turn input={QUESTION}>
         <WorkRows rows={READING.map((row) => ({ ...row, status: "done" }))} />
         <Reply text={ANSWER} isStreaming={false} />
+      </Turn>
+    ),
+  },
+  {
+    name: "Thinking",
+    fill: "page",
+    view: () => (
+      <Turn input={QUESTION}>
+        <Spinner label="Thinking" />
       </Turn>
     ),
   },

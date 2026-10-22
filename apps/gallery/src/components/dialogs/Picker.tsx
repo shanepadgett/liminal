@@ -3,6 +3,7 @@
  * titles; with one, `fuzzysort` orders them by match and marks the matched letters.
  */
 
+import { TextAttributes } from "@opentui/core";
 import fuzzysort from "fuzzysort";
 import { For, Match, Show, Switch } from "solid-js";
 
@@ -47,7 +48,7 @@ function ItemView(props: { readonly item: Item; readonly selected: string }) {
     <Switch>
       <Match when={props.item.kind === "section" ? props.item : undefined}>
         {(section) => (
-          <text fg={color("text.faint")} paddingLeft={1}>
+          <text fg={color("text.heading")} paddingLeft={1}>
             {section().title}
           </text>
         )}
@@ -83,8 +84,8 @@ export function Picker(props: {
   return (
     <Dialog title={props.title} hints={props.hints}>
       <box flexDirection="row" marginBottom={1}>
-        <text flexShrink={0} fg={color("text.accent")}>
-          {"› "}
+        <text flexShrink={0} fg={color("text.accent")} attributes={TextAttributes.BOLD}>
+          {"> "}
         </text>
         <input
           flexGrow={1}

@@ -21,9 +21,9 @@ export interface WorkRow {
 }
 
 const ICON: Readonly<Record<WorkStatus, { readonly glyph: string; readonly role: RoleName }>> = {
-  running: { glyph: "◌", role: "feedback.info.subtle" },
+  running: { glyph: "●", role: "text.accent" },
   done: { glyph: "✓", role: "feedback.success" },
-  failed: { glyph: "✕", role: "feedback.danger" },
+  failed: { glyph: "×", role: "feedback.danger" },
 };
 
 const TOOL_COLUMNS = 6;
@@ -65,8 +65,8 @@ function Row(props: { readonly row: WorkRow }) {
         <span
           style={{ fg: color(ICON[props.row.status].role) }}
         >{`${ICON[props.row.status].glyph} `}</span>
-        <span style={{ fg: color("text.muted") }}>{props.row.tool.padEnd(TOOL_COLUMNS)}</span>
-        <span style={{ fg: color("text.base") }}>{props.row.target}</span>
+        <span style={{ fg: color("text.accent") }}>{props.row.tool.padEnd(TOOL_COLUMNS)}</span>
+        <span style={{ fg: color("text.muted") }}>{props.row.target}</span>
         <span
           style={{ fg: color(props.row.status === "failed" ? "feedback.danger" : "text.faint") }}
         >

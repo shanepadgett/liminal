@@ -1,20 +1,20 @@
-/** A short message in the corner that goes away on its own. */
+/** A short message in the corner that goes away on its own, led by a loud little badge. */
 
 import { Show } from "solid-js";
 
-import type { RoleName } from "../../theme/roles.ts";
+import { Chip, type Tone } from "../../primitives/Chip.tsx";
 import { useColor } from "../../theme/theme.tsx";
 
 export type ToastKind = "info" | "success" | "warning" | "error";
 
-const TONE: Readonly<Record<ToastKind, RoleName>> = {
-  info: "feedback.info",
-  success: "feedback.success",
-  warning: "feedback.warning",
-  error: "feedback.danger",
+const BADGE: Readonly<Record<ToastKind, { readonly label: string; readonly tone: Tone }>> = {
+  info: { label: "NOTE", tone: "info" },
+  success: { label: "NICE", tone: "success" },
+  warning: { label: "HEADS UP", tone: "warning" },
+  error: { label: "OOPS", tone: "danger" },
 };
 
-const TOAST_COLUMNS = 40;
+const TOAST_COLUMNS = 44;
 
 export function Toast(props: {
   readonly kind: ToastKind;
@@ -24,16 +24,17 @@ export function Toast(props: {
   const color = useColor();
 
   return (
-    <box
-      width={TOAST_COLUMNS}
-      border={["left"]}
-      borderColor={color(TONE[props.kind])}
-      backgroundColor={color("surface.overlay")}
-      paddingX={1}
-    >
-      <text fg={color("text.base")}>{props.title}</text>
+    <box width={TOAST_COLUMNS} backgroundColor={color("surface.overlay")} padding={1}>
+      <box flexDirection="row" gap={1}>
+        <Chip label={BADGE[props.kind].label} tone={BADGE[props.kind].tone} />
+        <text fg={color("text.base")}>{props.title}</text>
+      </box>
       <Show when={props.message}>
-        {(message) => <text fg={color("text.muted")}>{message()}</text>}
+        {(message) => (
+          <text marginTop={1} fg={color("text.muted")}>
+            {message()}
+          </text>
+        )}
       </Show>
     </box>
   );

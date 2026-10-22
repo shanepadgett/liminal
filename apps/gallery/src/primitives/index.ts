@@ -1,10 +1,14 @@
 import type { Group } from "../entries.ts";
 import { chipStates } from "./Chip.states.tsx";
+import { gradientStates } from "./Gradient.states.tsx";
+import { hatchStates } from "./Hatch.states.tsx";
 import { hintsStates } from "./Hints.states.tsx";
 import { listRowStates } from "./ListRow.states.tsx";
+import { logoStates } from "./Logo.states.tsx";
 import { matchedTextStates } from "./MatchedText.states.tsx";
 import { ruleStates } from "./Rule.states.tsx";
 import { sectionStates } from "./Section.states.tsx";
+import { spinnerStates } from "./Spinner.states.tsx";
 
 export const primitives: Group = {
   title: "Primitives",
@@ -15,6 +19,15 @@ export const primitives: Group = {
         { id: "chip", title: "Chip", states: chipStates },
         { id: "hints", title: "Hints", states: hintsStates },
         { id: "matched-text", title: "Matched text", states: matchedTextStates },
+      ],
+    },
+    {
+      title: "Ornament",
+      entries: [
+        { id: "gradient", title: "Gradient", states: gradientStates },
+        { id: "hatch", title: "Hatch", states: hatchStates },
+        { id: "logo", title: "Logo", states: logoStates },
+        { id: "spinner", title: "Spinner", states: spinnerStates },
       ],
     },
     {

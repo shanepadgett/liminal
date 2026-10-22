@@ -23,6 +23,7 @@ export function Chip(props: { readonly label: string; readonly tone: Tone }) {
         style={{
           bg: color(FILL[props.tone]),
           fg: color(props.tone === "quiet" ? "text.muted" : "text.inverse"),
+          bold: true,
         }}
       >
         {` ${props.label} `}

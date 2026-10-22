@@ -1,4 +1,4 @@
-/** Text with the letters a filter matched picked out in the accent. */
+/** Text with the letters a filter matched picked out: bold, underlined and in their own color. */
 
 import { For } from "solid-js";
 
@@ -32,6 +32,8 @@ export function MatchedText(props: {
   /** Indexes of the matched letters. */
   readonly matches: readonly number[];
   readonly role: RoleName;
+  /** The matched letters' color; the accent unless the row sits on a fill. */
+  readonly matchRole?: RoleName;
 }) {
   const color = useColor();
 
@@ -39,7 +41,13 @@ export function MatchedText(props: {
     <text wrapMode="none">
       <For each={runsOf(props.text, new Set(props.matches))}>
         {(run) => (
-          <span style={{ fg: color(run.isMatch ? "text.accent" : props.role), bold: run.isMatch }}>
+          <span
+            style={{
+              fg: color(run.isMatch ? (props.matchRole ?? "text.accent") : props.role),
+              bold: run.isMatch,
+              underline: run.isMatch,
+            }}
+          >
             {run.text}
           </span>
         )}

@@ -1,6 +1,7 @@
 import type { Group } from "../entries.ts";
 import { composerStates } from "./chat/Composer.states.tsx";
 import { headerStates } from "./chat/Header.states.tsx";
+import { landingStates } from "./chat/Landing.states.tsx";
 import { sidebarStates } from "./chat/Sidebar.states.tsx";
 import { toastStates } from "./chat/Toast.states.tsx";
 import { commandsStates } from "./dialogs/Commands.states.tsx";
@@ -19,6 +20,7 @@ export const components: Group = {
       title: "Chat",
       entries: [
         { id: "header", title: "Header", states: headerStates },
+        { id: "landing", title: "Landing", states: landingStates },
         { id: "composer", title: "Composer", states: composerStates },
         { id: "sidebar", title: "Sidebar", states: sidebarStates },
         { id: "toast", title: "Toast", states: toastStates },

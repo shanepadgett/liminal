@@ -2,27 +2,22 @@ import type { JSX } from "@opentui/solid";
 
 import { Composer } from "../components/chat/Composer.tsx";
 import { Header } from "../components/chat/Header.tsx";
-import { SAMPLE_MODEL } from "../components/chat/Sidebar.states.tsx";
+import { Landing } from "../components/chat/Landing.tsx";
+import { SAMPLE_SIDEBAR } from "../components/chat/Sidebar.states.tsx";
 import { Sidebar } from "../components/chat/Sidebar.tsx";
 import { Toast } from "../components/chat/Toast.tsx";
 import { MODELS } from "../components/dialogs/Models.states.tsx";
 import { Picker, PICKER_HINTS } from "../components/dialogs/Picker.tsx";
 import { Notice } from "../components/transcript/Notice.tsx";
 import { Reply } from "../components/transcript/Reply.tsx";
-import { ANSWER, EDITING, QUESTION, READING, STREAMING } from "../components/transcript/samples.ts";
+import { ANSWER, EDITING, QUESTION, READING } from "../components/transcript/samples.ts";
 import { Turn } from "../components/transcript/Turn.tsx";
 import { WorkRows } from "../components/transcript/WorkRows.tsx";
 import type { State } from "../entries.ts";
-import { useColor } from "../theme/theme.tsx";
+import { Spinner } from "../primitives/Spinner.tsx";
 import { Chat } from "./Chat.tsx";
 
 const TITLE = "Why the loop retries twice";
-
-function Empty() {
-  const color = useColor();
-
-  return <text fg={color("text.faint")}>Ask anything to start. / opens the commands.</text>;
-}
 
 function Answered() {
   return (
@@ -43,92 +38,97 @@ function Working() {
   return (
     <Turn input={QUESTION}>
       <WorkRows rows={READING} />
-      <Reply text={STREAMING} isStreaming />
+      <Spinner label="Thinking" />
     </Turn>
   );
 }
 
 interface ChatSample {
-  readonly title?: string;
+  /** The session's title; none before the session starts. */
+  readonly title: string | undefined;
+  /** A wide screen has room for the sidebar. */
+  readonly width: "wide" | "narrow";
   readonly transcript: () => JSX.Element;
   readonly isWorking?: boolean;
-  readonly hasSidebar?: boolean;
+  readonly queued?: readonly string[];
   readonly dialog?: () => JSX.Element;
   readonly toast?: () => JSX.Element;
 }
 
 const chat = (sample: ChatSample) => () => (
   <Chat
-    header={
-      <Header
-        title={sample.title}
-        model={SAMPLE_MODEL.name}
-        isWorking={sample.isWorking ?? false}
-      />
-    }
+    header={<Header title={sample.title} />}
     transcript={sample.transcript()}
     composer={
       <Composer
         draft=""
-        model={SAMPLE_MODEL.name}
+        model="claude-sonnet-4.5"
         effort="high"
-        queued={[]}
+        queued={sample.queued ?? []}
         isWorking={sample.isWorking ?? false}
       />
     }
-    sidebar={
-      sample.hasSidebar === true ? (
-        <Sidebar
-          title={TITLE}
-          started="2h ago"
-          model={SAMPLE_MODEL}
-          used={86_000}
-          limit={200_000}
-        />
-      ) : undefined
-    }
+    sidebar={sample.width === "wide" ? <Sidebar {...SAMPLE_SIDEBAR} /> : undefined}
     dialog={sample.dialog?.()}
     toast={sample.toast?.()}
   />
 );
 
+const modelPicker = () => (
+  <Picker
+    title="Model for main"
+    placeholder="Search models"
+    empty="No models. Connect a provider first."
+    rows={MODELS}
+    query=""
+    selected="anthropic/claude-sonnet-4.5"
+    hints={PICKER_HINTS}
+  />
+);
+
 export const chatStates: readonly [State, ...State[]] = [
-  { name: "New session", fill: "screen", view: chat({ transcript: () => <Empty /> }) },
+  {
+    name: "New session",
+    fill: "screen",
+    view: chat({
+      title: undefined,
+      width: "narrow",
+      transcript: () => <Landing version="v0.1.0" />,
+    }),
+  },
   {
     name: "Conversation",
     fill: "screen",
-    view: chat({ title: TITLE, transcript: () => <Answered />, hasSidebar: true }),
+    view: chat({ title: TITLE, width: "wide", transcript: Answered }),
   },
   {
     name: "Working",
     fill: "screen",
-    view: chat({ title: TITLE, transcript: () => <Working />, isWorking: true, hasSidebar: true }),
+    view: chat({
+      title: TITLE,
+      width: "wide",
+      transcript: Working,
+      isWorking: true,
+      queued: ["Also rename the store to sessions"],
+    }),
+  },
+  {
+    name: "Narrow",
+    fill: "screen",
+    view: chat({ title: TITLE, width: "narrow", transcript: Answered }),
   },
   {
     name: "Model picker",
     fill: "screen",
-    view: chat({
-      title: TITLE,
-      transcript: () => <Answered />,
-      dialog: () => (
-        <Picker
-          title="Model for main"
-          placeholder="Search models"
-          empty="No models. Connect a provider first."
-          rows={MODELS}
-          query=""
-          selected="anthropic/claude-sonnet-4.5"
-          hints={PICKER_HINTS}
-        />
-      ),
-    }),
+    view: chat({ title: TITLE, width: "wide", transcript: Answered, dialog: modelPicker }),
   },
   {
     name: "Toast",
     fill: "screen",
     view: chat({
       title: TITLE,
-      transcript: () => <Answered />,
+      width: "wide",
+      transcript: Answered,
       toast: () => (
         <Toast
           kind="success"

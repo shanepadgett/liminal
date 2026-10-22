@@ -16,7 +16,8 @@
 - **The gallery owns its components.** Design evolves there without touching the real TUI. Milestone 2 copies approved components into `packages/tui` and the plugins' `tui` entries; the gallery keeps its own.
 - **Separate checks.** `apps/gallery` has its own `tsconfig.json` and gallery check tasks that run only when files under `apps/gallery/**` change. The repository's type check, lint and dead-code checks leave it out. Formatting stays shared. The gallery lint uses the full Liminal rule set.
 - **Scope: what milestone 2 needs.** Tokens, primitives, the header, composer, transcript (turns, replies, work rows, notices), sidebar, toasts, the pickers for commands, models, sessions and `/connect`, and the chat screen. Components for later milestones come with them.
-- **Look.** The archive's oklch palettes and color roles carry over; the components are redesigned.
+- **Look.** The archive's oklch palettes and color roles carry over; the components are redesigned with a playful touch drawn from Crush and Bubble Tea: a gradient wordmark, diagonal hatch fields, a shimmering spinner. Gradients run from light accent to dark; the palettes keep one accent.
+- **No repeated information.** The model shows only in the composer's footer and the context share only in the sidebar, as one percentage. The header, the spaced wordmark and the session title, always shows. The sidebar, on wide screens, has the session's folder and branch, the context with its memory and checkpoint counts, the repositories attached as references and the running language servers.
 - **Structure.** Four groups: Tokens, Primitives, Components, Screens. No Scenarios. Each component's states sit in a file beside it; each group lists its entries in one short file.
 - **Theme.** A Solid context gives components the palette's roles; `t` switches palettes. No color prop through every component.
 - **One picker.** A `Picker` (dialog, filter input, `fuzzysort` matches, rows, hints) that every picker configures.
@@ -50,9 +51,10 @@ apps/gallery/
       syntax.ts             markdown and code colors from the palette's roles
       theme.tsx             ThemeProvider, useTheme and useColor
     tokens/                 Tokens group: PaletteView, TerminalView, terminal-palette.ts
-    primitives/             Primitives group: Rule, Chip, Hints, ListRow, MatchedText, Section
+    primitives/             Primitives group: Rule, Chip, Hints, ListRow, MatchedText, Section,
+                            Gradient, Hatch, Logo, Spinner
     components/
-      chat/                 Header, Composer, Sidebar, Toast
+      chat/                 Header, Composer, Sidebar, Toast, Landing
       transcript/           Turn, Reply, WorkRows, Notice; samples.ts holds shared sample text
       dialogs/              Dialog, Picker, Connect (API key and browser steps); the commands,
                             models, sessions and connect pickers are Picker states only
