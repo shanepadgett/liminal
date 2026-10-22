@@ -51,7 +51,7 @@ Sections.add({ name: "agents-files", text: readAgentsFiles(cwd) }, { order: 20 }
 - Wraps `ToolCall`: a policy, then the small model's verdict, then the user.
 - The policy reads tool hints, such as read-only and destructive, added to `Tool` here, as MCP's annotations.
 - Asking the user is a `question` event; the answer is an input.
-- `tui` entry renders the question as a card through `EventRenderer`.
+- `tui` entry shows the question in the composer's place until the user answers: the tool and what the call will do in the model's words, then Approve and Reject; Reject opens a note for telling the model why. The call's input stays in its transcript row. Nothing stays in the transcript once answered.
 - Print mode's `--approve` lets questions and approvals pass; without it they are denied.
 - Tool calls in one reply run at the same time, so `ToolCall` wraps run at the same time too. Pi and DeepSeek run their before-call checks one at a time in the order asked; decide whether approvals asks one question at a time the same way.
 - Previous code: `approval`.

@@ -213,7 +213,7 @@ jsdiff: line diffs and unified patches. structuredPatch and formatPatch with OMI
 Renders Mermaid diagrams as Unicode box-drawing text: renderMermaidASCII(source, options) returns a string, throwing on a diagram it cannot parse.
 
 - Docs: `docs/reference/copies/beautiful-mermaid/1.1.3/` (1 file: README.md)
-- API (types): `tools/planned/node_modules/beautiful-mermaid/dist/index.d.ts`
+- API (types): `apps/gallery/node_modules/beautiful-mermaid/dist/index.d.ts`
 
 ## fuzzysort 4.0.2
 

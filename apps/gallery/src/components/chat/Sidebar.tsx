@@ -8,6 +8,7 @@ import { For, Show } from "solid-js";
 
 import { Section } from "../../primitives/Section.tsx";
 import { useColor } from "../../theme/theme.tsx";
+import { MEMORY_STARS } from "../transcript/Memory.tsx";
 
 /** The columns inside the sidebar's padding. */
 const CONTENT_COLUMNS = 28;
@@ -25,8 +26,12 @@ export interface SidebarContext {
   readonly checkpoints: number;
 }
 
-/** A label on the left and its value on the right. */
-function Row(props: { readonly label: string; readonly value: string | number }) {
+/** A label on the left and its value on the right, after an optional mark. */
+function Row(props: {
+  readonly label: string;
+  readonly value: string | number;
+  readonly mark?: string;
+}) {
   const color = useColor();
 
   return (
@@ -34,8 +39,11 @@ function Row(props: { readonly label: string; readonly value: string | number })
       <text flexGrow={1} wrapMode="none" fg={color("text.faint")}>
         {props.label}
       </text>
-      <text flexShrink={0} fg={color("text.muted")}>
-        {String(props.value)}
+      <text flexShrink={0}>
+        <span style={{ fg: color("text.accent") }}>
+          {props.mark === undefined ? "" : `${props.mark} `}
+        </span>
+        <span style={{ fg: color("text.muted") }}>{String(props.value)}</span>
       </text>
     </box>
   );
@@ -50,8 +58,16 @@ function ContextSection(props: { readonly context: SidebarContext }) {
       note={`${Math.round(share() * 100)}%`}
       noteRole={share() > NEAR_LIMIT ? "feedback.warning" : "text.muted"}
     >
-      <Row label="short-term memories" value={props.context.shortTermMemories} />
-      <Row label="long-term memories" value={props.context.longTermMemories} />
+      <Row
+        mark={MEMORY_STARS["short-term"]}
+        label="short-term memories"
+        value={props.context.shortTermMemories}
+      />
+      <Row
+        mark={MEMORY_STARS["long-term"]}
+        label="long-term memories"
+        value={props.context.longTermMemories}
+      />
       <Row label="checkpoints" value={props.context.checkpoints} />
     </Section>
   );

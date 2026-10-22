@@ -1,10 +1,19 @@
-/** The model's words, drawn as markdown; while streaming, the last block may still change. */
+/**
+ * The model's words, drawn as Markdown with its lists, tables and Mermaid diagrams. While they
+ * stream, the paragraph being written inks in above the ones that have settled.
+ */
 
+import { Match, Show, Switch } from "solid-js";
+
+import { Inked } from "../../primitives/Ink.tsx";
 import { useColor, useTheme } from "../../theme/theme.tsx";
+import { useDiagrams } from "./diagrams.ts";
+import { splitAt } from "./stream.ts";
 
-export function Reply(props: { readonly text: string; readonly isStreaming: boolean }) {
+function Markdown(props: { readonly text: string; readonly isStreaming: boolean }) {
   const theme = useTheme();
   const color = useColor();
+  const diagrams = useDiagrams();
 
   return (
     <markdown
@@ -13,13 +22,52 @@ export function Reply(props: { readonly text: string; readonly isStreaming: bool
       syntaxStyle={theme().syntax}
       fg={color("text.base")}
       conceal
+      renderNode={diagrams()}
       tableOptions={{
-        style: "columns",
+        style: "grid",
         widthMode: "content",
         cellPaddingX: 1,
         borderColor: color("border.base"),
         borderStyle: "rounded",
       }}
     />
+  );
+}
+
+export function Reply(props: {
+  readonly text: string;
+  /** How many characters have streamed in; all of them when left out. */
+  readonly streamed?: number;
+}) {
+  const split = () => splitAt(props.text, props.streamed ?? Number.POSITIVE_INFINITY);
+
+  const markdown = () => {
+    const current = split();
+
+    return current.kind === "markdown" ? current : undefined;
+  };
+
+  const inked = () => {
+    const current = split();
+
+    return current.kind === "inked" ? current : undefined;
+  };
+
+  return (
+    <Switch>
+      <Match when={markdown()}>
+        {(whole) => <Markdown text={whole().text} isStreaming={props.streamed !== undefined} />}
+      </Match>
+      <Match when={inked()}>
+        {(live) => (
+          <box gap={1}>
+            <Show when={live().settled !== ""}>
+              <Markdown text={live().settled} isStreaming />
+            </Show>
+            <Inked text={live().live} shown={live().shown} role="text.base" />
+          </box>
+        )}
+      </Match>
+    </Switch>
   );
 }

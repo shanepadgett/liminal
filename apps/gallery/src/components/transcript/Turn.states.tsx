@@ -1,8 +1,9 @@
 import type { State } from "../../entries.ts";
 import { Spinner } from "../../primitives/Spinner.tsx";
 import { Notice } from "./Notice.tsx";
+import { StreamingAnswer } from "./Reply.states.tsx";
 import { Reply } from "./Reply.tsx";
-import { ANSWER, QUESTION, READING, STREAMING } from "./samples.ts";
+import { ANSWER, QUESTION, READ } from "./samples.ts";
 import { Turn } from "./Turn.tsx";
 import { WorkRows } from "./WorkRows.tsx";
 
@@ -12,8 +13,8 @@ export const turnStates: readonly [State, ...State[]] = [
     fill: "page",
     view: () => (
       <Turn input={QUESTION}>
-        <WorkRows rows={READING.map((row) => ({ ...row, status: "done" }))} />
-        <Reply text={ANSWER} isStreaming={false} />
+        <WorkRows rows={READ} />
+        <Reply text={ANSWER} />
       </Turn>
     ),
   },
@@ -22,7 +23,7 @@ export const turnStates: readonly [State, ...State[]] = [
     fill: "page",
     view: () => (
       <Turn input={QUESTION}>
-        <Spinner label="Thinking" />
+        <Spinner />
       </Turn>
     ),
   },
@@ -31,8 +32,8 @@ export const turnStates: readonly [State, ...State[]] = [
     fill: "page",
     view: () => (
       <Turn input={QUESTION}>
-        <WorkRows rows={READING} />
-        <Reply text={STREAMING} isStreaming />
+        <WorkRows rows={READ} />
+        <StreamingAnswer />
       </Turn>
     ),
   },

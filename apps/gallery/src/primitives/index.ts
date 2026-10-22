@@ -1,8 +1,10 @@
 import type { Group } from "../entries.ts";
 import { chipStates } from "./Chip.states.tsx";
+import { choiceRowStates } from "./ChoiceRow.states.tsx";
 import { gradientStates } from "./Gradient.states.tsx";
 import { hatchStates } from "./Hatch.states.tsx";
 import { hintsStates } from "./Hints.states.tsx";
+import { inkStates } from "./Ink.states.tsx";
 import { listRowStates } from "./ListRow.states.tsx";
 import { logoStates } from "./Logo.states.tsx";
 import { matchedTextStates } from "./MatchedText.states.tsx";
@@ -19,6 +21,7 @@ export const primitives: Group = {
         { id: "chip", title: "Chip", states: chipStates },
         { id: "hints", title: "Hints", states: hintsStates },
         { id: "matched-text", title: "Matched text", states: matchedTextStates },
+        { id: "ink", title: "Ink", states: inkStates },
       ],
     },
     {
@@ -36,6 +39,7 @@ export const primitives: Group = {
         { id: "rule", title: "Rule", states: ruleStates },
         { id: "section", title: "Section", states: sectionStates },
         { id: "list-row", title: "List row", states: listRowStates },
+        { id: "choice-row", title: "Choice row", states: choiceRowStates },
       ],
     },
   ],
