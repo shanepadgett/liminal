@@ -43,6 +43,16 @@
         "effect": "*",
       },
     },
+    "packages/plugins/history": {
+      "name": "@shanepadgett/liminal-history",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "effect": "*",
+      },
+    },
     "packages/plugins/model": {
       "name": "@shanepadgett/liminal-model",
       "version": "0.1.0",
@@ -70,6 +80,15 @@
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-directories": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/persona": {
+      "name": "@shanepadgett/liminal-persona",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-system-prompt": "workspace:*",
         "effect": "*",
       },
     },
@@ -103,6 +122,27 @@
       "peerDependencies": {
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-directories": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/system-prompt": {
+      "name": "@shanepadgett/liminal-system-prompt",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-history": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/tools": {
+      "name": "@shanepadgett/liminal-tools",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
         "effect": "*",
       },
     },
@@ -365,6 +405,8 @@
 
     "@shanepadgett/liminal-directories": ["@shanepadgett/liminal-directories@workspace:packages/plugins/directories"],
 
+    "@shanepadgett/liminal-history": ["@shanepadgett/liminal-history@workspace:packages/plugins/history"],
+
     "@shanepadgett/liminal-model": ["@shanepadgett/liminal-model@workspace:packages/plugins/model"],
 
     "@shanepadgett/liminal-model-anthropic": ["@shanepadgett/liminal-model-anthropic@workspace:packages/plugins/model-anthropic"],
@@ -373,6 +415,8 @@
 
     "@shanepadgett/liminal-model-wire": ["@shanepadgett/liminal-model-wire@workspace:packages/model-wire"],
 
+    "@shanepadgett/liminal-persona": ["@shanepadgett/liminal-persona@workspace:packages/plugins/persona"],
+
     "@shanepadgett/liminal-planned": ["@shanepadgett/liminal-planned@workspace:tools/planned"],
 
     "@shanepadgett/liminal-session": ["@shanepadgett/liminal-session@workspace:packages/plugins/session"],
@@ -380,6 +424,10 @@
     "@shanepadgett/liminal-settings": ["@shanepadgett/liminal-settings@workspace:packages/plugins/settings"],
 
     "@shanepadgett/liminal-sqlite": ["@shanepadgett/liminal-sqlite@workspace:packages/plugins/sqlite"],
+
+    "@shanepadgett/liminal-system-prompt": ["@shanepadgett/liminal-system-prompt@workspace:packages/plugins/system-prompt"],
+
+    "@shanepadgett/liminal-tools": ["@shanepadgett/liminal-tools@workspace:packages/plugins/tools"],
 
     "@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
 

@@ -2,34 +2,13 @@
 
 Work for [status.md](../status.md) milestone 1. Contracts are in [architecture.md](../architecture.md#base-plugins-the-agent).
 
-## `tools`
-
-- `Tools` registry, `ToolCall` pipeline. Each tool carries a description, optional guidance, an optional `deferred` mark and an optional `sequential` mark; a tool result lists the tools it loads.
-- Previous code: `tools`.
-
 ## `tool-definitions`
 
 - `ToolDefinitions` pipeline: each tool's name, description and input shape as the model sees them. A plugin wraps it to change a description without replacing the tool.
-- Adds a section to `system-prompt` from each tool's optional guidance.
-- Logs tools added or removed mid-session. A removed tool is still sent, with a note, until the next fold.
-- Tool definitions are logged at session start; a change is logged as a note before the next model call; a fold rebuilds them.
+- `ToolList.sync(id)`: logs the tool list at session start, then `added` and `removed` records for what changed. A changed definition is logged as `added` under its name. `ToolList.current(events)`: the list the log says the model is sent; a removed tool is still sent, with a note, until the next fold. `ToolList.fold(id)` logs the full list again.
+- Deferred tools are left out until `tools-search`.
+- Adds `history` converters that turn its notes into user messages.
 - Previous code: `tools`.
-
-## `system-prompt`
-
-- `Sections` registry. Logs the system prompt built from the sections at session start, logs a change note before the next model call when a section's text changes, and offers `fold`, which logs a new system prompt. It never decides when to fold.
-- Previous code: `context`.
-
-## `persona`
-
-- One section: who the agent is and how it talks.
-- Previous code: `context`.
-
-## `history`
-
-- `Converters` registry: one converter per event kind turns its events into model messages; a kind with no converter never reaches the model. Each plugin adds converters for its own kinds; `history` adds the one for `session/message`.
-- `History` pipeline: the log, through the converters, into the messages each model call sends.
-- Previous code: `context`.
 
 ## `loop`
 

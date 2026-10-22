@@ -139,6 +139,46 @@ for (const event of yield* log.read(session)) {
 - `MessageEvent` (`session/message`) holds a `Message` the model sees.
 - `Notice` is a message for the user that the model never sees.
 
+## Add a tool
+
+`defineTool` from `@shanepadgett/liminal-tools/contract` checks the model's params with your schema before `run` sees them.
+
+```ts
+const add = defineTool({
+  name: "add",
+  description: "Adds two numbers.",
+  input: Schema.Struct({ a: Schema.Finite, b: Schema.Finite }),
+  run: ({ a, b }) => Effect.succeed({ result: a + b }),
+});
+
+yield* (yield* Tools).add(add);
+```
+
+- Fail with `ToolFailed` for a failure the model should read; a crash also reaches the model as a failed result.
+- Every call goes through the `ToolCall` pipeline; wrap it to see or change each call.
+- The `tools` README covers schema choices and the `deferred` and `sequential` marks.
+
+## Add a prompt section
+
+`Sections` from `@shanepadgett/liminal-system-prompt/contract` holds the parts of the system prompt. Lower `order` comes first; `persona` uses -100.
+
+```ts
+yield* (yield* Sections).add({ name: "environment", text: readEnvironment }, { order: 10 });
+```
+
+- `text` is an `Effect<string>`, run before each model call. Empty text leaves the section out.
+- The prompt is logged once. When a section's text changes, the model gets a note with its full new text, so keep text that changes often out of sections.
+
+## Send events to the model
+
+An event kind reaches the model only through a converter. `defineConverter` from `@shanepadgett/liminal-history/contract` reads the event's data with its schema.
+
+```ts
+yield* (yield* Converters).add(
+  defineConverter(Reminder, ({ text }) => [{ role: "user", parts: [{ type: "text", text }] }]),
+);
+```
+
 ## Call a model
 
 `Models` from `@shanepadgett/liminal-model/contract` makes one call outside the turn loop. `model` is a role, `main` or `small`, or a `provider/model` id.

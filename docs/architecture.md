@@ -21,7 +21,7 @@ Each layer imports only from the layers above it.
 ```text
 core                      definePlugin, compose, Registry, Pipeline, Attribute     knows nothing about agents
   ↑
-base plugins              directories · settings · model · session · tools · tool-definitions · system-prompt · persona · history · loop      "an agent"
+base plugins              directories · settings · model · session · tools · history · system-prompt · persona · tool-definitions · loop      "an agent"
   ↑
 providers & features      model-anthropic, sqlite, tools-files, approvals, memory, …
   ↑
@@ -194,21 +194,29 @@ interface SessionLog {
 }
 
 // tools
-interface Tool<I, O> { name; description; guidance?; deferred?; sequential?; input: Schema<I>; run(input: I, ctx: ToolContext): Effect<O> }
+interface Tool { name; description; deferred?; sequential?; input: JsonSchema; run(params: Json, ctx: ToolContext): Effect<ToolOutput, ToolFailed> }
+defineTool({ name; description; input: Schema<I>; run(input: I, ctx) }): Tool   // checks params before run
+type ToolContext = { session; callId; attributes }   // attributes of the latest input the turn consumed
+type ToolOutput = { result: Json; loads?: string[] }
 // a deferred tool shows by name only until a ToolResult lists it in `loads`
-Tools: Registry<Tool>
-ToolCall: Pipeline<ToolCallRequest, ToolResult>
+Tools: Registry<Tool>                          // of two with one name, the last added is used
+ToolCall: Pipeline<{ session; call: ToolCall; attributes }, ToolResult>   // failures, unknown tools and crashes become failed results
 
 // tool-definitions: what the model is told about each tool
 ToolDefinitions: Pipeline<Tool, ToolDefinition>   // name, description, input shape; wrap to change a description
-// tools added or removed mid-session are logged; a removed tool is still sent, with a note, until the next fold
+ToolList.sync(id): Effect<void>               // logs the tool list at start, then added and removed records
+ToolList.current(events): ToolDefinition[]    // a removed tool is still sent, with a note, until the next fold
+ToolList.fold(id): Effect<void>               // logs the full tool list again
 
 // system-prompt: the system prompt, built from sections
-Sections: Registry<Section>
-SystemPrompt.fold(): Effect<void>            // logs a new system prompt built from the current sections
+Sections: Registry<Section>                  // Section = { name; text: Effect<string> }; empty text is left out
+SystemPrompt.sync(id): Effect<void>          // logs the prompt at start, then a note with each changed section's full text
+SystemPrompt.current(events): string         // the prompt the log says the model is sent
+SystemPrompt.fold(id): Effect<void>          // logs the prompt again from the current sections
 
 // history: the messages each model call sends
 Converters: Registry<Converter>              // one per event kind; a kind with no converter never reaches the model
+defineConverter(EventKind<T>, (data: T) => Message[]): Converter
 History: Pipeline<SessionEvent[], Message[]> // the log, through the converters, into model messages
 
 // loop: the turn, the inbox and commands
@@ -219,8 +227,9 @@ interface Inbox {
 }
 Send: Pipeline<Input, void>
 Commands: Registry<Command>                  // slash commands, run on the agent side as soon as they are sent
-BeforeCall: Registry<Hook>                    // records logged before each model call: change notes, reminders
+BeforeCall: Registry<Hook>                    // records logged before each model call after both syncs, such as reminders
 Turns.request(id): Effect<ModelRequest>      // system prompt + tool definitions + History, as the next model call sends them
+Turns.fold(id): Effect<void>                 // SystemPrompt.fold + ToolList.fold; waits for a running turn
 TurnEnd: Registry<Hook>
 ```
 
@@ -363,7 +372,7 @@ How `session` does these over `SqlClient` is open.
 | Base | `model` | Message types, providers, `ModelCall`, `Models` | base | `models`, `decisions` |
 | Base | `session` | The session log over `SqlClient`, event kinds, deltas | base | `session-log`, `session-store`, `notices` |
 | Base | `tools` | Tool registry, `ToolCall` | base | `tools` |
-| Base | `tool-definitions` | `ToolDefinitions`, tool guidance section | base | `tools` |
+| Base | `tool-definitions` | `ToolDefinitions`, tool list records and notes | base | `tools` |
 | Base | `system-prompt` | `Sections`, the logged system prompt, change notes, fold | base | `context` |
 | Base | `persona` | Who the agent is and how it talks, as a section | base | `context` |
 | Base | `history` | `Converters`, `History` | base | `context` |

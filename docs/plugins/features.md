@@ -40,12 +40,14 @@ Commands.add({ name: "commit", run: (ctx) =>
 ## `tools-search`
 
 - Defers rarely used tools: wraps the tool list sent to the model and adds a search tool that loads them.
+- Sends deferred tools, which `tool-definitions` leaves out in milestone 1.
 - Previous code: `tools-search`.
 
 ## `tools-execute`
 
 - Code mode: adds a tool that runs a script able to call other tools through `ToolCall.run`, so every wrapper applies.
 - Runs scripts with `@opencode/codemode`.
+- Scripts get typed values back: `Tool` gains an optional output schema, as OpenCode's `output` and Pi's `outputSchema`.
 - Previous code: `tools-execute`.
 
 ## `attention`
