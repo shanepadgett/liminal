@@ -20,7 +20,9 @@ export const SAMPLE_SIDEBAR: ComponentProps<typeof Sidebar> = {
 
 const sidebar = (props: ComponentProps<typeof Sidebar>) => () => (
   <box height="100%" alignItems="flex-end" paddingTop={1}>
-    <Sidebar {...props} />
+    <box width={36}>
+      <Sidebar {...props} />
+    </box>
   </box>
 );
 

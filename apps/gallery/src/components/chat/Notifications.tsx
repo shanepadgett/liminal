@@ -30,8 +30,8 @@ const MARK: Readonly<
   error: { glyph: "×", role: "feedback.danger" },
 };
 
-/** How much of the kind's color tints the band. */
-const TINT = 0.14;
+/** How much of the kind's color tints the band, over the raised surface. */
+const TINT = 0.24;
 
 const TRACK_CELLS = 6;
 
@@ -60,7 +60,7 @@ function Band(props: { readonly notification: Notification }) {
       marginX={-1}
       paddingX={1}
       gap={1}
-      backgroundColor={mixHex(color("surface.base"), color(mark().role), TINT)}
+      backgroundColor={mixHex(color("surface.raised"), color(mark().role), TINT)}
     >
       <text
         width={GUTTER_COLUMNS - 1}

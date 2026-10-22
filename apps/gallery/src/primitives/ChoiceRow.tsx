@@ -1,7 +1,8 @@
 /**
  * One row of a list inside the composer, such as a command matching a typed `/` or an answer to an
- * ask. The row under the cursor gets a bold chevron and a brighter label; labels sit in one column
- * so the details line up. A row that can be picked shows a ring, filled once picked.
+ * ask. The row under the cursor gets a bold pointer, a chevron unless the list picks another, and a
+ * brighter label; labels sit in one column so the details line up. A row that can be picked shows a
+ * ring, filled once picked.
  */
 
 import { TextAttributes } from "@opentui/core";
@@ -69,6 +70,8 @@ function Label(props: LabelProps) {
 export function ChoiceRow(
   props: LabelProps & {
     readonly pick?: Pick | undefined;
+    /** The glyph marking the row under the cursor. */
+    readonly pointer?: string;
     /** Drawn in place of the label and detail, such as a field. */
     readonly children?: JSX.Element;
   },
@@ -83,7 +86,7 @@ export function ChoiceRow(
         fg={color("text.accent")}
         attributes={TextAttributes.BOLD}
       >
-        {props.isUnder ? POINTER : ""}
+        {props.isUnder ? (props.pointer ?? POINTER) : ""}
       </text>
       <Show when={props.pick}>{(pick) => <Ring pick={pick()} />}</Show>
       <Show when={props.children} fallback={<Label {...props} />}>
