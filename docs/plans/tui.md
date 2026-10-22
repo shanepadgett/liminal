@@ -255,6 +255,62 @@ loop/state (sessions.ts)
 - `streaming` matches the deltas `session` keeps for a viewer that joins mid-reply, so a view opened late sees the same.
 - A screen knows there is more history when `events[0].seq` is above 1.
 
+## Step 3: plugin anatomy
+
+Tooling only; the first `view.ts` and `tui` entry come with `theme` in step 5.
+
+```text
+tools/lint/plugin-entries.ts     PluginEntry gains "view"; src/view.ts file, src/view/ folder
+tools/lint/plugin-rules.ts       plugin-imports by entry; entry-isolation by table; new view-imports
+tools/lint/plugin-rules.test.ts  cases for each
+.oxlintrc.json                   turns on liminal/view-imports
+tools/checks/plugin-anatomy.ts   "./view" export; folder targets
+tools/checks/fixtures/           good: a ./view export, a tui folder; broken: messages updated
+docs/instructions/plugins.md     Checked section
+```
+
+Which other plugins' exports each importer may use (`plugin-imports`):
+
+| Importer | `/contract` | `/view` | `/tui` | `/web` |
+| --- | --- | --- | --- | --- |
+| contract, plugin, test, other files | yes | | | |
+| view code | yes | yes | | |
+| tui code | yes | yes | yes | |
+| web code | yes | yes | | yes |
+| `packages/client`, `packages/tui` | yes | | | |
+
+Which of its own entries a file may import with a relative path (`entry-isolation`):
+
+| From | May import |
+| --- | --- |
+| plugin | plugin; tui and web only with `import()` |
+| view | view |
+| tui | tui, view |
+| web | web, view |
+
+Contract and test files stay outside the table, as now.
+
+```ts
+// plugin-rules.ts
+const allowedSubpaths: ReadonlyMap<PluginEntry, ReadonlySet<string>>  // the first table
+const reaches: ReadonlyMap<PluginEntry, ReadonlySet<PluginEntry>>      // the second table
+
+/** View code uses no UI framework. */
+export const viewImports  // in view code: bans solid-js, @opentui/*, @shanepadgett/liminal-tui
+
+// plugin-anatomy.ts: each export and the files it may point to
+const entryFiles = new Map([
+  [".", ["./src/index.ts"]],
+  ["./contract", ["./src/contract.ts"]],
+  ["./view", ["./src/view.ts", "./src/view/index.ts"]],
+  ["./tui", ["./src/tui.tsx", "./src/tui/index.tsx"]],
+  ["./web", ["./src/web.tsx", "./src/web/index.tsx"]],
+])
+```
+
+- A folder entry's export points to its `index` file.
+- The guide in `docs/guides/plugins.md` gains `tui` entries in step 4, when a plugin can ship one.
+
 ## Events in the references
 
 | Signal | Pi | OpenCode | deepseek-harness | Liminal |

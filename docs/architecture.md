@@ -109,7 +109,7 @@ export default definePlugin({
 - A server never imports frontend entries. A frontend loads its entry of every plugin in the composition.
 - A plugin imports other plugins through their `./contract` export. Its `view` code may also import their `./view`, its `tui` code their `./view` and `./tui`, its `web` code their `./view` and `./web`.
 - A plugin's `tui` and `web` entries reach its server side only through the RPC group in its contract.
-- A `tui` or `web` entry that grows becomes a folder with an `index` file.
+- A `view`, `tui` or `web` entry that grows becomes a folder with an `index` file, which its export points to.
 - Code shared by plugins is Effect or standard JavaScript first. Pure code a second plugin needs moves to a library package named for one concept, never a grab-bag. It becomes a plugin only when it needs swapping, state or runtime services.
 
 ## Core

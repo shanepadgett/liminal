@@ -58,6 +58,7 @@
     "liminal/contract-no-side-effects": "error",
     "liminal/entry-isolation": "error",
     "liminal/plugin-imports": "error",
+    "liminal/view-imports": "error",
     "liminal/no-unknown-parameters": "error",
     "liminal/no-unknown-returns": "error",
     "liminal/no-unknown-type-aliases": "error",

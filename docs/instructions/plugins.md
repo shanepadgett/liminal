@@ -32,7 +32,8 @@
 
 ## Checked
 
-- Another plugin is imported only through its `/contract` export. (`liminal/plugin-imports`)
+- Another plugin is imported through its `/contract` export. View code may also import its `/view`, tui code its `/view` and `/tui`, web code its `/view` and `/web`. `packages/client` and `packages/tui` import only `/contract`. (`liminal/plugin-imports`)
 - A contract imports only `effect`, `@shanepadgett/liminal-core` and other contracts, and runs no statements. (`liminal/contract-imports`, `liminal/contract-no-side-effects`)
-- The plugin, tui and web entries never import each other; the plugin entry loads UI entries with `import()`. (`liminal/entry-isolation`)
+- The plugin, view, tui and web entries never import each other, except that tui and web import view, and the plugin entry loads tui and web with `import()`. (`liminal/entry-isolation`)
+- View code imports no UI framework: not `solid-js`, `@opentui/*` or `@shanepadgett/liminal-tui`. (`liminal/view-imports`)
 - Package name, exports, `liminal.plugins` and peer dependencies. (`mise run check:anatomy`)

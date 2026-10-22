@@ -1,7 +1,7 @@
 /** Where a file sits in a plugin package: which plugin, and which of its entries. */
 import { dirname, isAbsolute, join, normalize, relative, sep } from "node:path";
 
-export type PluginEntry = "contract" | "plugin" | "tui" | "web" | "test" | "other";
+export type PluginEntry = "contract" | "plugin" | "view" | "tui" | "web" | "test" | "other";
 
 export interface PluginLocation {
   readonly plugin: string;
@@ -11,6 +11,7 @@ export interface PluginLocation {
 /** Exact files that start an entry other than the plugin entry. */
 const entryFiles = new Map<string, PluginEntry>([
   ["src/contract.ts", "contract"],
+  ["src/view.ts", "view"],
   ["src/tui.tsx", "tui"],
   ["src/web.tsx", "web"],
 ]);
@@ -18,6 +19,7 @@ const entryFiles = new Map<string, PluginEntry>([
 /** Folders whose whole subtree belongs to one entry. */
 const entryFolders = new Map<string, PluginEntry>([
   ["test", "test"],
+  ["src/view", "view"],
   ["src/tui", "tui"],
   ["src/web", "web"],
 ]);

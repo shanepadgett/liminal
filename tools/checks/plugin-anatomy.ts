@@ -1,7 +1,7 @@
 /**
  * Checks every package under packages/plugins/ has the plugin anatomy: named after its folder,
- * published, exports limited to the plugin, contract, tui and web entries, the plugin entry listed
- * under `liminal.plugins`, and host-supplied packages and other plugins as peers.
+ * published, exports limited to the plugin, contract, view, tui and web entries, the plugin entry
+ * listed under `liminal.plugins`, and host-supplied packages and other plugins as peers.
  */
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -10,12 +10,13 @@ import { Schema } from "effect";
 
 import { jsonReader, type Problem, report } from "./problem.ts";
 
-/** Each export a plugin may have, and the file it must point to. */
-const entryFiles = new Map([
-  [".", "./src/index.ts"],
-  ["./contract", "./src/contract.ts"],
-  ["./tui", "./src/tui.tsx"],
-  ["./web", "./src/web.tsx"],
+/** Each export a plugin may have, and the files it may point to: an entry file or a folder's index. */
+const entryFiles = new Map<string, ReadonlyArray<string>>([
+  [".", ["./src/index.ts"]],
+  ["./contract", ["./src/contract.ts"]],
+  ["./view", ["./src/view.ts", "./src/view/index.ts"]],
+  ["./tui", ["./src/tui.tsx", "./src/tui/index.tsx"]],
+  ["./web", ["./src/web.tsx", "./src/web/index.tsx"]],
 ]);
 
 const Dependencies = Schema.optional(Schema.Record(Schema.String, Schema.String));
@@ -47,10 +48,10 @@ const checkExports = (dir: string, manifest: Manifest): Problem[] => {
     if (expected === undefined) {
       const allowed = [...entryFiles.keys()].join(", ");
       problems.push({ path, message: `export "${key}" is not one of ${allowed}` });
-    } else if (target !== expected) {
-      problems.push({ path, message: `export "${key}" must point to ${expected}` });
-    } else if (!existsSync(join(dir, expected))) {
-      problems.push({ path: join(dir, expected), message: "exported but missing" });
+    } else if (!expected.includes(target)) {
+      problems.push({ path, message: `export "${key}" must point to ${expected.join(" or ")}` });
+    } else if (!existsSync(join(dir, target))) {
+      problems.push({ path: join(dir, target), message: "exported but missing" });
     }
   }
 

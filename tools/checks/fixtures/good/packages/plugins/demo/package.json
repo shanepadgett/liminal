@@ -4,7 +4,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./contract": "./src/contract.ts",
-    "./tui": "./src/tui.tsx"
+    "./view": "./src/view.ts",
+    "./tui": "./src/tui/index.tsx"
   },
   "dependencies": {
     "diff": "9.0.0"

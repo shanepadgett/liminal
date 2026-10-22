@@ -19,8 +19,8 @@ test("a broken plugin reports each anatomy problem", () => {
   expect(messages.toSorted()).toEqual([
     `${demo}/package.json: @shanepadgett/liminal-core is supplied by the host; declare it in peerDependencies`,
     `${demo}/package.json: effect is supplied by the host; declare it in peerDependencies`,
-    `${demo}/package.json: export "./server" is not one of ., ./contract, ./tui, ./web`,
-    `${demo}/package.json: export "./web" must point to ./src/web.tsx`,
+    `${demo}/package.json: export "./server" is not one of ., ./contract, ./view, ./tui, ./web`,
+    `${demo}/package.json: export "./web" must point to ./src/web.tsx or ./src/web/index.tsx`,
     `${demo}/package.json: exports must include "." pointing to ./src/index.ts`,
     `${demo}/package.json: liminal.plugins must be ["./src/index.ts"]`,
     `${demo}/package.json: name must be @shanepadgett/liminal-demo, after its folder`,

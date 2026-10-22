@@ -3,11 +3,13 @@ import {
   contractNoSideEffects,
   entryIsolation,
   pluginImports,
+  viewImports,
 } from "./plugin-rules.ts";
 import { testRule } from "./rule-tester.ts";
 
 const contract = "packages/plugins/demo/src/contract.ts";
 const plugin = "packages/plugins/demo/src/index.ts";
+const view = "packages/plugins/demo/src/view.ts";
 const tui = "packages/plugins/demo/src/tui.tsx";
 const web = "packages/plugins/demo/src/web.tsx";
 
@@ -72,15 +74,47 @@ testRule("plugin-imports", pluginImports, {
       filename: "apps/cli/src/main.ts",
       code: 'import session from "@shanepadgett/liminal-session";',
     },
+    { filename: view, code: 'import { rules } from "@shanepadgett/liminal-chat/view";' },
+    {
+      filename: "packages/plugins/demo/src/view/rows.ts",
+      code: 'import { Theme } from "@shanepadgett/liminal-theme/contract";',
+    },
+    { filename: tui, code: 'import { rules } from "@shanepadgett/liminal-chat/view";' },
+    { filename: tui, code: 'import { ItemRenderer } from "@shanepadgett/liminal-chat/tui";' },
+    {
+      filename: "packages/plugins/demo/src/web/index.tsx",
+      code: 'import { Rows } from "@shanepadgett/liminal-chat/web";',
+    },
+    {
+      filename: "packages/tui/src/color.ts",
+      code: 'import type { Role } from "@shanepadgett/liminal-theme/contract";',
+    },
   ],
   invalid: [
     { filename: plugin, code: 'import session from "@shanepadgett/liminal-session";', errors: 1 },
+    {
+      filename: plugin,
+      code: 'import { rules } from "@shanepadgett/liminal-chat/view";',
+      errors: 1,
+    },
+    { filename: view, code: 'import { Rows } from "@shanepadgett/liminal-chat/tui";', errors: 1 },
+    { filename: tui, code: 'import { Rows } from "@shanepadgett/liminal-chat/web";', errors: 1 },
+    { filename: web, code: 'import { Rows } from "@shanepadgett/liminal-chat/tui";', errors: 1 },
+    {
+      filename: "packages/tui/src/color.ts",
+      code: 'import { palettes } from "@shanepadgett/liminal-theme/view";',
+      errors: 1,
+    },
     {
       filename: "packages/client/src/host.ts",
       code: 'import session from "@shanepadgett/liminal-session";',
       errors: 1,
     },
-    { filename: tui, code: 'import { View } from "@shanepadgett/liminal-chat/tui";', errors: 1 },
+    {
+      filename: "packages/client/src/host.ts",
+      code: 'import { rules } from "@shanepadgett/liminal-chat/view";',
+      errors: 1,
+    },
     {
       filename: contract,
       code: 'export * from "@shanepadgett/liminal-model/src/index.ts";',
@@ -96,6 +130,10 @@ testRule("entry-isolation", entryIsolation, {
     { filename: "packages/plugins/demo/src/store.ts", code: 'import "./index.ts";' },
     { filename: "packages/plugins/demo/src/store/rows.ts", code: 'import "../store.ts";' },
     { filename: "packages/plugins/demo/src/tui/view.tsx", code: 'import "../contract.ts";' },
+    { filename: tui, code: 'import { rules } from "./view.ts";' },
+    { filename: "packages/plugins/demo/src/web/index.tsx", code: 'import "../view/rows.ts";' },
+    { filename: view, code: 'import { Demo } from "./contract.ts";' },
+    { filename: "packages/plugins/demo/src/view/rows.ts", code: 'import "../view.ts";' },
   ],
   invalid: [
     { filename: plugin, code: 'import { View } from "./tui.tsx";', errors: 1 },
@@ -106,6 +144,28 @@ testRule("entry-isolation", entryIsolation, {
     {
       filename: "packages/plugins/demo/src/web/view.tsx",
       code: 'export * from "../tui.tsx";',
+      errors: 1,
+    },
+    { filename: plugin, code: 'import { rules } from "./view.ts";', errors: 1 },
+    { filename: plugin, code: 'const view = () => import("./view.ts");', errors: 1 },
+    { filename: view, code: 'import { store } from "./store.ts";', errors: 1 },
+    { filename: view, code: 'import { Rows } from "./tui.tsx";', errors: 1 },
+  ],
+});
+
+testRule("view-imports", viewImports, {
+  valid: [
+    { filename: view, code: 'import { Schema } from "effect";' },
+    { filename: view, code: 'import { SessionView } from "@shanepadgett/liminal-client";' },
+    { filename: tui, code: 'import { createSignal } from "solid-js";' },
+  ],
+  invalid: [
+    { filename: view, code: 'import { createSignal } from "solid-js";', errors: 1 },
+    { filename: view, code: 'import { createStore } from "solid-js/store";', errors: 1 },
+    { filename: view, code: 'import { RGBA } from "@opentui/core";', errors: 1 },
+    {
+      filename: "packages/plugins/demo/src/view/rows.ts",
+      code: 'import { Panel } from "@shanepadgett/liminal-tui";',
       errors: 1,
     },
   ],

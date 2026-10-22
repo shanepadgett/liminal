@@ -38,7 +38,7 @@ Planned dependencies are pinned in `tools/planned/package.json` so their docs ar
 Work: [plugins/tui.md](plugins/tui.md)
 
 - [x] `apps/gallery`: tokens, primitives, components and screens designed in their states
-- [ ] Session view in `packages/client`
+- [x] Session view in `packages/client`
 - [ ] `packages/tui`: renderer, slot tree, UI kit
 - [ ] `chat`, `palette`, `theme`
 - [ ] Model picker and print mode `--model`

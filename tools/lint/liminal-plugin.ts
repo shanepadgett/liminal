@@ -18,6 +18,7 @@ import {
   contractNoSideEffects,
   entryIsolation,
   pluginImports,
+  viewImports,
 } from "./plugin-rules.ts";
 import {
   noConditionalEmptySpread,
@@ -45,6 +46,7 @@ export default definePlugin({
     "contract-no-side-effects": contractNoSideEffects,
     "entry-isolation": entryIsolation,
     "plugin-imports": pluginImports,
+    "view-imports": viewImports,
     "no-unknown-parameters": noUnknownParameters,
     "no-unknown-returns": noUnknownReturns,
     "no-unknown-type-aliases": noUnknownTypeAliases,
