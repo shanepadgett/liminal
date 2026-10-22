@@ -556,6 +556,81 @@ Rpc.make("model/main", { success: Schema.Struct({ model: ModelId, contextWindow:
 - Quit: chat's `ctrl+c` calls `renderer.destroy()` through `Renderer`, which `run` waits on.
 - Deletes: the root's `ctrl+c` "Quit" while a plugin fills the screen; `liminal` with no flags no longer prints help.
 
+### 6b
+
+Three commits: the drawer fix, `@` tags, stashes.
+
+- Drawer: `escape` closes the sidebar drawer, through the drawer's own binding as `Shown` in `dialogs.tsx` does. While the drawer is closed on a narrow screen, the composer hints add `ctrl+b sidebar`.
+- A tag sends the file's contents with the message, as OpenCode (`core/src/session/prompt.ts` `readFileAttachment`) and Crush (`ui.go` `insertFileCompletion`) do. Long files are cut to a window with a note on how much is left, as Pi's `read` does (2000 lines or 50 KB, `[Showing lines X-Y of Z…]`) and the archive's `tools-read` `lineWindow` did. The message gains a text part per tag: `model`'s `Part` has no file part.
+- The `@` list shows files and folders, with folders taken from the file paths (OpenCode `filesystem/search.ts`, archive `files/server/tags.ts`); picking a folder inserts `@dir/`, `tab` opens it.
+- Files the user tags often and recently rank higher (OpenCode `prompt/frecency.tsx`).
+- Tag sources are a registry, so later features such as references add their own `@` rows (archive `TagSources`, deepseek-harness `InputTriggerSource`).
+- Stashes: a SQLite table with one list per workspace folder, behind chat RPCs (archive `inbox/server/stashes.ts`). `ctrl+s` stashes the draft and clears the composer.
+- The stash list opens from the palette or `/pop` in step 7; no key opens it before then. Picking a stash replaces an empty draft and is added after a draft with text, then leaves the list. `ctrl+d` deletes a stash after a confirm dialog, which the kit gains (OpenCode `dialog-stash.tsx`, archive `inbox/tui/stash.tsx`).
+- The list comes from `git ls-files --cached --others --exclude-standard`, ranked with `fuzzysort`; frecency is a SQLite table, scored as OpenCode does: uses / (1 + days since last use), multiplying the match score.
+- A new `tags` plugin owns the registry, the list RPC, frecency and the `loop/Send` step that adds file contents; workspace files are its first source. Print mode expands tags too. Chat imports `tags/contract`; stashes stay in chat.
+- A file tag sends at most 2000 lines or 50 KB, with a note such as `[lines 1-2000 of 5400 not all shown]`; milestone 3's `read` reuses the same window function. A binary file sends a one-line note. A folder tag sends a listing one level deep, at most 200 names.
+- Later: line ranges such as `@file#10-20` (OpenCode only) and picture tags (need milestone 3's image results).
+
+### 6b tags code
+
+```text
+packages/plugins/tags/
+  package.json        peers: core, effect, loop, session, directories, sqlite
+  README.md
+  src/contract.ts     TagRow, TagSource, TagSources, TagsRpc, tagText, tagsIn, windowOf
+  src/index.ts        plugin: registry, rpc, Send step, workspace source
+  src/workspace.ts    git ls-files, folders, attach (window, binary note, listing)
+  src/uses.ts         frecency table and score
+  src/migrations.ts   tags_migrations: 0001 tag_uses
+packages/plugins/chat/src/tui/
+  TagMenu.tsx         the @ list under the composer, from the gallery's SlashMenu
+  tags.ts             tag at the cursor, ranking, keys
+  Composer.tsx        opens TagMenu on @, inserts picks as virtual extmarks
+apps/cli/src/composition.ts   adds tags
+```
+
+```ts
+// tags/contract.ts
+export const TagRow = Schema.Struct({
+  kind: Schema.Literals(["file", "folder"]),
+  tag: Schema.String,            // text after @; a folder ends in /
+  frecency: Schema.Number,       // 0 when never sent
+})
+export interface TagSource {
+  readonly rows: Effect.Effect<ReadonlyArray<TagRow>>
+  /** The text tag `tag` adds to a message; none when this source does not know it. */
+  readonly attach: (tag: string) => Effect.Effect<Option.Option<string>>
+}
+export class TagSources extends Registry.Service<TagSources, TagSource>()("tags/TagSources") {}
+export class TagsRpc extends RpcGroup.make(
+  Rpc.make("tags/list", { success: Schema.Array(TagRow) }),
+) {}
+export const tagText: (tag: string) => string          // @path, or @"path" with spaces
+export const tagsIn: (text: string) => ReadonlyArray<string>
+export const windowOf: (content: string) => string     // 2000 lines or 50 KB, then the note
+```
+
+```mermaid
+flowchart LR
+  at["@ typed in Composer"] --> list["tags/list once per open"]
+  list --> rank["fuzzysort x (1 + frecency), 50 rows"]
+  rank --> pick["pick: tagText as virtual extmark"]
+  pick --> send["loop/send: text part"]
+  send --> step["tags Send step"]
+  step --> attach["each source's attach, first Some wins"]
+  attach --> parts["one text part per tag: file name=path"]
+  step --> uses["tag_uses +1"]
+  parts --> next["next Send step"]
+```
+
+- The Send step reads only user `session/message` inputs. Each distinct tag found by `tagsIn` in its text parts adds one text part `<file name="path">\n…\n</file>`, as Pi's `file-processor.ts` does. A tag no source knows stays plain text. A read failure adds `<file name="path">could not be read</file>`, so the step never fails the send.
+- Workspace source: `git ls-files` runs in the workspace folder through `ChildProcessSpawner` on each `rows`; folders come from the file paths. Outside a git repository it has no rows, and `attach` still reads any path under the folder.
+- Binary: a NUL byte in the first 8 KB, as git checks.
+- `tag_uses (folder, tag, uses, last_used)`; the Send step updates it, so frecency counts tags actually sent.
+- Composer keys while the list is open: up and down move, enter tags the row, tab opens a folder or tags anything else, esc closes the list until the cursor leaves the tag (archive `inbox/tui/tags.ts`). The list opens on `@` at the start or after whitespace (Crush `ui.go`).
+- Docs: `docs/plugins/coding.md` and the `tools-files` row in `architecture.md` lose `@` tags; the `fuzzysort` row gains `tags`.
+
 ## Events in the references
 
 | Signal | Pi | OpenCode | deepseek-harness | Liminal |
