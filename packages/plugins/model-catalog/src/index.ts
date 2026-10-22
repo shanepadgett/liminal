@@ -18,9 +18,9 @@ import { HttpClient, HttpClientResponse } from "effect/http";
 
 import { definePlugin } from "@shanepadgett/liminal-core";
 import { Directories } from "@shanepadgett/liminal-directories/contract";
+import { CatalogUnavailable, ModelCatalog } from "@shanepadgett/liminal-model/contract";
 
 import { type CatalogCache, readCache, writeCache } from "./cache.ts";
-import { CatalogUnavailable, ModelCatalog } from "./contract.ts";
 import { catalogModels, ModelsDevProviders } from "./models-dev.ts";
 
 const apiUrl = "https://models.dev/api.json";

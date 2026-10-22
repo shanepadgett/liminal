@@ -8,8 +8,8 @@ Run it from the repository with `bun apps/cli/src/main.ts`, or as `liminal` once
 liminal connect
 ```
 
-1. Pick a provider, then a login. A list with one choice is skipped.
-2. Follow the steps. A browser login opens your browser; when the browser cannot come back to Liminal, such as over SSH, paste the address it ends on.
+1. Pick a provider, then a login, then how to sign in. A list with one choice is skipped.
+2. Follow the steps. A browser login opens your browser; when the browser cannot come back to Liminal, such as over SSH, paste the address it ends on. A device code login shows a code to enter on any device.
 3. `Connected.` means the login is saved in `~/.liminal/liminal.db`. Liminal refreshes expired tokens itself.
 
 Logins:
@@ -17,6 +17,7 @@ Logins:
 | Provider | Login | Instead of a login |
 | --- | --- | --- |
 | Anthropic | Claude subscription (Pro or Max), or an API key | `ANTHROPIC_API_KEY` |
+| OpenAI | Codex (ChatGPT plan), in the browser or with a device code | none |
 
 A saved login wins over the environment variable.
 

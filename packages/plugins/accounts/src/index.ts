@@ -13,9 +13,15 @@ const rpc = AccountsRpc.toLayer(
     AccountsRpc.of({
       "accounts/methods": () =>
         Effect.map(methods.list, (list) =>
-          list.map(({ id, provider, title }) => ({ id, provider, title })),
+          list.map(({ id, provider, vendor, title, ways }) => ({
+            id,
+            provider,
+            vendor,
+            title,
+            ways: ways.map((way) => ({ id: way.id, title: way.title })),
+          })),
         ),
-      "accounts/sign-in": ({ method }) => signIn(method),
+      "accounts/sign-in": ({ method, way }) => signIn(method, way),
       "accounts/answer": ({ method, text }) => answer(method, text),
     }),
   ),

@@ -4,9 +4,7 @@
  */
 import { Option, Schema } from "effect";
 
-import type { ModelDetails } from "@shanepadgett/liminal-model/contract";
-
-import type { CatalogModel } from "./contract.ts";
+import type { CatalogModel, ModelDetails } from "@shanepadgett/liminal-model/contract";
 
 /** Models.dev entries by catalog id, then by model id, each still undecoded. */
 export const ModelsDevProviders = Schema.Record(

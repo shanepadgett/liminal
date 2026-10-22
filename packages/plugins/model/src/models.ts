@@ -5,9 +5,11 @@ import { AiError } from "effect/ai";
 import type { Registry } from "@shanepadgett/liminal-core";
 import type { Settings } from "@shanepadgett/liminal-settings/contract";
 
+import { detailsOf } from "./call.ts";
 import {
   type GenerateOptions,
   type ModelCall,
+  type ModelCatalog,
   type ModelChoice,
   ModelNotFound,
   type ModelProvider,
@@ -41,8 +43,23 @@ const requestOf = (
     messages: [...(prefix?.messages ?? []), { role: "user", parts: prompt }],
     toolChoice: tools.length === 0 ? undefined : "none",
     output,
+    cacheKey: prefix?.cacheKey,
   };
 };
+
+/** `provider`'s models with their details from the catalog. */
+const listOf = (catalog: ModelCatalog["Service"], provider: ModelProvider) =>
+  Effect.gen(function* () {
+    const listed = yield* provider.models;
+    const details = yield* detailsOf(catalog, provider);
+    const prefix = `${provider.id}/`;
+
+    return listed.map(({ id, name }) => ({
+      id,
+      name,
+      details: details.get(id.slice(prefix.length)),
+    }));
+  });
 
 const decodeOutput = <T>(schema: Schema.Codec<T, Schema.JsonObject>, text: string) =>
   Schema.decodeEffect(Schema.fromJsonString(schema))(text).pipe(
@@ -59,6 +76,7 @@ export const make = (
   providers: Registry<ModelProvider>,
   settings: Settings["Service"],
   call: ModelCall["Service"],
+  catalog: ModelCatalog["Service"],
 ) => {
   const resolve = Effect.fn("Models.resolve")(function* (model: string) {
     if (!isRole(model)) return { model } satisfies ModelChoice;
@@ -102,7 +120,7 @@ export const make = (
     resolve,
     list: Effect.flatMap(providers.list, (all) =>
       Effect.map(
-        Effect.forEach(all, (provider) => provider.models),
+        Effect.forEach(all, (provider) => listOf(catalog, provider)),
         (lists) => lists.flat(),
       ),
     ),

@@ -35,6 +35,7 @@
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-model-anthropic": "workspace:*",
         "@shanepadgett/liminal-model-catalog": "workspace:*",
+        "@shanepadgett/liminal-model-openai": "workspace:*",
         "@shanepadgett/liminal-persona": "workspace:*",
         "@shanepadgett/liminal-session": "workspace:*",
         "@shanepadgett/liminal-settings": "workspace:*",
@@ -64,6 +65,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@effect/ai-anthropic": "4.0.5",
+        "@effect/ai-openai": "4.0.5",
       },
       "peerDependencies": {
         "effect": "*",
@@ -125,7 +127,6 @@
         "@shanepadgett/liminal-accounts": "workspace:*",
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
-        "@shanepadgett/liminal-model-catalog": "workspace:*",
         "@shanepadgett/liminal-model-wire": "workspace:*",
         "effect": "*",
       },
@@ -137,6 +138,17 @@
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-directories": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/model-openai": {
+      "name": "@shanepadgett/liminal-model-openai",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-accounts": "workspace:*",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-model-wire": "workspace:*",
         "effect": "*",
       },
     },
@@ -219,7 +231,6 @@
       "name": "@shanepadgett/liminal-planned",
       "version": "0.1.0",
       "peerDependencies": {
-        "@effect/ai-openai": "4.0.5",
         "@effect/ai-openai-compat": "4.0.5",
         "@effect/ai-openrouter": "4.0.5",
         "@effect/sql-pg": "4.0.5",
@@ -488,6 +499,8 @@
     "@shanepadgett/liminal-model-anthropic": ["@shanepadgett/liminal-model-anthropic@workspace:packages/plugins/model-anthropic"],
 
     "@shanepadgett/liminal-model-catalog": ["@shanepadgett/liminal-model-catalog@workspace:packages/plugins/model-catalog"],
+
+    "@shanepadgett/liminal-model-openai": ["@shanepadgett/liminal-model-openai@workspace:packages/plugins/model-openai"],
 
     "@shanepadgett/liminal-model-wire": ["@shanepadgett/liminal-model-wire@workspace:packages/model-wire"],
 

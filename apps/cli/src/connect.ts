@@ -1,9 +1,13 @@
-/** `liminal connect`: pick a provider and a login, then follow its sign-in steps. */
+/** `liminal connect`: pick a vendor, a login and a way through it, then follow its sign-in steps. */
 import { Console, Deferred, Effect, Fiber, Match, Option, Redacted, Ref, Stream } from "effect";
 import { Prompt } from "effect/cli";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
-import { AccountsRpc, type LoginStep } from "@shanepadgett/liminal-accounts/contract";
+import {
+  AccountsRpc,
+  type LoginMethodInfo,
+  type LoginStep,
+} from "@shanepadgett/liminal-accounts/contract";
 import { Host } from "@shanepadgett/liminal-client";
 
 /** Opens `url` in the default browser; the printed address is there when that fails. */
@@ -24,23 +28,35 @@ const pick = <A>(
   return Prompt.run(Prompt.Select({ message, choices }));
 };
 
+/** Asks for the vendor, then its login, then the way through it. */
+const choose = (methods: ReadonlyArray<typeof LoginMethodInfo.Type>) =>
+  Effect.gen(function* () {
+    const vendors = [...new Set(methods.map((each) => each.vendor))];
+
+    const vendor = yield* pick(
+      "Provider",
+      vendors.map((name) => ({ title: name, value: name })),
+    );
+
+    const login = yield* pick(
+      "Login",
+      methods.flatMap((each) =>
+        each.vendor === vendor ? [{ title: each.title, value: each }] : [],
+      ),
+    );
+
+    const way = yield* pick(
+      "Sign in",
+      login.ways.map((each) => ({ title: each.title, value: each.id })),
+    );
+
+    return { method: login.id, way };
+  });
+
 export const connect = Effect.gen(function* () {
   const host = yield* Host;
   const accounts = yield* host.client(AccountsRpc);
-  const methods = yield* accounts["accounts/methods"]();
-  const providers = [...new Set(methods.map((method) => method.provider))];
-
-  const provider = yield* pick(
-    "Provider",
-    providers.map((id) => ({ title: id, value: id })),
-  );
-
-  const method = yield* pick(
-    "Login",
-    methods.flatMap((each) =>
-      each.provider === provider ? [{ title: each.title, value: each.id }] : [],
-    ),
-  );
+  const { method, way } = yield* choose(yield* accounts["accounts/methods"]());
 
   /** Asks the user and sends the answer to the sign-in. */
   const answer = (question: string, secret: boolean) => {
@@ -82,7 +98,7 @@ export const connect = Effect.gen(function* () {
     });
 
   yield* Effect.raceFirst(
-    accounts["accounts/sign-in"]({ method }).pipe(Stream.runForEach(show)),
+    accounts["accounts/sign-in"]({ method, way }).pipe(Stream.runForEach(show)),
     Deferred.await(quit),
   );
 });

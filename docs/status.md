@@ -17,7 +17,7 @@ Milestone 1. The stack is settled in [architecture.md](architecture.md#stack).
 ## Next
 
 1. Milestone 1's plugins from [plugins/base.md](plugins/base.md) are planned in [plans/base.md](plans/base.md). Rounds 1–7 are in its Decisions: storage, folders, settings, credentials, retries, choosing models, types, model details, `session`, the turn with its plugins, accounts with the providers, and `client` with `apps/cli`.
-2. Widen milestone 1: the rest of `accounts` (see [plugins/base.md](plugins/base.md#accounts)), the other providers, and classifiers in `model` (see [plugins/base.md](plugins/base.md#model)). Built: `packages/core` (`definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`), `directories`, `settings`, `sqlite`, `session`, `model`, `model-wire` with Anthropic Messages, `accounts` with API keys, OAuth tokens and the sign-in RPC, `model-anthropic` with its API key and Claude subscription logins and `ANTHROPIC_API_KEY` as fallback, `model-catalog` with models.dev details, `tools`, `history`, `system-prompt`, `persona`, `tool-definitions`, `loop`, `packages/client` with the in-memory `Host`, and `apps/cli` with `liminal -p`, which reads piped stdin, writes JSON lines with `--json` and sets exit codes, and `liminal connect`. A host composes a plugin of its own that provides Effect's runtime services, such as `Path`, `FileSystem` and `HttpClient`.
+2. Widen milestone 1: the rest of `accounts` (see [plugins/base.md](plugins/base.md#accounts)), the other providers, and classifiers in `model` (see [plugins/base.md](plugins/base.md#model)). Built: `packages/core` (`definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`), `directories`, `settings`, `sqlite`, `session`, `model`, `model-wire` with Anthropic Messages and OpenAI Responses, `accounts` with API keys, OAuth tokens, logins grouped by vendor and the sign-in RPC, `model-anthropic` with its API key and Claude subscription logins and `ANTHROPIC_API_KEY` as fallback, `model-openai` with `codex` and its Codex login, `model-catalog` providing `model`'s `ModelCatalog` from models.dev, `tools`, `history`, `system-prompt`, `persona`, `tool-definitions`, `loop`, `packages/client` with the in-memory `Host`, and `apps/cli` with `liminal -p`, which reads piped stdin, writes JSON lines with `--json` and sets exit codes, and `liminal connect`. A host composes a plugin of its own that provides Effect's runtime services, such as `Path`, `FileSystem` and `HttpClient`.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
 
@@ -31,7 +31,7 @@ Work: [plugins/base.md](plugins/base.md)
 - [x] Base plugins: `directories`, `settings`, `model`, `session`, `tools`, `tool-definitions`, `system-prompt`, `persona`, `history`, `loop`
 - [x] `sqlite`
 - [ ] `accounts`
-- [ ] `model-catalog`, `model-anthropic`, `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go`
+- [ ] `model-catalog`, `model-anthropic`, `model-openai`, `model-openrouter`, `model-opencode-go`
 - [x] `packages/client`: `host.client(Group)` over in-memory RPC
 - [ ] `apps/cli`: `liminal connect` saves credentials; print mode writes a reply with them
 
@@ -55,6 +55,7 @@ Work: [plugins/coding.md](plugins/coding.md)
 - [ ] Recreate `.liminal/`; move `docs/instructions/` to `.liminal/instructions/` with `read-when` front matter
 - [ ] `approvals`, `questions`
 - [ ] Liminal works on its own repository
+- [ ] Settle the database schema: after this, a schema change adds a migration, and the one-migration rule in `docs/instructions/code.md` is removed
 
 ### 4. Cost and naming
 
@@ -101,6 +102,7 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 
 - MCP servers as a source of tools, connecting and disconnecting mid-session.
 - Change notes as system-role messages where the model accepts them mid-conversation, as DeepSeek does; Effect AI's Anthropic provider has a per-model flag for it. Needs a `system` role in `Message`.
+- A turn that ends in structured output: the final answer, after any tool use, must decode through a schema the prompt gives, as OpenCode's `format` option does. `Models.generateObject` covers one-off calls.
 
 ## Open
 

@@ -9,7 +9,6 @@
     "@shanepadgett/liminal-accounts": "workspace:*",
     "@shanepadgett/liminal-core": "workspace:*",
     "@shanepadgett/liminal-model": "workspace:*",
-    "@shanepadgett/liminal-model-catalog": "workspace:*",
     "@shanepadgett/liminal-model-wire": "workspace:*",
     "effect": "*"
   },

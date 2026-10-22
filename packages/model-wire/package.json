@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    "./messages": "./src/messages.ts"
+    "./messages": "./src/messages.ts",
+    "./responses": "./src/responses.ts"
   },
   "dependencies": {
-    "@effect/ai-anthropic": "4.0.5"
+    "@effect/ai-anthropic": "4.0.5",
+    "@effect/ai-openai": "4.0.5"
   },
   "peerDependencies": {
     "effect": "*"

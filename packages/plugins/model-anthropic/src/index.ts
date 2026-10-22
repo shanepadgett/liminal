@@ -13,9 +13,8 @@ import {
   LoginMethods,
 } from "@shanepadgett/liminal-accounts/contract";
 import { definePlugin } from "@shanepadgett/liminal-core";
-import { ModelCatalog } from "@shanepadgett/liminal-model-catalog/contract";
 import { messagesModel, messagesModels } from "@shanepadgett/liminal-model-wire/messages";
-import { type ModelDetails, ModelProviders } from "@shanepadgett/liminal-model/contract";
+import { type LanguageModelOptions, ModelProviders } from "@shanepadgett/liminal-model/contract";
 
 import { asClaudeCode, refreshTokens, subscriptionMethod } from "./subscription.ts";
 
@@ -72,8 +71,6 @@ const signing = (credentials: Credentials["Service"], http: HttpClient.HttpClien
   }).pipe(
     Effect.catchTags({
       CredentialsFailed: (error) => authFailed(error.message, "Unknown"),
-      HttpClientError: refreshFailed,
-      SchemaError: refreshFailed,
       TokensRefused: refreshFailed,
     }),
   );
@@ -81,34 +78,23 @@ const signing = (credentials: Credentials["Service"], http: HttpClient.HttpClien
 const register = Effect.gen(function* () {
   const http = yield* HttpClient.HttpClient;
   const withHttp = Effect.provideService(HttpClient.HttpClient, http);
-  const catalog = yield* ModelCatalog;
   const credentials = yield* Credentials;
   const options = signing(credentials, http);
   const logins = yield* LoginMethods;
 
   yield* logins.add(subscriptionMethod(http));
-  yield* logins.add(apiKeyMethod("anthropic"));
+  yield* logins.add(apiKeyMethod("anthropic", "Anthropic"));
 
-  /** Details by model id; without the catalog, models go without them and calls still run. */
-  const details = catalog.models("anthropic").pipe(
-    Effect.map((models) => new Map(models.map((model) => [model.id, model.details]))),
-    Effect.catchTag("CatalogUnavailable", (error) =>
-      Effect.as(Effect.logWarning(error.message), new Map<string, ModelDetails>()),
-    ),
+  const models = Effect.map(withHttp(Effect.flatMap(options, messagesModels)), (listed) =>
+    listed.map(({ id, name }) => ({ id: `anthropic/${id}`, name })),
   );
-
-  const models = Effect.gen(function* () {
-    const listed = yield* withHttp(Effect.flatMap(options, messagesModels));
-    const known = yield* details;
-
-    return listed.map(({ id, name }) => ({ id: `anthropic/${id}`, name, details: known.get(id) }));
-  });
 
   const languageModel = Effect.fn("Anthropic.languageModel")(function* (
     model: string,
-    thinking: string | undefined,
+    // Anthropic caches by prefix and ignores the cache key.
+    { thinking, details }: LanguageModelOptions,
   ) {
-    const outputLimit = (yield* details).get(model)?.outputLimit;
+    const outputLimit = details?.outputLimit;
 
     return yield* withHttp(messagesModel(yield* options, model, { thinking, outputLimit }));
   });
@@ -116,6 +102,7 @@ const register = Effect.gen(function* () {
   yield* (yield* ModelProviders).add({
     id: "anthropic",
     name: "Anthropic",
+    catalogId: "anthropic",
     defaults: {
       main: { model: "anthropic/claude-sonnet-5-5" },
       small: { model: "anthropic/claude-haiku-5-5" },
@@ -129,6 +116,6 @@ const register = Effect.gen(function* () {
 export default definePlugin({
   name: "model-anthropic",
   provides: [],
-  requires: [ModelProviders, ModelCatalog, Credentials, LoginMethods, HttpClient.HttpClient],
+  requires: [ModelProviders, Credentials, LoginMethods, HttpClient.HttpClient],
   layer: Layer.effectDiscard(register),
 });

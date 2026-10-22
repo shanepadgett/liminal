@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./contract": "./src/contract.ts"
+    ".": "./src/index.ts"
   },
   "peerDependencies": {
     "@shanepadgett/liminal-core": "workspace:*",

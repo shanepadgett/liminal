@@ -12,6 +12,7 @@ import loop from "@shanepadgett/liminal-loop";
 import model from "@shanepadgett/liminal-model";
 import modelAnthropic from "@shanepadgett/liminal-model-anthropic";
 import modelCatalog from "@shanepadgett/liminal-model-catalog";
+import modelOpenai from "@shanepadgett/liminal-model-openai";
 import persona from "@shanepadgett/liminal-persona";
 import session from "@shanepadgett/liminal-session";
 import settings from "@shanepadgett/liminal-settings";
@@ -38,6 +39,7 @@ const composition = compose([
   model,
   modelCatalog,
   modelAnthropic,
+  modelOpenai,
   tools,
   history,
   systemPrompt,

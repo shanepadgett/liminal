@@ -64,17 +64,35 @@ export const toolkitOf = (tools: ReadonlyArray<ToolDefinition>) =>
     ),
   );
 
+/** A reasoning part's metadata for its end part, where OpenAI's encrypted content is not null. */
+const reasoningEndOf = ({
+  openai,
+  ...others
+}: Response.ReasoningPartMetadata): Response.ReasoningEndPartMetadata => {
+  if (openai === undefined) return others;
+  if (openai === null) return { ...others, openai };
+
+  const { encryptedContent, ...rest } = openai;
+
+  return {
+    ...others,
+    openai:
+      encryptedContent === null || encryptedContent === undefined
+        ? rest
+        : { ...rest, encryptedContent },
+  };
+};
+
 /** A whole reply's parts as the deltas a stream would have sent. */
 export const replay = (parts: ReadonlyArray<Response.AnyPart>): ReadonlyArray<Response.AnyPart> =>
   parts.flatMap((part, index): ReadonlyArray<Response.AnyPart> => {
     const id = String(index);
-    const { metadata } = part;
 
     if (part.type === "text") {
       return [
         Response.makePart("text-start", { id }),
         Response.makePart("text-delta", { id, delta: part.text }),
-        Response.makePart("text-end", { id, metadata }),
+        Response.makePart("text-end", { id, metadata: part.metadata }),
       ];
     }
 
@@ -82,7 +100,7 @@ export const replay = (parts: ReadonlyArray<Response.AnyPart>): ReadonlyArray<Re
       return [
         Response.makePart("reasoning-start", { id }),
         Response.makePart("reasoning-delta", { id, delta: part.text }),
-        Response.makePart("reasoning-end", { id, metadata }),
+        Response.makePart("reasoning-end", { id, metadata: reasoningEndOf(part.metadata) }),
       ];
     }
 

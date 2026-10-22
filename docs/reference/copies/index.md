@@ -117,7 +117,7 @@ Anthropic provider for effect/ai: AnthropicClient (apiKey, apiUrl, transformClie
 OpenAI provider for effect/ai: OpenAiClient (apiUrl, transformClient) and OpenAiLanguageModel on the Responses API.
 
 - Docs: `docs/reference/copies/@effect/ai-openai/4.0.5/` (1 file: README.md)
-- API (source): `tools/planned/node_modules/@effect/ai-openai/src/`, modules: `docs/reference/copies/@effect/ai-openai/4.0.5/api-index/@effect-ai-openai-src.md`
+- API (source): `packages/model-wire/node_modules/@effect/ai-openai/src/`, modules: `docs/reference/copies/@effect/ai-openai/4.0.5/api-index/@effect-ai-openai-src.md`
 
 ## @effect/ai-openai-compat 4.0.5
 

@@ -46,6 +46,7 @@ export const makeRequest = (services: TurnServices) =>
       system: yield* systemPrompt.current(events),
       tools: yield* toolList.current(events),
       messages: yield* history.run(events),
+      cacheKey: session,
     };
   });
 

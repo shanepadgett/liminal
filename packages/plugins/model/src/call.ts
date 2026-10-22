@@ -6,7 +6,9 @@ import type { Registry } from "@shanepadgett/liminal-core";
 import type { Settings } from "@shanepadgett/liminal-settings/contract";
 
 import {
+  type ModelCatalog,
   type ModelDelta,
+  type ModelDetails,
   type ModelId,
   ModelNotFound,
   type ModelProvider,
@@ -33,29 +35,57 @@ export const findModel = Effect.fn("ModelCall.findModel")(function* (
   });
 });
 
+/**
+ * The details of `provider`'s models by its own ids; none when it names no catalog id or the
+ * catalog is unavailable, and calls still run.
+ */
+export const detailsOf = (catalog: ModelCatalog["Service"], provider: ModelProvider) => {
+  const none = new Map<string, ModelDetails>();
+  if (provider.catalogId === undefined) return Effect.succeed(none);
+
+  return catalog.models(provider.catalogId).pipe(
+    Effect.map((models) => new Map(models.map((model) => [model.id, model.details]))),
+    Effect.catchTag("CatalogUnavailable", (error) =>
+      Effect.as(Effect.logWarning(error.message), none),
+    ),
+  );
+};
+
 /** One try: the provider's language model streams the reply, or makes it whole for an output. */
-const attempt = (provider: ModelProvider, model: string, request: ModelRequest) =>
+const attempt = (
+  provider: ModelProvider,
+  model: string,
+  request: ModelRequest,
+  details: ModelDetails | undefined,
+) =>
   Stream.unwrap(
-    Effect.map(provider.languageModel(model, request.thinking), (language) => {
-      const options = {
-        prompt: promptOf(request),
-        toolkit: toolkitOf(request.tools),
-        toolChoice: request.toolChoice ?? "auto",
-        disableToolCallResolution: true,
-        toolCallValidation: "deferred",
-      } as const;
+    Effect.map(
+      provider.languageModel(model, {
+        thinking: request.thinking,
+        cacheKey: request.cacheKey,
+        details,
+      }),
+      (language) => {
+        const options = {
+          prompt: promptOf(request),
+          toolkit: toolkitOf(request.tools),
+          toolChoice: request.toolChoice ?? "auto",
+          disableToolCallResolution: true,
+          toolCallValidation: "deferred",
+        } as const;
 
-      const { output } = request;
+        const { output } = request;
 
-      if (output === undefined) return language.streamText(options);
+        if (output === undefined) return language.streamText(options);
 
-      return Stream.fromIterableEffect(
-        Effect.map(
-          language.generateObject({ ...options, objectName: output.name, schema: output.schema }),
-          (response) => replay(response.content),
-        ),
-      );
-    }),
+        return Stream.fromIterableEffect(
+          Effect.map(
+            language.generateObject({ ...options, objectName: output.name, schema: output.schema }),
+            (response) => replay(response.content),
+          ),
+        );
+      },
+    ),
   );
 
 /** Waits `retryAfter` when the provider gives it, else 1s, 2s, 4s and on. */
@@ -87,14 +117,20 @@ const withRetries = (run: Stream.Stream<ModelDelta, AiError.AiError>, attempts: 
 };
 
 export const makeCall =
-  (providers: Registry<ModelProvider>, settings: Settings["Service"]) => (request: ModelRequest) =>
+  (
+    providers: Registry<ModelProvider>,
+    settings: Settings["Service"],
+    catalog: ModelCatalog["Service"],
+  ) =>
+  (request: ModelRequest) =>
     Effect.succeed(
       Stream.unwrap(
         Effect.gen(function* () {
           const { provider, model } = yield* findModel(providers, request.model);
           const { attempts = defaultAttempts } = yield* settings.get(ModelSetting);
+          const details = (yield* detailsOf(catalog, provider)).get(model);
 
-          return withRetries(attempt(provider, model, request), attempts);
+          return withRetries(attempt(provider, model, request, details), attempts);
         }),
       ),
     );

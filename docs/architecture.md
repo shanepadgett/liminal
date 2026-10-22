@@ -154,13 +154,14 @@ Settings.write(scope: "global" | "project", path, value): Effect<void>
 type Part = Text | Image | Reasoning | ToolCall | ToolResult
 type Message = { role: "user" | "assistant" | "tool"; parts: Part[] }
 type ModelId = string                         // provider/model
-type ModelRequest = { model; thinking?; system; tools: ToolDefinition[]; messages: Message[]; toolChoice?; output?: { name; schema } }
+type ModelRequest = { model; thinking?; system; tools: ToolDefinition[]; messages: Message[]; toolChoice?; output?: { name; schema }; cacheKey? }   // same key, same provider cache; a turn's is its session id
 type ModelDelta = Response.AnyPart | Retrying  // Effect AI's reply parts, plus a retry that clears the reply so far
 interface ModelProvider {
   id; name; defaults: { main; small }        // the first signed-in provider's, when the model setting leaves a role unset
+  catalogId?                                // whose models.dev entries hold its models' details, such as openai
   signedIn: Effect<boolean>                 // a saved login or a key in the environment
   models: Effect<ModelInfo[]>               // ModelInfo = { id; name; details?: ModelDetails }
-  languageModel(model, thinking?): Effect<LanguageModel>   // an Effect AI language model
+  languageModel(model, { thinking?, cacheKey?, details? }): Effect<LanguageModel>   // an Effect AI language model; a provider that routes its cache by key sends cacheKey
   classifiers?: Effect<ModelInfo[]>         // only those the current login can call
   classify?(model, state: JsonObject, questions: Record<string, Question>): Effect<Record<string, Answer>, ClassifyFailed>
 }
@@ -180,8 +181,7 @@ Models.generateObject<T>(options: { ...; schema: Schema<T> }): Effect<T>   // st
 Models.classify(options: { model?: ModelId; state; questions }): Effect<Record<string, Answer>, ClassifyFailed>
 type ModelDetails = { contextWindow; outputLimit; thinking: string[]; images; toolCalls; structuredOutput; price?: { input; output; cacheRead?; cacheWrite? } }
 
-// model-catalog: model details from models.dev, cached in ~/.liminal/catalog.json
-ModelCatalog.models(catalogId): Effect<CatalogModel[], CatalogUnavailable>   // CatalogModel = { id; name; details }
+ModelCatalog.models(catalogId): Effect<CatalogModel[], CatalogUnavailable>   // CatalogModel = { id; name; details }; model-catalog provides it from models.dev, cached in ~/.liminal/catalog.json
 
 // session: the log
 type SessionEvent = { session: SessionId; seq: Seq; at: Date; kind: string; data: Schema.Json; attributes: Attributes }
@@ -257,7 +257,7 @@ log steers → sync system prompt and tool list → BeforeCall hooks → Turns.r
 - A turn left unfinished by a crash is closed when the session next opens: interrupted results, a notice, and no restart.
 - Shared provider code, such as an OpenAI-compatible wire format, is a library the provider plugins import, not a contract.
 - The session log stores Liminal's own `Message` and `Part` schema, so saved sessions outlive Effect AI changes. Base `model` converts them to and from Effect AI's types in one place. The live reply stream and errors are Effect AI's `Response` parts and `AiError`, since nothing stores them.
-- Each provider lists the models it offers and requires `ModelCatalog` to add their details from models.dev. Without the catalog, models list without details and calls still go out.
+- Each provider lists the models it offers and names its `catalogId`. `model` adds their details from `ModelCatalog` to `Models.list` and passes a model's details to `languageModel`. When the catalog is unavailable, models list without details and calls still go out.
 
 ### Settings
 
@@ -393,7 +393,7 @@ How `session` does these over `SqlClient` is open.
 | Base | `persona` | Who the agent is and how it talks, as a section | base | `context` |
 | Base | `history` | `Converters`, `History` | base | `context` |
 | Base | `loop` | The turn, the inbox, `Send`, `Commands`, `BeforeCall`, `TurnEnd`, cancel | base | `agent-loop`, `cancel`, `inbox` |
-| Providers | `model-anthropic`, `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go` | Model providers and their logins | Add | same names |
+| Providers | `model-anthropic`, `model-openai`, `model-openrouter`, `model-opencode-go` | Model providers and their logins; `model-openai` adds `openai`, `chatgpt` and `codex` | Add | same names, `model-codex` |
 | Providers | `model-scripted` | Scripted replies for tests | Add | `model-scripted` |
 | Providers | `model-catalog` | Names, limits, prices from models.dev | base service | `model-catalog` |
 | Providers | `accounts` | Credentials, login methods, `liminal connect` and `/connect` | Add | `logins`, `credential-store` |

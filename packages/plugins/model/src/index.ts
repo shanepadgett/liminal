@@ -5,7 +5,7 @@ import { definePlugin, Pipeline, Registry } from "@shanepadgett/liminal-core";
 import { DeclaredSettings, Settings } from "@shanepadgett/liminal-settings/contract";
 
 import { makeCall } from "./call.ts";
-import { ModelCall, type ModelProvider, ModelProviders, Models } from "./contract.ts";
+import { ModelCall, ModelCatalog, type ModelProvider, ModelProviders, Models } from "./contract.ts";
 import { make } from "./models.ts";
 import { ModelSetting } from "./setting.ts";
 
@@ -15,21 +15,21 @@ const call = Layer.effect(
     const settings = yield* Settings;
     yield* (yield* DeclaredSettings).add(ModelSetting);
 
-    return yield* Pipeline.make(makeCall(yield* ModelProviders, settings));
+    return yield* Pipeline.make(makeCall(yield* ModelProviders, settings, yield* ModelCatalog));
   }),
 );
 
 const models = Layer.effect(
   Models,
   Effect.gen(function* () {
-    return make(yield* ModelProviders, yield* Settings, yield* ModelCall);
+    return make(yield* ModelProviders, yield* Settings, yield* ModelCall, yield* ModelCatalog);
   }),
 );
 
 export default definePlugin({
   name: "model",
   provides: [ModelProviders, ModelCall, Models],
-  requires: [Settings, DeclaredSettings],
+  requires: [Settings, DeclaredSettings, ModelCatalog],
   layer: models.pipe(
     Layer.provideMerge(call),
     Layer.provideMerge(Layer.effect(ModelProviders, Registry.make<ModelProvider>())),

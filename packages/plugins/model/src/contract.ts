@@ -99,7 +99,7 @@ export interface ModelPrice {
   readonly cacheWrite?: number | undefined;
 }
 
-/** What a model can take and do, from `model-catalog`. */
+/** What a model can take and do, from `ModelCatalog`. */
 export interface ModelDetails {
   readonly contextWindow: number;
   readonly outputLimit: number;
@@ -118,6 +118,30 @@ export interface ModelInfo {
   readonly details?: ModelDetails | undefined;
 }
 
+/** One model the catalog lists, by the id its provider gives it. */
+export interface CatalogModel {
+  readonly id: string;
+  readonly name: string;
+  readonly details: ModelDetails;
+}
+
+/** The catalog could not be reached or read, and has no entries for `catalogId`. */
+export class CatalogUnavailable extends Schema.TaggedError<
+  CatalogUnavailable,
+  { readonly brand: unique symbol }
+>()("CatalogUnavailable", { catalogId: Schema.String, message: Schema.String }) {}
+
+/** Model details by catalog id, which `model` adds to the models providers list. */
+export class ModelCatalog extends Context.Service<
+  ModelCatalog,
+  {
+    /** The models the catalog lists under `catalogId`, such as `anthropic`. */
+    readonly models: (
+      catalogId: string,
+    ) => Effect.Effect<ReadonlyArray<CatalogModel>, CatalogUnavailable>;
+  }
+>()("model/ModelCatalog") {}
+
 /** Asks for the reply as JSON that `schema` decodes. */
 export interface StructuredOutput {
   readonly name: string;
@@ -133,6 +157,19 @@ export interface ModelRequest {
   /** Missing is `auto`. */
   readonly toolChoice?: "auto" | "none" | "required" | undefined;
   readonly output?: StructuredOutput | undefined;
+  /**
+   * Requests with the same key share a provider's cache where it routes by key; a turn uses its
+   * session's id.
+   */
+  readonly cacheKey?: string | undefined;
+}
+
+/** How a provider sets up a language model for one request. */
+export interface LanguageModelOptions {
+  readonly thinking?: string | undefined;
+  readonly cacheKey?: string | undefined;
+  /** Missing when the catalog does not list the model or cannot be read. */
+  readonly details?: ModelDetails | undefined;
 }
 
 /** A failed attempt that will be tried again; the reply so far is void. */
@@ -164,13 +201,16 @@ export interface ModelProvider {
   readonly name: string;
   /** Used when the `model` setting leaves a role unset and this is the first signed-in provider. */
   readonly defaults: { readonly main: ModelChoice; readonly small: ModelChoice };
+  /** The catalog id its models' details are under, such as `openai`; missing lists none. */
+  readonly catalogId?: string | undefined;
   /** Whether it can sign calls now, with a saved login or a key in the environment. */
   readonly signedIn: Effect.Effect<boolean>;
+  /** Its models, without details; `model` adds them from the catalog. */
   readonly models: Effect.Effect<ReadonlyArray<ModelInfo>, AiError.AiError>;
   /** An Effect AI language model for one of its models, without the `provider/` prefix. */
   readonly languageModel: (
     model: string,
-    thinking: string | undefined,
+    options: LanguageModelOptions,
   ) => Effect.Effect<LanguageModel.LanguageModel, AiError.AiError>;
 }
 

@@ -1,5 +1,6 @@
 /** Saved credentials, the login methods providers add, and the sign-in that screens show. */
-import { Context, Effect, type Option, Redacted, Schema } from "effect";
+import { type Array, Clock, Context, Effect, type Option, Redacted, Schema } from "effect";
+import { type HttpClient, type HttpClientRequest, HttpClientResponse } from "effect/http";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 import { Registry } from "@shanepadgett/liminal-core";
@@ -90,13 +91,23 @@ export class LoginFlow extends Context.Service<
   }
 >()("accounts/LoginFlow") {}
 
-/** One way to sign in to a provider; the credential it gives is saved under the provider. */
+/** One way through a login, such as the browser or a code entered on another device. */
+export interface LoginWay {
+  /** Unique within its login, such as `browser`. */
+  readonly id: string;
+  readonly title: string;
+  readonly run: Effect.Effect<Credential, LoginFailed, LoginFlow>;
+}
+
+/** One login to a provider; the credential any of its ways gives is saved under the provider. */
 export interface LoginMethod {
   /** Unique across providers, such as `anthropic/subscription`. */
   readonly id: string;
   readonly provider: string;
+  /** The company menus group logins under, such as `OpenAI`. */
+  readonly vendor: string;
   readonly title: string;
-  readonly run: Effect.Effect<Credential, LoginFailed, LoginFlow>;
+  readonly ways: Array.NonEmptyReadonlyArray<LoginWay>;
 }
 
 /** The login methods by id; of two with one id, the one added last is used. */
@@ -104,23 +115,70 @@ export class LoginMethods extends Registry.Service<LoginMethods, LoginMethod>()(
   "accounts/LoginMethods",
 ) {}
 
-/** A login method that asks for the provider's API key. */
-export const apiKeyMethod = (provider: string, title = "API key"): LoginMethod => {
+/** A login with one way, which asks for the provider's API key. */
+export const apiKeyMethod = (provider: string, vendor: string): LoginMethod => {
   const id = `${provider}/api-key`;
 
-  return {
-    id,
-    provider,
-    title,
-    run: Effect.gen(function* () {
-      const key = Redacted.value(yield* (yield* LoginFlow).askSecret("API key")).trim();
+  const run = Effect.gen(function* () {
+    const key = Redacted.value(yield* (yield* LoginFlow).askSecret("API key")).trim();
 
-      if (key === "") return yield* new LoginFailed({ method: id, message: "No key was entered." });
+    if (key === "") return yield* new LoginFailed({ method: id, message: "No key was entered." });
 
-      return ApiKey.make({ key: Redacted.make(key) });
-    }),
-  };
+    return ApiKey.make({ key: Redacted.make(key) });
+  });
+
+  return { id, provider, vendor, title: "API key", ways: [{ id: "key", title: "API key", run }] };
 };
+
+/** An OAuth token endpoint refused a request, or did not reply with tokens. */
+export class TokensRefused extends Schema.TaggedError<
+  TokensRefused,
+  { readonly brand: unique symbol }
+>()("TokensRefused", { message: Schema.String }) {}
+
+const TokenReply = Schema.Struct({
+  access_token: Schema.String,
+  refresh_token: Schema.String,
+  expires_in: Schema.Finite,
+});
+
+export type TokenReply = typeof TokenReply.Type;
+
+const refused = (error: { readonly message: string }) =>
+  new TokensRefused({ message: error.message });
+
+/**
+ * Sends `request` to an OAuth token endpoint and gives the tokens it issued. `extraOf` reads what
+ * the provider keeps beside them, such as an account id.
+ */
+export const requestTokens = <E = never>(
+  client: HttpClient.HttpClient,
+  request: HttpClientRequest.HttpClientRequest,
+  extraOf: (reply: TokenReply) => Effect.Effect<OAuth["extra"], E> = () => Effect.succeed({}),
+) =>
+  Effect.gen(function* () {
+    const response = yield* client.execute(request).pipe(Effect.mapError(refused));
+
+    if (response.status >= 400) {
+      const text = yield* response.text.pipe(Effect.orElseSucceed(() => ""));
+
+      return yield* new TokensRefused({ message: `${response.status} ${text}` });
+    }
+
+    const reply = yield* HttpClientResponse.schemaBodyJson(TokenReply)(response).pipe(
+      Effect.mapError(refused),
+    );
+
+    const extra = yield* extraOf(reply);
+    const now = yield* Clock.currentTimeMillis;
+
+    return OAuth.make({
+      access: Redacted.make(reply.access_token),
+      refresh: Redacted.make(reply.refresh_token),
+      expiresAt: now + reply.expires_in * 1000,
+      extra,
+    });
+  });
 
 export const OpenUrl = Schema.TaggedStruct("OpenUrl", { url: Schema.String });
 
@@ -138,17 +196,21 @@ export const Done = Schema.TaggedStruct("Done", {});
 export const LoginStep = Schema.Union([OpenUrl, ShowCode, Ask, Waiting, Told, Done]);
 export type LoginStep = typeof LoginStep.Type;
 
+const LoginWayInfo = Schema.Struct({ id: Schema.String, title: Schema.String });
+
 export const LoginMethodInfo = Schema.Struct({
   id: Schema.String,
   provider: Schema.String,
+  vendor: Schema.String,
   title: Schema.String,
+  ways: Schema.Array(LoginWayInfo),
 });
 
 /** What screens call. */
 export class AccountsRpc extends RpcGroup.make(
   Rpc.make("accounts/methods", { success: Schema.Array(LoginMethodInfo) }),
   Rpc.make("accounts/sign-in", {
-    payload: { method: Schema.String },
+    payload: { method: Schema.String, way: Schema.String },
     success: LoginStep,
     error: LoginFailed,
     stream: true,

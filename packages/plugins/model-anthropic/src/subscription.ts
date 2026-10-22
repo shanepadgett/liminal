@@ -3,15 +3,16 @@
  * refuses subscription tokens without Claude Code's headers and its identity as the first system
  * block.
  */
-import { Clock, Effect, Redacted, Schema } from "effect";
-import { HttpBody, HttpClient, HttpClientRequest, HttpClientResponse } from "effect/http";
+import { Effect, Redacted, Schema } from "effect";
+import { HttpBody, HttpClient, HttpClientRequest } from "effect/http";
 
 import {
   type Authorized,
   LoginFailed,
   LoginFlow,
   type LoginMethod,
-  OAuth,
+  type OAuth,
+  requestTokens,
 } from "@shanepadgett/liminal-accounts/contract";
 
 /** The OAuth client of Claude Code, which subscription logins are issued to. */
@@ -33,48 +34,17 @@ const scopes = [
   "user:file_upload",
 ].join(" ");
 
-/** The token endpoint refused the request; `message` holds its reply. */
-class TokensRefused extends Schema.TaggedError<TokensRefused, { readonly brand: unique symbol }>()(
-  "TokensRefused",
-  { message: Schema.String },
-) {}
-
-const TokenReply = Schema.Struct({
-  access_token: Schema.String,
-  refresh_token: Schema.String,
-  expires_in: Schema.Finite,
-});
-
 /** Posts `fields` to the token endpoint and gives the tokens it issued. */
-export const requestTokens = (
-  client: HttpClient.HttpClient,
-  fields: Readonly<Record<string, string>>,
-) =>
-  Effect.gen(function* () {
-    const request = HttpClientRequest.post(tokenUrl).pipe(
+const tokensFor = (client: HttpClient.HttpClient, fields: Readonly<Record<string, string>>) =>
+  requestTokens(
+    client,
+    HttpClientRequest.post(tokenUrl).pipe(
       HttpClientRequest.bodyJsonUnsafe({ ...fields, client_id: clientId }),
-    );
-
-    const response = yield* client.execute(request);
-
-    if (response.status >= 400) {
-      return yield* new TokensRefused({ message: `${response.status} ${yield* response.text}` });
-    }
-
-    const reply = yield* HttpClientResponse.schemaBodyJson(TokenReply)(response);
-
-    const now = yield* Clock.currentTimeMillis;
-
-    return OAuth.make({
-      access: Redacted.make(reply.access_token),
-      refresh: Redacted.make(reply.refresh_token),
-      expiresAt: now + reply.expires_in * 1000,
-      extra: {},
-    });
-  });
+    ),
+  );
 
 const exchange = (client: HttpClient.HttpClient, authorized: Authorized) =>
-  requestTokens(client, {
+  tokensFor(client, {
     grant_type: "authorization_code",
     code: authorized.code,
     state: authorized.state,
@@ -88,11 +58,8 @@ const exchange = (client: HttpClient.HttpClient, authorized: Authorized) =>
   );
 
 /** The Claude subscription login, through the browser that returns to Claude Code's port. */
-export const subscriptionMethod = (client: HttpClient.HttpClient): LoginMethod => ({
-  id: methodId,
-  provider: "anthropic",
-  title: "Claude subscription (Pro or Max)",
-  run: Effect.gen(function* () {
+export const subscriptionMethod = (client: HttpClient.HttpClient): LoginMethod => {
+  const run = Effect.gen(function* () {
     const flow = yield* LoginFlow;
 
     const authorized = yield* flow.authorizeInBrowser({
@@ -102,14 +69,19 @@ export const subscriptionMethod = (client: HttpClient.HttpClient): LoginMethod =
     });
 
     return yield* exchange(client, authorized);
-  }),
-});
+  });
+
+  return {
+    id: methodId,
+    provider: "anthropic",
+    vendor: "Anthropic",
+    title: "Claude subscription (Pro or Max)",
+    ways: [{ id: "browser", title: "In the browser", run }],
+  };
+};
 
 export const refreshTokens = (client: HttpClient.HttpClient) => (stale: OAuth) =>
-  requestTokens(client, {
-    grant_type: "refresh_token",
-    refresh_token: Redacted.value(stale.refresh),
-  });
+  tokensFor(client, { grant_type: "refresh_token", refresh_token: Redacted.value(stale.refresh) });
 
 const MessagesBody = Schema.fromJsonString(Schema.Record(Schema.String, Schema.Json));
 

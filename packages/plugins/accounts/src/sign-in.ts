@@ -14,6 +14,7 @@ import {
   type LoginMethod,
   LoginMethods,
   type LoginStep,
+  type LoginWay,
   OpenUrl,
   ShowCode,
   Told,
@@ -77,15 +78,22 @@ export const makeSignIn = Effect.gen(function* () {
     ReadonlyMap<string, Deferred.Deferred<Redacted.Redacted>>
   >(new Map());
 
-  const find = Effect.fn("Accounts.find")(function* (id: string) {
+  /** The login method `id` and its way `way`. */
+  const find = Effect.fn("Accounts.find")(function* (id: string, way: string) {
     const method = (yield* methods.list).findLast((each) => each.id === id);
-    if (method !== undefined) return method;
 
-    return yield* new LoginFailed({ method: id, message: `No login method ${id} exists.` });
+    if (method === undefined) {
+      return yield* new LoginFailed({ method: id, message: `No login method ${id} exists.` });
+    }
+
+    const chosen = method.ways.find((each) => each.id === way);
+    if (chosen !== undefined) return { method, way: chosen };
+
+    return yield* new LoginFailed({ method: id, message: `The login ${id} has no way ${way}.` });
   });
 
-  const save = (method: LoginMethod) =>
-    Effect.flatMap(method.run, (credential) =>
+  const save = ({ method, way }: { readonly method: LoginMethod; readonly way: LoginWay }) =>
+    Effect.flatMap(way.run, (credential) =>
       credentials
         .set(method.provider, credential)
         .pipe(
@@ -96,9 +104,9 @@ export const makeSignIn = Effect.gen(function* () {
     );
 
   /** Runs the method and saves its credential; closing the stream interrupts it. */
-  const signIn = (id: string): Stream.Stream<LoginStep, LoginFailed> =>
+  const signIn = (id: string, way: string): Stream.Stream<LoginStep, LoginFailed> =>
     Stream.callback<LoginStep, LoginFailed>((steps) =>
-      find(id).pipe(
+      find(id, way).pipe(
         Effect.flatMap(save),
         Effect.provideService(LoginFlow, flowOf(pending, steps, id, crypto)),
         Effect.andThen(Queue.offer(steps, Done.make({}))),
