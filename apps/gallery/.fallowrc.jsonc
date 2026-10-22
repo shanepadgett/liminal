@@ -1,0 +1,5 @@
+{
+  "$schema": "../../node_modules/fallow/schema.json",
+  // The gallery's duplicate check; the repository's fallow config leaves the gallery out.
+  "duplicates": { "mode": "mild", "minTokens": 50, "minLines": 5, "minOccurrences": 2 },
+}

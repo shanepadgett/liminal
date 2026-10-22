@@ -139,21 +139,21 @@ Terminal UI renderer with a native core: renderables (box, text, scrollbox), lay
 
 - Docs: `docs/reference/copies/@opentui/core/0.6.6/` (110 files: README.md, packages/)
 - From: https://github.com/anomalyco/opentui.git, tag v0.6.6, commit 212eb27da4ad
-- API (types): `tools/planned/node_modules/@opentui/core/`, modules: `docs/reference/copies/@opentui/core/0.6.6/api-index/@opentui-core.md`
+- API (types): `apps/gallery/node_modules/@opentui/core/`, modules: `docs/reference/copies/@opentui/core/0.6.6/api-index/@opentui-core.md`
 
 ## @opentui/solid 0.6.6
 
 Solid renderer for OpenTUI: `render`, `testRender`, hooks (`useKeyboard`, `useRenderer`, `useTerminalDimensions`), JSX elements, plugin slots (`createSolidSlotRegistry`, `<Slot>`) and runtime plugin support. Needs the `@opentui/solid/preload` Bun preload to run `.tsx` from source.
 
 - Docs: `docs/reference/copies/@opentui/solid/0.6.6/` (1 file: README.md)
-- API (types): `tools/planned/node_modules/@opentui/solid/`, modules: `docs/reference/copies/@opentui/solid/0.6.6/api-index/@opentui-solid.md`
+- API (types): `apps/gallery/node_modules/@opentui/solid/`, modules: `docs/reference/copies/@opentui/solid/0.6.6/api-index/@opentui-solid.md`
 
 ## @opentui/keymap 0.6.6
 
 Layered key bindings and named commands for OpenTUI: `createDefaultOpenTuiKeymap`, `KeymapProvider`, `useBindings`, `useKeymapSelector`, `getActiveKeys`. Its guides live in the @opentui/core copy under `packages/web/src/content/docs/keymap/`.
 
 - Docs: `docs/reference/copies/@opentui/keymap/0.6.6/` (1 file: README.md)
-- API (types): `tools/planned/node_modules/@opentui/keymap/`, modules: `docs/reference/copies/@opentui/keymap/0.6.6/api-index/@opentui-keymap.md`
+- API (types): `apps/gallery/node_modules/@opentui/keymap/`, modules: `docs/reference/copies/@opentui/keymap/0.6.6/api-index/@opentui-keymap.md`
 
 ## solid-js 1.9.12
 
@@ -161,7 +161,7 @@ Solid 1.x reactivity behind the OpenTUI Solid renderer: signals, memos, effects,
 
 - Docs: `docs/reference/copies/solid-js/1.9.12/` (118 files: README.md, src/)
 - From: https://github.com/solidjs/solid-docs.git, branch main, commit dadb1f193443 (not pinned to the installed version)
-- API (types): `tools/planned/node_modules/solid-js/types/`, modules: `docs/reference/copies/solid-js/1.9.12/api-index/solid-js-types.md`
+- API (types): `apps/gallery/node_modules/solid-js/types/`, modules: `docs/reference/copies/solid-js/1.9.12/api-index/solid-js-types.md`
 
 ## electrobun 2.0.4
 
@@ -220,7 +220,7 @@ Renders Mermaid diagrams as Unicode box-drawing text: renderMermaidASCII(source,
 Fuzzy search with ranking and match highlighting: `go(search, targets, { key, keys, limit, threshold })`, `prepare` for cached targets, `result.highlight`. For the palette and `@` completion.
 
 - Docs: `docs/reference/copies/fuzzysort/4.0.2/` (1 file: README.md)
-- API (types): `tools/planned/node_modules/fuzzysort/index.d.ts`
+- API (types): `apps/gallery/node_modules/fuzzysort/index.d.ts`
 
 ## partial-json 0.1.7
 

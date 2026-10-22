@@ -20,5 +20,6 @@
     "plugins": [{ "name": "@effect/language-service", "diagnostics": false }]
   },
   "include": ["apps", "packages", "tools"],
-  "exclude": ["**/node_modules", "tools/**/fixtures", "archive"]
+  // The gallery has its own config: apps/gallery/tsconfig.json.
+  "exclude": ["**/node_modules", "tools/**/fixtures", "archive", "apps/gallery"]
 }

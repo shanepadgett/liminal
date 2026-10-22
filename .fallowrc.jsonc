@@ -1,7 +1,13 @@
 {
   "$schema": "./node_modules/fallow/schema.json",
   // Fallow owns dead code, workspace dependency hygiene, cycles, import boundaries and duplicates.
-  "ignorePatterns": ["tools/**/fixtures/**", "docs/reference/copies/**", "archive/**"],
+  // The gallery has its own checks: apps/gallery/.fallowrc.jsonc.
+  "ignorePatterns": [
+    "tools/**/fixtures/**",
+    "docs/reference/copies/**",
+    "archive/**",
+    "apps/gallery/**",
+  ],
   "entry": [
     "tools/quiet.ts",
     "tools/checks/plugin-anatomy.ts",

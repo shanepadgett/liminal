@@ -1,0 +1,6 @@
+{
+  // The gallery is checked on its own; the root config leaves it out.
+  "extends": "../../tsconfig.json",
+  "include": ["src"],
+  "exclude": ["**/node_modules"]
+}

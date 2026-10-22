@@ -46,7 +46,7 @@ run = "bunx --bun --no-install oxfmt --list-different"
 
 [tasks."check:lint"]
 description = "Type-aware oxlint with Liminal rules"
-run = "bunx --bun --no-install oxlint --type-aware --deny-warnings --disable-nested-config --format=agent"
+run = "bunx --bun --no-install oxlint --type-aware --deny-warnings --disable-nested-config --format=agent --ignore-pattern 'apps/gallery/**'"
 
 [tasks."check:types"]
 description = "Types and Effect diagnostics with the patched compiler"
@@ -75,6 +75,23 @@ run = "bun tools/quiet.ts bunx --bun --no-install fallow dead-code --fail-on-iss
 [tasks."fallow:dupes"]
 description = "Duplicated code"
 run = "bun tools/quiet.ts bunx --bun --no-install fallow dupes --fail-on-issues"
+
+[tasks.gallery]
+description = "Run the gallery; it restarts on save"
+dir = "apps/gallery"
+run = "bun src/watch.ts"
+
+[tasks."gallery:types"]
+description = "Types and Effect diagnostics in the gallery"
+run = "bunx --bun --no-install tsc --noEmit -p apps/gallery"
+
+[tasks."gallery:lint"]
+description = "Type-aware oxlint with Liminal rules in the gallery"
+run = "bunx --bun --no-install oxlint --type-aware --deny-warnings --disable-nested-config --format=agent apps/gallery"
+
+[tasks."gallery:dupes"]
+description = "Duplicated code in the gallery"
+run = "bun tools/quiet.ts bunx --bun --no-install fallow dupes --root apps/gallery --fail-on-issues"
 
 [tasks.test]
 description = "Tool tests under Bun"

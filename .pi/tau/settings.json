@@ -57,14 +57,28 @@
               "command": "mise run check:types",
               "details": "Types and Effect diagnostics",
               "timeoutMs": 300000,
-              "includeGlobs": ["**/*.ts", "**/*.tsx", "**/tsconfig.json", "**/package.json"]
+              "includeGlobs": ["**/*.ts", "**/*.tsx", "**/tsconfig.json", "**/package.json"],
+              "excludeGlobs": ["apps/gallery/**"]
             },
             {
               "name": "lint",
               "command": "mise run check:lint",
               "details": "Type-aware oxlint with Liminal rules",
               "timeoutMs": 300000,
-              "includeGlobs": ["**/*.ts", "**/*.tsx", ".oxlintrc.json"]
+              "includeGlobs": ["**/*.ts", "**/*.tsx", ".oxlintrc.json"],
+              "excludeGlobs": ["apps/gallery/**"]
+            },
+            {
+              "name": "gallery types",
+              "command": "mise run gallery:types",
+              "timeoutMs": 300000,
+              "includeGlobs": ["apps/gallery/**", "tsconfig.json", "bun.lock"]
+            },
+            {
+              "name": "gallery lint",
+              "command": "mise run gallery:lint",
+              "timeoutMs": 300000,
+              "includeGlobs": ["apps/gallery/**", ".oxlintrc.json", "tools/lint/**"]
             },
             {
               "name": "plugin anatomy",
@@ -94,19 +108,27 @@
               "name": "dead code",
               "command": "mise run fallow:dead-code",
               "details": "Unused code and dependencies, cycles, boundaries",
-              "includeGlobs": ["**/*.ts", "**/*.tsx", "**/package.json", ".fallowrc.jsonc"]
+              "includeGlobs": ["**/*.ts", "**/*.tsx", "**/package.json", ".fallowrc.jsonc"],
+              "excludeGlobs": ["apps/gallery/**"]
             },
             {
               "name": "duplicates",
               "command": "mise run fallow:dupes",
-              "includeGlobs": ["**/*.ts", "**/*.tsx", ".fallowrc.jsonc"]
+              "includeGlobs": ["**/*.ts", "**/*.tsx", ".fallowrc.jsonc"],
+              "excludeGlobs": ["apps/gallery/**"]
+            },
+            {
+              "name": "gallery duplicates",
+              "command": "mise run gallery:dupes",
+              "includeGlobs": ["apps/gallery/**"]
             },
             {
               "name": "tests",
               "command": "mise run test",
               "details": "Workspace and tool tests under Bun",
               "timeoutMs": 300000,
-              "includeGlobs": ["apps/**", "packages/**", "tools/checks/**", "tools/reference/**"]
+              "includeGlobs": ["apps/**", "packages/**", "tools/checks/**", "tools/reference/**"],
+              "excludeGlobs": ["apps/gallery/**"]
             },
             {
               "name": "tool tests",
@@ -134,6 +156,8 @@
               "details": "Type-aware oxlint with Liminal rules",
               "timeoutMs": 300000
             },
+            { "name": "gallery types", "command": "mise run gallery:types", "timeoutMs": 300000 },
+            { "name": "gallery lint", "command": "mise run gallery:lint", "timeoutMs": 300000 },
             { "name": "plugin anatomy", "command": "mise run check:anatomy" },
             { "name": "reference docs", "command": "mise run check:reference" },
             {
@@ -142,6 +166,7 @@
               "details": "Unused code and dependencies, cycles, boundaries"
             },
             { "name": "duplicates", "command": "mise run fallow:dupes" },
+            { "name": "gallery duplicates", "command": "mise run gallery:dupes" },
             {
               "name": "tests",
               "command": "mise run test",

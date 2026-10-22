@@ -1,6 +1,6 @@
 # Plan: milestone 1 plugins
 
-The base plugins, storage, accounts, providers, `client` and `apps/cli` from [plugins/base.md](../plugins/base.md). Contracts: [architecture.md](../architecture.md#base-plugins-the-agent).
+The base plugins, storage, accounts, providers, `client` and `apps/cli` of milestone 1. Contracts: [architecture.md](../../architecture.md#base-plugins-the-agent).
 
 ## Systems
 
@@ -29,7 +29,7 @@ Prior art: Pi keeps `auth.json` at `0600` and takes a lock file around each OAut
 
 - Runtime services: Effect's own `FileSystem`, `Path` and the rest. Base plugins ask only for those, so they run on any runtime. `apps/cli` hands in `BunServices.layer` with a few-line plugin of its own; no package. The host guide covers it once built.
 - One database: a `sqlite` plugin opens `liminal.db` in the global folder (mode `0600`, WAL so the CLI, TUI and desktop app share it) and provides Effect's `SqlClient`. Every plugin that keeps state requires it and owns its tables and migrations. A server swaps in `postgres`.
-- Sessions: base `session` stores the log through `SqlClient`, with live updates and the runner within one process. Across server processes is open in [architecture.md](../architecture.md#open).
+- Sessions: base `session` stores the log through `SqlClient`, with live updates and the runner within one process. Across server processes is open in [architecture.md](../../architecture.md#open).
 - Settings: one base plugin, `settings`, reads and writes `settings.json` in the global and project folders through Effect's `FileSystem`, which the host supplies. A host whose settings live elsewhere composes its own plugin that provides `Settings` and `DeclaredSettings`.
 - Folders: a base plugin, `directories`, provides `Directories`; `settings` and `sqlite` require it, and a harness that stores files elsewhere replaces it.
 - `Directories` fields: `global` (`~/.liminal`), `workspace` (the folder Liminal works in) and `project` (`<workspace>/.liminal`). `liminal.db` goes in `global`. Other folders arrive with their first caller.
