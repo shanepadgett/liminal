@@ -424,7 +424,7 @@ How `session` does these over `SqlClient` is open.
 | Hosting | `loader` | Plugin folders, `plugins.json`, trust, reload | host level | `trust`, `archive/packages/kernel` |
 | Hosting | `actors` | Who sent each input | Attach, Wrap | none |
 | Hosting | `http` | Serves plugins' RPC groups over HTTP | none | `archive/packages/kernel/src/server` |
-| TUI | `chat` | Chat screen, composer, the session slots | Add (slots) | `chat`, `inbox` (composer) |
+| TUI | `chat` | Chat screen, composer, the session slots, stashes | Add (slots) | `chat`, `inbox` (composer) |
 | TUI | `tags` | `@` tags: `TagSources`, the workspace's files and folders, their text added on send | Add, Wrap | `files`, `inbox` (tags) |
 | TUI | `palette`, `theme`, `attention` | Command palette, theme, sounds | Add (slots) | same names |
 

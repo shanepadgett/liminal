@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./contract": "./src/contract.ts",
     "./view": "./src/view/index.ts",
     "./tui": "./src/tui/index.tsx"
   },

@@ -43,7 +43,7 @@ Work: [plugins/tui.md](plugins/tui.md)
 - [x] `theme`
 - [x] `chat`: screen, transcript, sidebar, composer; `liminal` opens the TUI
 - [x] `chat`: `@` file tags (`tags`)
-- [ ] `chat`: save stashes with `ctrl+s`
+- [x] `chat`: save stashes with `ctrl+s`
 - [ ] `palette`, with the stash list
 - [ ] Model picker and print mode `--model`
 - [ ] `/connect` in the TUI

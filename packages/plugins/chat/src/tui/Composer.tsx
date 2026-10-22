@@ -2,16 +2,20 @@
  * Where the user writes. No box: a gutter of marks runs down the left of the draft, the first a
  * bold chevron and the rest fading from light accent to dark. Below are the keys that apply now.
  * `enter` sends and `shift+enter` adds a line; while a turn runs, `enter` steers it, `tab` queues a
- * follow-up and `esc` stops it. `ctrl+c` clears the draft, and with none passes on, so it quits. An
- * `@` opens the list of files and folders to tag above the draft; its keys come first.
+ * follow-up and `esc` stops it. `ctrl+s` stashes the draft and clears it once saved. `ctrl+c`
+ * clears the draft, and with none passes on, so it quits. An `@` opens the list of files and
+ * folders to tag above the draft; its keys come first.
  */
 
 import { TextAttributes, type TextareaRenderable } from "@opentui/core";
 import { useBindings } from "@opentui/keymap/solid";
+import { Effect } from "effect";
 import { For, Show } from "solid-js";
 
-import { kit, useColor, useMix, useSyntax } from "@shanepadgett/liminal-tui";
+import { Host } from "@shanepadgett/liminal-client";
+import { kit, useColor, useMix, useRun, useSyntax } from "@shanepadgett/liminal-tui";
 
+import { ChatRpc } from "../contract.ts";
 import type { ComposerProps } from "./slots.ts";
 import { TAG_HINTS, TagMenu } from "./TagMenu.tsx";
 import { useTagList } from "./tags.ts";
@@ -49,12 +53,14 @@ function Gutter(props: { readonly rows: number }) {
 const IDLE_HINTS = [
   { keys: "enter", label: "send" },
   { keys: "shift+enter", label: "new line" },
+  { keys: "ctrl+s", label: "stash" },
 ];
 
 const WORKING_HINTS = [
   { keys: "enter", label: "steer" },
   { keys: "tab", label: "follow-up" },
   { keys: "esc", label: "stop" },
+  { keys: "ctrl+s", label: "stash" },
 ];
 
 const DRAFT_KEYS = [
@@ -62,6 +68,48 @@ const DRAFT_KEYS = [
   { name: "kpenter", action: "submit" },
   { name: "return", shift: true, action: "newline" },
 ] as const;
+
+const stash = (text: string) =>
+  Effect.gen(function* () {
+    const chat = yield* (yield* Host).client(ChatRpc);
+
+    yield* chat["chat/stash"]({ text });
+  }).pipe(Effect.scoped);
+
+/**
+ * `ctrl+s`: stashes the draft, then clears it if it still holds the same text. Declines with no
+ * draft, so the key passes on.
+ */
+const useStashKey = (draft: () => TextareaRenderable | undefined) => {
+  const run = useRun();
+
+  const current = () => draft()?.plainText.trim() ?? "";
+
+  useBindings(() => ({
+    commands: [
+      {
+        name: "chat.stash",
+        title: "Stash draft",
+        run: () => {
+          const text = current();
+          if (text === "") return false;
+
+          run(
+            Effect.andThen(
+              stash(text),
+              Effect.sync(() => {
+                if (current() === text) draft()?.clear();
+              }),
+            ),
+          );
+
+          return true;
+        },
+      },
+    ],
+    bindings: [{ key: "ctrl+s", cmd: "chat.stash" }],
+  }));
+};
 
 /** The draft's keys outside the textarea's own: `tab` and `esc` only while a turn runs. */
 const useComposerKeys = (props: ComposerProps, take: () => string | undefined) => {
@@ -106,6 +154,7 @@ export function Composer(props: ComposerProps) {
   };
 
   useComposerKeys(props, take);
+  useStashKey(() => draft);
 
   const hints = () =>
     tags.rows() === undefined

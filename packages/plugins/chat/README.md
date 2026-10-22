@@ -1,6 +1,16 @@
 # @shanepadgett/liminal-chat
 
-The chat screen: a landing until the first send opens a session, then the session's transcript, a composer and a sidebar. It fills the TUI's `screen` slot. It has no backend and no contract.
+The chat screen: a landing until the first send opens a session, then the session's transcript, a composer and a sidebar. It fills the TUI's `screen` slot, and keeps stashes: drafts set aside with Ctrl+S, one list per workspace folder.
+
+## Contract
+
+`./contract` exports `ChatRpc`:
+
+- `chat/stash`: stashes a text in the workspace folder's list; the same text again keeps one stash.
+- `chat/stashes`: the folder's stashes, newest first, each with its `id`, `text` and `createdAt`.
+- `chat/unstash`: deletes the stash with an `id`.
+
+Each fails with `StashesFailed` when the `stashes` table cannot be read or written. The plugin requires `Directories` and `SqlClient`, and keeps its migrations in `chat_migrations`.
 
 ## View
 
@@ -30,9 +40,10 @@ Keys:
 | Shift+Enter | New line |
 | Tab | While a turn runs, send as a follow-up |
 | Esc | Close the open sidebar; otherwise, while a turn runs, stop it |
+| Ctrl+S | Stash the draft, then clear it once saved; a failure is logged and the draft stays |
 | Ctrl+C | Clear the draft; with no draft, quit |
 | Ctrl+B | Open or close the sidebar, below 110 columns |
 
 `@` at the start of the draft or after whitespace opens the list of tags above the draft. It loads `tags/list` once each time it opens, and ranks rows by their `fuzzysort` match times one plus their frecency, 50 at most. While it is open, Up and Down move, Enter tags the row, Tab opens a folder (and tags a file), and Esc closes it until the cursor leaves the tag. A picked tag is a virtual extmark: the cursor steps over it and Backspace removes it whole. `buildTranscript` leaves out the parts `tags` added to a message, by its `tags/attached` attribute.
 
-The `tui` entry requires `Slots` and `Renderer`, and calls `session/*`, `loop/*`, `tags/list`, `directories/workspace` and `model/main`.
+The `tui` entry requires `Slots` and `Renderer`, and calls `session/*`, `loop/*`, `chat/stash`, `tags/list`, `directories/workspace` and `model/main`.

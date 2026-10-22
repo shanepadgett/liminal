@@ -635,6 +635,32 @@ flowchart LR
 - Folder tags add `<folder name="path/">` with one name per line, folders ending in `/`, up to 200.
 - Docs: `docs/plugins/coding.md` and the `tools-files` row in `architecture.md` lose `@` tags; `architecture.md` gains a `tags` row.
 
+### 6b stashes code
+
+```text
+packages/plugins/chat/
+  package.json         ./contract export
+  src/contract.ts      Stash, StashesFailed, ChatRpc
+  src/index.ts         plugin: migrate, ChatRpc handlers over SqlClient, per workspace folder
+  src/migrations.ts    chat_migrations: 0001 stashes
+  src/tui/Composer.tsx ctrl+s: chat/stash, then clears the draft
+```
+
+```ts
+// chat/contract.ts
+export const Stash = Schema.Struct({ id: Schema.Int, text: Schema.String, createdAt: Schema.Int })
+export class StashesFailed extends Schema.TaggedError<…>()("StashesFailed", { message: Schema.String }) {}
+export class ChatRpc extends RpcGroup.make(
+  Rpc.make("chat/stash", { payload: { text: Schema.String }, error: StashesFailed }),
+  Rpc.make("chat/stashes", { success: Schema.Array(Stash), error: StashesFailed }),  // newest first
+  Rpc.make("chat/unstash", { payload: { id: Schema.Int }, error: StashesFailed }),
+) {}
+```
+
+- `stashes (id, folder, text, created_at)`, unique on `(folder, text)`: stashing the same text again keeps one row (archive `stashes.ts`).
+- `ctrl+s` with a blank draft declines, so the key passes on. The draft clears only once `chat/stash` succeeds; a failure is logged and the draft stays.
+- The hints gain `ctrl+s stash`.
+
 ## Events in the references
 
 | Signal | Pi | OpenCode | deepseek-harness | Liminal |
