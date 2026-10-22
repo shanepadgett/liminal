@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /** The `liminal` command: print mode with `-p`, `liminal connect`, and help otherwise. */
 import { BunRuntime, BunServices } from "@effect/platform-bun";
-import { Effect, Option, Stdio, Stream } from "effect";
+import { Console, Effect, Option, Stdio, Stream } from "effect";
 import { CliError, Command, Flag } from "effect/cli";
 
 import { host } from "./composition.ts";
@@ -26,8 +26,11 @@ const promptOf = Effect.fn("promptOf")(function* (flag: string) {
 });
 
 const connectCommand = Command.make("connect", {}, () =>
-  // oxlint-disable-next-line effecttsgo/strict-effect-provide -- the connect command's entry point.
-  Effect.scoped(connect).pipe(Effect.provide(host)),
+  Effect.scoped(connect).pipe(
+    Effect.catchTag("LoginFailed", (error) => Console.error(error.message)),
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- the connect command's entry point.
+    Effect.provide(host),
+  ),
 ).pipe(Command.withDescription("Sign in to a model provider"));
 
 const liminal = Command.make(
