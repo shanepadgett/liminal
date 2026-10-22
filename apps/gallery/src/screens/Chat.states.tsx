@@ -102,7 +102,7 @@ const chat = (sample: ChatSample) => () => (
         <Header title={sample.title} isWorking={sample.isWorking ?? false} />
       )
     }
-    pinned={sample.pinned === undefined ? undefined : <Prompt input={sample.pinned} isPinned />}
+    pinned={sample.pinned === undefined ? undefined : <Prompt input={sample.pinned} />}
     transcript={sample.transcript()}
     composer={
       <Composer

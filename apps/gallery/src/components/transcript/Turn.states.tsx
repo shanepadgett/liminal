@@ -3,7 +3,7 @@ import { Spinner } from "../../primitives/Spinner.tsx";
 import { Notice } from "./Notice.tsx";
 import { StreamingAnswer } from "./Reply.states.tsx";
 import { Reply } from "./Reply.tsx";
-import { ANSWER, QUESTION, READ } from "./samples.ts";
+import { ANSWER, LONG_QUESTION, QUESTION, READ } from "./samples.ts";
 import { Turn } from "./Turn.tsx";
 import { WorkRows } from "./WorkRows.tsx";
 
@@ -15,6 +15,15 @@ export const turnStates: readonly [State, ...State[]] = [
       <Turn input={QUESTION}>
         <WorkRows rows={READ} />
         <Reply text={ANSWER} />
+      </Turn>
+    ),
+  },
+  {
+    name: "Long input",
+    fill: "page",
+    view: () => (
+      <Turn input={LONG_QUESTION}>
+        <WorkRows rows={READ} />
       </Turn>
     ),
   },

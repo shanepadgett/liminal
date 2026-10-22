@@ -7,6 +7,15 @@ export const SHORT_TERM_MEMORY = "Traced the double retry to recovery.ts and tur
 
 export const QUESTION = "Why does the loop retry twice when the provider is overloaded?";
 
+/** An input past the three rows a prompt takes in the transcript. */
+export const LONG_QUESTION = [
+  "Why does the loop retry twice when the provider is overloaded? I read recovery.ts and turn.ts and both seem to retry,",
+  "but the logs show three attempts in one session and two in another, and I cannot tell which path runs first",
+  "or whether the backoff resets between them. Trace both paths and tell me which one to keep.",
+  "Then check whether the step retry in turn.ts still matters once recovery.ts reads retry-after,",
+  "and if it does not, drop it and run the loop tests.",
+].join(" ");
+
 export const ANSWER = [
   "The retry runs in **two places**: `recovery.ts` retries the request, and `turn.ts` retries the step when the request fails.",
   "",
