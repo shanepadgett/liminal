@@ -8,6 +8,7 @@
   "type": "module",
   "dependencies": {
     "@effect/platform-bun": "4.0.5",
+    "@shanepadgett/liminal-accounts": "workspace:*",
     "@shanepadgett/liminal-client": "workspace:*",
     "@shanepadgett/liminal-core": "workspace:*",
     "@shanepadgett/liminal-directories": "workspace:*",

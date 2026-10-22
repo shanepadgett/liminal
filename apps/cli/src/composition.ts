@@ -1,8 +1,9 @@
 /** The plugins the CLI runs, and a client host over them in this process. */
 import { BunServices } from "@effect/platform-bun";
-import { FileSystem, Layer, Path } from "effect";
+import { Crypto, FileSystem, Layer, Path } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/http";
 
+import accounts from "@shanepadgett/liminal-accounts";
 import { inMemory } from "@shanepadgett/liminal-client";
 import { compose, definePlugin } from "@shanepadgett/liminal-core";
 import directories from "@shanepadgett/liminal-directories";
@@ -19,10 +20,10 @@ import systemPrompt from "@shanepadgett/liminal-system-prompt";
 import toolDefinitions from "@shanepadgett/liminal-tool-definitions";
 import tools from "@shanepadgett/liminal-tools";
 
-/** Bun's files, paths and HTTP for the plugins that ask for them. */
+/** Bun's files, paths, crypto and HTTP for the plugins that ask for them. */
 const runtime = definePlugin({
   name: "runtime",
-  provides: [Path.Path, FileSystem.FileSystem, HttpClient.HttpClient],
+  provides: [Path.Path, FileSystem.FileSystem, Crypto.Crypto, HttpClient.HttpClient],
   requires: [],
   layer: Layer.mergeAll(BunServices.layer, FetchHttpClient.layer),
 });
@@ -32,6 +33,7 @@ const composition = compose([
   directories,
   settings,
   sqlite,
+  accounts,
   session,
   model,
   modelCatalog,

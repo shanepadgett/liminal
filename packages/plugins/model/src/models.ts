@@ -1,5 +1,5 @@
 /** `Models`: roles, the model list and one-off calls. */
-import { Effect, Schema, Stream } from "effect";
+import { Effect, Option, Schema, Stream } from "effect";
 import { AiError } from "effect/ai";
 
 import type { Registry } from "@shanepadgett/liminal-core";
@@ -66,12 +66,12 @@ export const make = (
     const chosen = (yield* settings.get(ModelSetting))[model];
     if (chosen !== undefined) return chosen;
 
-    const [first] = yield* providers.list;
-    if (first !== undefined) return first.defaults[model];
+    const signedIn = yield* Effect.findFirst(yield* providers.list, (each) => each.signedIn);
+    if (Option.isSome(signedIn)) return signedIn.value.defaults[model];
 
     return yield* new ModelNotFound({
       model,
-      message: `No model is set for the ${model} role and no provider is composed.`,
+      message: "No model provider is connected. Run liminal connect.",
     });
   });
 

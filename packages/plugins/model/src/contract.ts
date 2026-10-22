@@ -162,8 +162,10 @@ export interface ModelProvider {
   /** The `provider` in `provider/model`. */
   readonly id: string;
   readonly name: string;
-  /** Used when the `model` setting leaves a role unset. */
+  /** Used when the `model` setting leaves a role unset and this is the first signed-in provider. */
   readonly defaults: { readonly main: ModelChoice; readonly small: ModelChoice };
+  /** Whether it can sign calls now, with a saved login or a key in the environment. */
+  readonly signedIn: Effect.Effect<boolean>;
   readonly models: Effect.Effect<ReadonlyArray<ModelInfo>, AiError.AiError>;
   /** An Effect AI language model for one of its models, without the `provider/` prefix. */
   readonly languageModel: (
@@ -297,7 +299,7 @@ export class Models extends Context.Service<
   {
     /**
      * The model `main`, `small` or a model id names; a role comes from the `model` setting, else
-     * the first provider's default.
+     * the first signed-in provider's default.
      */
     readonly resolve: (
       model: string,

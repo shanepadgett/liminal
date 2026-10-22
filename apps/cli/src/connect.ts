@@ -1,0 +1,88 @@
+/** `liminal connect`: pick a provider and a login, then follow its sign-in steps. */
+import { Console, Deferred, Effect, Fiber, Match, Option, Redacted, Ref, Stream } from "effect";
+import { Prompt } from "effect/cli";
+import { ChildProcess, ChildProcessSpawner } from "effect/process";
+
+import { AccountsRpc, type LoginStep } from "@shanepadgett/liminal-accounts/contract";
+import { Host } from "@shanepadgett/liminal-client";
+
+/** Opens `url` in the default browser; the printed address is there when that fails. */
+const openBrowser = (url: string) =>
+  Effect.gen(function* () {
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const opener = process.platform === "darwin" ? "open" : "xdg-open";
+    yield* spawner.exitCode(ChildProcess.make(opener, [url]));
+  }).pipe(Effect.ignore);
+
+const pick = <A>(
+  message: string,
+  choices: ReadonlyArray<{ readonly title: string; readonly value: A }>,
+) => {
+  const [only] = choices;
+  if (choices.length === 1 && only !== undefined) return Effect.succeed(only.value);
+
+  return Prompt.run(Prompt.Select({ message, choices }));
+};
+
+export const connect = Effect.gen(function* () {
+  const host = yield* Host;
+  const accounts = yield* host.client(AccountsRpc);
+  const methods = yield* accounts["accounts/methods"]();
+  const providers = [...new Set(methods.map((method) => method.provider))];
+
+  const provider = yield* pick(
+    "Provider",
+    providers.map((id) => ({ title: id, value: id })),
+  );
+
+  const method = yield* pick(
+    "Login",
+    methods.flatMap((each) =>
+      each.provider === provider ? [{ title: each.title, value: each.id }] : [],
+    ),
+  );
+
+  /** Asks the user and sends the answer to the sign-in. */
+  const answer = (question: string, secret: boolean) => {
+    const prompt = secret
+      ? Prompt.run(Prompt.Password({ message: question }))
+      : Effect.map(Prompt.run(Prompt.String({ message: question })), Redacted.make);
+
+    return Effect.flatMap(prompt, (text) => accounts["accounts/answer"]({ method, text }));
+  };
+
+  const asking = yield* Ref.make(Option.none<Fiber.Fiber<void>>());
+  const quit = yield* Deferred.make<void, Effect.Error<ReturnType<typeof answer>>>();
+
+  /** Asks in the background, so a later step, such as the browser coming back, withdraws it. */
+  const ask = (question: string, secret: boolean) =>
+    Effect.gen(function* () {
+      const answering = answer(question, secret).pipe(
+        Effect.catch((error) => Deferred.fail(quit, error)),
+        Effect.asVoid,
+      );
+
+      yield* Ref.set(asking, Option.some(yield* Effect.forkChild(answering)));
+    });
+
+  const show = (step: LoginStep) =>
+    Effect.gen(function* () {
+      const open = yield* Ref.getAndSet(asking, Option.none());
+      if (Option.isSome(open)) yield* Fiber.interrupt(open.value);
+
+      yield* Match.valueTags(step, {
+        OpenUrl: ({ url }) =>
+          Effect.andThen(Console.log(`Sign in at:\n${url}\n`), openBrowser(url)),
+        ShowCode: ({ code, url }) => Console.log(`Enter the code ${code} at ${url}`),
+        Ask: ({ question, secret }) => ask(question, secret),
+        Waiting: ({ text }) => Console.log(text),
+        Told: ({ text }) => Console.log(text),
+        Done: () => Console.log("Connected."),
+      });
+    });
+
+  yield* Effect.raceFirst(
+    accounts["accounts/sign-in"]({ method }).pipe(Stream.runForEach(show)),
+    Deferred.await(quit),
+  );
+});

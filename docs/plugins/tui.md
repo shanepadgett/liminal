@@ -47,5 +47,5 @@ export const EventRenderer: Registry<{ kind: string; component: Component<{ even
 
 ## `/connect` in the TUI
 
-- The `accounts` TUI entry: `/connect` runs the same login methods and saves to the same credentials file as `liminal connect`.
+- The `accounts` TUI entry: `/connect` runs the same login methods and saves to the same credentials as `liminal connect`.
 - Previous code: `logins`.

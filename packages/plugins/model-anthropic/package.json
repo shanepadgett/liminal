@@ -6,6 +6,7 @@
     ".": "./src/index.ts"
   },
   "peerDependencies": {
+    "@shanepadgett/liminal-accounts": "workspace:*",
     "@shanepadgett/liminal-core": "workspace:*",
     "@shanepadgett/liminal-model": "workspace:*",
     "@shanepadgett/liminal-model-catalog": "workspace:*",

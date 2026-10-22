@@ -26,6 +26,7 @@
       },
       "dependencies": {
         "@effect/platform-bun": "4.0.5",
+        "@shanepadgett/liminal-accounts": "workspace:*",
         "@shanepadgett/liminal-client": "workspace:*",
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-directories": "workspace:*",
@@ -65,6 +66,14 @@
         "@effect/ai-anthropic": "4.0.5",
       },
       "peerDependencies": {
+        "effect": "*",
+      },
+    },
+    "packages/plugins/accounts": {
+      "name": "@shanepadgett/liminal-accounts",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
         "effect": "*",
       },
     },
@@ -113,6 +122,7 @@
       "name": "@shanepadgett/liminal-model-anthropic",
       "version": "0.1.0",
       "peerDependencies": {
+        "@shanepadgett/liminal-accounts": "workspace:*",
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-model-catalog": "workspace:*",
@@ -458,6 +468,8 @@
     "@oxlint/binding-win32-x64-msvc": ["@oxlint/binding-win32-x64-msvc@1.89.0", "", { "os": "win32", "cpu": "x64" }, "sha512-hLFJ/o0f/dTJh/EW0vmcbREYSQO9tYgfiAAlsOkiLFiJuRRWvYtFELUXN5o2ijpSo/tlO1n+YlWN58tZwPG18A=="],
 
     "@oxlint/plugins": ["@oxlint/plugins@1.89.0", "", {}, "sha512-TJBBNl4KIxbxrSk7gsqlz6iM1kxidfyTizEzfWqXvijF2Ou8/Da58GvjemBVmCmaUamwRij+JwsVc0kpBFuqfg=="],
+
+    "@shanepadgett/liminal-accounts": ["@shanepadgett/liminal-accounts@workspace:packages/plugins/accounts"],
 
     "@shanepadgett/liminal-cli": ["@shanepadgett/liminal-cli@workspace:apps/cli"],
 

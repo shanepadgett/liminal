@@ -157,10 +157,15 @@ type ModelId = string                         // provider/model
 type ModelRequest = { model; thinking?; system; tools: ToolDefinition[]; messages: Message[]; toolChoice?; output?: { name; schema } }
 type ModelDelta = Response.AnyPart | Retrying  // Effect AI's reply parts, plus a retry that clears the reply so far
 interface ModelProvider {
-  id; name; defaults: { main; small }        // used when the model setting leaves a role unset
+  id; name; defaults: { main; small }        // the first signed-in provider's, when the model setting leaves a role unset
+  signedIn: Effect<boolean>                 // a saved login or a key in the environment
   models: Effect<ModelInfo[]>               // ModelInfo = { id; name; details?: ModelDetails }
   languageModel(model, thinking?): Effect<LanguageModel>   // an Effect AI language model
+  classifiers?: Effect<ModelInfo[]>         // only those the current login can call
+  classify?(model, state: JsonObject, questions: Record<string, Question>): Effect<Record<string, Answer>, ClassifyFailed>
 }
+type Question = Choice { instructions; criteria: Record<string, string> } | Score { instructions; criteria } | Bool { instructions; criteria: { true; false } }
+type Answer = Choice { choice; probabilities; confidence } | Score { score; confidence } | Bool { probability }
 ModelProviders: Registry<ModelProvider>
 ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>   // retries inside; converts to Effect AI's types
 Reply.add(reply, delta) / Reply.message(reply)          // deltas into the assistant Message
@@ -172,6 +177,7 @@ Models.generate(options: {
   prefix?: ModelRequest                      // start from this request, such as Turns.request(id)
 }): Effect<Message>
 Models.generateObject<T>(options: { ...; schema: Schema<T> }): Effect<T>   // structured output
+Models.classify(options: { model?: ModelId; state; questions }): Effect<Record<string, Answer>, ClassifyFailed>
 type ModelDetails = { contextWindow; outputLimit; thinking: string[]; images; toolCalls; structuredOutput; price?: { input; output; cacheRead?; cacheWrite? } }
 
 // model-catalog: model details from models.dev, cached in ~/.liminal/catalog.json
@@ -268,6 +274,13 @@ log steers → sync system prompt and tool list → BeforeCall hooks → Turns.r
 - With `prefix`, the request starts from another request. `Turns.request(id)` gives the session's next request: its system prompt, tool definitions and history, the same prefix as its last turn, so the call hits the provider's cache. The prompt goes at the end and the result is not appended to the session. A side question over the current chat ("by the way") is this call.
 - Commit grouping, approval verdicts and session names are `Models.generateObject` on the `small` model.
 
+### Classifiers
+
+- A classifier is a model that answers typed questions about JSON state with probabilities: pick a choice, give a score, or yes or no. It does not chat. Jev and GPT-6 Luna are classifiers.
+- `Models.classify` calls the model passed in, else the `classifier` model in `model`'s setting, else fails with `ClassifyFailed` saying no classifier is set.
+- `model` finds the provider, makes one call with no retries, and checks every answer: each question answered, probabilities and scores between 0 and 1, a choice among the criteria. The caller sets the deadline with `Effect.timeout` and decides what a failure means.
+- A provider lists only the classifiers its current login can call: `model-openai` lists `gpt-6-luna` only with an API key, since the Decisions API refuses ChatGPT sign-in tokens.
+
 ## Sessions
 
 - The session log is the source of truth. Everything the model sees is logged; model context is a projection of the log.
@@ -350,7 +363,7 @@ An embedding app is the host, so it owns its UI. It uses `client` and the sessio
 | Embedded | Whatever the embedding code imports | The embedding app's own UI |
 
 - `apps/cli` is a full command line: the TUI by default, and a print mode like Pi's and OpenCode's that runs a prompt without the TUI and writes the result to stdout.
-- `liminal connect` saves a provider's credentials: pick a provider, then a login method, then enter an API key or finish an OAuth flow. The TUI's `/connect` and the desktop app use the same login methods and credentials file.
+- `liminal connect` saves a provider's credentials: pick a provider, then a login method, then enter an API key or finish an OAuth flow. The TUI's `/connect` and the desktop app use the same login methods and credentials.
 - Print mode is a frontend over `client`. `-p` writes the final reply when the turn ends; `--json` writes saved events and deltas as JSON lines. Questions and approvals are denied unless `--approve` is passed. There is no RPC mode over stdin; `http` covers remote control.
 - No host runs a server unless it composes `http`. A CLI that composes `http` lets a second client attach to a running session.
 - `http` serves every plugin's RPC group over HTTP; `actors` supplies the caller through RPC middleware.
@@ -372,7 +385,7 @@ How `session` does these over `SqlClient` is open.
 | --- | --- | --- | --- | --- |
 | Base | `directories` | `Directories`: the global, workspace and project folders | base | `archive/packages/sdk/src/core/directories.ts` |
 | Base | `settings` | `Settings` over the global and project settings files, `Setting`, `DeclaredSettings` | base | `settings` |
-| Base | `model` | Message types, providers, `ModelCall`, `Models` | base | `models`, `decisions` |
+| Base | `model` | Message types, providers, `ModelCall`, `Models`, classifiers | base | `models`, `decisions` |
 | Base | `session` | The session log over `SqlClient`, event kinds, deltas | base | `session-log`, `session-store`, `notices` |
 | Base | `tools` | Tool registry, `ToolCall` | base | `tools` |
 | Base | `tool-definitions` | `ToolDefinitions`, tool list records and notes | base | `tools` |
