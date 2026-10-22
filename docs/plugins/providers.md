@@ -4,13 +4,8 @@ Work for [status.md](../status.md) milestone 4.
 
 ## `usage`
 
-- Attaches token counts and cost to assistant events; adds a `Sidebar` item.
+- Prices the token usage on `loop/step-end` events from the catalog; adds a section to `chat`'s `sidebar` slot.
 - Previous code: `usage`.
-
-```ts
-ModelCall.wrap((req, next) => next(req).pipe(tapFinish(u => attach(Usage, cost(u, catalog)))))
-Slots.add(Sidebar, { component: UsageSummary })
-```
 
 ## `cache-hints`
 

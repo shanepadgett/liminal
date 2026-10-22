@@ -5,7 +5,7 @@ Work for [status.md](../status.md) milestone 3.
 ## `tools-files`
 
 - Adds `read`, `edit`, `write`; `@` file tags expand into file parts.
-- `edit` events render as diffs through `EventRenderer` with OpenTUI's `Diff`; patches come from `diff`.
+- `edit` events render as diffs through `chat`'s `ItemRenderer` with OpenTUI's `Diff`; patches come from `diff`.
 - Shows an edit while its arguments stream, with `partial-json` only if Effect AI gives no partial tool arguments.
 - `read` returns images, so a tool result holds text and image parts, not only JSON. This changes `ToolResult` in the `model` contract and `ToolOutput` in `tools`.
 - `edit` diffs need display data beside what the model sees, such as Pi's `details`.

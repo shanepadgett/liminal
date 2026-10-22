@@ -16,7 +16,7 @@ Milestone 2. The stack is settled in [architecture.md](architecture.md#stack).
 
 ## Next
 
-1. Plan and build the gallery in [plans/gallery.md](plans/gallery.md), then plan milestone 2 from [plugins/tui.md](plugins/tui.md) in rounds, in `plans/tui.md`. Milestone 1's plan is in [plans/_archive/base.md](plans/_archive/base.md).
+1. Plan milestone 2 from [plugins/tui.md](plugins/tui.md) in rounds, in `plans/tui.md`. The gallery's plan is in [plans/_archive/gallery.md](plans/_archive/gallery.md); its approval and question designs wait for milestone 3. Milestone 1's plan is in [plans/_archive/base.md](plans/_archive/base.md).
 2. Built: `packages/core` (`definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`), `directories`, `settings`, `sqlite`, `session`, `model` with classifiers over Effect AI's `Decision`, `model-wire` with Anthropic Messages, OpenAI Responses, Chat Completions and OpenAI Decisions, `accounts` with API keys, command credentials, OAuth tokens, logins grouped by vendor, the sign-in RPC and logout, `model-anthropic` with its API key and Claude subscription logins and `ANTHROPIC_API_KEY` as fallback, `model-openai` with `openai` (API key, `OPENAI_API_KEY` as fallback, GPT-6 Luna as classifier), `chatgpt` (Sign in with ChatGPT) and `codex` (Codex login), `model-openrouter` (API key, `OPENROUTER_API_KEY` as fallback, Jev as classifier), `model-opencode-go` (API key, `OPENCODE_API_KEY` as fallback, each model on the wire the catalog names), `model-catalog` providing `model`'s `ModelCatalog` from models.dev, `tools`, `history`, `system-prompt`, `persona`, `tool-definitions`, `loop`, `packages/client` with the in-memory `Host`, and `apps/cli` with `liminal -p`, which reads piped stdin, writes JSON lines with `--json` and sets exit codes, `liminal connect` and `liminal logout`. A host composes a plugin of its own that provides Effect's runtime services, such as `Path`, `FileSystem` and `HttpClient`.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
@@ -37,7 +37,7 @@ Planned dependencies are pinned in `tools/planned/package.json` so their docs ar
 
 Work: [plugins/tui.md](plugins/tui.md)
 
-- [ ] `apps/gallery`: tokens, primitives, components and screens designed in their states
+- [x] `apps/gallery`: tokens, primitives, components and screens designed in their states
 - [ ] Session view in `packages/client`
 - [ ] `packages/tui`: renderer, slot tree, UI kit
 - [ ] `chat`, `palette`, `theme`
@@ -103,6 +103,7 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 - Change notes as system-role messages where the model accepts them mid-conversation, as DeepSeek does; Effect AI's Anthropic provider has a per-model flag for it. Needs a `system` role in `Message`.
 - A turn that ends in structured output: the final answer, after any tool use, must decode through a schema the prompt gives, as OpenCode's `format` option does. `Models.generateObject` covers one-off calls.
 - Sign in with ChatGPT limits `chatgpt` does not handle: the API refuses uncompressed request bodies over about 1 MiB, which OpenCode compresses with zstd, and `model` retries errors such as `subscription_sharing_usage_limit_exceeded` that retrying cannot fix.
+- A session event when the model changes mid-session, as Pi and OpenCode log, so the transcript shows where it switched.
 - Image generation built in: when a signed-in provider offers an image model, a simple way to make an image with it.
 
 ## Open

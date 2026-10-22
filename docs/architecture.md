@@ -83,16 +83,18 @@ docs/
 
 ```text
 plugins/approvals/
-  package.json        exports ".", "./contract", "./tui", "./web"; "liminal": { "plugins": ["./src/index.ts"] }
+  package.json        exports ".", "./contract", "./view", "./tui", "./web"; "liminal": { "plugins": ["./src/index.ts"] }
   README.md           what it provides and requires, how to use or replace it
   src/
     index.ts          definePlugin(...): the server side
     contract.ts       tags, event kinds, schemas, slot handles, the RPC group its screens call
+    view.ts           framework-free frontend code its tui and web entries share (optional)
     tui.tsx           TUI slot registrations (optional)
     web.tsx           desktop webview slot registrations (optional)
 ```
 
-- `contract.ts`, `tui.tsx` or `tui/`, and `web.tsx` or `web/` are fixed. Every other file under `src/` is server side, laid out freely.
+- `contract.ts`, `view.ts` or `view/`, `tui.tsx` or `tui/`, and `web.tsx` or `web/` are fixed. Every other file under `src/` is server side, laid out freely.
+- `view.ts` uses no UI framework. The `tui` and `web` entries import it; the server never does.
 
 ```ts
 export default definePlugin({
@@ -105,7 +107,7 @@ export default definePlugin({
 ```
 
 - A server never imports frontend entries. A frontend loads its entry of every plugin in the composition.
-- A plugin imports other plugins only through their `./contract` export.
+- A plugin imports other plugins through their `./contract` export. Its `view` code may also import their `./view`, its `tui` code their `./view` and `./tui`, its `web` code their `./view` and `./web`.
 - A plugin's `tui` and `web` entries reach its server side only through the RPC group in its contract.
 - A `tui` or `web` entry that grows becomes a folder with an `index` file.
 - Code shared by plugins is Effect or standard JavaScript first. Pure code a second plugin needs moves to a library package named for one concept, never a grab-bag. It becomes a plugin only when it needs swapping, state or runtime services.
@@ -307,19 +309,18 @@ Three layers, each usable without the next:
 
 ```text
 client         host.client(Group): plugins' RPC groups in memory, over IPC or HTTP   any JS with Effect, no framework
-session view   folds events into state: messages, streaming text,
-               pending questions, who's acting, turn status                   any JS, no framework
+session view   saved events, the reply streaming now, turn status                    any JS with Effect, no framework
 frontend       components                                                      TUI, desktop, an embedding app
 ```
 
 ```ts
-const view = SessionView.open(client, sessionId)
-view.state      // { messages, streaming, questions, status: "idle" | "running", actors }
-view.subscribe(listener)
-view.send(input)
-view.answer(questionId, value)
-view.loadOlder()
+const view = yield* SessionView.open(sessionId)   // needs Host and a Scope
+view.state        // SubscriptionRef<{ events, streaming, running }>
+view.loadOlder    // loads the page before the oldest event held
 ```
+
+- The view knows only `session` and `loop` kinds. A screen decodes the kinds it draws and builds what it needs from them, such as the chat transcript or pending questions.
+- `running` comes from `loop/turn-start` and `loop/turn-end`. Sending, cancelling and answering are RPC calls, not view methods.
 
 - Each plugin's contract declares the functions its screens may call as an Effect RPC group: names, input and output schemas, one-shot calls or streams. `session` declares `open`, `page` and `live`; `loop` declares `send`, `cancel`, `pullBack` and `queue`; `accounts` declares the login methods, the sign-in stream and `answer`.
 - The code behind a group's functions is an ordinary service in the plugin's layer. RPC calls go from screen to plugin only, so a plugin reaches a screen by streaming, as sign-in does.
@@ -332,25 +333,39 @@ A slot is a named region of the screen that plugins fill from their `tui` and `w
 | Slot mode | Mechanism | Example |
 | --- | --- | --- |
 | `append` | Add | Status bar items, sidebar sections |
-| `replace`, `single_winner` | Replace | The whole composer, the message list, the root layout |
+| `replace`, `single_winner` | Replace | The whole composer, the screen |
 
-How an event renders is not a slot: `EventRenderer` is a registry keyed by event kind.
+Dialogs are not a slot: a command opens one through the UI kit's `Dialogs` stack, drawn above the screen.
+
+How the transcript shows events is not a slot. `chat` builds transcript items from events with `TranscriptRules`, in its `view.ts`, and draws each item with `ItemRenderer`, in its `tui` entry, keyed by item kind.
 
 ```ts
-// chat plugin owns the screen, its slots and the event renderers
+// chat/src/view.ts
+interface TranscriptRule<S> {
+  readonly kind: string                              // item kind
+  readonly match: (part: Part) => string | undefined // item id; parts with one id make one item
+  readonly start: (part: Part) => S
+  readonly update: (state: S, part: Part) => S
+}
+export const TranscriptRules: Registry<TranscriptRule<unknown>>
+
+// chat/src/tui.tsx
 type ChatSlots = { sidebar: { session: SessionId }; composer: { session: SessionId } }
-export const EventRenderer: Registry<{ kind: string; component: Component<{ event: SessionEvent }> }>
+export const ItemRenderer: Registry<{ kind: string; component: Component<{ item: Item }> }>
 
 // approvals tui entry
-EventRenderer.add({ kind: "question", component: QuestionCard })
+ItemRenderer.add({ kind: "question", component: QuestionCard })
 ```
 
-- An event kind with no renderer gets a generic view.
-- The TUI and the desktop webview both use Solid 1.x. The session view and state code are shared. Components and the slot registry are not: OpenTUI's need its native core, so the desktop gets its own small slot registry with the same slot names.
+- A part is one event, or one part of a `session/message`. A tool call and its result share the call id, so they make one item.
+- An event no rule matches is its own item, of the event's kind. An item kind with no renderer gets a generic view.
+- Streamed parts show as live items until saved.
+- A plugin's `tui` module default-exports a plugin made with `definePlugin`. `packages/tui` composes every `tui` entry with `compose` over a layer that provides `Host`, the renderer and the slot registry, so entries require each other's services as server plugins do.
+- The TUI and the desktop webview both use Solid 1.x. The session view, state code and `theme`'s colors are shared. Components, spacing and the slot registry are not: OpenTUI's need its native core, so the desktop gets its own small slot registry with the same slot names.
 
 ### Embedding apps
 
-An embedding app is the host, so it owns its UI. It uses `client` and the session view and renders with its own components. A plain map from event kind to component plays the role of the `EventRenderer` slot. Plugin `tui` and `web` entries are for Liminal's own frontends.
+An embedding app is the host, so it owns its UI. It uses `client` and the session view and renders with its own components. A plain map from item kind to component plays the role of `ItemRenderer`. Plugin `tui` and `web` entries are for Liminal's own frontends.
 
 ## Hosts
 
