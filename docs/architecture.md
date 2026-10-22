@@ -309,7 +309,7 @@ view.answer(questionId, value)
 view.loadOlder()
 ```
 
-- Each plugin's contract declares the functions its screens may call as an Effect RPC group: names, input and output schemas, one-shot calls or streams. `session` declares `page` and `live`; `loop` declares `send`, `cancel`, `pullBack` and `queue`; `accounts` declares the login methods, the sign-in stream and `answer`.
+- Each plugin's contract declares the functions its screens may call as an Effect RPC group: names, input and output schemas, one-shot calls or streams. `session` declares `open`, `page` and `live`; `loop` declares `send`, `cancel`, `pullBack` and `queue`; `accounts` declares the login methods, the sign-in stream and `answer`.
 - The code behind a group's functions is an ordinary service in the plugin's layer. RPC calls go from screen to plugin only, so a plugin reaches a screen by streaming, as sign-in does.
 - A frontend gets a client for a group with `host.client(Group)`. The host picks the connection: Effect's in-memory client in the same process, the desktop shell's IPC, or HTTP through `http`. A plugin's screen code is the same in every host.
 

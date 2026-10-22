@@ -23,17 +23,9 @@ LoginMethods.add({ provider: "anthropic", kind: "oauth", run: anthropicOAuth })
 - `model-anthropic` adds its API key and Claude subscription logins to `LoginMethods`; subscription requests are sent as Claude Code, with its identity line added on the way out. `model-codex` offers the ChatGPT plan login by browser or device code.
 - Previous code: same names.
 
-## `packages/client`
-
-- `host.client(Group)`: a client for a plugin's RPC group over Effect's in-memory client; IPC and HTTP come with the desktop app and `http`.
-- Imports `effect`, core and plugin contracts.
-- Previous code: `archive/packages/frontend`.
-
 ## `apps/cli`
 
-- Composes the base plugins, `sqlite`, `accounts`, `model-catalog` and every provider, plus a few-line plugin of its own that hands in `BunServices.layer`: files, paths, processes and the terminal.
-- Command line with `effect/cli`.
+- Add `accounts` and the other providers to its composition.
 - `liminal connect` over `client`: interactive prompts pick a provider and a login method, then show the sign-in steps from `accounts` and send back what the user types.
-- Print mode over `client`, using `send` and `live`: `-p` writes the final reply when the turn ends, with errors and notices on stderr; `--json` writes saved events and deltas as JSON lines from the input to the turn's end; piped stdin joins the prompt. Print mode reads the events it needs itself and always starts a new session.
+- Print mode `--json`: saved events and deltas as JSON lines from the input to the turn's end.
 - Exit codes: 0 answered, 1 failed or cancelled, 2 bad flags, 130 Ctrl-C after cancelling the turn.
-- Bare `liminal` prints help.

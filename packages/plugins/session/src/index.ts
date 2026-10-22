@@ -87,7 +87,10 @@ const make = Effect.gen(function* () {
 
 const rpc = SessionRpc.toLayer(
   Effect.map(SessionLog, (log) =>
-    SessionRpc.of({ "session/live": ({ session, after }) => log.live(session, after) }),
+    SessionRpc.of({
+      "session/open": () => log.open(),
+      "session/live": ({ session, after }) => log.live(session, after),
+    }),
   ),
 );
 

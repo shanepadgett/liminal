@@ -18,6 +18,39 @@
         "typescript": "7.0.2",
       },
     },
+    "apps/cli": {
+      "name": "@shanepadgett/liminal-cli",
+      "version": "0.1.0",
+      "bin": {
+        "liminal": "./src/main.ts",
+      },
+      "dependencies": {
+        "@effect/platform-bun": "4.0.5",
+        "@shanepadgett/liminal-client": "workspace:*",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-history": "workspace:*",
+        "@shanepadgett/liminal-loop": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-model-anthropic": "workspace:*",
+        "@shanepadgett/liminal-model-catalog": "workspace:*",
+        "@shanepadgett/liminal-persona": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-settings": "workspace:*",
+        "@shanepadgett/liminal-sqlite": "workspace:*",
+        "@shanepadgett/liminal-system-prompt": "workspace:*",
+        "@shanepadgett/liminal-tool-definitions": "workspace:*",
+        "@shanepadgett/liminal-tools": "workspace:*",
+        "effect": "4.0.5",
+      },
+    },
+    "packages/client": {
+      "name": "@shanepadgett/liminal-client",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "effect": "*",
+      },
+    },
     "packages/core": {
       "name": "@shanepadgett/liminal-core",
       "version": "0.1.0",
@@ -179,7 +212,6 @@
         "@effect/ai-openai": "4.0.5",
         "@effect/ai-openai-compat": "4.0.5",
         "@effect/ai-openrouter": "4.0.5",
-        "@effect/platform-bun": "4.0.5",
         "@effect/sql-pg": "4.0.5",
         "@opencode/codemode": "2.1.2",
         "@opentui/core": "0.6.6",
@@ -426,6 +458,10 @@
     "@oxlint/binding-win32-x64-msvc": ["@oxlint/binding-win32-x64-msvc@1.89.0", "", { "os": "win32", "cpu": "x64" }, "sha512-hLFJ/o0f/dTJh/EW0vmcbREYSQO9tYgfiAAlsOkiLFiJuRRWvYtFELUXN5o2ijpSo/tlO1n+YlWN58tZwPG18A=="],
 
     "@oxlint/plugins": ["@oxlint/plugins@1.89.0", "", {}, "sha512-TJBBNl4KIxbxrSk7gsqlz6iM1kxidfyTizEzfWqXvijF2Ou8/Da58GvjemBVmCmaUamwRij+JwsVc0kpBFuqfg=="],
+
+    "@shanepadgett/liminal-cli": ["@shanepadgett/liminal-cli@workspace:apps/cli"],
+
+    "@shanepadgett/liminal-client": ["@shanepadgett/liminal-client@workspace:packages/client"],
 
     "@shanepadgett/liminal-core": ["@shanepadgett/liminal-core@workspace:packages/core"],
 

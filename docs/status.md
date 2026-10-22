@@ -17,7 +17,7 @@ Milestone 1. The stack is settled in [architecture.md](architecture.md#stack).
 ## Next
 
 1. Milestone 1's plugins from [plugins/base.md](plugins/base.md) are planned in [plans/base.md](plans/base.md). Rounds 1–7 are in its Decisions: storage, folders, settings, credentials, retries, choosing models, types, model details, `session`, the turn with its plugins, accounts with the providers, and `client` with `apps/cli`.
-2. Build the rest of milestone 1 as one path to a first reply, then widen: `client` and print mode. Then `accounts` with `liminal connect`, the Claude subscription login, the other providers, `--json` and exit codes. Built: `packages/core` (`definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`), `directories`, `settings`, `sqlite`, `session`, `model`, `model-wire` with Anthropic Messages, `model-anthropic` with `ANTHROPIC_API_KEY`, `model-catalog` with models.dev details, `tools`, `history`, `system-prompt`, `persona`, `tool-definitions`, `loop`. A host composes a plugin of its own that provides Effect's runtime services, such as `Path`, `FileSystem` and `HttpClient`.
+2. Widen milestone 1: `accounts` with `liminal connect`, the Claude subscription login, the other providers, `--json` and exit codes. Built: `packages/core` (`definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`), `directories`, `settings`, `sqlite`, `session`, `model`, `model-wire` with Anthropic Messages, `model-anthropic` with `ANTHROPIC_API_KEY`, `model-catalog` with models.dev details, `tools`, `history`, `system-prompt`, `persona`, `tool-definitions`, `loop`, `packages/client` with the in-memory `Host`, and `apps/cli` with `liminal -p`, which reads piped stdin. A host composes a plugin of its own that provides Effect's runtime services, such as `Path`, `FileSystem` and `HttpClient`.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
 
@@ -31,7 +31,7 @@ Work: [plugins/base.md](plugins/base.md)
 - [x] Base plugins: `directories`, `settings`, `model`, `session`, `tools`, `tool-definitions`, `system-prompt`, `persona`, `history`, `loop`
 - [ ] `sqlite`, `accounts`
 - [ ] `model-catalog`, `model-anthropic`, `model-openai`, `model-codex`, `model-openrouter`, `model-opencode-go`
-- [ ] `packages/client`: `host.client(Group)` over in-memory RPC
+- [x] `packages/client`: `host.client(Group)` over in-memory RPC
 - [ ] `apps/cli`: `liminal connect` saves credentials; print mode writes a reply with them
 
 ### 2. TUI

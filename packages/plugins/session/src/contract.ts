@@ -137,6 +137,7 @@ export class SessionLog extends Context.Service<
 
 /** What screens call. */
 export class SessionRpc extends RpcGroup.make(
+  Rpc.make("session/open", { success: SessionId, error: SessionStoreFailed }),
   Rpc.make("session/live", {
     payload: { session: SessionId, after: Schema.optional(Seq) },
     success: LiveItem,

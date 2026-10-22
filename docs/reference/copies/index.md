@@ -89,7 +89,7 @@ Node.js API docs. Prefer Bun's built-ins and Effect; use `node:` modules where B
 Bun layers for Effect's platform services: FileSystem, Path, ChildProcess, runtime entry. Hosts use it; core and base plugins stay on `effect`. Its ai-docs duplicate Effect's, so only the README is copied.
 
 - Docs: `docs/reference/copies/@effect/platform-bun/4.0.5/` (1 file: README.md)
-- API (source): `tools/planned/node_modules/@effect/platform-bun/src/`, modules: `docs/reference/copies/@effect/platform-bun/4.0.5/api-index/@effect-platform-bun-src.md`
+- API (source): `apps/cli/node_modules/@effect/platform-bun/src/`, modules: `docs/reference/copies/@effect/platform-bun/4.0.5/api-index/@effect-platform-bun-src.md`
 
 ## @effect/sql-sqlite-bun 4.0.5
 
