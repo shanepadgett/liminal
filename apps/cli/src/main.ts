@@ -1,17 +1,18 @@
 #!/usr/bin/env bun
 /**
- * The `liminal` command: print mode with `-p`, `liminal connect`, `liminal logout`, and help
+ * The `liminal` command: print mode with `-p`, `liminal connect`, `liminal logout`, and the TUI
  * otherwise.
  */
 import { BunRuntime, BunServices } from "@effect/platform-bun";
 import { Console, Effect, Option, Stdio, Stream, Terminal } from "effect";
-import { CliError, Command, Flag } from "effect/cli";
+import { Command, Flag } from "effect/cli";
 
 import { host } from "./composition.ts";
 import { connect } from "./connect.ts";
 import { badUsage, ExitCode, failed, interrupted } from "./exit-code.ts";
 import { logout } from "./logout.ts";
 import { print } from "./print.ts";
+import { tui } from "./tui.ts";
 
 /** Piped stdin, or nothing when stdin is the terminal. */
 const piped = Effect.gen(function* () {
@@ -66,12 +67,16 @@ const liminal = Command.make(
   },
   Effect.fn(function* ({ print: flag, json }) {
     if (Option.isNone(flag)) {
-      return yield* new CliError.ShowHelp({ commandPath: ["liminal"], errors: [] });
+      return yield* tui.pipe(
+        Effect.catch((error) =>
+          Effect.andThen(Console.error(error.message), new ExitCode({ code: failed })),
+        ),
+      );
     }
 
     const prompt = yield* promptOf(flag.value);
 
-    // The plugins start only for print mode, so help never opens the session store.
+    // The plugins start only once the command is known, so help never opens the session store.
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- print mode's entry point.
     return yield* Effect.scoped(print(prompt, json)).pipe(Effect.provide(host));
   }),

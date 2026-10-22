@@ -16,8 +16,8 @@ import { Colors, ColorsProvider, useColor } from "./colors.ts";
 import { DialogLayer, Dialogs } from "./dialogs.tsx";
 import { RegistryProvider, screen, Slots, SlotView } from "./slots.tsx";
 
-/** The whole screen. `ctrl+c` quits until a screen takes it over. */
-function Screen(props: { readonly dialogs: Dialogs["Service"]; readonly quit: () => void }) {
+/** What shows while no plugin fills the screen; `ctrl+c` quits, as the screen would let it. */
+function Empty(props: { readonly quit: () => void }) {
   const color = useColor();
 
   useBindings(() => ({
@@ -25,10 +25,17 @@ function Screen(props: { readonly dialogs: Dialogs["Service"]; readonly quit: ()
     bindings: [{ key: "ctrl+c", cmd: "app.quit" }],
   }));
 
+  return <text fg={color("text.faint")}>No plugin fills the screen.</text>;
+}
+
+/** The whole screen. The plugin that fills it binds its own keys, quitting among them. */
+function Screen(props: { readonly dialogs: Dialogs["Service"]; readonly quit: () => void }) {
+  const color = useColor();
+
   return (
     <box width="100%" height="100%" backgroundColor={color("surface.base")}>
       <SlotView slot={screen}>
-        <text fg={color("text.faint")}>No plugin fills the screen.</text>
+        <Empty quit={props.quit} />
       </SlotView>
       <DialogLayer dialogs={props.dialogs} />
     </box>

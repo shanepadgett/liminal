@@ -8,7 +8,9 @@
   "type": "module",
   "dependencies": {
     "@effect/platform-bun": "4.0.5",
+    "@opentui/solid": "0.6.6",
     "@shanepadgett/liminal-accounts": "workspace:*",
+    "@shanepadgett/liminal-chat": "workspace:*",
     "@shanepadgett/liminal-client": "workspace:*",
     "@shanepadgett/liminal-core": "workspace:*",
     "@shanepadgett/liminal-directories": "workspace:*",
@@ -28,6 +30,7 @@
     "@shanepadgett/liminal-theme": "workspace:*",
     "@shanepadgett/liminal-tool-definitions": "workspace:*",
     "@shanepadgett/liminal-tools": "workspace:*",
+    "@shanepadgett/liminal-tui": "workspace:*",
     "effect": "4.0.5"
   }
 }

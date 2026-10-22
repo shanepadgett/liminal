@@ -21,7 +21,7 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 
 ## `chat`
 
-- The chat screen. Owns `TranscriptRules` in `view.ts`, and `ItemRenderer` and the `sidebar` (`append`) and `composer` (`replace`) slots in its `tui` entry.
+- The chat screen. Builds the transcript in `view/`; owns `ItemRenderer` (by event kind) and the `sidebar` (`append`) and `composer` (`replace`) slots in its `tui` entry.
 - Sidebar: chat's Session section, and the context share from the latest `loop/step-end` over the model's `contextWindow`. Below 110 columns it is a drawer; the "Toggle sidebar" command (`ctrl+b`, in the palette) opens it, `escape` closes it, a footer hint shows while hidden.
 - The transcript opens at the bottom: its first frame shows the latest items, with no scroll down after loading.
 - Each tool call and its result make one single-line row; consecutive tool rows sit next to each other, ungrouped.
@@ -33,11 +33,11 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 - Previous code: `chat`, `inbox` (composer).
 
 ```ts
-// view.ts
-export const TranscriptRules: Registry<TranscriptRule<unknown>>
-// tui.tsx
+// view/index.ts
+export const buildTranscript: (state: ViewState, drawn: ReadonlySet<string>) => ReadonlyArray<Turn>
+// tui/index.tsx
 type ChatSlots = { sidebar: { session: SessionId }; composer: { session: SessionId } }
-export const ItemRenderer: Registry<{ kind: string; component: Component<{ item: Item }> }>
+export const ItemRenderer: Registry<{ kind: string; component: (props: { event: SessionEvent }) => JSX.Element }>
 ```
 
 ## `palette`

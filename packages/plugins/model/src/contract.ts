@@ -1,9 +1,10 @@
 /** The model vocabulary: messages, requests, providers, the model call and one-off calls. */
 import { Context, type Effect, Schema, type Stream } from "effect";
 import type { AiError, Decision, DecisionModel, LanguageModel, Response } from "effect/ai";
+import { Rpc, RpcGroup } from "effect/rpc";
 
 import { Pipeline, Registry } from "@shanepadgett/liminal-core";
-import type { SettingsInvalid } from "@shanepadgett/liminal-settings/contract";
+import { SettingsInvalid } from "@shanepadgett/liminal-settings/contract";
 
 /** What a provider needs back on the next request, such as a reasoning signature, by provider. */
 export const ProviderData = Schema.Record(Schema.String, Schema.Json);
@@ -355,6 +356,24 @@ export const Reply = {
   add,
   message: (reply: Reply): Message => ({ role: "assistant", parts: reply.map(({ part }) => part) }),
 };
+
+/** The model a role runs, as a screen shows it. */
+export const RoleModel = Schema.Struct({
+  model: ModelId,
+  /** Missing when the catalog does not list the model or cannot be read. */
+  contextWindow: Schema.optional(Schema.Int),
+});
+
+export type RoleModel = typeof RoleModel.Type;
+
+/** What screens call. */
+export class ModelRpc extends RpcGroup.make(
+  /** The model the `main` role runs. */
+  Rpc.make("model/main", {
+    success: RoleModel,
+    error: Schema.Union([ModelNotFound, SettingsInvalid]),
+  }),
+) {}
 
 export class Models extends Context.Service<
   Models,

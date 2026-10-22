@@ -40,7 +40,10 @@ Work: [plugins/tui.md](plugins/tui.md)
 - [x] `apps/gallery`: tokens, primitives, components and screens designed in their states
 - [x] Session view in `packages/client`
 - [x] `packages/tui`: renderer, slot tree, UI kit
-- [ ] `chat`, `palette`, `theme`
+- [x] `theme`
+- [x] `chat`: screen, transcript, sidebar, composer; `liminal` opens the TUI
+- [ ] `chat`: `@` file tags and stashes
+- [ ] `palette`
 - [ ] Model picker and print mode `--model`
 - [ ] `/connect` in the TUI
 - [ ] Daily chat in the TUI with saved sessions
@@ -105,6 +108,7 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 - Sign in with ChatGPT limits `chatgpt` does not handle: the API refuses uncompressed request bodies over about 1 MiB, which OpenCode compresses with zstd, and `model` retries errors such as `subscription_sharing_usage_limit_exceeded` that retrying cannot fix.
 - A session event when the model changes mid-session, as Pi and OpenCode log, so the transcript shows where it switched.
 - Image generation built in: when a signed-in provider offers an image model, a simple way to make an image with it.
+- A place to read the TUI's logs, such as a file under `~/.liminal/` or OpenTUI's console overlay. Inside the TUI, OpenTUI captures console output, so logged errors such as a slot fill that fails to draw stay hidden.
 
 ## Open
 

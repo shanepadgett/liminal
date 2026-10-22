@@ -338,29 +338,23 @@ A slot is a named region of the screen that plugins fill from their `tui` and `w
 
 Dialogs are not a slot: a command opens one through the UI kit's `Dialogs` stack, drawn above the screen.
 
-How the transcript shows events is not a slot. `chat` builds transcript items from events with `TranscriptRules`, in its `view.ts`, and draws each item with `ItemRenderer`, in its `tui` entry, keyed by item kind.
+How the transcript shows events is not a slot. `chat` builds turns and items from `session/*` and `loop/*` events in its `view/`, in one closed function. Another plugin draws its own saved event kind by adding to `ItemRenderer`, in chat's `tui` entry, keyed by event kind.
 
 ```ts
-// chat/src/view.ts
-interface TranscriptRule<S> {
-  readonly kind: string                              // item kind
-  readonly match: (part: Part) => string | undefined // item id; parts with one id make one item
-  readonly start: (part: Part) => S
-  readonly update: (state: S, part: Part) => S
-}
-export const TranscriptRules: Registry<TranscriptRule<unknown>>
+// chat/src/view/index.ts
+export const buildTranscript: (state: ViewState, drawn: ReadonlySet<string>) => ReadonlyArray<Turn>
 
-// chat/src/tui.tsx
+// chat/src/tui/index.tsx
 type ChatSlots = { sidebar: { session: SessionId }; composer: { session: SessionId } }
-export const ItemRenderer: Registry<{ kind: string; component: Component<{ item: Item }> }>
+export const ItemRenderer: Registry<{ kind: string; component: (props: { event: SessionEvent }) => JSX.Element }>
 
 // approvals tui entry
-ItemRenderer.add({ kind: "question", component: QuestionCard })
+ItemRenderer.add({ kind: "approvals/question", component: QuestionCard })
 ```
 
-- A part is one event, or one part of a `session/message`. A tool call and its result share the call id, so they make one item.
-- An event no rule matches is its own item, of the event's kind. An item kind with no renderer gets a generic view.
-- Streamed parts show as live items until saved.
+- A tool call and its result share the call id, so they make one item.
+- A saved event of a kind with no renderer, and not chat's own, does not show.
+- Streamed deltas show as live items until the next saved event.
 - A plugin's `tui` module default-exports a plugin made with `definePlugin`. `packages/tui` composes every `tui` entry with `compose` over a layer that provides `Host`, the renderer and the slot registry, so entries require each other's services as server plugins do.
 - The TUI and the desktop webview both use Solid 1.x. The session view, state code and `theme`'s colors are shared. Components, spacing and the slot registry are not: OpenTUI's need its native core, so the desktop gets its own small slot registry with the same slot names.
 

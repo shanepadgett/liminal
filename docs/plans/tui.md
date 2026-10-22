@@ -51,8 +51,8 @@ Prior art:
 - **`loop` logs steps.** `loop/step-start` (with the model id) and `loop/step-end` are saved around each model call; the model never sees them. Every step start gets an end: `finished`, `failed`, `cancelled`, or `interrupted` when Liminal stopped, as OpenCode, deepseek-harness and Pi each close every model call.
 - **Frontend code shared by `tui` and `web` lives in `view.ts`.** A plugin's `src/view.ts` or `src/view/` uses no UI framework; its `tui` and `web` entries import it and the server never does. `chat`'s holds the code that builds the transcript, so the desktop app reuses it. The plugin anatomy check and lint rules learn the new fixed file.
 - **Plugins add frontend exports.** Beside `./contract`, a plugin exports `./view` (no UI framework) and `./tui` (OpenTUI), later `./web`. `/contract` is importable anywhere, `/view` from `view`, `tui` and `web` code, `/tui` from `tui` code only. `contract.ts` cannot hold a tag typed with a Solid component, since servers import it.
-- **Plugins say which events make one transcript item.** `chat`'s `view.ts` holds `TranscriptRules`, after deepseek-harness's event definitions; its `tui` entry holds `ItemRenderer`, keyed by item kind. A part is one event, or one part of a `session/message`; parts with one item id make one item. An event no rule matches is its own item, of the event's kind. Streamed parts show as live items until saved.
-- **Tool rows are not grouped.** A tool call and its result make one single-line row through `TranscriptRules`; consecutive tool rows sit next to each other, as in the gallery.
+- **Chat builds the transcript; plugins draw their own kinds.** `chat`'s `view/` builds turns and items from `session/*` and `loop/*` events in one closed function, as OpenCode's client store does; its `tui` entry holds `ItemRenderer`, keyed by event kind, as Pi's `registerMessageRenderer` is. A saved event of a kind with a renderer is an item that renderer draws. Streamed deltas show as live items until the next saved event.
+- **Tool rows are not grouped.** A tool call and its result make one single-line row; consecutive tool rows sit next to each other, as in the gallery.
 - **TUI and desktop share colors.** `packages/client` holds the role names, so the UI kits and `theme` import them without importing each other. `theme`'s contract holds the `Palette` type, the setting and `theme/get`, `theme/set`; its `view.ts` holds the OKLCH math, ramps, palettes and the palette-to-role mapping. Its `tui` entry builds OpenTUI's `SyntaxStyle` and fills the UI kit's color context; a later `web` entry turns role colors into CSS variables. The UI kit owns `useColor` and that context. Spacing, borders, glyphs, fonts and syntax styles belong to each frontend. OpenCode keeps separate theme code for its TUI and web app, and their theme sets have drifted.
 - **Slots.** `packages/tui` has one `screen` slot (`single_winner`) that `chat` fills. `chat` has `sidebar` (`append`, sections by `order`, its own Session section first) and `composer` (`replace`). A notifications slot comes with the first plugin that fills it.
 - **Dialogs are a service, not a slot.** The UI kit's `Dialogs` is a stack with `open` and `close`, drawn above the screen with the dim. `model`, `accounts` and `palette` open their pickers through it from commands.
@@ -71,17 +71,11 @@ SessionView.open(session): Effect<{ state: SubscriptionRef<ViewState>; loadOlder
 ```
 
 ```ts
-// chat/src/view.ts
-interface TranscriptRule<S> {
-  readonly kind: string                              // item kind
-  readonly match: (part: Part) => string | undefined // item id
-  readonly start: (part: Part) => S
-  readonly update: (state: S, part: Part) => S
-}
-export const TranscriptRules: Registry<TranscriptRule<unknown>>
+// chat/src/view/index.ts
+export const buildTranscript: (state: ViewState, drawn: ReadonlySet<string>) => ReadonlyArray<Turn>
 
-// chat/src/tui.tsx
-export const ItemRenderer: Registry<{ kind: string; component: Component<{ item: Item }> }>
+// chat/src/tui/index.tsx
+export const ItemRenderer: Registry<{ kind: string; component: (props: { event: SessionEvent }) => JSX.Element }>
 ```
 
 ```mermaid
@@ -107,7 +101,7 @@ flowchart LR
 
 ## Build order
 
-1. `loop` events. 2. Session view in `packages/client`. 3. Plugin anatomy: `./view`, `./tui`, `view.ts`. 4. `packages/tui`. 5. `theme`. 6. `chat`, with `liminal` opening the TUI. 7. `palette`, model picker, `/connect`, saved sessions, queue and pull-back, `Commands`.
+1. `loop` events. 2. Session view in `packages/client`. 3. Plugin anatomy: `./view`, `./tui`, `view.ts`. 4. `packages/tui`. 5. `theme`. 6. `chat`, with `liminal` opening the TUI: 6a the screen, 6b `@` tags and stashes. 7. `palette`, model picker, `/connect`, saved sessions, queue and pull-back, `Commands`.
 
 ## Step 1: `loop` events
 
@@ -447,6 +441,120 @@ apps/cli composition              gains theme, so theme/get answers once the TUI
 - Plugins may import `packages/client`, so a `tui` entry reaches `Host` and the role names; `.fallowrc.jsonc` allows it.
 - The gallery keeps its theme files; `theme` copies them.
 - The theme picker comes in step 7, with the command palette and an interactive `Picker`; step 7 also settles how a pick reaches `Colors`.
+
+## Step 6: `chat`
+
+Two commits. 6a: the chat screen, transcript, sidebar, a plain composer and `liminal` opening the TUI. 6b: `@` file tags with `git ls-files` completion, and stashes. Slash commands come in step 7 with `Commands`.
+
+```mermaid
+flowchart LR
+  cli["liminal (no -p)"] --> run["packages/tui run(plugins)"]
+  run --> entries["each plugin's tui entry"]
+  entries --> chat["chat fills screen"]
+  cli --> host["host (composition.ts)"]
+  run -.Host.-> host
+```
+
+- `liminal` with no `-p` opens the TUI; `--help` prints help. `composition.ts` exports its plugin list beside `host`, and `run(plugins)` gets `Host` from `host`.
+- The screen starts on Landing. The first send calls `session/open`, then `loop/send`, and the screen switches to the header and transcript. Quitting before a send saves nothing.
+- Composer keys: `enter` sends and `shift+enter` adds a line. While a turn runs, `enter` steers, `tab` queues a follow-up (both `loop/send` with its `mode`) and `esc` stops it (`loop/cancel`).
+- `ctrl+c` clears the draft when there is one, and quits otherwise. Chat's binding replaces the root's "Quit".
+- No model line under the composer until step 7, when frontends can ask for the main model.
+- Chat builds and draws the transcript for `session/*` and `loop/*` events in one closed function, as OpenCode's client store does; base plugins stay free of frontend code. Other plugins draw their own saved event kinds by adding an `ItemRenderer` for the kind, as Pi's `registerMessageRenderer` does.
+- The transcript shows inputs, replies, tool rows and notices, never reasoning. While a turn runs and nothing is inking in (no reply text or tool input streaming), the kit's `Spinner` shows under the turn: the face with the scrambled words stands in for thinking and other work.
+- Replies draw Mermaid code blocks as diagrams: chat copies the gallery's `diagrams.ts` and depends on `beautiful-mermaid`.
+
+### 6a code
+
+```text
+packages/plugins/chat/
+  package.json, README.md      exports ., ./view, ./tui; entries.tui; no contract, nothing imports one
+  src/index.ts                 the plugin: no services, so its tui entry loads
+  src/view/index.ts            Item, Turn, buildTranscript, contextUsed, isWriting
+  src/tui/index.tsx            the tui entry: provides ItemRenderer; fills screen, sidebar, composer
+  src/tui/slots.ts             ItemView, ItemRenderer, the sidebar and composer slots
+  src/tui/ChatScreen.tsx       screen state, session view, turns, ctrl+c and ctrl+b
+  src/tui/Layout.tsx           layout, copied from gallery screens/Chat.tsx
+  src/tui/Landing.tsx, Header.tsx, Sidebar.tsx, Composer.tsx    copied from gallery components/chat; Composer binds its keys
+  src/tui/Turn.tsx, Reply.tsx, WorkRow.tsx, Notice.tsx, stream.ts, diagrams.ts   copied from gallery components/transcript; Turn draws each item kind
+packages/tui/src/root.tsx      keeps ctrl+c "Quit" only while no plugin fills the screen
+packages/tui/src/slots.tsx     a fill's component runs untracked
+apps/cli/src/composition.ts    exports plugins beside host; gains chat
+apps/cli/src/tui.ts            registers Solid's transform, then run(plugins) with host
+apps/cli/src/main.ts           no flags: tui
+apps/cli/package.json          gains @opentui/solid, liminal-tui, liminal-chat
+packages/plugins/directories/  DirectoriesRpc: directories/workspace
+packages/plugins/model/        ModelRpc: model/main
+```
+
+```ts
+// view/index.ts: framework-free; decodes with Schema.decodeOption, skipping data its schema rejects
+type Item =
+  | { kind: "input"; id: string; text: string }                          // a steer or later input in the turn
+  | { kind: "reply"; id: string; text: string; isLive: boolean }
+  | { kind: "tool"; id: string; name: string; params: Json; status: "running" | "done" | "failed"; isLive: boolean }
+  | { kind: "notice"; id: string; level: "info" | "warning" | "error"; text: string }
+  | { kind: "event"; id: string; event: SessionEvent }                    // another plugin's kind, drawn by its ItemRenderer
+interface Turn { readonly id: string; readonly input: string | undefined; readonly items: ReadonlyArray<Item> }
+const buildTranscript: (state: ViewState, drawn: ReadonlySet<string>) => ReadonlyArray<Turn>   // drawn: kinds with a renderer
+const contextUsed: (state: ViewState) => number | undefined   // input tokens of the latest finished loop/step-end
+const isWriting: (state: ViewState) => boolean                // the last delta is reply text or tool input
+
+// tui/index.tsx
+interface ItemView { readonly kind: string; readonly component: (props: { event: SessionEvent }) => JSX.Element }
+class ItemRenderer extends Registry.Service<ItemRenderer, ItemView>()("chat/ItemRenderer") {}
+```
+
+```text
+buildTranscript(state, drawn): one closed switch, saved events first, then deltas
+  loop/turn-start               → start a Turn
+  session/message user          → the Turn's input, or an input item when it has one
+  session/message assistant     → reply per text part (id seq:index); tool per tool-call part (id call id)
+  loop/interrupted              → the same, for the reply a cancel cut short
+  session/message tool results  → the tool (id call id): done or failed
+  session/notice                → notice
+  loop/turn-end cancelled       → notice "Stopped."
+  a kind in drawn               → event item
+  loop/reply text delta         → live reply (id key), its text appended
+  loop/reply reasoning delta    → nothing
+  loop/reply tool-input, call   → live tool (id call id), its params inking in
+  loop/reply retry              → drops the live items; a retry notice
+  loop/tool-done                → the tool (id call id): done or failed
+  anything else                 → nothing; kinds such as loop/step-start never show
+  an item with an id seen before in its Turn replaces it in place; a saved event clears the deltas, so live items go
+```
+
+```mermaid
+sequenceDiagram
+  participant cli as liminal
+  participant tui as packages/tui run
+  participant chat as chat tui entry
+  participant host as Host
+  cli->>tui: run(plugins), host provided
+  tui->>chat: build entry: provide ItemRenderer, fill screen
+  chat->>chat: Landing until the first send
+  chat->>host: session/open, then loop/send
+  chat->>host: SessionView.open(session) via useSessionView
+  host-->>chat: ViewState; buildTranscript; draw each Turn
+```
+
+- Screen state: `{ kind: "landing" } | { kind: "session"; session: SessionId }`.
+- Header: the wordmark and diagonals, no title until saved sessions bring titles in step 7.
+- Sidebar Session section: the folder, the Git branch and the context share, through two new RPCs:
+
+```ts
+// directories contract: the branch is read from <workspace>/.git/HEAD; none outside a repository
+Rpc.make("directories/workspace", { success: Schema.Struct({ folder: Schema.String, branch: Schema.optional(Schema.String) }) })
+// model contract: the main role's model and its window; step 7's model picker builds on this group
+Rpc.make("model/main", { success: Schema.Struct({ model: ModelId, contextWindow: Schema.optional(Schema.Int) }), error: ModelNotFound | SettingsInvalid })
+```
+
+- Context share: input tokens from the latest `loop/step-end` over `contextWindow`; no percentage without a window.
+- Sidebar and composer slots: `defineSlot<{ session: SessionId; state: ViewState }>("chat/sidebar", "append")` and `defineSlot<{ running: boolean; send(text, mode?); cancel() }>("chat/composer", "replace")`, exported from chat's `./tui`. Chat fills them with its own Session section and Composer.
+- The chat screen returns one `<box>` around its landing-or-session switch: OpenTUI's `Slot` draws a fill again from fresh state whenever the element it returns changes.
+- Spinner: under the last Turn while `running` and the last delta is not a reply text or tool-input delta.
+- Quit: chat's `ctrl+c` calls `renderer.destroy()` through `Renderer`, which `run` waits on.
+- Deletes: the root's `ctrl+c` "Quit" while a plugin fills the screen; `liminal` with no flags no longer prints help.
 
 ## Events in the references
 

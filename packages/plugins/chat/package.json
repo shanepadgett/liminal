@@ -1,0 +1,32 @@
+{
+  "name": "@shanepadgett/liminal-chat",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./view": "./src/view/index.ts",
+    "./tui": "./src/tui/index.tsx"
+  },
+  "dependencies": {
+    "beautiful-mermaid": "1.1.3"
+  },
+  "peerDependencies": {
+    "@opentui/core": "0.6.6",
+    "@opentui/keymap": "0.6.6",
+    "@opentui/solid": "0.6.6",
+    "@shanepadgett/liminal-client": "workspace:*",
+    "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-directories": "workspace:*",
+    "@shanepadgett/liminal-loop": "workspace:*",
+    "@shanepadgett/liminal-model": "workspace:*",
+    "@shanepadgett/liminal-session": "workspace:*",
+    "@shanepadgett/liminal-tui": "workspace:*",
+    "effect": "*",
+    "solid-js": "1.9.12"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/index.ts"
+    ]
+  }
+}

@@ -243,6 +243,7 @@ export default definePlugin({
 ```
 
 - `@shanepadgett/liminal-tui` holds the slots, `Dialogs`, the hooks and the UI kit. A fill stays until the layer's scope closes.
+- A fill's component returns one element that stays, such as a `<box>` around a `<Switch>`. When the element it returns changes, the slot draws the component again from fresh state.
 - In a component, `useColor()` reads the theme's role colors, `useRun()` runs an Effect with `Host` and `Dialogs`, `useWatch` reads a stream as a signal, and `useSessionView` reads a session.
 - Reach your plugin's server through `Host` and its RPC group; a `tui` entry imports other plugins only through `/contract`, `/view` and `/tui`.
 - Code shared with other frontends goes in `view.ts`, exported as `./view`, with no Solid or OpenTUI imports.

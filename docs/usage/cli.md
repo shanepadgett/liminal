@@ -2,6 +2,25 @@
 
 Run it from the repository with `bun apps/cli/src/main.ts`, or as `liminal` once the `@shanepadgett/liminal-cli` package is linked.
 
+## Chat in the terminal
+
+```sh
+liminal
+```
+
+With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; the first send starts a new session. The reply streams into the transcript, and the sidebar shows the folder, the git branch and how much of the model's context window the session uses.
+
+| Key | Does |
+| --- | --- |
+| Enter | Send; while a turn runs, steer it |
+| Shift+Enter | New line |
+| Tab | While a turn runs, send as a follow-up |
+| Esc | While a turn runs, stop it |
+| Ctrl+C | Clear the draft; with no draft, quit |
+| Ctrl+B | Open or close the sidebar, below 110 columns |
+
+`liminal --help` lists the commands and flags.
+
 ## Connect a provider
 
 ```sh

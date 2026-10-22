@@ -5,7 +5,7 @@
 import type { SlotMode, SlotRegistry } from "@opentui/core";
 import { type JSX, Slot } from "@opentui/solid";
 import { Context, Effect, type Scope } from "effect";
-import { createContext, splitProps, useContext } from "solid-js";
+import { createContext, splitProps, untrack, useContext } from "solid-js";
 
 // oxlint-disable-next-line liminal/no-loose-dictionaries -- the registry holds every slot; each slot's handle types its props.
 type SlotProps = Record<string, object>;
@@ -30,7 +30,11 @@ export const screen = defineSlot<object>("screen", "single_winner");
 export class Slots extends Context.Service<
   Slots,
   {
-    /** Draws `component` in `slot` until the caller's scope closes; lower `order` draws first. */
+    /**
+     * Draws `component` in `slot` until the caller's scope closes; lower `order` draws first. The
+     * component must return one element that stays: the slot draws it again, from fresh state,
+     * whenever the element it returned changes.
+     */
     readonly fill: <Props extends object>(
       slot: SlotHandle<Props>,
       component: (props: Props) => JSX.Element,
@@ -57,7 +61,7 @@ export const makeSlots = (registry: Registry): Slots["Service"] => {
         id,
         order,
         // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- SlotView draws `slot` with the props its handle names.
-        slots: { [slot.name]: (_context, props) => component(props as Props) },
+        slots: { [slot.name]: (_context, props) => untrack(() => component(props as Props)) },
       }),
     );
 

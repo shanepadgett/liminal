@@ -11,6 +11,7 @@ The model vocabulary and the one path every model call takes. Knows nothing of s
 - `Reply.add` and `Reply.message`: turn deltas into the assistant `Message`.
 - `Models.resolve(role or id)`, `Models.list` (signed-in providers only; one whose list fails is logged and left out), `Models.generate` and `Models.generateObject`: one-off calls outside the turn loop. A `prefix` request, such as `Turns.request(id)`, shares that session's cache.
 - `Models.classify(definition, { model?, input })`: asks a classifier Effect AI `Decision` questions about an input, once, without retries. It uses `model`, else the `classifier` setting, else the first classifier a signed-in provider lists, else fails with `ModelNotFound`. A provider offers classifiers with `classifiers` and an Effect AI `DecisionModel` for each from `decisionModel`.
+- `ModelRpc` serves `model/main`: the model the `main` role runs and its context window, for screens.
 - `CatalogModel.kind`: `chat`, `embedding`, `image` or `realtime`, so a provider can list only chat models.
 - `CatalogModel.wire`: `messages`, `responses` or `chat`, the API the model is called through; missing when the catalog names another.
 

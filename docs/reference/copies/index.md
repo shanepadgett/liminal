@@ -146,7 +146,7 @@ Terminal UI renderer with a native core: renderables (box, text, scrollbox), lay
 Solid renderer for OpenTUI: `render`, `testRender`, hooks (`useKeyboard`, `useRenderer`, `useTerminalDimensions`), JSX elements, plugin slots (`createSolidSlotRegistry`, `<Slot>`) and runtime plugin support. Needs the `@opentui/solid/preload` Bun preload to run `.tsx` from source.
 
 - Docs: `docs/reference/copies/@opentui/solid/0.6.6/` (1 file: README.md)
-- API (types): `apps/gallery/node_modules/@opentui/solid/`, modules: `docs/reference/copies/@opentui/solid/0.6.6/api-index/@opentui-solid.md`
+- API (types): `apps/cli/node_modules/@opentui/solid/`, modules: `docs/reference/copies/@opentui/solid/0.6.6/api-index/@opentui-solid.md`
 
 ## @opentui/keymap 0.6.6
 

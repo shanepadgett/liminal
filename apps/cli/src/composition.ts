@@ -5,6 +5,7 @@ import { FetchHttpClient, HttpClient } from "effect/http";
 import { ChildProcessSpawner } from "effect/process";
 
 import accounts from "@shanepadgett/liminal-accounts";
+import chat from "@shanepadgett/liminal-chat";
 import { inMemory } from "@shanepadgett/liminal-client";
 import { compose, definePlugin } from "@shanepadgett/liminal-core";
 import directories from "@shanepadgett/liminal-directories";
@@ -39,7 +40,8 @@ const runtime = definePlugin({
   layer: Layer.mergeAll(BunServices.layer, FetchHttpClient.layer),
 });
 
-const composition = compose([
+/** Every plugin, in composition order; the TUI loads their `tui` entries. */
+export const plugins = [
   runtime,
   directories,
   settings,
@@ -59,7 +61,8 @@ const composition = compose([
   toolDefinitions,
   loop,
   theme,
-]);
+  chat,
+] as const;
 
 /** The client host, with the composition built behind it. */
-export const host = Layer.provide(inMemory, composition);
+export const host = Layer.provide(inMemory, compose(plugins));

@@ -12,7 +12,7 @@ Liminal's terminal UI, on OpenTUI and Solid. `run(plugins)` loads each plugin's 
 
 ## Slots
 
-`Slots.fill(slot, component)` draws a component in a slot until the caller's scope closes. `defineSlot(name, mode)` makes a slot; `<SlotView slot={...}>` draws it. The root draws `screen`, where the last fill wins; `ctrl+c` quits until a screen takes it over.
+`Slots.fill(slot, component)` draws a component in a slot until the caller's scope closes. `defineSlot(name, mode)` makes a slot; `<SlotView slot={...}>` draws it. The root draws `screen`, where the last fill wins; `ctrl+c` quits until a screen takes it over. A fill's component returns one element that stays: when the element it returns changes, the slot draws the component again from fresh state. A fill that throws while it draws is logged as an error, and its slot draws as if it were not there.
 
 ## Dialogs
 

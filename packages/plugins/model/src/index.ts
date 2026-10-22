@@ -4,8 +4,15 @@ import { Effect, Layer } from "effect";
 import { definePlugin, Pipeline, Registry } from "@shanepadgett/liminal-core";
 import { DeclaredSettings, Settings } from "@shanepadgett/liminal-settings/contract";
 
-import { makeCall } from "./call.ts";
-import { ModelCall, ModelCatalog, type ModelProvider, ModelProviders, Models } from "./contract.ts";
+import { detailsOf, findModel, makeCall } from "./call.ts";
+import {
+  ModelCall,
+  ModelCatalog,
+  type ModelProvider,
+  ModelProviders,
+  ModelRpc,
+  Models,
+} from "./contract.ts";
 import { make } from "./models.ts";
 import { ModelSetting } from "./setting.ts";
 
@@ -26,11 +33,30 @@ const models = Layer.effect(
   }),
 );
 
+const rpc = ModelRpc.toLayer(
+  Effect.gen(function* () {
+    const roles = yield* Models;
+    const providers = yield* ModelProviders;
+    const catalog = yield* ModelCatalog;
+
+    const main = Effect.gen(function* () {
+      const { model } = yield* roles.resolve("main");
+      const found = yield* findModel(providers, model);
+      const details = (yield* detailsOf(catalog, found.provider)).get(found.model);
+
+      return { model, contextWindow: details?.contextWindow };
+    });
+
+    return ModelRpc.of({ "model/main": () => main });
+  }),
+);
+
 export default definePlugin({
   name: "model",
   provides: [ModelProviders, ModelCall, Models],
   requires: [Settings, DeclaredSettings, ModelCatalog],
-  layer: models.pipe(
+  layer: rpc.pipe(
+    Layer.provideMerge(models),
     Layer.provideMerge(call),
     Layer.provideMerge(Layer.effect(ModelProviders, Registry.make<ModelProvider>())),
   ),
