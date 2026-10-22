@@ -311,6 +311,92 @@ const entryFiles = new Map([
 - A folder entry's export points to its `index` file.
 - The guide in `docs/guides/plugins.md` gains `tui` entries in step 4, when a plugin can ship one.
 
+## Step 4: `packages/tui`
+
+One step: the runtime (renderer, entries, slots, bridge, dialogs) and the UI kit copied from the gallery, checked by hand with a scratch `tui` entry.
+
+```text
+packages/tui/
+  package.json        exports "."; dependencies @opentui/core, @opentui/solid, @opentui/keymap, solid-js;
+                      peers effect, liminal-core, liminal-client
+  README.md
+  src/index.ts        run, Slots, defineSlot, SlotView, screen, Dialogs, Colors, useColor, useRun, useWatch, useSessionView, kit
+  src/run.ts          loads tui entries, composes them over the base, renders the root, waits for quit
+  src/base.ts         the base plugin: Host, Renderer, Slots, Dialogs
+  src/root.tsx        the root plugin: requires Colors, renders screen slot and dialog layer
+  src/slots.tsx       SlotHandle, defineSlot, Slots, SlotView over OpenTUI's registry
+  src/dialogs.tsx     the Dialogs stack and its layer
+  src/bridge.ts       useRun, useWatch, useSessionView: Effect into Solid
+  src/colors.ts       Colors, useColor, useSyntax, useMix
+  src/kit/            primitives, Overlay, Dialog, Picker, copied from apps/gallery
+packages/plugins/theme/
+  package.json, README.md, src/contract.ts   RoleName, Palette types only; the rest in step 5
+  src/index.ts        a plugin with no services, since every plugin package has one
+```
+
+```ts
+// run.ts
+export const run: (plugins: ReadonlyArray<AnyPlugin>) =>     // AnyPlugin now exported from core
+  Effect<void, CompositionError | EntryInvalid, Host>          // own scope: the terminal is restored first
+class EntryInvalid extends Schema.TaggedError  // { plugin }: its tui entry does not default-export a plugin
+
+// slots.tsx
+interface SlotHandle<Props> { readonly name: string; readonly mode: SlotMode }
+const defineSlot: <Props extends object>(name: string, mode: SlotMode) => SlotHandle<Props>
+class Slots extends Context.Service<Slots, {
+  readonly fill: <P>(slot: SlotHandle<P>, component: (props: P) => JSX.Element, order?: number) =>
+    Effect<void, never, Scope>   // unregisters when the scope closes
+}>
+function SlotView<P>(props: { slot: SlotHandle<P>; children?: JSX.Element } & P): JSX.Element
+const screen: SlotHandle<{}>    // "screen", single_winner
+
+// dialogs.tsx: sync, since key handlers open them
+class Dialogs extends Context.Service<Dialogs, {
+  readonly open: (dialog: () => JSX.Element) => () => void   // returns close
+  readonly close: () => void                                 // closes the top one
+}>
+
+// colors.ts: provided by theme's tui entry
+type RoleColor = (role: RoleName) => string     // RoleName from liminal-theme/contract, as a type
+class Colors extends Context.Service<Colors, {
+  readonly color: Accessor<RoleColor>; readonly syntax: Accessor<SyntaxStyle>
+  readonly mix: (from: string, to: string, amount: number) => string  // OKLCH math stays in theme
+}>
+
+// bridge.ts: in components
+useRun(): <A, E>(effect: Effect<A, E, Host | Dialogs>) => void            // failure logged
+useWatch<A>(stream: Stream<A>, initial: A): Accessor<A>                   // stops with the component
+useSessionView(session): { state: ViewState (Solid store, reconciled by seq), loadOlder: () => void }
+```
+
+```text
+run(plugins)
+  entries = each plugin with entries.tui: import it, default export must be a plugin, else EntryInvalid
+  renderer = acquireRelease(createCliRenderer({ exitOnCtrlC: false }), destroy)
+  compose([base(host, renderer), ...entries, root]) missing Colors: CompositionError
+  wait until the renderer is destroyed
+
+base(host, renderer)                                plugin, provides Host, Renderer, Slots, Dialogs
+  registry = createSolidSlotRegistry(renderer, {})
+
+root                                                plugin, requires Host, Colors, Slots, Dialogs, Renderer
+  runner = FiberSet.makeRuntime, in the composition's scope
+  render(<Services runner colors dialogs><KeymapProvider>
+           <SlotView slot={screen}>no screen</SlotView>
+           <DialogLayer />          top dialog in an Overlay; escape closes it
+         </KeymapProvider></Services>)
+  ctrl+c: "Quit", destroys the renderer; chat takes it over in step 6
+
+a tui entry (tui.tsx)
+  export default definePlugin({ name, provides, requires: [Slots, ...], layer: Layer.effectDiscard(
+    Effect.gen: slots = yield* Slots; yield* slots.fill(screen, () => <ChatScreen />)) })
+```
+
+- The gallery keeps its own code and stays free to change; `packages/tui` copies what it takes, and neither imports the other.
+- A component reaches its plugin's services through its layer's closure, and the base's through `useRun`.
+- `root` is the last plugin, so it renders after every entry fills its slots, and a composition without a theme fails to start.
+- `liminal` loads `packages/tui` with `import()` after `@opentui/solid/preload`, so `.tsx` compiles wherever it runs; that wiring comes with step 6.
+
 ## Events in the references
 
 | Signal | Pi | OpenCode | deepseek-harness | Liminal |

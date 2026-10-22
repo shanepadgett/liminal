@@ -251,6 +251,14 @@
         "effect": "*",
       },
     },
+    "packages/plugins/theme": {
+      "name": "@shanepadgett/liminal-theme",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "effect": "*",
+      },
+    },
     "packages/plugins/tool-definitions": {
       "name": "@shanepadgett/liminal-tool-definitions",
       "version": "0.1.0",
@@ -270,6 +278,24 @@
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-session": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/tui": {
+      "name": "@shanepadgett/liminal-tui",
+      "version": "0.1.0",
+      "dependencies": {
+        "@opentui/core": "0.6.6",
+        "@opentui/keymap": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "fuzzysort": "4.0.2",
+        "solid-js": "1.9.12",
+      },
+      "peerDependencies": {
+        "@shanepadgett/liminal-client": "workspace:*",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-theme": "workspace:*",
         "effect": "*",
       },
     },
@@ -560,9 +586,13 @@
 
     "@shanepadgett/liminal-system-prompt": ["@shanepadgett/liminal-system-prompt@workspace:packages/plugins/system-prompt"],
 
+    "@shanepadgett/liminal-theme": ["@shanepadgett/liminal-theme@workspace:packages/plugins/theme"],
+
     "@shanepadgett/liminal-tool-definitions": ["@shanepadgett/liminal-tool-definitions@workspace:packages/plugins/tool-definitions"],
 
     "@shanepadgett/liminal-tools": ["@shanepadgett/liminal-tools@workspace:packages/plugins/tools"],
+
+    "@shanepadgett/liminal-tui": ["@shanepadgett/liminal-tui@workspace:packages/tui"],
 
     "@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
 

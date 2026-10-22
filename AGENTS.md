@@ -26,6 +26,7 @@ Read an instruction file only when you are about to do the work it covers.
 | `docs/instructions/docs.md` | Writing or changing a file in `docs/` |
 | `docs/instructions/planning.md` | Planning work, in chat or in `docs/plans/` |
 | `docs/instructions/tools.md` | Changing lint rules, checks, fallow config or reference tooling |
+| `docs/instructions/gallery.md` | Changing `apps/gallery`, or taking a design from it into the product |
 | `docs/instructions/instructions.md` | Changing `AGENTS.md` or `docs/instructions/` |
 
 ## Scope

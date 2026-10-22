@@ -39,7 +39,7 @@ Work: [plugins/tui.md](plugins/tui.md)
 
 - [x] `apps/gallery`: tokens, primitives, components and screens designed in their states
 - [x] Session view in `packages/client`
-- [ ] `packages/tui`: renderer, slot tree, UI kit
+- [x] `packages/tui`: renderer, slot tree, UI kit
 - [ ] `chat`, `palette`, `theme`
 - [ ] Model picker and print mode `--model`
 - [ ] `/connect` in the TUI

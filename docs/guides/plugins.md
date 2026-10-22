@@ -220,3 +220,29 @@ const { answers } = yield* models.classify(Triage, { input: { command: "rm -rf b
 
 - Every call goes through the `ModelCall` pipeline; wrap it to see or change each request and its deltas.
 - A provider adds a `ModelProvider` to `ModelProviders`; see the `model` README.
+
+## Draw in the TUI
+
+A plugin draws in the terminal UI from a `tui` entry: a module that default-exports a plugin of its own, built only when the TUI opens. Point `entries.tui` at it and export it as `./tui`.
+
+```ts
+// index.ts
+export default definePlugin({ ..., entries: { tui: () => import("./tui.tsx") } });
+
+// tui.tsx
+export default definePlugin({
+  name: "greeter-tui",
+  provides: [],
+  requires: [Slots],
+  layer: Layer.effectDiscard(
+    Effect.gen(function* () {
+      yield* (yield* Slots).fill(screen, () => <Greeting />);
+    }),
+  ),
+});
+```
+
+- `@shanepadgett/liminal-tui` holds the slots, `Dialogs`, the hooks and the UI kit. A fill stays until the layer's scope closes.
+- In a component, `useColor()` reads the theme's role colors, `useRun()` runs an Effect with `Host` and `Dialogs`, `useWatch` reads a stream as a signal, and `useSessionView` reads a session.
+- Reach your plugin's server through `Host` and its RPC group; a `tui` entry imports other plugins only through `/contract`, `/view` and `/tui`.
+- Code shared with other frontends goes in `view.ts`, exported as `./view`, with no Solid or OpenTUI imports.

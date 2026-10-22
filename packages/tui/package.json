@@ -1,0 +1,22 @@
+{
+  "name": "@shanepadgett/liminal-tui",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@opentui/core": "0.6.6",
+    "@opentui/keymap": "0.6.6",
+    "@opentui/solid": "0.6.6",
+    "fuzzysort": "4.0.2",
+    "solid-js": "1.9.12"
+  },
+  "peerDependencies": {
+    "@shanepadgett/liminal-client": "workspace:*",
+    "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-session": "workspace:*",
+    "@shanepadgett/liminal-theme": "workspace:*",
+    "effect": "*"
+  }
+}
