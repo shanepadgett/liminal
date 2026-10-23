@@ -1,11 +1,13 @@
 /** `shell`: runs one foreground command with a fresh `bash` in the workspace. */
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Option } from "effect";
 import { ChildProcessSpawner } from "effect/process";
 
 import { definePlugin } from "@shanepadgett/liminal-core";
 import { Directories } from "@shanepadgett/liminal-directories/contract";
 import {
+  type Access,
   defineTool,
+  runAccess,
   ToolFailed,
   type ToolOutput,
   Tools,
@@ -13,6 +15,7 @@ import {
 
 import { DEFAULT_TIMEOUT, MAX_TIMEOUT, ShellParams, shellName } from "./contract.ts";
 import { installedTools } from "./installed.ts";
+import { readPathsOf } from "./read-only.ts";
 import { type Ending, runCommand } from "./run.ts";
 
 const descriptionOf = (installed: ReadonlyArray<string>) => {
@@ -44,6 +47,11 @@ const layer = Layer.effectDiscard(
       name: shellName,
       description: descriptionOf(installed),
       input: ShellParams,
+      access: (params) =>
+        Option.match(readPathsOf(params.command), {
+          onNone: () => runAccess,
+          onSome: (paths): Access => ({ kind: "read", paths }),
+        }),
       run: (params, context) =>
         runCommand(spawner, params.command, {
           cwd: workspace,

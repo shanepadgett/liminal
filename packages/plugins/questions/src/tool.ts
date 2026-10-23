@@ -4,7 +4,7 @@
  */
 import { Effect } from "effect";
 
-import { defineTool, ToolFailed } from "@shanepadgett/liminal-tools/contract";
+import { defineTool, noAccess, ToolFailed } from "@shanepadgett/liminal-tools/contract";
 
 import {
   askQuestionName,
@@ -60,6 +60,7 @@ export const makeAskQuestion = (questions: Questions["Service"]) =>
     description: DESCRIPTION,
     input: Form,
     deferred: true,
+    access: () => noAccess,
     run: Effect.fn("ask_question")(function* (form, { session, callId }) {
       const problem = formProblem(form);
       if (problem !== undefined) return yield* new ToolFailed({ message: problem });

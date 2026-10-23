@@ -5,6 +5,7 @@ import { FetchHttpClient, HttpClient } from "effect/http";
 import { ChildProcessSpawner } from "effect/process";
 
 import accounts from "@shanepadgett/liminal-accounts";
+import approvals from "@shanepadgett/liminal-approvals";
 import chat from "@shanepadgett/liminal-chat";
 import { inMemory } from "@shanepadgett/liminal-client";
 import { compose, definePlugin } from "@shanepadgett/liminal-core";
@@ -37,6 +38,8 @@ import toolDefinitions from "@shanepadgett/liminal-tool-definitions";
 import toolOutput from "@shanepadgett/liminal-tool-output";
 import tools from "@shanepadgett/liminal-tools";
 import toolsFiles from "@shanepadgett/liminal-tools-files";
+import toolsProcesses from "@shanepadgett/liminal-tools-processes";
+import toolsShell from "@shanepadgett/liminal-tools-shell";
 
 /** Bun's files, paths, crypto, HTTP and child processes for the plugins that ask for them. */
 const runtime = definePlugin({
@@ -68,6 +71,8 @@ export const plugins = [
   modelOpencodeGo,
   tools,
   toolsFiles,
+  toolsShell,
+  toolsProcesses,
   toolOutput,
   history,
   systemPrompt,
@@ -82,6 +87,7 @@ export const plugins = [
   theme,
   chat,
   questions,
+  approvals,
   stash,
   slash,
   palette,

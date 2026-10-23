@@ -180,9 +180,11 @@ Models.list: Effect<ModelInfo[]>   // signed-in providers only; a provider whose
 Models.generate(options: {
   model?: "small" | ModelId                 // missing is the prefix's model, or small
   prompt: Part[]
+  system?: string                            // in place of the prefix's system prompt
   prefix?: ModelRequest                      // start from this request, such as Turns.request(id)
 }): Effect<Message>
-Models.generateObject<T>(options: { ...; schema: Schema<T> }): Effect<T>   // structured output
+Models.generateObject<T>(options: { ...; schema: Codec<T, JsonObject>; tools?: StepTool[]; maxSteps? }): Effect<T>   // structured output
+type StepTool = { definition: ToolDefinition; run(params: Json): Effect<string> }   // runs directly, unlogged
 Models.classify(definition: Decision.Definition, { model?: ModelId; input; images? }): Effect<DecideResponse, AiError | ModelNotFound>
 type ModelDetails = { contextWindow; outputLimit; thinking: string[]; images; toolCalls; structuredOutput; price?: { input; output; cacheRead?; cacheWrite? } }
 
@@ -205,8 +207,10 @@ interface SessionLog {
 }
 
 // tools
-interface Tool { name; description; deferred?; sequential?; input: JsonSchema; run(params: Json, ctx: ToolContext): Effect<ToolOutput, ToolFailed> }
-defineTool({ name; description; input: Schema<I>; run(input: I, ctx) }): Tool   // checks params before run
+interface Tool { name; description; deferred?; sequential?; input: JsonSchema; access?(params: Json): Access; run(params: Json, ctx: ToolContext): Effect<ToolOutput, ToolFailed> }
+type Access = { kind: "read" | "write"; paths: string[] } | { kind: "run" }   // what a call touches; no access, or params that fail to decode, is run
+runAccess; noAccess                            // { kind: "run" }; { kind: "read", paths: [] } for a tool that touches nothing
+defineTool({ name; description; input: Schema<I>; access?(input: I): Access; run(input: I, ctx) }): Tool   // checks params before run
 type ToolContext = { session; callId; attributes; progress(data: Json): Effect<void> }   // attributes of the latest input the turn consumed
 ToolProgress: delta { callId; data }           // what progress publishes; holds the whole progress so far, frontends draw the latest
 type ToolOutput = { content: (Text | Image)[] }
@@ -282,6 +286,7 @@ log steers → sync system prompt and tool list → BeforeCall hooks → Turns.r
 - `model` retries a call whose `AiError` is retryable, turns and one-off calls alike. Viewers see "retrying in 4s (2/5)"; a reply that fails partway is cleared and restarts. Out of attempts, the turn ends with a notice and the input stays.
 - `generateObject` decodes the reply through its schema. Its request carries the schema as `output`, and `ModelCall` asks Effect AI's `LanguageModel.generateObject`, which picks native JSON output or a forced tool call per provider.
 - With `prefix`, the request starts from another request. `Turns.request(id)` gives the session's next request: its system prompt, tool definitions and history, the same prefix as its last turn, so the call hits the provider's cache. The prompt goes at the end and the result is not appended to the session. A side question over the current chat ("by the way") is this call.
+- With `tools`, the model may call them before it answers: the schema becomes an `answer` tool, every step must call a tool, and the call ends when an answer decodes. After `maxSteps` model calls, 6 when missing, it fails with `StructuredOutputError`. Step tools run directly and are not logged.
 - Commit grouping, approval verdicts and session names are `Models.generateObject` on the `small` model.
 
 ### Classifiers
@@ -387,7 +392,7 @@ An embedding app is the host, so it owns its UI. It uses `client` and the sessio
 
 - `apps/cli` is a full command line: the TUI by default, and a print mode like Pi's and OpenCode's that runs a prompt without the TUI and writes the result to stdout.
 - `liminal connect` saves a provider's credentials: pick a provider, then a login method, then enter an API key or finish an OAuth flow. The TUI's `/connect` and the desktop app use the same login methods and credentials.
-- Print mode is a frontend over `client`. `-p` writes the final reply when the turn ends; `--json` writes saved events and deltas as JSON lines. Questions and approvals are denied unless `--approve` is passed. There is no RPC mode over stdin; `http` covers remote control.
+- Print mode is a frontend over `client`. `-p` writes the final reply when the turn ends; `--json` writes saved events and deltas as JSON lines. Calls that need approval are denied; `--yolo` runs every call unchecked. There is no RPC mode over stdin; `http` covers remote control.
 - No host runs a server unless it composes `http`. A CLI that composes `http` lets a second client attach to a running session.
 - `http` serves every plugin's RPC group over HTTP; `actors` supplies the caller through RPC middleware.
 - `client` depends on Effect, so a browser island that uses it loads Effect.
@@ -431,7 +436,7 @@ How `session` does these over `SqlClient` is open.
 | Context | `instructions` | `.liminal/instructions/` files; `AGENTS.md` files once turned on | Add | `agents-files`, `instruction-files` |
 | Context | `environment` | Workspace, Git, platform, date and the workspace root's entries | Add | `environment` |
 | Context | `skills`, `references`, `vocabulary` | Skill folders, reference repos, project terms | Add | same names |
-| Features | `approvals` | Tool call gate: decision model, reviewer, user | Wrap | `approval` |
+| Features | `approvals` | Tool call gate: allowed folders, classifier, reviewer, user; `request_access` | Wrap, Add | `approval` |
 | Features | `questions` | `ask_question`, `/qna`, `Questions.ask`, the answer form | Add, Wrap | `questions` |
 | Features | `memory` | Checkpoints, notes, context window | Wrap | `memory` |
 | Features | `session-name`, `usage`, `cache-hints` | Naming, cost, cache marks | Add, Attach, Wrap | same names |
@@ -446,6 +451,14 @@ How `session` does these over `SqlClient` is open.
 | TUI | `palette` | `ctrl+p`: a picker of the commands that have a category | Add | `palette` |
 | TUI | `session-picker` | `ctrl+o`, `/sessions`: this folder's saved sessions | Add | `session-store` (list) |
 | TUI | `theme`, `attention` | Theme and `/theme`, sounds | Add (slots) | same names |
+
+### Approvals
+
+- `approvals` wraps `ToolCall`. A `read` or `write` call runs when every path is inside an allowed folder and fails otherwise, pointing the model to `request_access`. A `run` call goes to a classifier, then a reviewer, then the user.
+- `AllowedFolders: Registry<{ path; access: "read" | "write" }>` holds the folders every session may reach; approvals adds the workspace and the system temp folder. Paths compare after `realpath`. A folder `request_access` is allowed is logged as `approvals/granted` and stays allowed for the session.
+- The classifier is `Models.classify` with a 3 s limit; it allows the calls it scores safe. The reviewer is `Models.generateObject` on `small` with `session_search` and a `read` checked against the allowed folders. It sees the call, the user's latest message and the turn's earlier calls, never the agent's text or tool results. It allows the call or writes the user a summary, effects and risk.
+- The user's ask is a `questions` kind: approve, or reject with a note. Every judged call logs `approvals/decided`.
+- The `Unattended` attribute marks inputs no one is there to answer, as print mode's are. Without `yolo` a call the reviewer would send to the user is denied; with it every call runs unchecked.
 
 ## Example: the work order agent
 

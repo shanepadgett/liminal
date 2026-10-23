@@ -10,6 +10,7 @@
     "@effect/platform-bun": "4.0.5",
     "@opentui/solid": "0.6.6",
     "@shanepadgett/liminal-accounts": "workspace:*",
+    "@shanepadgett/liminal-approvals": "workspace:*",
     "@shanepadgett/liminal-chat": "workspace:*",
     "@shanepadgett/liminal-client": "workspace:*",
     "@shanepadgett/liminal-core": "workspace:*",
@@ -42,6 +43,8 @@
     "@shanepadgett/liminal-tool-output": "workspace:*",
     "@shanepadgett/liminal-tools": "workspace:*",
     "@shanepadgett/liminal-tools-files": "workspace:*",
+    "@shanepadgett/liminal-tools-processes": "workspace:*",
+    "@shanepadgett/liminal-tools-shell": "workspace:*",
     "@shanepadgett/liminal-tui": "workspace:*",
     "effect": "4.0.5"
   }

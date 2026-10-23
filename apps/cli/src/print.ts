@@ -6,6 +6,7 @@
 import { Console, Duration, Effect, Option, Schema, Stream } from "effect";
 import type { RpcClient } from "effect/rpc";
 
+import { Unattended } from "@shanepadgett/liminal-approvals/contract";
 import { Host } from "@shanepadgett/liminal-client";
 import { Attribute } from "@shanepadgett/liminal-core";
 import { LoopRpc, TurnEnded } from "@shanepadgett/liminal-loop/contract";
@@ -70,19 +71,28 @@ const followJson = (output: TurnOutput, item: LiveItem) =>
     Effect.andThen(ending(output, item)),
   );
 
-/** The user's message, carrying `model` as the pick when there is one. */
+export interface PrintOptions {
+  readonly json: boolean;
+  readonly model: Option.Option<ModelId>;
+  readonly saved: Option.Option<SessionId>;
+  /** Runs every tool call unchecked; without it, calls that need approval are denied. */
+  readonly yolo: boolean;
+}
+
+/** The user's message: no one is there to approve calls, and `model` is the pick when given. */
 const messageOf = Effect.fn("Print.messageOf")(function* (
   prompt: string,
-  model: Option.Option<ModelId>,
+  { model, yolo }: PrintOptions,
 ) {
   const message = yield* MessageEvent.make({
     role: "user",
     parts: [{ type: "text", text: prompt }],
   });
 
-  if (Option.isNone(model)) return message;
+  const unattended = yield* Attribute.set(message.attributes, Unattended, { yolo });
+  if (Option.isNone(model)) return { ...message, attributes: unattended };
 
-  const attributes = yield* Attribute.set(message.attributes, ModelPick, { model: model.value });
+  const attributes = yield* Attribute.set(unattended, ModelPick, { model: model.value });
 
   return { ...message, attributes };
 });
@@ -106,17 +116,13 @@ const startIn = (sessions: Sessions, saved: Option.Option<SessionId>) =>
       ),
   });
 
-export const print = Effect.fn("print")(function* (
-  prompt: string,
-  json: boolean,
-  model: Option.Option<ModelId>,
-  saved: Option.Option<SessionId>,
-) {
+export const print = Effect.fn("print")(function* (prompt: string, options: PrintOptions) {
+  const { json } = options;
   const host = yield* Host;
   const sessions = yield* host.client(SessionRpc);
   const loop = yield* host.client(LoopRpc);
-  const { session, after } = yield* startIn(sessions, saved);
-  const input = yield* messageOf(prompt, model);
+  const { session, after } = yield* startIn(sessions, options.saved);
+  const input = yield* messageOf(prompt, options);
 
   const live = (id: SessionId) =>
     sessions["session/live"]({ session: id, after }).pipe(Stream.takeUntil(isTurnEnd));

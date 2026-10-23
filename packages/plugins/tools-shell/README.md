@@ -11,6 +11,8 @@ Adds `shell`, which runs one foreground command with `bash` in the workspace.
 - `description` is 5 to 10 words saying what the command does. The transcript row shows it as the label.
 - The tool's description lists which of `rg`, `fd`, `jq`, `git`, `gh`, `bun`, `node` and `python3` are on `PATH` when the plugin starts.
 
+`shell`'s `access` is a read of the paths a command names when `unbash` parses it as read-only: simple commands such as `ls`, `cat`, `rg` and `git status`, with no writes, redirects to files or expansions that run code. Every other command is `runAccess`, which approvals sends to its classifier and reviewer.
+
 While a command runs, its last 5 lines are published through `ToolContext.progress`. The `tui` entry adds `shell`'s row to chat's `ToolRows`: the description as the label, the last lines under it while it runs, and the command and the end of its output when opened.
 
 Requires `Tools`, `Directories` and `ChildProcessSpawner`; the `tui` entry requires `ToolRows`.

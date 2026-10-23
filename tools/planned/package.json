@@ -8,7 +8,6 @@
     "@opencode/codemode": "2.1.2",
     "diff": "9.0.0",
     "electrobun": "2.0.4",
-    "partial-json": "0.1.7",
-    "unbash": "6.0.1"
+    "partial-json": "0.1.7"
   }
 }

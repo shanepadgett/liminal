@@ -8,6 +8,7 @@ import type { KeyEvent, Renderable } from "@opentui/core";
 import type { Layer, Keymap as OpenTuiKeymap } from "@opentui/keymap";
 import { formatCommandBindings, formatKeySequence } from "@opentui/keymap/extras";
 import { reactiveMatcherFromSignal, useKeymapSelector } from "@opentui/keymap/solid";
+import { useRenderer } from "@opentui/solid";
 import { Context, Effect, Option, Predicate, Schema } from "effect";
 import type { Accessor } from "solid-js";
 
@@ -177,3 +178,25 @@ export const activeHints = (keymap: OpenTuiKeymap<Renderable, KeyEvent>): Readon
 
 /** The hints of the keys that act now; follows the keymap as focus and commands change. */
 export const useHints = (): Accessor<ReadonlyArray<Hint>> => useKeymapSelector(activeHints);
+
+/** Whether focus sits on `root` or inside it. */
+const isWithin = (focused: Renderable | null, root: Renderable | undefined): boolean => {
+  if (focused === null || root === undefined) return false;
+  if (focused === root) return true;
+
+  return isWithin(focused.parent, root);
+};
+
+/**
+ * `useHints` while focus sits on `root` or inside it, and none otherwise, so a dialog above shows
+ * only its own keys.
+ */
+export const useHintsWithin = (
+  root: () => Renderable | undefined,
+): Accessor<ReadonlyArray<Hint>> => {
+  const renderer = useRenderer();
+
+  return useKeymapSelector((keymap) =>
+    isWithin(renderer.currentFocusedRenderable, root()) ? activeHints(keymap) : [],
+  );
+};

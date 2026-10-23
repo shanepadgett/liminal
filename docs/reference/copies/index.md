@@ -198,8 +198,8 @@ Confined interpreter for a JavaScript subset whose only reach is host tools: Cod
 Bash parser with no dependencies: parse gives a ParsedScript of statements, pipelines, and/or lists, commands, words with typed parts, and redirects; forEachChild visits a node's direct children. For shell safety checks.
 
 - Docs: `docs/reference/copies/unbash/6.0.1/` (1 file: README.md)
-- API (types): `tools/planned/node_modules/unbash/dist/types.d.ts`
-- API (types): `tools/planned/node_modules/unbash/dist/parser.d.ts`
+- API (types): `packages/plugins/tools-shell/node_modules/unbash/dist/types.d.ts`
+- API (types): `packages/plugins/tools-shell/node_modules/unbash/dist/parser.d.ts`
 
 ## @xterm/headless 6.0.0
 

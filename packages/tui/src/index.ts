@@ -25,6 +25,7 @@ export {
   type Slash,
   slashCommands,
   useHints,
+  useHintsWithin,
 } from "./commands.ts";
 
 export { Colors, type Mix, type RoleColor, useColor, useMix, useSyntax } from "./colors.ts";

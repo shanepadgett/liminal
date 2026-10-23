@@ -642,10 +642,10 @@ Sources: Tau `packages/agent/extensions/tool-approval/` (`index.ts`, `decision.t
   readonly access?: (params: Schema.Json) => Access
   ```
 
-- The allowed folders are the workspace, the folders in an `approvals` settings section, such as reference repos, and the system temp folder. An allowed access request lasts for the session and is saved as a session event, so it survives a restart.
+- The allowed folders are the workspace, the folders other plugins add to approvals' `AllowedFolders` registry, each for reading or for changing, such as a references plugin's repos, and the system temp folder. An allowed access request lasts for the session and is saved as a session event, so it survives a restart.
 - Tau's list of read-only commands lives in `tools-shell`, as the work file's shell safety rules on `unbash`: `shell`'s `access` returns `read` for a command the parser proves read-only and `run` for the rest. `unbash` needs approval as a new dependency when `tools-shell` is planned.
 - The reviewer's tools are `session_search` and the registered `read` tool. `session_search` is a literal search over the current session's user messages and earlier tool-call inputs, returning about ten short excerpts and never tool results, as DeepSeek leaves them out so a file the agent read cannot talk the reviewer into a yes. The reviewer runs `read` directly after checking its `access` paths against the allowed folders, so a replaced `read` tool is the one the reviewer uses.
-- When the reviewer fails, from a provider error or no valid answer within `maxSteps`, the user is asked and told the review failed, as Tau does. DeepSeek fails the call instead, since a technical failure says nothing about risk; a person is there to decide here. Print mode denies unless `--approve` is passed.
+- When the reviewer fails, from a provider error or no valid answer within `maxSteps`, the user is asked and told the review failed, as Tau does. DeepSeek fails the call instead, since a technical failure says nothing about risk; a person is there to decide here. Print mode denies unless `--yolo` is passed.
 - The user never reads the command or script. The reviewer, not the agent, writes what an ask shows, since a summary the agent shapes turns approval into a formality. When it sends a call to the user its answer is:
 
   ```ts
@@ -686,6 +686,165 @@ Sources: Tau `packages/agent/extensions/tool-approval/` (`index.ts`, `decision.t
       Reject
   ```
 
+### Code plan
+
+Mechanisms: approvals Wraps `ToolCall`, Adds the `request_access` tool, Adds two question kinds through `defineQuestion`, owns the `AllowedFolders` registry other plugins Add to, and its `tui` entry Adds two views to `AskViews`. `tools`, `tools-files`, `tools-shell`, `tools-processes` and `questions` each gain `access`; `model` gains tools on `generateObject`.
+
+#### Contract change: `Tool.access` (`tools`)
+
+```ts
+type Access =
+  | { readonly kind: "read"; readonly paths: ReadonlyArray<string> }
+  | { readonly kind: "write"; readonly paths: ReadonlyArray<string> }
+  | { readonly kind: "run" }
+
+interface Tool {
+  // ...existing fields
+  readonly access?: (params: Schema.Json) => Access // no access: run
+}
+
+// defineTool takes access typed by the tool's own params;
+// params that fail to decode count as run
+defineTool({ ..., access?: (input: S["Type"]) => Access })
+```
+
+| Tool | Access |
+| --- | --- |
+| `read` | `read [path]` |
+| `shell` | `read [path-like args]` when `unbash` proves the command read-only, else `run` |
+| `process_start`, `process_input` | `run` |
+| `process_output`, `process_stop`, `ask_question`, `request_access` | `read []` |
+
+A path-like argument is one that is absolute, starts with `~` or contains `..`; relative paths without `..` stay in the workspace. `unbash` 6.0.1 moves from `tools/planned` into `tools-shell`. The read-only rules port Tau's `allowlist.ts`: its always-safe commands, the read verbs of `git`, `find` without `-exec`, `-delete` or `-fprint`, and no write redirects.
+
+#### Contract change: tools on `generateObject` (`model`)
+
+```ts
+interface StepTool {
+  readonly definition: ToolDefinition // name, description, JSON schema
+  readonly run: (params: Schema.Json) => Effect.Effect<string>
+}
+
+interface GenerateOptions {
+  readonly model?: ModelRole | ModelPick
+  readonly prefix?: ...
+  readonly system?: string // new
+  readonly prompt: string
+}
+
+generateObject<T>(options: GenerateOptions & {
+  readonly schema: Schema.Codec<T>
+  readonly tools?: ReadonlyArray<StepTool> // new
+  readonly maxSteps?: number // new, default 6
+}): Effect.Effect<T, AiError>
+```
+
+Without `tools` it works as today. With them, the schema becomes an `answer` tool, each step goes through `ModelCall` with `toolChoice: { mode: "required" }`, tool calls run and their results join the next step's prompt, and the call ends when `answer` decodes. A bad answer goes back as a tool error and counts as a step; running out of steps fails with `AiError` `StructuredOutputError`.
+
+#### `approvals` contract
+
+```ts
+// attribute on the input message; print mode sets it from --yolo
+const Unattended = Attribute.make("approvals/unattended", Schema.Struct({ yolo: Schema.Boolean }))
+
+// logged once per run call
+const Decided = defineEvent("approvals/decided", {
+  callId: string
+  allowed: boolean
+  by: "classifier" | "reviewer" | "user" | "unattended"
+  scores?: { hidden: number; impact: Record<Impact, number>; asked: number }
+  review?: { read: ReadonlyArray<string>; failed?: string; verdict?: Verdict }
+  note?: string // the user's note
+})
+
+// logged when an access request is allowed; replayed on session open
+const Granted = defineEvent("approvals/granted", AllowedFolder)
+
+const callQuestion = defineQuestion("approvals/call", {
+  tool: string
+  review: Verdict & { decision: "ask" } | { failed: string }
+}, Answer)
+
+const accessQuestion = defineQuestion("approvals/access", {
+  path: string
+  write: boolean
+  reason: string
+  review?: { failed: string }
+}, Answer)
+
+const Answer = Schema.Struct({ decision: Schema.Literals(["approve", "reject"]), note: Schema.optional(Schema.String) })
+
+// folders readable beside the workspace; a plugin that depends on approvals adds to it
+// a folder and everything under it; write allows reads too
+const AllowedFolder = Schema.Struct({ path: Schema.String, access: Schema.Literals(["read", "write"]) })
+class AllowedFolders extends Registry.Service<AllowedFolders, AllowedFolder>()("approvals/AllowedFolders") {}
+```
+
+#### Call path
+
+```text
+ToolCall wrap (request, next)
+  Unattended.yolo?                              log Decided(unattended, allowed) ; next
+  tool = last tool in Tools named request.call.name; none: next
+  access = tool.access?.(request.call.params) ?? run
+  read  -> every path inside readable folders?  next : failed "outside the allowed folders; ask with request_access"
+  write -> every path inside writable folders?  next : same failure
+  run   -> judge(request, tool)                 allowed: next
+                                                 denied: failed result with the reason
+
+judge
+  classify(state)          approves: Decided(classifier)
+                           over 6,000 chars, 3 s, error or no classifier: on to review
+  review(state)            allow: Decided(reviewer)
+                           ask or failed: on to the user
+  no Unattended attribute in a frontend:  callQuestion.ask(asker, data) -> Decided(user, note)
+  Unattended.yolo false (print mode):     Decided(unattended, denied)
+```
+
+The reasons a call fails are distinct: outside the allowed folders, rejected by the user (with the note), and denied in print mode ("run with --yolo to allow"). `--yolo` skips every check, folders included, as Crush's `--yolo` does. `request_access` runs the same `judge` with its own state, asks with `accessQuestion`, and on approve appends `Granted`.
+
+#### Folders
+
+- One list holds every allowed folder: the `AllowedFolders` entries, then the session's grants, which share the `AllowedFolder` shape. Approvals adds the workspace and the system temp folder to its own registry as `write` entries, so they need no special case.
+- A `read` call passes when every path is inside some entry; a `write` call when every path is inside a `write` entry.
+- Entries are folders, not globs: a folder check is a prefix test after `realpath`, which a symlink cannot slip past, and grants are folders already. No settings: a user who wants a folder every session adds a plugin, or asks once per session.
+- A path is resolved against the workspace, `~` expanded, then the nearest existing ancestor is resolved with `realpath`, so a symlink cannot lead outside.
+- Grants are a `Ref` per session, loaded from `Granted` events on the first call in that session.
+
+#### Files
+
+| File | Holds |
+| --- | --- |
+| `src/contract.ts` | `Unattended`, `Decided`, `Granted`, the two question kinds, `Answer`, `Verdict`, `requestAccessName` |
+| `src/index.ts` | `definePlugin`: wraps `ToolCall`, adds `request_access`, provides `AllowedFolders` and adds the workspace and the system temp folder to it; `entries: { tui }` |
+| `src/folders.ts` | Allowed folders, path resolution, grants per session |
+| `src/state.ts` | The state the classifier and reviewer see: tool, input, folder, allowed folders, latest user request, the turn's earlier calls |
+| `src/classify.ts` | The three questions and Tau's thresholds on `Models.classify` |
+| `src/review.ts` | The reviewer's system prompt and its `generateObject` call with `session_search` and `read` |
+| `src/search.ts` | `session_search` over user messages and earlier tool-call inputs |
+| `src/judge.ts` | The chain, logging `Decided` |
+| `src/tui/index.tsx` | Adds `CallAsk` and `AccessAsk` to `AskViews` |
+| `src/tui/CallAsk.tsx`, `src/tui/AccessAsk.tsx` | The two asks, ported from the gallery's `Approval` sketch |
+
+#### CLI
+
+- The composition adds `tools-shell`, `tools-processes` and `approvals`.
+- Print mode takes `--yolo` and sets `Unattended` on the input message; without it, `Unattended` is set with `yolo: false`, and the TUI sets nothing.
+
+#### `tool-output`
+
+- Spills move from the global folder to the system temp folder, which approvals already allows, so `read` can open them.
+
+Settled while building:
+
+- `Verdict` is one flat object, with empty summary, effects and risk for `allow`: provider tool schemas need an object at the top level, so a union cannot be the `answer` tool.
+- `callQuestion` carries a `Review` union: the reviewer's verdict, or the message of its failure, so the ask can say no one checked the call.
+- `request_access` lives in `src/access.ts`. Under `--yolo` it grants at once.
+- Under `--yolo`, `Decided` is logged only for `run` calls; reads and writes run without a record.
+- The classifier's impact question has an `unknown` label, so it can say it cannot tell.
+- `Choose.tsx` is the frame both asks share. `useHintsWithin` in `packages/tui` gives the hints only while focus is inside the ask, for both questions' form and approvals.
+- `generateObject` takes the schema's own codec, `Codec<T, JsonObject>`; a plain struct such as `Verdict` passes as is.
+
 ## Open
 
-- Step 5 code plan, after `tools-shell` is built: the events approvals logs (verdicts, who decided, files read, grants), the question kinds, and the `generateObject` contract change.
+- None.

@@ -1,7 +1,12 @@
 /** The four process tools, over the session's processes. */
 import { Effect, Schema } from "effect";
 
-import { defineTool, type Tool, type ToolOutput } from "@shanepadgett/liminal-tools/contract";
+import {
+  defineTool,
+  noAccess,
+  type Tool,
+  type ToolOutput,
+} from "@shanepadgett/liminal-tools/contract";
 
 import {
   MAX_WAIT,
@@ -90,6 +95,7 @@ export const processTools = (processes: Processes): ReadonlyArray<Tool> => [
     name: processOutputName,
     description: `Read what a process started with \`${processStartName}\` printed since the last call. ${READS} \`wait\` defaults to 0, which returns at once; at most ${MAX_WAIT}.`,
     input: OutputParams,
+    access: () => noAccess,
     run: (params, context) =>
       processes.find(context.session, params.id).pipe(
         Effect.flatMap((running) => processes.settle(running, params.wait ?? 0)),
@@ -114,6 +120,7 @@ export const processTools = (processes: Processes): ReadonlyArray<Tool> => [
     name: processStopName,
     description: `Stop a process started with \`${processStartName}\` and everything it started, and return its last output.`,
     input: StopParams,
+    access: () => noAccess,
     run: (params, context) =>
       processes
         .find(context.session, params.id)

@@ -1,5 +1,5 @@
 /** The tools the model can call and the one path every tool call takes. */
-import { Effect, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 import { Tool as AiTool } from "effect/ai";
 
 import { type Attributes, Pipeline, Registry } from "@shanepadgett/liminal-core";
@@ -50,9 +50,26 @@ interface ToolMarks {
   readonly sequential?: boolean | undefined;
 }
 
+/**
+ * What one call touches: files it reads, files it changes, or anything else, such as running a
+ * command. Paths are as the call gives them, relative to the workspace or absolute.
+ */
+export type Access =
+  | { readonly kind: "read"; readonly paths: ReadonlyArray<string> }
+  | { readonly kind: "write"; readonly paths: ReadonlyArray<string> }
+  | { readonly kind: "run" };
+
+/** A call that touches anything: what a tool without `access` counts as. */
+export const runAccess: Access = { kind: "run" };
+
+/** A call that touches no files and runs nothing, such as asking the user. */
+export const noAccess: Access = { kind: "read", paths: [] };
+
 /** A tool as `Tools` holds it: its input as JSON Schema, its params unchecked. */
 export interface Tool extends ToolMarks {
   readonly input: Schema.JsonObject;
+  /** What a call with these params touches; without it every call counts as `run`. */
+  readonly access?: ((params: Schema.Json) => Access) | undefined;
   readonly run: (
     params: Schema.Json,
     context: ToolContext,
@@ -81,13 +98,23 @@ export class ToolCall extends Pipeline.Service<ToolCall, ToolCallRequest, ToolRe
 export const defineTool = <S extends Schema.Top & { readonly DecodingServices: never }>(
   tool: ToolMarks & {
     readonly input: S;
+    /** What a call touches; params that fail to decode count as `run`. */
+    readonly access?: ((input: S["Type"]) => Access) | undefined;
     readonly run: (input: S["Type"], context: ToolContext) => Effect.Effect<ToolOutput, ToolFailed>;
   },
 ): Tool => {
-  const decode = Schema.decodeUnknownEffect(Schema.toCodecJson(tool.input));
+  const codec = Schema.toCodecJson(tool.input);
+  const decode = Schema.decodeUnknownEffect(codec);
+  const decodeOption = Schema.decodeUnknownOption(codec);
+  const { access } = tool;
 
   return {
     ...tool,
+    access:
+      access === undefined
+        ? undefined
+        : (params) =>
+            Option.match(decodeOption(params), { onNone: () => runAccess, onSome: access }),
     input: Schema.decodeUnknownSync(Schema.JsonObject)(AiTool.getJsonSchemaFromSchema(tool.input)),
     run: (params, context) =>
       decode(params).pipe(

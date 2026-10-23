@@ -8,6 +8,7 @@ import type { Settings } from "@shanepadgett/liminal-settings/contract";
 import { detailsOf } from "./call.ts";
 import { makeClassify } from "./classify.ts";
 import {
+  type GenerateObjectOptions,
   type GenerateOptions,
   type ModelCall,
   type ModelCatalog,
@@ -20,6 +21,7 @@ import {
   type StructuredOutput,
 } from "./contract.ts";
 import { ModelSetting } from "./setting.ts";
+import { generateWithTools } from "./steps.ts";
 
 /** The reply's text, which holds the JSON of a structured output. */
 const textOf = (reply: Reply) =>
@@ -28,7 +30,7 @@ const textOf = (reply: Reply) =>
 /** The prefix and prompt as one request on `choice`; tools stay for the cache but go unused. */
 const requestOf = (
   choice: ModelChoice,
-  { prefix, prompt }: GenerateOptions,
+  { prefix, system, prompt }: GenerateOptions,
   output: StructuredOutput | undefined,
 ): ModelRequest => {
   const tools = prefix?.tools ?? [];
@@ -36,7 +38,7 @@ const requestOf = (
   return {
     model: choice.model,
     thinking: choice.thinking,
-    system: prefix?.system ?? "",
+    system: system ?? prefix?.system ?? "",
     tools,
     messages: [...(prefix?.messages ?? []), { role: "user", parts: prompt }],
     toolChoice: tools.length === 0 ? undefined : "none",
@@ -116,12 +118,19 @@ export const make = (
       ),
     );
 
-  const generateObject = <T>(
-    options: GenerateOptions & { readonly schema: Schema.Codec<T, Schema.JsonObject> },
-  ) =>
-    Effect.flatMap(reply(options, { name: "output", schema: options.schema }), (built) =>
+  const generateObject = <T>(options: GenerateObjectOptions<T>) => {
+    const { tools } = options;
+
+    if (tools !== undefined && tools.length > 0) {
+      return Effect.flatMap(choiceOf(options), (choice) =>
+        generateWithTools(call, choice, { ...options, tools }),
+      );
+    }
+
+    return Effect.flatMap(reply(options, { name: "output", schema: options.schema }), (built) =>
       decodeOutput(options.schema, textOf(built)),
     );
+  };
 
   return Models.of({
     resolve,

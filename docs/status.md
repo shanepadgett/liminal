@@ -53,14 +53,14 @@ Planned dependencies are pinned in `tools/planned/package.json` so their docs ar
 Work: [plugins/coding.md](plugins/coding.md)
 
 - [x] `read` in `tools-files`, `tool-output`; tool results hold text and image parts
-- [x] `tools-shell`; `ToolContext.progress`. Joins the CLI composition with `approvals`
-- [x] `tools-processes`. Joins the CLI composition with `approvals`
+- [x] `tools-shell`; `ToolContext.progress`
+- [x] `tools-processes`
 - [ ] `tools-web`
 - [ ] Split `tools-files` into `tools-read`, `tools-edit`, `tools-write`; build `edit` and `write`
 - [x] `instructions`, `environment`
 - [x] Recreate `.liminal/`; move `docs/instructions/` to `.liminal/instructions/` with `read-when` front matter
 - [x] `questions`
-- [ ] `approvals`
+- [x] `approvals`; `Tool.access`; `generateObject` with tools
 - [ ] Liminal works on its own repository
 - [ ] Settle the database schema: after this, a schema change adds a migration, and the one-migration rule in `.liminal/instructions/code.md` is removed
 

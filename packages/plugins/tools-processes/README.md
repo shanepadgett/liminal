@@ -13,6 +13,8 @@ A call returns at once when the process has exited. Otherwise it returns once ne
 
 Each session numbers its own processes, and another session's ids are unknown to it. Processes keep running between turns and stop when Liminal exits; an unknown id fails the call.
 
+For approvals, `process_start` and `process_input` run things; `process_output` and `process_stop` touch nothing.
+
 The `tui` entry adds `process_start`'s row to chat's `ToolRows`, labelled by the description. The other three tools use chat's plain row.
 
 Requires `Tools` and `Directories`; the `tui` entry requires `ToolRows`.

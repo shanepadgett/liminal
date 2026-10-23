@@ -101,5 +101,11 @@ export const makeRead = Effect.gen(function* () {
       return yield* readFile(target, input);
     }).pipe(Effect.catchTag("PlatformError", (error) => Effect.fail(failed(error.message))));
 
-  return defineTool({ name: "read", description, input: Input, run });
+  return defineTool({
+    name: "read",
+    description,
+    input: Input,
+    access: (input) => ({ kind: "read", paths: [input.path] }),
+    run,
+  });
 });

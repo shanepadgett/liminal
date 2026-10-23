@@ -58,6 +58,18 @@ Type `/qna`, alone or followed by what the questions should be about, and send i
 
 The transcript shows the form's title and how many questions you answered. Click that row to open your answers under it, and again to close them; a row that has something to open brightens under the mouse. The model can ask only in the turn that takes your `/qna`. Print mode never asks.
 
+### Approve the model's calls
+
+Before a call that runs a command or changes something, Liminal checks it. Reads and changes inside the folder you run Liminal in and the system temp folder go ahead. A command goes to a quick classifier, then a small reviewer model; when either finds it routine, it runs. Otherwise the composer shows the call in plain words: what it does, what it changes and the risk.
+
+| Key | Does |
+| --- | --- |
+| Up, Down | Choose Approve or Reject |
+| Enter | Approve; on Reject, send the rejection with the note you typed |
+| Esc | On Approve, move to Reject; on Reject, cancel the turn |
+
+A rejection tells the model why when you write a note. To reach a folder outside the allowed ones, the model asks with `request_access`, which you approve the same way; an approved folder stays allowed for the rest of the session.
+
 ### Open a saved session
 
 Ctrl+O lists this folder's latest 100 sessions, newest first, under Today, Yesterday and Earlier. Each is named by the first line of its first message and shows when it was last active. Enter opens it. A session appears once you send in it.
@@ -146,6 +158,7 @@ git diff | liminal -p "Review this change"
 - `--session <id>` sends in that saved session instead of a new one. An unknown id stops with an error.
 - `--model provider/model` runs that model, such as `--model anthropic/claude-opus-5-5`. Without it, the session runs the model chosen as in [Choose models](#choose-models). With no provider signed in, it stops with `No model provider is connected. Run liminal connect.`
 - `--json` writes, instead of the reply, one JSON line per saved event and streamed delta, from your prompt to the turn's end.
+- No one is there to approve calls, so a call that would ask you is denied, and the model reads why. `--yolo` runs every call unchecked, outside the allowed folders too.
 - Ctrl-C cancels the turn, then exits.
 
 Exit codes:
@@ -213,4 +226,8 @@ Changes to these files reach the model before its next call.
 
 The model reads files and folders with its `read` tool, by a path relative to the folder you run Liminal in or an absolute one. It reads text in pages of up to 2,000 lines, and sees PNG, JPEG, GIF and WebP images when the model takes images.
 
-When a tool's output is over 2,000 lines or 50 KB, the model gets the first and last parts, and the whole output is saved in `~/.liminal/tool-output/`, readable only by you. Saved output is removed after 7 days.
+It runs commands with `shell`, one `bash -c` per call in that folder, stopped after 2 minutes unless it asks for longer. Commands that keep running, such as dev servers and watchers, run with `process_start` in a terminal of their own; the model reads their output, types into them and stops them. They stop when Liminal exits.
+
+When a tool's output is over 2,000 lines or 50 KB, the model gets the first and last parts, and the whole output is saved in `liminal-tool-output` in the system temp folder, readable only by you. Saved output is removed after 7 days.
+
+Calls are checked first, as in [Approve the model's calls](#approve-the-models-calls).

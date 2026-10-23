@@ -74,8 +74,14 @@ const liminal = Command.make(
       Flag.withDescription("With -p, send to this saved session instead of a new one"),
       Flag.optional,
     ),
+    yolo: Flag.Boolean("yolo").pipe(
+      Flag.withDescription(
+        "With -p, run every tool call without checks; without it, calls that need approval are denied",
+      ),
+      Flag.withDefault(false),
+    ),
   },
-  Effect.fn(function* ({ print: flag, json, model, session }) {
+  Effect.fn(function* ({ print: flag, json, model, session, yolo }) {
     if (Option.isNone(flag)) {
       return yield* tui.pipe(
         Effect.catch((error) =>
@@ -87,9 +93,11 @@ const liminal = Command.make(
     const prompt = yield* promptOf(flag.value);
     const saved = Option.map(session, (id) => SessionId.make(id));
 
+    const printed = Effect.scoped(print(prompt, { json, model, saved, yolo }));
+
     // The plugins start only once the command is known, so help never opens the session store.
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- print mode's entry point.
-    return yield* Effect.scoped(print(prompt, json, model, saved)).pipe(Effect.provide(host));
+    return yield* printed.pipe(Effect.provide(host));
   }),
 ).pipe(
   Command.withDescription("An agent harness where everything is a plugin"),

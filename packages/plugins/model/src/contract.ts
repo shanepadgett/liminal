@@ -276,8 +276,28 @@ export interface GenerateOptions {
   readonly model?: string | undefined;
   /** The request to start from, such as `Turns.request(id)`, so the call shares its cache. */
   readonly prefix?: ModelRequest | undefined;
+  /** The system prompt; missing is the prefix's, or none. */
+  readonly system?: string | undefined;
   /** Sent as a user message after the prefix. */
   readonly prompt: ReadonlyArray<Part>;
+}
+
+/** A tool `generateObject` lets the model call before it answers; it runs directly, unlogged. */
+export interface StepTool {
+  readonly definition: ToolDefinition;
+  /** What the model reads back; params are as the model wrote them, unchecked. */
+  readonly run: (params: Schema.Json) => Effect.Effect<string>;
+}
+
+export interface GenerateObjectOptions<T> extends GenerateOptions {
+  readonly schema: Schema.Codec<T, Schema.JsonObject>;
+  /**
+   * Tools the model may call first. With them, `schema` becomes an `answer` tool, every step calls
+   * a tool, and the call ends when an answer decodes.
+   */
+  readonly tools?: ReadonlyArray<StepTool> | undefined;
+  /** At most this many model calls when `tools` is given; missing is 6. */
+  readonly maxSteps?: number | undefined;
 }
 
 export interface ClassifyOptions<
@@ -427,9 +447,13 @@ export class Models extends Context.Service<
     readonly list: Effect.Effect<ReadonlyArray<ModelInfo>>;
     /** One model call outside the turn loop, through `ModelCall`; the reply is not logged. */
     readonly generate: (options: GenerateOptions) => Effect.Effect<Message, ModelCallError>;
-    /** `generate` whose reply is JSON that `schema` decodes; an object at the top. */
+    /**
+     * `generate` whose reply is JSON that `schema` decodes; an object at the top. With `tools`, an
+     * answer that fails to decode goes back to the model, and running out of steps fails with a
+     * structured output error.
+     */
     readonly generateObject: <T>(
-      options: GenerateOptions & { readonly schema: Schema.Codec<T, Schema.JsonObject> },
+      options: GenerateObjectOptions<T>,
     ) => Effect.Effect<T, ModelCallError>;
     /**
      * Answers `definition`'s decisions about `input` in one call with no retries; the model is

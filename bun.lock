@@ -28,6 +28,7 @@
         "@effect/platform-bun": "4.0.5",
         "@opentui/solid": "0.6.6",
         "@shanepadgett/liminal-accounts": "workspace:*",
+        "@shanepadgett/liminal-approvals": "workspace:*",
         "@shanepadgett/liminal-chat": "workspace:*",
         "@shanepadgett/liminal-client": "workspace:*",
         "@shanepadgett/liminal-core": "workspace:*",
@@ -60,6 +61,8 @@
         "@shanepadgett/liminal-tool-output": "workspace:*",
         "@shanepadgett/liminal-tools": "workspace:*",
         "@shanepadgett/liminal-tools-files": "workspace:*",
+        "@shanepadgett/liminal-tools-processes": "workspace:*",
+        "@shanepadgett/liminal-tools-shell": "workspace:*",
         "@shanepadgett/liminal-tui": "workspace:*",
         "effect": "4.0.5",
       },
@@ -114,6 +117,25 @@
         "@opentui/solid": "0.6.6",
         "@shanepadgett/liminal-client": "workspace:*",
         "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-tui": "workspace:*",
+        "effect": "*",
+        "solid-js": "1.9.12",
+      },
+    },
+    "packages/plugins/approvals": {
+      "name": "@shanepadgett/liminal-approvals",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@opentui/core": "0.6.6",
+        "@opentui/keymap": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-loop": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-questions": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-tools": "workspace:*",
         "@shanepadgett/liminal-tui": "workspace:*",
         "effect": "*",
         "solid-js": "1.9.12",
@@ -472,7 +494,6 @@
       "version": "0.1.0",
       "peerDependencies": {
         "@shanepadgett/liminal-core": "workspace:*",
-        "@shanepadgett/liminal-directories": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-session": "workspace:*",
         "@shanepadgett/liminal-tools": "workspace:*",
@@ -519,6 +540,9 @@
     "packages/plugins/tools-shell": {
       "name": "@shanepadgett/liminal-tools-shell",
       "version": "0.1.0",
+      "dependencies": {
+        "unbash": "6.0.1",
+      },
       "peerDependencies": {
         "@opentui/solid": "0.6.6",
         "@shanepadgett/liminal-chat": "workspace:*",
@@ -558,7 +582,6 @@
         "diff": "9.0.0",
         "electrobun": "2.0.4",
         "partial-json": "0.1.7",
-        "unbash": "6.0.1",
       },
     },
   },
@@ -795,6 +818,8 @@
     "@oxlint/plugins": ["@oxlint/plugins@1.89.0", "", {}, "sha512-TJBBNl4KIxbxrSk7gsqlz6iM1kxidfyTizEzfWqXvijF2Ou8/Da58GvjemBVmCmaUamwRij+JwsVc0kpBFuqfg=="],
 
     "@shanepadgett/liminal-accounts": ["@shanepadgett/liminal-accounts@workspace:packages/plugins/accounts"],
+
+    "@shanepadgett/liminal-approvals": ["@shanepadgett/liminal-approvals@workspace:packages/plugins/approvals"],
 
     "@shanepadgett/liminal-chat": ["@shanepadgett/liminal-chat@workspace:packages/plugins/chat"],
 

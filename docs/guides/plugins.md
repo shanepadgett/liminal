@@ -160,6 +160,8 @@ yield* (yield* Tools).add(add);
 - Fail with `ToolFailed` for a failure the model should read; a crash also reaches the model as a failed result.
 - `run`'s second argument, `ToolContext`, has `progress(data)` for showing a long call's progress while it runs, such as `shell`'s last lines. It publishes a `ToolProgress` delta that is not saved; a frontend draws only the latest, so send the whole progress so far each time. Your tool's row in `ToolRows` decodes `data`.
 - Every call goes through the `ToolCall` pipeline; wrap it to see or change each call.
+- Say what a call touches with `access(input)`: `{ kind: "read", paths }`, `{ kind: "write", paths }`, or `runAccess` for one that runs things. With `approvals` composed, a read or write runs only inside the allowed folders, and a run call goes to the classifier, the reviewer and the user. A tool without `access` counts as run; use `noAccess` for one that touches nothing.
+- To let calls reach another folder, such as a cache your plugin keeps, add `{ path, access: "read" | "write" }` to `AllowedFolders` from `@shanepadgett/liminal-approvals/contract`.
 - To change what the model is told about another plugin's tool, wrap `ToolDefinitions` from `@shanepadgett/liminal-tool-definitions/contract`.
 - Tools added or removed mid-session reach the model before its next call, in the provider's own form or as a note.
 - A `deferred` tool is left out until you offer it in a session with `ToolList.offer(session, names)` from `@shanepadgett/liminal-tool-definitions/contract`, such as from a `BeforeCall` hook; `ToolList.withdraw` takes it away again. A call to a tool the session is not offered fails.
@@ -229,6 +231,7 @@ const verdict = yield* models.generateObject({ prompt, schema: Verdict });
 ```
 
 - With `prefix`, such as `Turns.request(id)`, the call starts from a session's request and shares its cache. The reply is not logged.
+- `system` sets the system prompt. `generateObject` takes `tools`, each a `StepTool` of a `definition` and a `run` that returns text; the model may call them before it answers, for at most `maxSteps` calls, 6 when left out.
 - `classify` asks a classifier Effect AI `Decision` questions about an input. Effect AI checks the answers; the call is not retried, so set a deadline with `Effect.timeout`.
 
 ```ts

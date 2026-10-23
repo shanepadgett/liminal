@@ -7,13 +7,12 @@
  * shift+tab move between tabs, esc cancels the turn; enter on the notes tab sends the answers.
  */
 
-import type { BoxRenderable, Renderable } from "@opentui/core";
-import { useBindings, useKeymapSelector } from "@opentui/keymap/solid";
-import { useRenderer } from "@opentui/solid";
+import type { BoxRenderable } from "@opentui/core";
+import { useBindings } from "@opentui/keymap/solid";
 import { Option, Schema } from "effect";
 import { type Accessor, createEffect, createSignal, Show } from "solid-js";
 
-import { activeHints, type Command, keymapCommand, kit } from "@shanepadgett/liminal-tui";
+import { type Command, keymapCommand, kit, useHintsWithin } from "@shanepadgett/liminal-tui";
 
 import { formQuestion } from "../contract.ts";
 import { Ask, moreAside } from "./Ask.tsx";
@@ -184,16 +183,7 @@ const FORM_KEYS = [
   { key: "escape", cmd: "questions.cancel" },
 ];
 
-/** Whether focus sits on `root` or inside it. */
-const isWithin = (focused: Renderable | null, root: BoxRenderable | undefined): boolean => {
-  if (focused === null || root === undefined) return false;
-  if (focused === root) return true;
-
-  return isWithin(focused.parent, root);
-};
-
 function Form(props: AskProps & { readonly state: FormState; readonly update: Update }) {
-  const renderer = useRenderer();
   const state = () => props.state;
   let root: BoxRenderable | undefined;
 
@@ -207,10 +197,7 @@ function Form(props: AskProps & { readonly state: FormState; readonly update: Up
     bindings: FORM_KEYS,
   }));
 
-  // Behind a dialog the dialog shows its own keys.
-  const hints = useKeymapSelector((keymap) =>
-    isWithin(renderer.currentFocusedRenderable, root) ? activeHints(keymap) : [],
-  );
+  const hints = useHintsWithin(() => root);
 
   // A field takes focus when it shows; on a row, the form holds it.
   createEffect(() => {

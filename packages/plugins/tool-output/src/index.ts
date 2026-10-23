@@ -1,11 +1,12 @@
 /**
  * Long tool output: a result whose text is past the limits keeps its first and last halves, and the
- * whole text is saved to a private file the model can read.
+ * whole text is saved to a private file in the system temp folder, which the model can read.
  */
+import { tmpdir } from "node:os";
+
 import { Clock, Duration, Effect, FileSystem, Layer, Option, Path } from "effect";
 
 import { definePlugin } from "@shanepadgett/liminal-core";
-import { Directories } from "@shanepadgett/liminal-directories/contract";
 import type { ToolResult } from "@shanepadgett/liminal-model/contract";
 import type { SessionId } from "@shanepadgett/liminal-session/contract";
 import { ToolCall } from "@shanepadgett/liminal-tools/contract";
@@ -25,7 +26,7 @@ const textOf = (result: ToolResult) =>
 const make = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const root = path.join((yield* Directories).global, "tool-output");
+  const root = path.join(tmpdir(), "liminal-tool-output");
 
   /** Writes `text` to the session's file for `callId` and returns its path. */
   const save = Effect.fn("ToolOutput.save")(function* (
@@ -99,6 +100,6 @@ const layer = Layer.effectDiscard(
 export default definePlugin({
   name: "tool-output",
   provides: [],
-  requires: [ToolCall, Directories, FileSystem.FileSystem, Path.Path],
+  requires: [ToolCall, FileSystem.FileSystem, Path.Path],
   layer,
 });
