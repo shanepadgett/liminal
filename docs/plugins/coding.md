@@ -4,32 +4,23 @@ Work for [status.md](../status.md) milestone 3.
 
 ## `tools-files`
 
-- Adds `read`, `edit`, `write`. `read` windows a file with `tags`' `windowOf`, as `@` tags do.
+- `read` is built. Adds `edit`, `write`.
 - `edit` events render as diffs through `chat`'s `ItemRenderer` with OpenTUI's `Diff`; patches come from `diff`.
 - Shows an edit while its arguments stream, with `partial-json` only if Effect AI gives no partial tool arguments.
-- `read` returns images, so a tool result holds text and image parts, not only JSON. This changes `ToolResult` in the `model` contract and `ToolOutput` in `tools`.
 - `edit` diffs need display data beside what the model sees, such as Pi's `details`.
-- Previous code: `files`, `tools-read`, `tools-edit`.
+- Previous code: `files`, `tools-edit`.
 
 ## `tools-shell`
 
 - Adds `shell`; command runner on `effect/process`, shell safety rules on `unbash`, background processes.
 - Streams output while the command runs: `ToolContext` gains `progress`, as Pi's `onUpdate` and OpenCode's `ctx.progress`.
+- File search runs through `shell`; there are no `grep` or `find` tools. `environment` lists the command-line tools found on the machine for the model to use, such as `rg` and `jq`, beside the shell line.
 - Previous code: `tools-shell`, `command-runner`, `shell-safety`, `processes`.
 
 ## `tools-web`
 
 - Adds `websearch`, `webfetch`.
 - Previous code: `tools-web`.
-
-## `tool-output`
-
-- Wraps `ToolCall`: truncates large results and saves the full output to a file the model can read.
-- Previous code: `tool-output`.
-
-```ts
-ToolCall.wrap((req, next) => next(req).pipe(Effect.map(limitOutput)))
-```
 
 ## `approvals`
 

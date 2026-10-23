@@ -52,7 +52,8 @@ Planned dependencies are pinned in `tools/planned/package.json` so their docs ar
 
 Work: [plugins/coding.md](plugins/coding.md)
 
-- [ ] `tools-files`, `tools-shell`, `tools-web`, `tool-output`
+- [x] `read` in `tools-files`, `tool-output`; tool results hold text and image parts
+- [ ] `edit` and `write` in `tools-files`, `tools-shell`, `tools-web`
 - [x] `instructions`, `environment`
 - [x] Recreate `.liminal/`; move `docs/instructions/` to `.liminal/instructions/` with `read-when` front matter
 - [ ] `approvals`, `questions`
@@ -105,6 +106,7 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 
 - Instruction files that run shell commands and put the output in the text when the prompt is built, so a file can carry live project facts.
 - MCP servers as a source of tools, connecting and disconnecting mid-session.
+- Image resizing and PDFs in `read`.
 - Change notes as system-role messages where the model accepts them mid-conversation, as DeepSeek does; Effect AI's Anthropic provider has a per-model flag for it. Needs a `system` role in `Message`.
 - A turn that ends in structured output: the final answer, after any tool use, must decode through a schema the prompt gives, as OpenCode's `format` option does. `Models.generateObject` covers one-off calls.
 - Sign in with ChatGPT limits `chatgpt` does not handle: the API refuses uncompressed request bodies over about 1 MiB, which OpenCode compresses with zstd, and `model` retries errors such as `subscription_sharing_usage_limit_exceeded` that retrying cannot fix.
@@ -117,4 +119,3 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 ## Open
 
 - Electrobun 2.x ships its SDK through the Hutch devkit, not npm; the npm package is only a bootstrap. Whether the desktop app stays on Electrobun.
-- File search tools (`grep`, `find`): whether they belong in `tools-files`, and whether they use a system `rg` or ship one.

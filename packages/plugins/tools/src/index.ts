@@ -10,7 +10,7 @@ const failed = (request: ToolCallRequest, message: string): ToolResult => ({
   type: "tool-result",
   callId: request.call.id,
   name: request.call.name,
-  result: message,
+  content: [{ type: "text", text: message }],
   isFailure: true,
 });
 
@@ -23,12 +23,12 @@ const runTool = (tools: ReadonlyArray<Tool>, request: ToolCallRequest) => {
   const context = { session: request.session, callId: call.id, attributes: request.attributes };
 
   return tool.run(call.params, context).pipe(
-    Effect.map(({ result, loads }) => {
+    Effect.map(({ content, loads }) => {
       const done: ToolResult = {
         type: "tool-result",
         callId: call.id,
         name: call.name,
-        result,
+        content,
         isFailure: false,
       };
 

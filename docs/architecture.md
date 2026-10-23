@@ -155,6 +155,7 @@ Settings.write(scope: "global" | "project", path, value): Effect<void>
 
 // model: the LLM vocabulary, providers and one-off calls; knows nothing of sessions
 type Part = Text | Image | Reasoning | ToolCall | ToolResult
+type ToolResult = { callId; name; content: (Text | Image)[]; isFailure; loads? }   // the text goes to the model as the result; images follow the run of results in one user message, or are left out for a model without images
 type Message = { role: "user" | "assistant" | "tool"; parts: Part[] }
 type ModelId = string                         // provider/model
 type ModelRequest = { model; thinking?; system; tools: ToolDefinition[]; messages: Message[]; toolChoice?; output?: { name; schema }; cacheKey? }   // same key, same provider cache; a turn's is its session id
@@ -204,7 +205,7 @@ interface SessionLog {
 interface Tool { name; description; deferred?; sequential?; input: JsonSchema; run(params: Json, ctx: ToolContext): Effect<ToolOutput, ToolFailed> }
 defineTool({ name; description; input: Schema<I>; run(input: I, ctx) }): Tool   // checks params before run
 type ToolContext = { session; callId; attributes }   // attributes of the latest input the turn consumed
-type ToolOutput = { result: Json; loads?: string[] }
+type ToolOutput = { content: (Text | Image)[]; loads?: string[] }
 // a deferred tool shows by name only until a ToolResult lists it in `loads`
 Tools: Registry<Tool>                          // of two with one name, the last added is used
 ToolCall: Pipeline<{ session; call: ToolCall; attributes }, ToolResult>   // failures, unknown tools and crashes become failed results

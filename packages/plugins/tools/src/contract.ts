@@ -3,7 +3,12 @@ import { Effect, Schema } from "effect";
 import { Tool as AiTool } from "effect/ai";
 
 import { type Attributes, Pipeline, Registry } from "@shanepadgett/liminal-core";
-import type { ToolCall as ToolCallPart, ToolResult } from "@shanepadgett/liminal-model/contract";
+import type {
+  Image,
+  Text,
+  ToolCall as ToolCallPart,
+  ToolResult,
+} from "@shanepadgett/liminal-model/contract";
 import type { SessionId } from "@shanepadgett/liminal-session/contract";
 
 /** What a tool knows about the call it runs. */
@@ -16,7 +21,7 @@ export interface ToolContext {
 
 /** A finished call: what the model sees, and the deferred tools it loads by name. */
 export interface ToolOutput {
-  readonly result: Schema.Json;
+  readonly content: ReadonlyArray<Text | Image>;
   readonly loads?: ReadonlyArray<string> | undefined;
 }
 
