@@ -1,7 +1,6 @@
 /** `liminal connect`: pick a vendor, a login and a way through it, then follow its sign-in steps. */
 import { Console, Deferred, Effect, Fiber, Match, Option, Redacted, Ref, Stream } from "effect";
 import { Prompt } from "effect/cli";
-import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import {
   AccountsRpc,
@@ -9,14 +8,6 @@ import {
   type LoginStep,
 } from "@shanepadgett/liminal-accounts/contract";
 import { Host } from "@shanepadgett/liminal-client";
-
-/** Opens `url` in the default browser; the printed address is there when that fails. */
-const openBrowser = (url: string) =>
-  Effect.gen(function* () {
-    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
-    const opener = process.platform === "darwin" ? "open" : "xdg-open";
-    yield* spawner.exitCode(ChildProcess.make(opener, [url]));
-  }).pipe(Effect.ignore);
 
 /** Asks to pick one choice; a single choice is taken without asking. */
 export const pick = <A>(
@@ -88,8 +79,7 @@ export const connect = Effect.gen(function* () {
       if (Option.isSome(open)) yield* Fiber.interrupt(open.value);
 
       yield* Match.valueTags(step, {
-        OpenUrl: ({ url }) =>
-          Effect.andThen(Console.log(`Sign in at:\n${url}\n`), openBrowser(url)),
+        OpenUrl: ({ url }) => Console.log(`Sign in at:\n${url}\n`),
         ShowCode: ({ code, url }) => Console.log(`Enter the code ${code} at ${url}`),
         Ask: ({ question, secret }) => ask(question, secret),
         Waiting: ({ text }) => Console.log(text),
