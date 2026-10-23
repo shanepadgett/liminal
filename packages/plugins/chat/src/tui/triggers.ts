@@ -26,8 +26,10 @@ export interface DraftRow {
 export interface DraftKey {
   /** In the keymap's key syntax, such as `return` or `tab`. */
   readonly key: string;
-  /** The hint beside the key. */
-  readonly label: string;
+  /** What the key does, as the keymap names its command. */
+  readonly title: string;
+  /** The hint beside the key; none for a key every user expects, such as enter. */
+  readonly hint?: string;
   /** Whether the key acts on `row`; without it, on every row. Otherwise the key passes on. */
   readonly enabled?: (row: DraftRow) => boolean;
   /** Edits the draft itself, such as putting a tag in place of the token or clearing it. */

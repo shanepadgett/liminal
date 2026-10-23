@@ -97,13 +97,7 @@ const useSignInKeys = (keys: {
   useBindings(() => ({
     priority: 1,
     commands: [
-      {
-        name: "sign-in.answer",
-        title: "Send the answer",
-        hint: { label: "send" },
-        enabled: keys.asking,
-        run: keys.send,
-      },
+      { name: "sign-in.answer", title: "Send the answer", enabled: keys.asking, run: keys.send },
       {
         name: "sign-in.copy",
         title: "Copy",
@@ -111,7 +105,7 @@ const useSignInKeys = (keys: {
         enabled: () => keys.copy.label() !== undefined,
         run: keys.copy.run,
       },
-      { name: "sign-in.close", title: "Close", hint: { label: "close" }, run: keys.close },
+      { name: "sign-in.close", title: "Close", run: keys.close },
     ].map(keymapCommand),
     bindings: [
       { key: "return", cmd: "sign-in.answer" },

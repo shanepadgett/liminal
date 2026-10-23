@@ -16,7 +16,7 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 - Loads the `tui` entry of every plugin in the composition.
 - One `screen` slot (`single_winner`), which `chat` fills.
 - `Dialogs`: a stack with `open` and `close`, drawn above the screen with the dim.
-- `Keymap` and `registerCommands`: keymap commands with `title`, `category`, `slash`, `hint` and `enabled`; `listCommands` reads back the reachable ones. Every hint line shows only the keys that would run now (`activeHints`, `useHints`).
+- `Keymap` and `registerCommands`: keymap commands with `title`, `category`, `slash`, `hint` and `enabled`; `listCommands` reads back the reachable ones. Every hint line shows only the keys that would run now (`activeHints`, `useHints`), important ones first, on one line; `ctrl+g` shows them all in columns where a line cannot fit them.
 - `Pickers`: a pipeline every picker spec passes through by name; `openPicker` draws the kit's `Picker` in a dialog.
 - Plugins gain `./view` and `./tui` exports; the plugin anatomy check and lint rules learn them and who may import each.
 - Previous code: `archive/packages/frontend`, `archive/apps/gallery`.

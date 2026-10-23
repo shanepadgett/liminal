@@ -7,9 +7,9 @@
  * quits. A draft trigger, such as `@`, opens its menu above the draft; the menu's keys come first.
  */
 
-import { type BoxRenderable, TextAttributes, type TextareaRenderable } from "@opentui/core";
+import { TextAttributes, type TextareaRenderable } from "@opentui/core";
 import { useBindings, useKeymapSelector } from "@opentui/keymap/solid";
-import { createSignal, For, Show } from "solid-js";
+import { For, Show } from "solid-js";
 
 import type { SendMode } from "@shanepadgett/liminal-loop/contract";
 import {
@@ -85,14 +85,14 @@ const composerCommands = (props: ComposerProps, draft: Draft, text: () => string
     {
       name: "chat.send",
       title: "Send",
-      hint: { label: "send" },
+      hint: { label: "send", important: true },
       enabled: () => hasText() && !props.running,
       run: sendAs(),
     },
     {
       name: "chat.steer",
       title: "Steer the turn",
-      hint: { label: "steer" },
+      hint: { label: "steer", important: true },
       enabled: () => hasText() && props.running,
       run: sendAs("steer"),
     },
@@ -115,7 +115,7 @@ const composerCommands = (props: ComposerProps, draft: Draft, text: () => string
     {
       name: "chat.stop",
       title: "Stop",
-      hint: { label: "stop" },
+      hint: { label: "stop", important: true },
       enabled: () => props.running,
       run: () => {
         props.cancel();
@@ -143,28 +143,6 @@ const COMPOSER_KEYS = [
   { key: "escape", cmd: "chat.stop" },
   { key: "ctrl+c", cmd: "chat.clear" },
 ];
-
-/** The hints, right-aligned; those that do not fit drop from the end. */
-function HintRow(props: { readonly hints: ReadonlyArray<kit.Hint> }) {
-  let row: BoxRenderable | undefined;
-  const [columns, setColumns] = createSignal<number>();
-
-  return (
-    <box
-      ref={(made) => {
-        row = made;
-      }}
-      flexDirection="row"
-      flexGrow={1}
-      justifyContent="flex-end"
-      onSizeChange={() => {
-        setColumns(row?.width);
-      }}
-    >
-      <kit.Hints hints={props.hints} columns={columns()} />
-    </box>
-  );
-}
 
 export function Composer(
   props: ComposerProps & {
@@ -215,9 +193,12 @@ export function Composer(
           onCursorChange={menu.refresh}
         />
       </box>
-      <box flexDirection="row" marginTop={1}>
+      {/* The hints take the width the status fills leave, three cells from them. */}
+      <box flexDirection="row" marginTop={1} gap={3}>
         <SlotView slot={status} session={props.screen.session()} />
-        <HintRow hints={hints()} />
+        <box flexGrow={1} flexBasis={0}>
+          <kit.Hints hints={hints()} end />
+        </box>
       </box>
     </box>
   );

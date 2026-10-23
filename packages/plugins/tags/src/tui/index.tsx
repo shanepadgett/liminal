@@ -40,14 +40,15 @@ const make = Effect.gen(function* () {
       keys: [
         {
           key: "return",
-          label: "tag",
+          title: "Tag",
           run: (row, draft, token) => {
             writeTag(draft, token, row.id, colors.syntax());
           },
         },
         {
           key: "tab",
-          label: "open folder",
+          title: "Open folder",
+          hint: "open folder",
           enabled: (row) => kinds.get(row.id) === "folder",
           run: (row, draft, token) => {
             replaceToken(draft, token, `@${row.id}`);

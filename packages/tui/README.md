@@ -22,9 +22,11 @@ Liminal's terminal UI, on OpenTUI and Solid. `run(plugins)` loads each plugin's 
 
 `Keymap` is the TUI's OpenTUI keymap. `registerCommands(commands, keys)` adds app-wide commands and the keys that run them until the caller's scope closes. A `Command` has a `name`, a `title`, a `run`, and optionally a `category`, a `slash` name with `aliases`, a `hint` and `enabled`. While `enabled` reads false, the command neither runs nor shows its hint, and its key passes on.
 
-A `hint` is `{ label, keys? }`, shown beside the command's first key; `keys` sets other key text, such as `↑↓` for up and down shown together. `keymapCommand(command)` gives the keymap's form of a command, for `useBindings` in a component; `commandLayer(commands, keys, target?)` gives a layer, active only while `target` or something inside it has focus.
+A `hint` is `{ label, keys?, important? }`, shown beside the command's first key; `keys` sets other key text, such as `↑↓` for up and down shown together. Important hints come first on a line, so they stay when it cannot fit them all. Keys every user expects, such as Up, Down, Enter and Esc in a list or dialog, have no hint. `keymapCommand(command)` gives the keymap's form of a command, for `useBindings` in a component; `commandLayer(commands, keys, target?)` gives a layer, active only while `target` or something inside it has focus.
 
-A hint shows only for a key that would run now. `activeHints(keymap)` reads them from the keymap's active keys: higher-priority layers first, then newer layers. A key shows once, for the command that wins it. `useHints()` gives them as an accessor, which every hint line uses.
+A hint shows only for a key that would run now. `activeHints(keymap)` reads them from the keymap's active keys: important hints first, then higher-priority layers, then newer layers. A key shows once, for the command that wins it. `useHints()` gives them as an accessor, which every hint line uses.
+
+`kit.Hints` draws a hint line in the width it has, never splitting a hint; `end` puts it against the right edge. When the hints do not fit, it shows the leading ones and `ctrl+g more`. `ctrl+g`, bound by the root with no target so it works under dialogs too, switches every such line to all its hints in columns, filled top to bottom, with `ctrl+g less` last. A line that fits looks the same either way. `Dialog` draws its hint line only when it has hints.
 
 `listCommands(keymap)` reads back the commands reachable now, with their keys; `slashCommands` keeps those with a slash name.
 
@@ -32,7 +34,7 @@ A hint shows only for a key that would run now. `activeHints(keymap)` reads them
 
 `openPicker(spec)` opens the kit's `Picker` in a dialog. A `PickerSpec` is the picker's props plus a `name`, such as `stash/stashes`. Every spec passes through the `Pickers` pipeline before it opens, so a plugin can wrap a picker by its name to change its rows or add keys.
 
-The picker filters its rows with `fuzzysort` as the user types, and groups them by `section`. Up and Down move, Enter calls `onSelect` and closes, Esc closes. Each action is a key with a label in the hints; it closes the picker unless `keepsOpen` is set. Enter and the actions work, and show their hints, only while a row is selected, and Up and Down only with more than one row. The picker's keys work while its input has focus. `onMove` runs as the selection moves and `onClose` when it closes. `initial` names the row selected when it opens.
+The picker filters its rows with `fuzzysort` as the user types, and groups them by `section`. Up and Down move, Enter calls `onSelect` and closes, Esc closes; none of the four shows a hint. Each action is a key with a label in the hints; a label can be a function of the selected row, such as `favorite` or `unfavorite`; it closes the picker unless `keepsOpen` is set. Enter and the actions work, and show their hints, only while a row is selected, and Up and Down only with more than one row. The picker's keys work while its input has focus. `onMove` runs as the selection moves and `onClose` when it closes. `initial` names the row selected when it opens.
 
 ## Hooks
 

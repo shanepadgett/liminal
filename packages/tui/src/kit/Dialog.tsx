@@ -1,11 +1,16 @@
-/** A box over the screen: a title trailed by diagonals, its contents and the keys that apply. */
+/**
+ * A box over the screen: a title trailed by diagonals, its contents and the keys that apply, when
+ * any do.
+ */
 
 import { TextAttributes } from "@opentui/core";
 import type { JSX } from "@opentui/solid";
+import { Show } from "solid-js";
 
 import { useColor } from "../colors.ts";
 import { Hatch } from "./Hatch.tsx";
-import { type Hint, Hints } from "./Hints.tsx";
+import type { Hint } from "./hint-layout.ts";
+import { Hints } from "./Hints.tsx";
 
 const DIALOG_COLUMNS = 60;
 
@@ -36,9 +41,11 @@ export function Dialog(props: {
         <Hatch width={DIALOG_COLUMNS - FRAME_COLUMNS - props.title.length - 1} />
       </box>
       {props.children}
-      <box marginTop={1}>
-        <Hints hints={props.hints} />
-      </box>
+      <Show when={props.hints.length > 0}>
+        <box marginTop={1}>
+          <Hints hints={props.hints} />
+        </box>
+      </Show>
     </box>
   );
 }

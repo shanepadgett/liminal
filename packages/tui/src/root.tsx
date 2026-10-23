@@ -5,6 +5,7 @@
 import { KeymapProvider, useBindings } from "@opentui/keymap/solid";
 import { render } from "@opentui/solid";
 import { Effect, FiberSet, Layer } from "effect";
+import { createSignal } from "solid-js";
 
 import { Host } from "@shanepadgett/liminal-client";
 import { definePlugin } from "@shanepadgett/liminal-core";
@@ -14,6 +15,7 @@ import { ForkProvider, type Services } from "./bridge.ts";
 import { Colors, ColorsProvider, useColor } from "./colors.ts";
 import { Keymap } from "./commands.ts";
 import { DialogLayer, Dialogs } from "./dialogs.tsx";
+import { HintsExpandedProvider } from "./kit/Hints.tsx";
 import { Pickers } from "./pickers.tsx";
 import { RegistryProvider, screen, Slots, SlotView } from "./slots.tsx";
 
@@ -29,17 +31,36 @@ function Empty(props: { readonly quit: () => void }) {
   return <text fg={color("text.faint")}>No plugin fills the screen.</text>;
 }
 
-/** The whole screen. The plugin that fills it binds its own keys, quitting among them. */
+/**
+ * The whole screen. The plugin that fills it binds its own keys, quitting among them. `ctrl+g`
+ * shows every hint on lines too narrow for them, under dialogs too.
+ */
 function Screen(props: { readonly dialogs: Dialogs["Service"]; readonly quit: () => void }) {
   const color = useColor();
+  const [isExpanded, setExpanded] = createSignal(false);
+
+  useBindings(() => ({
+    commands: [
+      {
+        name: "hints.toggle",
+        title: "Show all keys",
+        run: () => {
+          setExpanded((was) => !was);
+        },
+      },
+    ],
+    bindings: [{ key: "ctrl+g", cmd: "hints.toggle" }],
+  }));
 
   return (
-    <box width="100%" height="100%" backgroundColor={color("surface.base")}>
-      <SlotView slot={screen}>
-        <Empty quit={props.quit} />
-      </SlotView>
-      <DialogLayer dialogs={props.dialogs} />
-    </box>
+    <HintsExpandedProvider value={isExpanded}>
+      <box width="100%" height="100%" backgroundColor={color("surface.base")}>
+        <SlotView slot={screen}>
+          <Empty quit={props.quit} />
+        </SlotView>
+        <DialogLayer dialogs={props.dialogs} />
+      </box>
+    </HintsExpandedProvider>
   );
 }
 

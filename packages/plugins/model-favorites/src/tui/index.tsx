@@ -70,7 +70,7 @@ const make = Effect.gen(function* () {
       ...spec.actions,
       {
         key: "ctrl+f",
-        label: "favorite",
+        label: (row) => (favorites().includes(row.id) ? "unfavorite" : "favorite"),
         keepsOpen: true,
         run: (row) => {
           run(toggle(row.id));

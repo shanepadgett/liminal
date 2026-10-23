@@ -11,7 +11,7 @@ export function ModelLine(props: { readonly state: ModelState }) {
   return (
     <Show when={props.state.line()}>
       {(choice) => (
-        <text flexGrow={1} wrapMode="none">
+        <text wrapMode="none">
           <span style={{ fg: color("text.accent") }}>◇ </span>
           <span style={{ fg: color("text.muted") }}>
             {choice().model.slice(choice().model.indexOf("/") + 1)}

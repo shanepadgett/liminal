@@ -84,7 +84,10 @@ const useMenuState = (registry: DraftTriggers["Service"]) => {
 
 type MenuState = ReturnType<typeof useMenuState>;
 
-/** Up and down, with more than one row to choose from, and esc while the menu is open. */
+/**
+ * Up and down, with more than one row to choose from, and esc while the menu is open. None has a
+ * hint; every user expects them.
+ */
 const menuCommands = (menu: MenuState, dismiss: () => void): Command[] => {
   const canMove = () => (menu.rows()?.length ?? 0) > 1;
 
@@ -92,7 +95,6 @@ const menuCommands = (menu: MenuState, dismiss: () => void): Command[] => {
     {
       name: "chat.menu.up",
       title: "Previous row",
-      hint: { label: "choose", keys: "↑↓" },
       enabled: canMove,
       run: () => {
         menu.move(-1);
@@ -109,7 +111,6 @@ const menuCommands = (menu: MenuState, dismiss: () => void): Command[] => {
     {
       name: "chat.menu.close",
       title: "Close menu",
-      hint: { label: "close" },
       enabled: () => menu.typing() !== undefined,
       run: dismiss,
     },
@@ -122,19 +123,22 @@ const triggerCommands = (
   keys: ReadonlyArray<DraftKey>,
   pick: (key: DraftKey) => void,
 ): Command[] =>
-  keys.map((key, index) => ({
-    name: `chat.menu.key.${index}`,
-    title: key.label,
-    hint: { label: key.label },
-    enabled: () => {
-      const row = menu.rows()?.[menu.under()];
+  keys.map((key, index) => {
+    const command: Command = {
+      name: `chat.menu.key.${index}`,
+      title: key.title,
+      enabled: () => {
+        const row = menu.rows()?.[menu.under()];
 
-      return menu.typing() !== undefined && row !== undefined && (key.enabled?.(row) ?? true);
-    },
-    run: () => {
-      pick(key);
-    },
-  }));
+        return menu.typing() !== undefined && row !== undefined && (key.enabled?.(row) ?? true);
+      },
+      run: () => {
+        pick(key);
+      },
+    };
+
+    return key.hint === undefined ? command : { ...command, hint: { label: key.hint } };
+  });
 
 /** Above the composer's own keys; active while the draft has focus. */
 const useMenuKeys = (

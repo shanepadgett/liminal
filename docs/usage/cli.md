@@ -23,8 +23,9 @@ With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; th
 | Ctrl+N | New session: back to the start screen; nothing is saved until you send |
 | Ctrl+O | Open a saved session. See below |
 | Ctrl+P | The command palette: every command with its keys, by category. Enter runs one |
+| Ctrl+G | Show every key hint on a line too narrow for them, in columns; again to go back to one line |
 
-The line under the draft shows the model line, `◇ model • thinking`, and only the keys that would do something now. The draft's keys stop while a dialog is open.
+The line under the draft shows the model line, `◇ model • thinking`, and only the keys that would do something now. Enter and Esc come first. When the keys do not fit, the line ends with `ctrl+g more`. Lists and dialogs leave out hints for Up, Down, Enter and Esc; those keys still work. The draft's keys stop while a dialog is open.
 
 ### Commands with `/`
 

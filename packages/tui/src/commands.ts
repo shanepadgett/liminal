@@ -11,7 +11,7 @@ import { reactiveMatcherFromSignal, useKeymapSelector } from "@opentui/keymap/so
 import { Context, Effect, Option, Predicate, Schema } from "effect";
 import type { Accessor } from "solid-js";
 
-import type { Hint } from "./kit/Hints.tsx";
+import type { Hint } from "./kit/hint-layout.ts";
 
 /** The TUI's keymap; `root.tsx` draws with the same one. */
 export class Keymap extends Context.Service<Keymap, OpenTuiKeymap<Renderable, KeyEvent>>()(
@@ -29,6 +29,8 @@ export interface CommandHint {
   readonly label: string;
   /** Shown in place of the key, for keys shown together such as `↑↓`. */
   readonly keys?: string;
+  /** Placed before the other hints, so it stays when a line cannot fit them all. */
+  readonly important?: boolean;
 }
 
 export interface Command {
@@ -124,23 +126,28 @@ export const slashCommands = (keymap: OpenTuiKeymap<Renderable, KeyEvent>) =>
   listCommands(keymap).filter((command) => command.slash !== undefined);
 
 const decodeHint = Schema.decodeUnknownOption(
-  Schema.Struct({ label: Schema.String, keys: Schema.optional(Schema.String) }),
+  Schema.Struct({
+    label: Schema.String,
+    keys: Schema.optional(Schema.String),
+    important: Schema.optional(Schema.Boolean),
+  }),
 );
 
 /** Key names as hints spell them. */
 const keyNameAliases = { return: "enter", escape: "esc" };
 
 /**
- * A hint for each key that runs a command now and whose command has one, in the keymap's order:
- * higher-priority layers first. A command on several keys, such as `return` and `kpenter`, shows
- * only by its first key, and not at all while another command holds that key.
+ * A hint for each key that runs a command now and whose command has one: important hints first,
+ * then the rest, each in the keymap's order: higher-priority layers first. A command on several
+ * keys, such as `return` and `kpenter`, shows only by its first key, and not at all while another
+ * command holds that key.
  */
 export const activeHints = (keymap: OpenTuiKeymap<Renderable, KeyEvent>): ReadonlyArray<Hint> => {
   const active = keymap.getActiveKeys({ includeMetadata: true });
   const commands = active.flatMap((key) => (Predicate.isString(key.command) ? [key.command] : []));
   const bindings = keymap.getCommandBindings({ visibility: "reachable", commands });
 
-  return active.flatMap((key) => {
+  const decoded = active.flatMap((key) => {
     const first = Predicate.isString(key.command) ? bindings.get(key.command)?.[0] : undefined;
 
     const isFirstKey =
@@ -151,10 +158,21 @@ export const activeHints = (keymap: OpenTuiKeymap<Renderable, KeyEvent>): Readon
     return Option.match(decodeHint(key.commandAttrs?.["hint"]), {
       onNone: () => [],
       onSome: (hint) => [
-        { keys: hint.keys ?? formatKeySequence([key], { keyNameAliases }), label: hint.label },
+        {
+          important: hint.important === true,
+          hint: {
+            keys: hint.keys ?? formatKeySequence([key], { keyNameAliases }),
+            label: hint.label,
+          },
+        },
       ],
     });
   });
+
+  return [
+    ...decoded.filter((each) => each.important),
+    ...decoded.filter((each) => !each.important),
+  ].map((each) => each.hint);
 };
 
 /** The hints of the keys that act now; follows the keymap as focus and commands change. */

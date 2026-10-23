@@ -54,7 +54,7 @@ const make = Effect.gen(function* () {
       keys: [
         {
           key: "return",
-          label: "run",
+          title: "Run",
           run: (row, draft) => {
             draft.clear();
             keymap.runCommand(row.id);
@@ -62,7 +62,8 @@ const make = Effect.gen(function* () {
         },
         {
           key: "tab",
-          label: "complete",
+          title: "Complete",
+          hint: "complete",
           run: (row, draft, token) => {
             replaceToken(draft, token, row.label);
           },

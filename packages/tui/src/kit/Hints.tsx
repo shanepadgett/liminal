@@ -1,51 +1,57 @@
-/** Key hints: `enter select esc close`. */
+/** Key hints: `ctrl+s stash ctrl+p commands`, on one line or, expanded, in columns. */
 
-import { For } from "solid-js";
+import type { BoxRenderable } from "@opentui/core";
+import { type Accessor, createContext, createSignal, For, useContext } from "solid-js";
 
 import { useColor } from "../colors.ts";
+import { HINT_GAP, type Hint, keyColumnsOf, layoutOf, paddedKeys } from "./hint-layout.ts";
 
-export interface Hint {
-  readonly keys: string;
-  readonly label: string;
-}
+const ExpandedContext = createContext<Accessor<boolean>>(() => false);
 
-const GAP = "   ";
+/** Whether a line that cannot fit its hints shows them all; `ctrl+g` in `root.tsx` toggles it. */
+export const HintsExpandedProvider = ExpandedContext.Provider;
 
-/** The leading hints that fit in `columns` whole; all of them without a width. */
-const fitting = (hints: readonly Hint[], columns: number | undefined): readonly Hint[] => {
-  if (columns === undefined) return hints;
-
-  let used = -GAP.length;
-  const shown: Hint[] = [];
-
-  for (const hint of hints) {
-    used += GAP.length + hint.keys.length + 1 + hint.label.length;
-    if (used > columns) break;
-    shown.push(hint);
-  }
-
-  return shown;
-};
-
-/** With `columns`, hints that would not fit in it are left off the end. */
-export function Hints(props: {
-  readonly hints: readonly Hint[];
-  readonly columns?: number | undefined;
-}) {
+function Column(props: { readonly column: readonly Hint[] }) {
   const color = useColor();
+  const keyColumns = () => keyColumnsOf(props.column);
 
   return (
-    <text flexShrink={0}>
-      <For each={fitting(props.hints, props.columns)}>
-        {(hint, index) => (
-          <>
-            <span style={{ fg: color("text.muted") }}>
-              {(index() === 0 ? "" : GAP) + hint.keys}
-            </span>
+    <box flexShrink={0}>
+      <For each={props.column}>
+        {(hint) => (
+          <text>
+            <span style={{ fg: color("text.muted") }}>{paddedKeys(hint, keyColumns())}</span>
             <span style={{ fg: color("text.faint") }}>{` ${hint.label}`}</span>
-          </>
+          </text>
         )}
       </For>
-    </text>
+    </box>
+  );
+}
+
+/** The hints in the width this line has; with `end`, against its right edge. */
+export function Hints(props: { readonly hints: readonly Hint[]; readonly end?: boolean }) {
+  const isExpanded = useContext(ExpandedContext);
+  const [width, setWidth] = createSignal<number>();
+  let line: BoxRenderable | undefined;
+
+  return (
+    <box
+      ref={(made) => {
+        line = made;
+      }}
+      width="100%"
+      overflow="hidden"
+      flexDirection="row"
+      justifyContent={props.end === true ? "flex-end" : "flex-start"}
+      gap={HINT_GAP}
+      onSizeChange={() => {
+        setWidth(line?.width);
+      }}
+    >
+      <For each={layoutOf(props.hints, width(), isExpanded())}>
+        {(column) => <Column column={column} />}
+      </For>
+    </box>
   );
 }

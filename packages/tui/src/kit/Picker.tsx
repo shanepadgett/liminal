@@ -7,6 +7,7 @@
 
 import { type InputRenderable, type ScrollBoxRenderable, TextAttributes } from "@opentui/core";
 import { useBindings } from "@opentui/keymap/solid";
+import { Predicate } from "effect";
 import fuzzysort from "fuzzysort";
 import {
   type Accessor,
@@ -35,7 +36,11 @@ export interface PickerRow {
 /** A key beyond up, down, enter and esc, such as `ctrl+d` to delete the selected row. */
 export interface PickerAction {
   readonly key: string;
-  readonly label: string;
+  /**
+   * What the hint calls it; a function names it for the selected row, as `favorite` or
+   * `unfavorite`.
+   */
+  readonly label: string | ((row: PickerRow) => string);
   readonly run: (row: PickerRow) => void;
   /** Leaves the picker open after it runs; without it, the picker closes. */
   readonly keepsOpen?: boolean;
@@ -168,7 +173,6 @@ const moveCommands = (state: PickerState): Command[] => {
     {
       name: "picker.up",
       title: "Previous row",
-      hint: { label: "choose", keys: "↑↓" },
       enabled: canMove,
       run: () => {
         state.move(-1);
@@ -185,7 +189,17 @@ const moveCommands = (state: PickerState): Command[] => {
   ];
 };
 
-/** Enter and each action: they act on the selected row, so only while one is. */
+/** What `action` is called for `row`; nothing while no row is selected. */
+const labelOf = (action: PickerAction, row: PickerRow | undefined) => {
+  if (Predicate.isString(action.label)) return action.label;
+
+  return row === undefined ? "" : action.label(row);
+};
+
+/**
+ * Enter and each action: they act on the selected row, so only while one is. Enter has no hint;
+ * every user expects it.
+ */
 const rowCommands = (props: PickerProps, state: PickerState, close: () => void): Command[] => {
   const hasRow = () => state.selected() !== undefined;
 
@@ -200,7 +214,6 @@ const rowCommands = (props: PickerProps, state: PickerState, close: () => void):
     {
       name: "picker.select",
       title: "Select",
-      hint: { label: "select" },
       enabled: hasRow,
       run: () => {
         onSelected(props.onSelect);
@@ -208,8 +221,8 @@ const rowCommands = (props: PickerProps, state: PickerState, close: () => void):
     },
     ...props.actions.map((action, index) => ({
       name: `picker.action.${index}`,
-      title: action.label,
-      hint: { label: action.label },
+      title: labelOf(action, state.selected()),
+      hint: { label: labelOf(action, state.selected()) },
       enabled: hasRow,
       run: () => {
         onSelected(action.run, action.keepsOpen);
@@ -228,7 +241,6 @@ const usePickerKeys = (
   const closeCommand: Command = {
     name: "picker.close",
     title: "Close",
-    hint: { label: "close" },
     run: () => {
       close();
       props.onClose?.();

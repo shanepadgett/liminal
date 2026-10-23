@@ -1117,6 +1117,46 @@ A hint line shows only keys a user would not guess, on one line. When they do no
 - A picker action's label is a string or a function of the selected row: `model-favorites` shows `ctrl+f favorite` or `ctrl+f unfavorite` (OpenCode `component/dialog-model.tsx`).
 - `esc stop` while a turn runs is important; which other hints are is settled in the code plan.
 
+### 7a-4 code
+
+```text
+packages/tui/src/commands.ts   CommandHint gains important; activeHints puts important hints first
+packages/tui/src/kit/Hints.tsx  measures its width; one line or the grid; HintsExpanded context
+packages/tui/src/root.tsx       holds the expanded signal, provides it, binds ctrl+g
+packages/tui/src/kit/Dialog.tsx no hint line without hints
+packages/tui/src/kit/Picker.tsx no hints on up, down, enter, esc; action labels follow the row
+packages/tui/src/kit/Confirm.tsx keeps enter confirm and esc cancel
+packages/plugins/chat/src/tui/  Composer: send, steer, stop important; HintRow loses its measuring
+                                draft-menu.ts: no hints on up, down, esc; DraftKey title and hint
+packages/plugins/slash, tags    enter keys lose their hint; tab keeps it
+packages/plugins/accounts       sign-in: enter and esc lose their hint
+packages/plugins/model-favorites ctrl+f favorite or unfavorite
+packages/plugins/model-choice   the model line keeps its own width, so the hints get the rest
+```
+
+```ts
+// commands.ts
+interface CommandHint { label: string; keys?: string; important?: boolean }
+// kit/Hints.tsx
+interface Hint { keys: string; label: string }
+const HintsExpandedProvider: Context<Accessor<boolean>>["Provider"]  // root provides it; false without one
+function Hints(props: { hints: readonly Hint[]; end?: boolean })   // end: right-aligned, as the composer
+// layout: columns of hints; one line is columns of one hint each
+const layoutOf = (hints, width, expanded): ReadonlyArray<ReadonlyArray<Hint>>
+// kit/Picker.tsx
+interface PickerAction { key; label: string | ((row: PickerRow) => string); run; keepsOpen? }
+// chat triggers.ts
+interface DraftKey { key; title: string; hint?: string; enabled?; run }
+```
+
+- `layoutOf`: everything fits on one line, so one line. Collapsed: the leading hints that fit with `ctrl+g more` after them. Expanded: the hints and `ctrl+g less` in as many columns as fit, filled top to bottom; one column when none fit. A column's width is its widest key, a space and its widest label; columns sit three cells apart, as hints on a line do.
+- `ctrl+g` is bound in `root.tsx` with no target, so it works under dialogs too. It always toggles; a line that fits does not change. Making it act only while some line overflows would need every line to report its overflow, for a key that does nothing visible either way.
+- `Confirm` keeps its hints: `enter confirm` and `esc cancel` are the answers to its question, and nothing else on it says how to give them.
+- A picker reads an action's label for the selected row inside its bindings, so the hint follows the selection; the command's title is that label too.
+- `Hints` takes the width its parent gives it and clips what does not fit. In the composer the `status` fills keep their own width and the hints get the rest, three cells after them; the hints' box has no width of its own (`flexBasis` 0), so what they show never changes the room they get.
+- Important: `enter send`, `enter steer`, `esc stop`. The rest keep keymap order after them.
+- Docs: `packages/tui` README (hints, `ctrl+g`, action labels), `chat` README if it lists `DraftKey`, `docs/usage/cli.md` (`ctrl+g`, hints).
+
 ## Events in the references
 
 | Signal | Pi | OpenCode | deepseek-harness | Liminal |
