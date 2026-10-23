@@ -66,6 +66,8 @@ export type Item =
   /** Another plugin's event, drawn by the renderer it adds for its kind. */
   | { readonly kind: "event"; readonly id: string; readonly event: SessionEvent };
 
+export type ToolItem = Extract<Item, { readonly kind: "tool" }>;
+
 export interface Turn {
   readonly id: string;
   /** The input that started the turn; missing when it lies before the events loaded. */

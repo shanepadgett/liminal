@@ -160,8 +160,26 @@ yield* (yield* Tools).add(add);
 - Fail with `ToolFailed` for a failure the model should read; a crash also reaches the model as a failed result.
 - Every call goes through the `ToolCall` pipeline; wrap it to see or change each call.
 - To change what the model is told about another plugin's tool, wrap `ToolDefinitions` from `@shanepadgett/liminal-tool-definitions/contract`.
-- Tools added or removed mid-session reach the model as a note before its next call.
+- Tools added or removed mid-session reach the model before its next call, in the provider's own form or as a note.
+- A `deferred` tool is left out until you offer it in a session with `ToolList.offer(session, names)` from `@shanepadgett/liminal-tool-definitions/contract`, such as from a `BeforeCall` hook; `ToolList.withdraw` takes it away again. A call to a tool the session is not offered fails.
 - The `tools` README covers schema choices and the `deferred` and `sequential` marks.
+
+## Ask the user
+
+`defineQuestion` from `@shanepadgett/liminal-questions/contract` makes a kind of question with schemas for what it asks and how it is answered. Its `ask` logs the question for a tool call and waits for the answer.
+
+```ts
+const Confirm = defineQuestion(
+  "greeter/confirm",
+  Schema.Struct({ text: Schema.String }),
+  Schema.Struct({ yes: Schema.Boolean }),
+);
+
+const { yes } = yield* Confirm.ask({ session: ctx.session, callId: ctx.callId }, { text: "Go on?" });
+```
+
+- A cancelled turn interrupts the wait; an answer the schema rejects fails with `AnswerInvalid`.
+- In the TUI, add a view for the kind to `AskViews` from `@shanepadgett/liminal-questions/tui`; it takes the composer's place while the question waits. Draw it in the `Ask` frame, and call its `answer` with the JSON answer.
 
 ## Add a prompt section
 
@@ -250,3 +268,4 @@ export default definePlugin({
 - In a component, `useColor()` reads the theme's role colors, `useRun()` runs an Effect with `Host` and `Dialogs`, `useWatch` reads a stream as a signal, and `useSessionView` reads a session.
 - Reach your plugin's server through `Host` and its RPC group; a `tui` entry imports other plugins only through `/contract`, `/view` and `/tui`.
 - Code shared with other frontends goes in `view.ts`, exported as `./view`, with no Solid or OpenTUI imports.
+- `@shanepadgett/liminal-chat/tui` holds the chat screen's extension points: `ItemRenderer` for your event kinds, `ToolRows` for your tool's transcript row, `ComposerCovers` for something that takes the composer's place, `Moods` for what Porter murmurs while a turn works, the `sidebar`, `composer` and `status` slots, and `ChatSend` to wrap every send. The `chat` README lists them.

@@ -1,0 +1,31 @@
+{
+  "name": "@shanepadgett/liminal-questions",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contract": "./src/contract.ts",
+    "./tui": "./src/tui/index.tsx"
+  },
+  "peerDependencies": {
+    "@opentui/core": "0.6.6",
+    "@opentui/keymap": "0.6.6",
+    "@opentui/solid": "0.6.6",
+    "@shanepadgett/liminal-chat": "workspace:*",
+    "@shanepadgett/liminal-client": "workspace:*",
+    "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-history": "workspace:*",
+    "@shanepadgett/liminal-loop": "workspace:*",
+    "@shanepadgett/liminal-session": "workspace:*",
+    "@shanepadgett/liminal-tool-definitions": "workspace:*",
+    "@shanepadgett/liminal-tools": "workspace:*",
+    "@shanepadgett/liminal-tui": "workspace:*",
+    "effect": "*",
+    "solid-js": "1.9.12"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/index.ts"
+    ]
+  }
+}

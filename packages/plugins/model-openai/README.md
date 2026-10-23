@@ -15,6 +15,7 @@ OpenAI's models in `ModelProviders`, one provider for each way of signing in, ea
 - Sign in with ChatGPT registers Liminal as its own app on the ChatGPT account on the first login, and checks each ID token against OpenAI's published keys. It names this machine with a host id kept in `~/.liminal/host-id`.
 - Nothing is stored on OpenAI's side. Each call carries the whole conversation, and the session id goes along as the cache key.
 - Thinking: `off`, or an effort level such as `low`, `medium`, `high` or `xhigh`. Unset leaves it to the model.
+- Tool changes mid-conversation go as `additional_tools` items for GPT-5.4 and later on `openai` and `chatgpt`, and GPT-5.6 and later on `codex`. Other models get a note.
 
 ```jsonc
 {

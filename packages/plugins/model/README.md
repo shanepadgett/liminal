@@ -2,10 +2,10 @@
 
 The model vocabulary and the one path every model call takes. Knows nothing of sessions.
 
-- `Message` and `Part` (`Text`, `Image`, `Reasoning`, `ToolCall`, `ToolResult`): what the log stores and the model sees. Images hold their data in base64.
+- `Message` and `Part` (`Text`, `Image`, `Reasoning`, `ToolCall`, `ToolResult`, `ToolChange`): what the log stores and the model sees. Images hold their data in base64. A `ToolChange`, in user messages only, holds tools offered or changed and tools removed since the request's tools were declared.
 - `ToolDefinition`: a tool's name, description and input JSON Schema, as the model is told.
 - `ModelRequest`: model, thinking level, system prompt, tool definitions, messages, tool choice and an optional structured `output`.
-- `ModelProviders`: the registry providers add to. A provider gives its models, its default `main` model for turns and `small` model for side calls, whether it is signed in, and an Effect AI `LanguageModel` for each model.
+- `ModelProviders`: the registry providers add to. A provider gives its models, its default `main` model for turns and `small` model for side calls, whether it is signed in, and an Effect AI `LanguageModel` for each model. A provider whose models take tool changes mid-conversation sets `nativeToolChanges(model)`; `languageModel` then gets `toolChanges`, the declared tools and each change, to send in its own form. For any other model, each change is a `<tool-update>` note in its user message and the request sends the tools after every change.
 - `ModelCatalog`: `ModelDetails` by catalog id: limits, thinking levels, capabilities and price. A provider names its `catalogId`; `Models.list` adds each model's details, and `languageModel` gets them. With the catalog unavailable, models list without details and calls still run. `model-catalog` provides it.
 - `ModelCall`: the pipeline every call runs through. It streams `ModelDelta`s: Effect AI's reply parts, plus a `retry` delta when a retryable `AiError` is tried again. A reply that fails partway restarts.
 - `Reply.add` and `Reply.message`: turn deltas into the assistant `Message`.

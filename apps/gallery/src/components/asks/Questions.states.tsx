@@ -5,7 +5,7 @@ import { Questions } from "./Questions.tsx";
 import {
   FORM_CHOOSING,
   FORM_CONFIRMING,
-  FORM_CONTEXT,
+  FORM_ADDITIONAL_NOTES,
   FORM_NOTING,
   FORM_OWN,
   FORM_WRITING,
@@ -20,5 +20,5 @@ export const questionsStates: readonly [State, ...State[]] = [
   { name: "Yes or no", fill: "screen", view: questions(FORM_CONFIRMING) },
   { name: "Written answer", fill: "screen", view: questions(FORM_WRITING) },
   { name: "Own answer", fill: "screen", view: questions(FORM_OWN) },
-  { name: "Context", fill: "screen", view: questions(FORM_CONTEXT) },
+  { name: "Additional notes", fill: "screen", view: questions(FORM_ADDITIONAL_NOTES) },
 ];

@@ -12,6 +12,7 @@ import { commandsStates } from "./dialogs/Commands.states.tsx";
 import { connectStates } from "./dialogs/Connect.states.tsx";
 import { modelsStates } from "./dialogs/Models.states.tsx";
 import { sessionsStates } from "./dialogs/Sessions.states.tsx";
+import { answersStates } from "./transcript/Answers.states.tsx";
 import { checkpointStates } from "./transcript/Checkpoint.states.tsx";
 import { memoryStates } from "./transcript/Memory.states.tsx";
 import { noticeStates } from "./transcript/Notice.states.tsx";
@@ -40,6 +41,7 @@ export const components: Group = {
         { id: "turn", title: "Turn", states: turnStates },
         { id: "reply", title: "Reply", states: replyStates },
         { id: "work-rows", title: "Work rows", states: workRowsStates },
+        { id: "answers", title: "Answers", states: answersStates },
         { id: "notice", title: "Notice", states: noticeStates },
         { id: "turn-end", title: "Turn end", states: turnEndStates },
         { id: "memory", title: "Memory", states: memoryStates },

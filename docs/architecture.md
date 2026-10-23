@@ -154,8 +154,9 @@ Settings.get<T>(setting): Effect<T, SettingsInvalid>               // read on ea
 Settings.write(scope: "global" | "project", path, value): Effect<void>
 
 // model: the LLM vocabulary, providers and one-off calls; knows nothing of sessions
-type Part = Text | Image | Reasoning | ToolCall | ToolResult
-type ToolResult = { callId; name; content: (Text | Image)[]; isFailure; loads? }   // the text goes to the model as the result; images follow the run of results in one user message, or are left out for a model without images
+type Part = Text | Image | Reasoning | ToolCall | ToolResult | ToolChange
+type ToolChange = { added: ToolDefinition[]; removed: string[] }   // in user messages only; a provider that takes changes natively sends them in its own form, others get a <tool-update> note and the tools after every change
+type ToolResult = { callId; name; content: (Text | Image)[]; isFailure }   // the text goes to the model as the result; images follow the run of results in one user message, or are left out for a model without images
 type Message = { role: "user" | "assistant" | "tool"; parts: Part[] }
 type ModelId = string                         // provider/model
 type ModelRequest = { model; thinking?; system; tools: ToolDefinition[]; messages: Message[]; toolChoice?; output?: { name; schema }; cacheKey? }   // same key, same provider cache; a turn's is its session id
@@ -165,7 +166,8 @@ interface ModelProvider {
   catalogId?                                // whose models.dev entries hold its models' details, such as openai
   signedIn: Effect<boolean>                 // a saved login or a key in the environment
   models: Effect<ModelInfo[]>               // ModelInfo = { id; name; details?: ModelDetails }
-  languageModel(model, { thinking?, cacheKey?, details? }): Effect<LanguageModel>   // an Effect AI language model; a provider that routes its cache by key sends cacheKey
+  nativeToolChanges?(model): boolean        // whether the model takes tool changes mid-conversation
+  languageModel(model, { thinking?, cacheKey?, details?, toolChanges? }): Effect<LanguageModel>   // an Effect AI language model; a provider that routes its cache by key sends cacheKey; toolChanges = { declared; changes }, set only for a native model with changes
   classifiers?: Effect<ModelInfo[]>         // only those the current login can call
   decisionModel?(model): Effect<DecisionModel>   // an Effect AI decision model for one of its classifiers
 }
@@ -205,8 +207,8 @@ interface SessionLog {
 interface Tool { name; description; deferred?; sequential?; input: JsonSchema; run(params: Json, ctx: ToolContext): Effect<ToolOutput, ToolFailed> }
 defineTool({ name; description; input: Schema<I>; run(input: I, ctx) }): Tool   // checks params before run
 type ToolContext = { session; callId; attributes }   // attributes of the latest input the turn consumed
-type ToolOutput = { content: (Text | Image)[]; loads?: string[] }
-// a deferred tool shows by name only until a ToolResult lists it in `loads`
+type ToolOutput = { content: (Text | Image)[] }
+// a deferred tool is left out of a session's tools until a plugin offers it through ToolList.offer
 Tools: Registry<Tool>                          // of two with one name, the last added is used
 ToolCall: Pipeline<{ session; call: ToolCall; attributes }, ToolResult>   // failures, unknown tools and crashes become failed results
 
@@ -214,7 +216,10 @@ ToolCall: Pipeline<{ session; call: ToolCall; attributes }, ToolResult>   // fai
 ToolDefinitions: Pipeline<Tool, ToolDefinition>   // name, description, input shape; wrap to change a description
 ToolList.sync(id): Effect<void>               // logs the tool list at start, then a change: definitions added or changed, names removed
 ToolList.current(events): ToolDefinition[]    // a removed tool is still sent, with a note, until the next fold
-ToolList.fold(id): Effect<void>               // logs the full tool list again
+ToolList.fold(id): Effect<void>               // logs the full tool list again; offered deferred tools are left out
+ToolList.offer(id, names): Effect<void>       // logs a change adding deferred tools
+ToolList.withdraw(id, names): Effect<void>    // logs a change removing tools
+// a call to a tool the session is not offered fails; each change reaches the model as a tool-change part
 
 // system-prompt: the system prompt, built from sections
 Sections: Registry<Section>                  // Section = { name; text: (session) => Effect<string> }; empty text is left out
@@ -349,9 +354,14 @@ export const buildTranscript: (state: ViewState, drawn: ReadonlySet<string>) => 
 // chat/src/tui/index.tsx
 type ChatSlots = { sidebar: { session: SessionId }; composer: { session: SessionId } }
 export const ItemRenderer: Registry<{ kind: string; component: (props: { event: SessionEvent }) => JSX.Element }>
+export const ToolRows: Registry<{ tool: string; component: (props: { item: ToolItem; state }) => JSX.Element }>   // in place of a tool's plain row
+export const ComposerCovers: Registry<{ active(props): boolean; component(props): JSX.Element }>   // the first active cover takes the composer's place
+export const Moods: Registry<{ active(props): boolean; words(props): string[]; poses?: Pose[]; header?: "scanning" | "still" }>   // how the screen looks while a turn works: Porter's words and faces, the header's scan; the first active mood wins
 
-// approvals tui entry
-ItemRenderer.add({ kind: "approvals/question", component: QuestionCard })
+// questions tui entry
+ToolRows.add({ tool: "ask_question", component: AskRow })   // AskRow draws <WorkRow item details={answers} />; a click opens the details
+ComposerCovers.add({ active: (props) => openAsks(props.state).length > 0, component: AskCover })
+Moods.add({ active: (props) => openAsks(props.state).length > 0, words: () => ["patiently waiting"], poses, header: "still" })
 ```
 
 - A tool call and its result share the call id, so they make one item.
@@ -419,14 +429,14 @@ How `session` does these over `SqlClient` is open.
 | Context | `environment` | Workspace, Git, platform, date and the workspace root's entries | Add | `environment` |
 | Context | `skills`, `references`, `vocabulary` | Skill folders, reference repos, project terms | Add | same names |
 | Features | `approvals` | Tool call gate: decision model, reviewer, user | Wrap | `approval` |
-| Features | `questions` | `ask_question`, `/qna` | Add | `questions` |
+| Features | `questions` | `ask_question`, `/qna`, `Questions.ask`, the answer form | Add, Wrap | `questions` |
 | Features | `memory` | Checkpoints, notes, context window | Wrap | `memory` |
 | Features | `session-name`, `usage`, `cache-hints` | Naming, cost, cache marks | Add, Attach, Wrap | same names |
 | Features | `checks`, `commit` | Project checks, `/commit` | Wrap, Add | same names |
 | Hosting | `loader` | Plugin folders, `plugins.json`, trust, reload | host level | `trust`, `archive/packages/kernel` |
 | Hosting | `actors` | Who sent each input | Attach, Wrap | none |
 | Hosting | `http` | Serves plugins' RPC groups over HTTP | none | `archive/packages/kernel/src/server` |
-| TUI | `chat` | Chat screen, composer, the session slots, `ChatScreen`, `DraftTriggers` | Add (slots) | `chat`, `inbox` (composer) |
+| TUI | `chat` | Chat screen, composer, the session slots, `ChatScreen`, `DraftTriggers`, `ToolRows`, `ComposerCovers`, `Moods` | Add (slots) | `chat`, `inbox` (composer) |
 | TUI | `tags` | `@` tags: `TagSources`, the workspace's files and folders, their text added on send, the `@` draft trigger | Add, Wrap | `files`, `inbox` (tags) |
 | TUI | `stash` | Drafts set aside with `ctrl+s`, brought back with `/pop` | Add | `inbox` (stash) |
 | TUI | `slash` | The `/` draft trigger over commands with a slash name | Add | `sdk` (commands) |

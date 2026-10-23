@@ -3,6 +3,9 @@ import { OpenAiClient, OpenAiLanguageModel, OpenAiSchema } from "@effect/ai-open
 import { Effect, Schema } from "effect";
 import { AiError } from "effect/ai";
 
+import { responsesToolChanges } from "./responses-tools.ts";
+import { type ToolChanges, withToolChanges } from "./tool-changes.ts";
+
 /** Where to send Responses calls and how to sign them. */
 export type ResponsesOptions = OpenAiClient.Options;
 
@@ -32,10 +35,11 @@ const reasoningOf = Effect.fn("reasoningOf")(function* (thinking: string) {
   return { effort, summary: "auto" } satisfies Reasoning;
 });
 
-/** A model's thinking level and cache key, for one request. */
+/** A model's thinking level and cache key, and its tool changes when it takes them natively. */
 export interface ResponsesModelOptions {
   readonly thinking?: string | undefined;
   readonly cacheKey?: string | undefined;
+  readonly toolChanges?: ToolChanges | undefined;
 }
 
 /**
@@ -45,9 +49,11 @@ export interface ResponsesModelOptions {
 export const responsesModel = Effect.fn("responsesModel")(function* (
   options: ResponsesOptions,
   model: string,
-  { thinking, cacheKey }: ResponsesModelOptions,
+  { thinking, cacheKey, toolChanges }: ResponsesModelOptions,
 ) {
-  const client = yield* OpenAiClient.make(options);
+  const client = yield* OpenAiClient.make(
+    withToolChanges(options, toolChanges, responsesToolChanges),
+  );
 
   // Our tool schemas are not written for strict mode, which refuses some JSON Schema keywords.
   const base: Config = { store: false, strictJsonSchema: false };

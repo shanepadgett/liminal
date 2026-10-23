@@ -9,17 +9,27 @@
 import { Dynamic } from "@opentui/solid";
 import { For, Match, Show, Switch } from "solid-js";
 
+import type { SessionView } from "@shanepadgett/liminal-client";
+
 import type { Item, Turn as TurnData } from "../view/index.ts";
 import { Notice } from "./Notice.tsx";
 import { Prompt } from "./Prompt.tsx";
 import { Reply } from "./Reply.tsx";
-import type { ItemView } from "./slots.ts";
+import type { ItemView, ToolRowView } from "./slots.ts";
 import { StickyRow } from "./sticky.tsx";
 import { TurnEnd } from "./TurnEnd.tsx";
 import { WorkRow } from "./WorkRow.tsx";
 
-/** Each event kind another plugin draws, and its component. */
-export type Renderers = ReadonlyMap<string, ItemView["component"]>;
+/** Each event kind another plugin draws, and its component; and each tool's row the same way. */
+export interface Renderers {
+  readonly events: ReadonlyMap<string, ItemView["component"]>;
+  readonly tools: ReadonlyMap<string, ToolRowView["component"]>;
+}
+
+interface ItemProps {
+  readonly renderers: Renderers;
+  readonly state: SessionView.ViewState;
+}
 
 type ItemOf<K extends Item["kind"]> = Extract<Item, { readonly kind: K }>;
 
@@ -30,7 +40,7 @@ const isKind = <K extends Item["kind"]>(item: Item, kind: K): item is ItemOf<K> 
 const asKind = <K extends Item["kind"]>(item: Item, kind: K): ItemOf<K> | undefined =>
   isKind(item, kind) ? item : undefined;
 
-function ItemBody(props: { readonly item: Item; readonly renderers: Renderers }) {
+function ItemBody(props: ItemProps & { readonly item: Item }) {
   return (
     <Switch>
       <Match when={asKind(props.item, "input")}>
@@ -43,7 +53,13 @@ function ItemBody(props: { readonly item: Item; readonly renderers: Renderers })
       <Match when={asKind(props.item, "reply")}>
         {(reply) => <Reply text={reply().text} isLive={reply().isLive} />}
       </Match>
-      <Match when={asKind(props.item, "tool")}>{(tool) => <WorkRow item={tool()} />}</Match>
+      <Match when={asKind(props.item, "tool")}>
+        {(tool) => (
+          <Show when={props.renderers.tools.get(tool().name)} fallback={<WorkRow item={tool()} />}>
+            {(component) => <Dynamic component={component()} item={tool()} state={props.state} />}
+          </Show>
+        )}
+      </Match>
       <Match when={asKind(props.item, "notice")}>
         {(notice) => <Notice level={notice().level} text={notice().text} />}
       </Match>
@@ -52,7 +68,7 @@ function ItemBody(props: { readonly item: Item; readonly renderers: Renderers })
       </Match>
       <Match when={asKind(props.item, "event")}>
         {(event) => (
-          <Show when={props.renderers.get(event().event.kind)}>
+          <Show when={props.renderers.events.get(event().event.kind)}>
             {(component) => <Dynamic component={component()} event={event().event} />}
           </Show>
         )}
@@ -64,7 +80,7 @@ function ItemBody(props: { readonly item: Item; readonly renderers: Renderers })
 /** Replies, tools and notices sit in from the inputs. */
 const INDENT = 3;
 
-export function Turn(props: { readonly turn: TurnData; readonly renderers: Renderers }) {
+export function Turn(props: ItemProps & { readonly turn: TurnData }) {
   const isToolAt = (index: number) => props.turn.items[index]?.kind === "tool";
 
   const spaceAbove = (index: number) =>
@@ -87,7 +103,7 @@ export function Turn(props: { readonly turn: TurnData; readonly renderers: Rende
               marginTop={spaceAbove(index())}
               paddingLeft={item.kind === "input" ? 0 : INDENT}
             >
-              <ItemBody item={item} renderers={props.renderers} />
+              <ItemBody item={item} renderers={props.renderers} state={props.state} />
             </box>
           )}
         </For>

@@ -42,6 +42,21 @@ Type `/` as the first character of the draft to list commands. Keep typing to fi
 | `/connect` | Connect a provider, as `liminal connect` does. See below |
 | `/theme` | Pick a palette. Moving through the list shows each; Enter saves it, Esc puts the saved one back |
 | `/pop` | List this folder's stashes. Enter puts one back after the draft and removes it from the list; Ctrl+D asks, then removes it |
+| `/qna` | Have the model ask you questions before it goes on. See below |
+
+### Answer the model's questions
+
+Type `/qna`, alone or followed by what the questions should be about, and send it. The model then asks you a form of questions in the composer's place. Each question has its own tab, and the last tab, `notes`, holds anything else you want to add. A suggested answer is marked `(suggested)`.
+
+| Key | Does |
+| --- | --- |
+| Up, Down | Choose an option, or the row for your own answer |
+| Enter | Pick the option or accept the written answer; on the `notes` tab, send the answers |
+| `n` | Pick the option and write a note on it; Enter keeps the note, Esc drops it |
+| Tab, Shift+Tab | Next and previous tab |
+| Esc | Cancel the turn |
+
+The transcript shows the form's title and how many questions you answered. Click that row to open your answers under it, and again to close them; a row that has something to open brightens under the mouse. The model can ask only in the turn that takes your `/qna`. Print mode never asks.
 
 ### Open a saved session
 

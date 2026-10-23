@@ -22,6 +22,7 @@ import {
 
 import { fetchList } from "../list.ts";
 import { authFailed } from "../sign.ts";
+import { apiToolChanges } from "../tool-changes.ts";
 
 const keyVariable = "OPENAI_API_KEY";
 
@@ -86,10 +87,10 @@ export const registerOpenAi = Effect.gen(function* () {
 
   const languageModel = Effect.fn("OpenAI.languageModel")(function* (
     model: string,
-    { thinking, cacheKey }: LanguageModelOptions,
+    { thinking, cacheKey, toolChanges }: LanguageModelOptions,
   ) {
     return yield* withHttp(
-      responsesModel({ apiKey: yield* apiKey }, model, { thinking, cacheKey }),
+      responsesModel({ apiKey: yield* apiKey }, model, { thinking, cacheKey, toolChanges }),
     );
   });
 
@@ -104,6 +105,7 @@ export const registerOpenAi = Effect.gen(function* () {
     defaults: { main: { model: "openai/gpt-6.1-sol" }, small: { model: "openai/gpt-6-luna" } },
     signedIn: login.signedIn,
     models,
+    nativeToolChanges: apiToolChanges,
     languageModel,
     // The Decisions API takes only API keys, so `chatgpt` and `codex` offer no classifier.
     classifiers: Effect.succeed([{ id: "openai/gpt-6-luna", name: "GPT-6 Luna" }]),

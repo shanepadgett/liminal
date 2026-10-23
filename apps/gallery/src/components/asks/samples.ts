@@ -13,7 +13,7 @@ export const SHELL_INPUT = "rm -rf node_modules packages/*/node_modules && bun i
 
 export const FORM_TITLE = "Before I rewrite the concurrency test";
 
-const QUESTIONS: readonly Question[] = [
+export const QUESTIONS: readonly Question[] = [
   {
     kind: "select",
     prompt: "How should the test tell that two plugins started together?",
@@ -50,17 +50,17 @@ const QUESTIONS: readonly Question[] = [
   },
 ];
 
-const OPEN_CHOICE: Draft = { kind: "choice", picked: undefined, own: "", notes: {} };
+const OPEN_CHOICE: Draft = { kind: "choice", picked: undefined, own: "", note: "" };
 
 const UNANSWERED: readonly Draft[] = QUESTIONS.map((question): Draft =>
   question.kind === "input" ? { kind: "text", text: "" } : OPEN_CHOICE,
 );
 
-const ANSWERED: readonly Draft[] = [
-  { kind: "choice", picked: 0, own: "", notes: { 1: "CI is slow, so no timing margins." } },
-  { kind: "choice", picked: 0, own: "", notes: {} },
+export const FORM_ANSWERED: readonly Draft[] = [
+  { kind: "choice", picked: 0, own: "", note: "CI is slow, so no timing margins." },
+  { kind: "choice", picked: 0, own: "", note: "" },
   { kind: "text", text: "runs independent plugins at the same time" },
-  { kind: "choice", picked: "own", own: "Inline it. It is one comparison.", notes: {} },
+  { kind: "choice", picked: "own", own: "Inline it. It is one comparison.", note: "" },
 ];
 
 /**
@@ -73,9 +73,9 @@ const formAt = (tab: number, row: number, draft?: Draft): Form => ({
   drafts: UNANSWERED.map((open, index) => {
     if (index === tab) return draft ?? open;
 
-    return index < tab ? (ANSWERED[index] ?? open) : open;
+    return index < tab ? (FORM_ANSWERED[index] ?? open) : open;
   }),
-  context: "",
+  additionalNotes: "",
   tab,
   row,
 });
@@ -83,8 +83,8 @@ const formAt = (tab: number, row: number, draft?: Draft): Form => ({
 export const FORM_CHOOSING = formAt(0, 1);
 
 export const FORM_NOTING: Form = {
-  ...formAt(0, 1, { kind: "choice", picked: 0, own: "", notes: { 1: "CI is slow" } }),
-  noting: 1,
+  ...formAt(0, 0, { kind: "choice", picked: 0, own: "", note: "CI is slow" }),
+  isNoting: true,
 };
 
 export const FORM_CONFIRMING = formAt(1, 0);
@@ -95,11 +95,11 @@ export const FORM_OWN = formAt(3, 2, {
   kind: "choice",
   picked: "own",
   own: "Inline it.",
-  notes: {},
+  note: "",
 });
 
-export const FORM_CONTEXT: Form = {
+export const FORM_ADDITIONAL_NOTES: Form = {
   ...formAt(QUESTIONS.length, 0),
-  drafts: ANSWERED,
-  context: "Keep the test under twenty lines.",
+  drafts: FORM_ANSWERED,
+  additionalNotes: "Keep the test under twenty lines.",
 };

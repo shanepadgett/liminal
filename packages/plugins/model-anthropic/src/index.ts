@@ -64,6 +64,15 @@ const signing = (
     }),
   );
 
+/** The models that take `tool_addition` and `tool_removal` blocks, from Pi's model lists. */
+const nativeModels = [
+  /^claude-opus-(?:4[.-]8|5(?:[.-]5)?)(?:-\d{8})?$/,
+  /^claude-(?:sonnet|haiku)-5[.-]5(?:-\d{8})?$/,
+  /^claude-(?:fable|mythos)-5(?:[.-]1)?(?:-\d{8})?$/,
+];
+
+const nativeToolChanges = (model: string) => nativeModels.some((pattern) => pattern.test(model));
+
 const register = Effect.gen(function* () {
   const http = yield* HttpClient.HttpClient;
   const withHttp = Effect.provideService(HttpClient.HttpClient, http);
@@ -82,11 +91,13 @@ const register = Effect.gen(function* () {
   const languageModel = Effect.fn("Anthropic.languageModel")(function* (
     model: string,
     // Anthropic caches by prefix and ignores the cache key.
-    { thinking, details }: LanguageModelOptions,
+    { thinking, details, toolChanges }: LanguageModelOptions,
   ) {
     const outputLimit = details?.outputLimit;
 
-    return yield* withHttp(messagesModel(yield* options, model, { thinking, outputLimit }));
+    return yield* withHttp(
+      messagesModel(yield* options, model, { thinking, outputLimit, toolChanges }),
+    );
   });
 
   yield* (yield* ModelProviders).add({
@@ -99,6 +110,7 @@ const register = Effect.gen(function* () {
     },
     signedIn: login.signedIn,
     models,
+    nativeToolChanges,
     languageModel,
   });
 });

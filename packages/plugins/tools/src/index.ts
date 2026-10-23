@@ -23,17 +23,13 @@ const runTool = (tools: ReadonlyArray<Tool>, request: ToolCallRequest) => {
   const context = { session: request.session, callId: call.id, attributes: request.attributes };
 
   return tool.run(call.params, context).pipe(
-    Effect.map(({ content, loads }) => {
-      const done: ToolResult = {
-        type: "tool-result",
-        callId: call.id,
-        name: call.name,
-        content,
-        isFailure: false,
-      };
-
-      return loads === undefined ? done : { ...done, loads };
-    }),
+    Effect.map(({ content }): ToolResult => ({
+      type: "tool-result",
+      callId: call.id,
+      name: call.name,
+      content,
+      isFailure: false,
+    })),
     Effect.catchTag("ToolFailed", (error) => Effect.succeed(failed(request, error.message))),
     Effect.catchDefect((defect) =>
       Effect.as(

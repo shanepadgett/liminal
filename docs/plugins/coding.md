@@ -26,7 +26,7 @@ Work for [status.md](../status.md) milestone 3.
 
 - Wraps `ToolCall`: a policy, then the small model's verdict, then the user.
 - The policy reads tool hints, such as read-only and destructive, added to `Tool` here, as MCP's annotations.
-- Asking the user is a `question` event; the answer is an input.
+- Asking the user is a kind made with `questions`' `defineQuestion`, drawn by a view added to its `AskViews`; the answer is an input.
 - `tui` entry shows the question in the composer's place until the user answers: the tool and what the call will do in the model's words, then Approve and Reject; Reject opens a note for telling the model why. The call's input stays in its transcript row. Nothing stays in the transcript once answered.
 - Print mode's `--approve` lets questions and approvals pass; without it they are denied.
 - Tool calls in one reply run at the same time, so `ToolCall` wraps run at the same time too. Pi and DeepSeek run their before-call checks one at a time in the order asked; decide whether approvals asks one question at a time the same way.
@@ -37,12 +37,6 @@ ToolCall.wrap((req, next) =>
   policy(req) === "allow" ? next(req)
   : Turns.request(req.session).pipe(Effect.flatMap(prefix =>
       Models.generateObject({ model: "small", prefix, prompt: review(req), schema: Verdict })))
-      .pipe(Effect.flatMap(v => v.safe ? next(req) : Questions.ask(req.session, approvalQuestion(req))
+      .pipe(Effect.flatMap(v => v.safe ? next(req) : approval.ask({ session: req.session, callId: req.call.id }, data(req))
       .pipe(Effect.flatMap(a => a.approved ? next(req) : Effect.succeed(denied(a)))))))
 ```
-
-## `questions`
-
-- Adds the `ask_question` tool and `/qna` command; `Questions.ask` for other plugins.
-- Questions are events; answers are inputs.
-- Previous code: `questions`.

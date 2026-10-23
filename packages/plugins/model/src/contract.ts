@@ -52,22 +52,9 @@ export const ToolResult = Schema.Struct({
   /** What the model reads; a failure is one text part. */
   content: Schema.Array(Schema.Union([Text, Image])),
   isFailure: Schema.Boolean,
-  /** Deferred tools this result loads, by name. */
-  loads: Schema.optionalKey(Schema.Array(Schema.String)),
 });
 
 export type ToolResult = typeof ToolResult.Type;
-
-export const Part = Schema.Union([Text, Image, Reasoning, ToolCall, ToolResult]);
-export type Part = typeof Part.Type;
-
-/** Users send text and images, assistants text, reasoning and tool calls, tools their results. */
-export const Message = Schema.Struct({
-  role: Schema.Literals(["user", "assistant", "tool"]),
-  parts: Schema.Array(Part),
-});
-
-export type Message = typeof Message.Type;
 
 /** A tool as the model is told about it; `input` is a JSON Schema for its params. */
 export const ToolDefinition = Schema.Struct({
@@ -77,6 +64,29 @@ export const ToolDefinition = Schema.Struct({
 });
 
 export type ToolDefinition = typeof ToolDefinition.Type;
+
+/**
+ * Tools offered or changed since the request's tools were declared, and tools withdrawn by name; in
+ * user messages only.
+ */
+export const ToolChange = Schema.Struct({
+  type: Schema.Literal("tool-change"),
+  added: Schema.Array(ToolDefinition),
+  removed: Schema.Array(Schema.String),
+});
+
+export type ToolChange = typeof ToolChange.Type;
+
+export const Part = Schema.Union([Text, Image, Reasoning, ToolCall, ToolResult, ToolChange]);
+export type Part = typeof Part.Type;
+
+/** Users send text and images, assistants text, reasoning and tool calls, tools their results. */
+export const Message = Schema.Struct({
+  role: Schema.Literals(["user", "assistant", "tool"]),
+  parts: Schema.Array(Part),
+});
+
+export type Message = typeof Message.Type;
 
 /** `provider/model`, such as `anthropic/claude-opus-5-5`. */
 export const ModelId = Schema.String;
@@ -160,6 +170,7 @@ export interface ModelRequest {
   readonly model: ModelId;
   readonly thinking?: string | undefined;
   readonly system: string;
+  /** The tools the session's tool list declared; later changes are `tool-change` parts. */
   readonly tools: ReadonlyArray<ToolDefinition>;
   readonly messages: ReadonlyArray<Message>;
   /** Missing is `auto`. */
@@ -172,12 +183,25 @@ export interface ModelRequest {
   readonly cacheKey?: string | undefined;
 }
 
+/**
+ * A request's tool changes for a provider that takes them natively. The prompt holds each change as
+ * a system message, the only system messages after the first, and the request's tools are the tools
+ * after every change; a provider rewrites both, or sends them as they are.
+ */
+export interface ToolChanges {
+  readonly declared: ReadonlyArray<ToolDefinition>;
+  /** In the order their system messages appear. */
+  readonly changes: ReadonlyArray<ToolChange>;
+}
+
 /** How a provider sets up a language model for one request. */
 export interface LanguageModelOptions {
   readonly thinking?: string | undefined;
   readonly cacheKey?: string | undefined;
   /** Missing when the catalog does not list the model or cannot be read. */
   readonly details?: ModelDetails | undefined;
+  /** Set only when the provider takes the model's tool changes natively and there are some. */
+  readonly toolChanges?: ToolChanges | undefined;
 }
 
 /** A failed attempt that will be tried again; the reply so far is void. */
@@ -218,6 +242,11 @@ export interface ModelProvider {
   readonly signedIn: Effect.Effect<boolean>;
   /** Its models, without details; `model` adds them from the catalog. */
   readonly models: Effect.Effect<ReadonlyArray<ModelInfo>, AiError.AiError>;
+  /**
+   * Whether `model`, without the `provider/` prefix, takes tool changes mid-conversation; missing
+   * takes none, and each change is a note and a changed tool list.
+   */
+  readonly nativeToolChanges?: ((model: string) => boolean) | undefined;
   /** An Effect AI language model for one of its models, without the `provider/` prefix. */
   readonly languageModel: (
     model: string,

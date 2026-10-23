@@ -40,7 +40,7 @@ const PROMPT = "❯";
 const CONTINUATION = "╎";
 
 /** The gutter's marks down `rows` rows. */
-function Gutter(props: { readonly rows: number }) {
+export function Gutter(props: { readonly rows: number }) {
   const color = useColor();
   const mix = useMix();
 

@@ -15,7 +15,7 @@ import {
   type ModelRequest,
   type Retrying,
 } from "./contract.ts";
-import { promptOf, replay, toolkitOf } from "./prompt.ts";
+import { promptOf, replay, toolChangesOf, toolkitOf, toolsAfterChanges } from "./prompt.ts";
 import { defaultAttempts, ModelSetting } from "./setting.ts";
 
 /** The provider `id` names and its own name for the model. */
@@ -51,24 +51,34 @@ export const detailsOf = (catalog: ModelCatalog["Service"], provider: ModelProvi
   );
 };
 
+/** The request's tool changes when the provider takes them natively for `model`. */
+const nativeChangesOf = (provider: ModelProvider, model: string, request: ModelRequest) => {
+  const changes = toolChangesOf(request);
+  const isNative = changes.length > 0 && provider.nativeToolChanges?.(model) === true;
+
+  return isNative ? { declared: request.tools, changes } : undefined;
+};
+
 /** One try: the provider's language model streams the reply, or makes it whole for an output. */
 const attempt = (
   provider: ModelProvider,
   model: string,
   request: ModelRequest,
   details: ModelDetails | undefined,
-) =>
-  Stream.unwrap(
+) => {
+  const toolChanges = nativeChangesOf(provider, model, request);
+  const { thinking, cacheKey } = request;
+
+  return Stream.unwrap(
     Effect.map(
-      provider.languageModel(model, {
-        thinking: request.thinking,
-        cacheKey: request.cacheKey,
-        details,
-      }),
+      provider.languageModel(model, { thinking, cacheKey, details, toolChanges }),
       (language) => {
         const options = {
-          prompt: promptOf(request, details?.images !== false),
-          toolkit: toolkitOf(request.tools),
+          prompt: promptOf(request, {
+            images: details?.images !== false,
+            isNative: toolChanges !== undefined,
+          }),
+          toolkit: toolkitOf(toolsAfterChanges(request)),
           toolChoice: request.toolChoice ?? "auto",
           disableToolCallResolution: true,
           toolCallValidation: "deferred",
@@ -87,6 +97,7 @@ const attempt = (
       },
     ),
   );
+};
 
 /** Waits `retryAfter` when the provider gives it, else 1s, 2s, 4s and on. */
 const delayOf = (error: AiError.AiError, tried: number) =>

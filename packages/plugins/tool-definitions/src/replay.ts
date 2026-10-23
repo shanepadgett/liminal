@@ -6,25 +6,36 @@ import type { SessionEvent } from "@shanepadgett/liminal-session/contract";
 
 import { ToolListChange, ToolListRecord } from "./contract.ts";
 
-/** A logged tool; a removed one is still sent until the next fold. */
+/** A logged tool; a removed one is still sent until the next fold, but it is not offered. */
 interface Known {
   readonly definition: ToolDefinition;
   readonly removed: boolean;
 }
 
-/** The latest list with every later change applied, by name in first-logged order. */
-export const replay = Effect.fn("replay")(function* (events: ReadonlyArray<SessionEvent>) {
-  const index = events.findLastIndex((event) => event.kind === ToolListRecord.kind);
-  const event = events[index];
-  if (event === undefined) return Option.none<ReadonlyMap<string, Known>>();
+const lastListIndex = (events: ReadonlyArray<SessionEvent>) =>
+  events.findLastIndex((event) => event.kind === ToolListRecord.kind);
+
+/** The tools the latest list declared; none before the first list. */
+export const declared = Effect.fn("declared")(function* (events: ReadonlyArray<SessionEvent>) {
+  const event = events[lastListIndex(events)];
+  if (event === undefined) return [];
 
   const listed = yield* ToolListRecord.decode(event);
+
+  return Option.match(listed, {
+    onNone: (): ReadonlyArray<ToolDefinition> => [],
+    onSome: ({ tools }) => tools,
+  });
+});
+
+/** The latest list with every later change applied, by name in first-logged order. */
+export const replay = Effect.fn("replay")(function* (events: ReadonlyArray<SessionEvent>) {
+  const index = lastListIndex(events);
+  if (index < 0) return Option.none<ReadonlyMap<string, Known>>();
+
   const known = new Map<string, Known>();
 
-  for (const definition of Option.match(listed, {
-    onNone: () => [],
-    onSome: ({ tools }) => tools,
-  })) {
+  for (const definition of yield* declared(events)) {
     known.set(definition.name, { definition, removed: false });
   }
 
@@ -45,11 +56,27 @@ export const replay = Effect.fn("replay")(function* (events: ReadonlyArray<Sessi
   return Option.some<ReadonlyMap<string, Known>>(known);
 });
 
+/** The names of the tools offered now: logged and not removed. */
+export const offeredOf = (known: Option.Option<ReadonlyMap<string, Known>>) =>
+  new Set(
+    Option.match(known, {
+      onNone: () => [],
+      onSome: (tools) => [...tools].flatMap(([name, tool]) => (tool.removed ? [] : [name])),
+    }),
+  );
+
 const same = (left: ToolDefinition, right: ToolDefinition) =>
   JSON.stringify(left) === JSON.stringify(right);
 
-/** Tools that are new or changed, and logged tools that are gone. */
-export const diff = (known: ReadonlyMap<string, Known>, current: ReadonlyArray<ToolDefinition>) => {
+/**
+ * Tools that are new or changed, and logged tools that are gone; tools in `kept`, such as offered
+ * deferred tools, are never gone.
+ */
+export const diff = (
+  known: ReadonlyMap<string, Known>,
+  current: ReadonlyArray<ToolDefinition>,
+  kept: ReadonlySet<string>,
+) => {
   const names = new Set(current.map(({ name }) => name));
 
   const added = current.filter((definition) => {
@@ -59,25 +86,8 @@ export const diff = (known: ReadonlyMap<string, Known>, current: ReadonlyArray<T
   });
 
   const removed = [...known].flatMap(([name, tool]) =>
-    tool.removed || names.has(name) ? [] : [name],
+    tool.removed || names.has(name) || kept.has(name) ? [] : [name],
   );
 
   return { added, removed };
-};
-
-/** A change note as the model reads it. */
-export const changeText = (
-  added: ReadonlyArray<ToolDefinition>,
-  removed: ReadonlyArray<string>,
-) => {
-  const lines = [
-    ...(added.length > 0
-      ? [
-          `Tools added or changed: ${added.map(({ name }) => name).join(", ")}. Their definitions are in your tool list.`,
-        ]
-      : []),
-    ...(removed.length > 0 ? [`Tools removed: ${removed.join(", ")}. Do not call them.`] : []),
-  ];
-
-  return `<tool-update>\n${lines.join("\n")}\n</tool-update>`;
 };

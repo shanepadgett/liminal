@@ -93,6 +93,10 @@
 			"definition": "One unit of behavior, built with definePlugin as an Effect layer, that adds to, wraps, attaches to or replaces other plugins."
 		},
 		{
+			"term": "Porter",
+			"definition": "The little face that murmurs words while a turn runs; plugins change his words and faces through moods."
+		},
+		{
 			"term": "print mode",
 			"definition": "The CLI running without the TUI, writing the reply or events to stdout."
 		},

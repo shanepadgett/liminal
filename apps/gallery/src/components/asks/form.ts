@@ -1,6 +1,7 @@
 /**
  * The model's questions and the form the user answers them in: one tab per question and a last one
- * for anything else the model should know. Questions left open are sent as skipped.
+ * for additional notes: anything else the model should know. Questions left open are sent as
+ * skipped.
  */
 
 import type { Hint } from "../../primitives/Hints.tsx";
@@ -41,8 +42,8 @@ export type Draft =
       /** An option's index, `"own"` for the user's own answer, or none yet. */
       readonly picked: number | "own" | undefined;
       readonly own: string;
-      /** The user's notes by option index. */
-      readonly notes: Readonly<Record<number, string>>;
+      /** The user's note on the option they picked, such as why they picked it. */
+      readonly note: string;
     }
   | { readonly kind: "text"; readonly text: string };
 
@@ -50,13 +51,14 @@ export interface Form {
   readonly title: string;
   readonly questions: readonly Question[];
   readonly drafts: readonly Draft[];
-  readonly context: string;
-  /** A question's index, or `questions.length` for the context tab. */
+  /** Anything else the user wants the model to know. */
+  readonly additionalNotes: string;
+  /** A question's index, or `questions.length` for the additional notes tab. */
   readonly tab: number;
   /** The row under the cursor in a question with options. */
   readonly row: number;
-  /** The option whose note is being written. */
-  readonly noting?: number;
+  /** Whether the note on the picked option is being written. */
+  readonly isNoting?: boolean;
 }
 
 export const isAnswered = (draft: Draft) => {
@@ -88,7 +90,7 @@ const WRITING: readonly Hint[] = [
   { keys: "esc", label: "cancel" },
 ];
 
-const CONTEXT: readonly Hint[] = [
+const ADDITIONAL_NOTES: readonly Hint[] = [
   { keys: "enter", label: "send answers" },
   { keys: "shift+tab", label: "back" },
   { keys: "esc", label: "cancel" },
@@ -98,8 +100,8 @@ const CONTEXT: readonly Hint[] = [
 export const formHintsOf = (form: Form): readonly Hint[] => {
   const question = form.questions.at(form.tab);
 
-  if (question === undefined) return CONTEXT;
-  if (form.noting !== undefined) return NOTING;
+  if (question === undefined) return ADDITIONAL_NOTES;
+  if (form.isNoting === true) return NOTING;
   if (question.kind === "input" || form.row === ownRowOf(question)) return WRITING;
 
   return CHOOSING;

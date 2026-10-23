@@ -23,6 +23,7 @@ import modelOpencodeGo from "@shanepadgett/liminal-model-opencode-go";
 import modelOpenrouter from "@shanepadgett/liminal-model-openrouter";
 import palette from "@shanepadgett/liminal-palette";
 import persona from "@shanepadgett/liminal-persona";
+import questions from "@shanepadgett/liminal-questions";
 import session from "@shanepadgett/liminal-session";
 import sessionPicker from "@shanepadgett/liminal-session-picker";
 import settings from "@shanepadgett/liminal-settings";
@@ -80,6 +81,7 @@ export const plugins = [
   tags,
   theme,
   chat,
+  questions,
   stash,
   slash,
   palette,

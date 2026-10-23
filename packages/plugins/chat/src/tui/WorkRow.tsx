@@ -1,19 +1,19 @@
 /**
  * One line per tool call: an icon for where it stands, the tool and its input. Everything but the
  * icon sits dimmed, so the replies around the rows read first. An input too long for the line is
- * cut in the middle, keeping its end. While the model writes a call, its input inks in.
+ * cut in the middle, keeping its end. While the model writes a call, its input inks in. A row with
+ * details brightens under the mouse, and a click opens or closes the details under it.
  */
 
 import { type BoxRenderable } from "@opentui/core";
+import type { JSX } from "@opentui/solid";
 import { Predicate } from "effect";
-import { createSignal, For } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 
 import type { RoleName } from "@shanepadgett/liminal-client";
 import { kit, useColor, useMix } from "@shanepadgett/liminal-tui";
 
-import type { Item, ToolStatus } from "../view/index.ts";
-
-type ToolItem = Extract<Item, { readonly kind: "tool" }>;
+import type { ToolItem, ToolStatus } from "../view/index.ts";
 
 const ICON: Readonly<Record<ToolStatus, { readonly glyph: string; readonly role: RoleName }>> = {
   running: { glyph: "○", role: "text.accent" },
@@ -25,6 +25,9 @@ const TOOL_COLUMNS = 7;
 
 /** How much of its brightness a row keeps beside a reply. */
 const ROW_OPACITY = 0.3;
+
+/** How much a row with details keeps under the mouse. */
+const HOVER_OPACITY = 0.5;
 
 const ELLIPSIS = "…";
 
@@ -54,11 +57,23 @@ const cutMiddle = (cells: readonly string[], width: number): readonly string[] =
   return [...cells.slice(0, head), ELLIPSIS, ...cells.slice(cells.length - (width - 1 - head))];
 };
 
-export function WorkRow(props: { readonly item: ToolItem }) {
+interface WorkRowProps {
+  readonly item: ToolItem;
+  /**
+   * Draws what a click opens under the row, such as the call's output; without it the row stays
+   * still. Called each time the row opens, since closing it destroys what was drawn.
+   */
+  readonly details?: (() => JSX.Element) | undefined;
+}
+
+export function WorkRow(props: WorkRowProps) {
   const color = useColor();
   const mix = useMix();
   const [box, setBox] = createSignal<BoxRenderable>();
   const [width, setWidth] = createSignal(0);
+  const [isHovered, setHovered] = createSignal(false);
+  const [isOpen, setOpen] = createSignal(false);
+  const hasDetails = () => props.details !== undefined;
 
   const cells = () =>
     cutMiddle(
@@ -80,23 +95,33 @@ export function WorkRow(props: { readonly item: ToolItem }) {
   const icon = () => ICON[props.item.status];
 
   return (
-    <box flexDirection="row">
-      <text width={2} flexShrink={0} fg={color(icon().role)}>
-        {icon().glyph}
-      </text>
+    <box>
       <box
-        ref={setBox}
-        flexGrow={1}
-        opacity={ROW_OPACITY}
-        onSizeChange={() => {
-          setWidth(box()?.width ?? 0);
+        flexDirection="row"
+        onMouseOver={() => setHovered(true)}
+        onMouseOut={() => setHovered(false)}
+        onMouseUp={() => {
+          if (hasDetails()) setOpen(!isOpen());
         }}
       >
-        <text wrapMode="none">
-          <span style={{ fg: color("text.base") }}>{props.item.name.padEnd(TOOL_COLUMNS)}</span>
-          <For each={runs()}>{(run) => <span style={{ fg: run.fg }}>{run.text}</span>}</For>
+        <text width={2} flexShrink={0} fg={color(icon().role)}>
+          {icon().glyph}
         </text>
+        <box
+          ref={setBox}
+          flexGrow={1}
+          opacity={isHovered() && hasDetails() ? HOVER_OPACITY : ROW_OPACITY}
+          onSizeChange={() => {
+            setWidth(box()?.width ?? 0);
+          }}
+        >
+          <text wrapMode="none">
+            <span style={{ fg: color("text.base") }}>{props.item.name.padEnd(TOOL_COLUMNS)}</span>
+            <For each={runs()}>{(run) => <span style={{ fg: run.fg }}>{run.text}</span>}</For>
+          </text>
+        </box>
       </box>
+      <Show when={isOpen() ? props.details : undefined}>{(details) => details()()}</Show>
     </box>
   );
 }

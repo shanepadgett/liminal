@@ -11,6 +11,7 @@ import { responsesModel } from "@shanepadgett/liminal-model-wire/responses";
 import { type LanguageModelOptions, ModelProviders } from "@shanepadgett/liminal-model/contract";
 
 import { freshTokens } from "../sign.ts";
+import { codexToolChanges } from "../tool-changes.ts";
 import { apiUrl, codexModels, signedAs } from "./backend.ts";
 import { codexLogin } from "./logins.ts";
 import { refreshTokens } from "./tokens.ts";
@@ -30,12 +31,12 @@ export const registerCodex = Effect.gen(function* () {
 
   const languageModel = Effect.fn("Codex.languageModel")(function* (
     model: string,
-    { thinking, cacheKey }: LanguageModelOptions,
+    { thinking, cacheKey, toolChanges }: LanguageModelOptions,
   ) {
     const transformClient = HttpClient.mapRequest(signedAs(yield* tokens, cacheKey));
 
     return yield* withHttp(
-      responsesModel({ apiUrl, transformClient }, model, { thinking, cacheKey }),
+      responsesModel({ apiUrl, transformClient }, model, { thinking, cacheKey, toolChanges }),
     );
   });
 
@@ -47,6 +48,7 @@ export const registerCodex = Effect.gen(function* () {
     defaults: { main: { model: "codex/gpt-6.1-sol" }, small: { model: "codex/gpt-6-luna" } },
     signedIn: credentialSaved(credentials, "codex"),
     models: Effect.flatMap(tokens, (signed) => codexModels(http, signed)),
+    nativeToolChanges: codexToolChanges,
     languageModel,
   });
 });

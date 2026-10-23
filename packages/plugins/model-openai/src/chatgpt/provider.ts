@@ -12,6 +12,7 @@ import { type LanguageModelOptions, ModelProviders } from "@shanepadgett/liminal
 
 import { planModelInfo, planModels } from "../list.ts";
 import { freshTokens } from "../sign.ts";
+import { apiToolChanges } from "../tool-changes.ts";
 import { refreshTokens, resource } from "./auth.ts";
 import { makeHostId } from "./host-id.ts";
 import { chatgptLogin } from "./login.ts";
@@ -46,12 +47,16 @@ export const registerChatgpt = Effect.gen(function* () {
 
   const languageModel = Effect.fn("Chatgpt.languageModel")(function* (
     model: string,
-    { thinking, cacheKey }: LanguageModelOptions,
+    { thinking, cacheKey, toolChanges }: LanguageModelOptions,
   ) {
     const { access } = yield* tokens;
 
     return yield* withHttp(
-      responsesModel({ apiUrl: resource, apiKey: access }, model, { thinking, cacheKey }),
+      responsesModel({ apiUrl: resource, apiKey: access }, model, {
+        thinking,
+        cacheKey,
+        toolChanges,
+      }),
     );
   });
 
@@ -62,6 +67,7 @@ export const registerChatgpt = Effect.gen(function* () {
     defaults: { main: { model: "chatgpt/gpt-6.1-sol" }, small: { model: "chatgpt/gpt-6-luna" } },
     signedIn: credentialSaved(credentials, "chatgpt"),
     models,
+    nativeToolChanges: apiToolChanges,
     languageModel,
   });
 });

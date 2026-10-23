@@ -3,6 +3,9 @@ import { AnthropicClient, AnthropicLanguageModel } from "@effect/ai-anthropic";
 import { Effect } from "effect";
 import { AiError } from "effect/ai";
 
+import { messagesToolChanges } from "./messages-tools.ts";
+import { type ToolChanges, withToolChanges } from "./tool-changes.ts";
+
 /** Where to send Messages calls and how to sign them. */
 export type MessagesOptions = AnthropicClient.Options;
 
@@ -27,19 +30,26 @@ const thinkingConfigOf = (thinking: string | undefined): Config => {
   };
 };
 
-/** A model's thinking level and output limit; a missing limit leaves Effect AI to guess it. */
+/**
+ * A model's thinking level and output limit, and its tool changes when it takes them natively; a
+ * missing limit leaves Effect AI to guess it.
+ */
 export interface MessagesModelOptions {
   readonly thinking?: string | undefined;
   readonly outputLimit?: number | undefined;
+  readonly toolChanges?: ToolChanges | undefined;
 }
 
 /** An Effect AI language model for `model` on a Messages API. */
 export const messagesModel = Effect.fn("messagesModel")(function* (
   options: MessagesOptions,
   model: string,
-  { thinking, outputLimit }: MessagesModelOptions,
+  { thinking, outputLimit, toolChanges }: MessagesModelOptions,
 ) {
-  const client = yield* AnthropicClient.make(options);
+  const client = yield* AnthropicClient.make(
+    withToolChanges(options, toolChanges, messagesToolChanges),
+  );
+
   const thinkingConfig = thinkingConfigOf(thinking);
 
   const config: Config =

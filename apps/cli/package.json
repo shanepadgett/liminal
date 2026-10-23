@@ -28,6 +28,7 @@
     "@shanepadgett/liminal-model-openrouter": "workspace:*",
     "@shanepadgett/liminal-palette": "workspace:*",
     "@shanepadgett/liminal-persona": "workspace:*",
+    "@shanepadgett/liminal-questions": "workspace:*",
     "@shanepadgett/liminal-session": "workspace:*",
     "@shanepadgett/liminal-session-picker": "workspace:*",
     "@shanepadgett/liminal-settings": "workspace:*",

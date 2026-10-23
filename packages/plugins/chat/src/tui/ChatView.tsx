@@ -8,6 +8,7 @@
 
 import type { BoxRenderable } from "@opentui/core";
 import { useBindings } from "@opentui/keymap/solid";
+import { Dynamic } from "@opentui/solid";
 import { Effect, Option } from "effect";
 import {
   type Accessor,
@@ -17,6 +18,7 @@ import {
   Match,
   onMount,
   Show,
+  splitProps,
   Switch,
 } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
@@ -42,8 +44,15 @@ import {
   type ChatSend,
   type ChatSendRequest,
   composer,
+  type ComposerCover,
+  type ComposerCovers,
+  type CoverProps,
   type ItemRenderer,
+  type Mood,
+  type MoodProps,
+  type Moods,
   sidebar,
+  type ToolRows,
 } from "./slots.ts";
 import { type Renderers, Turn } from "./Turn.tsx";
 
@@ -83,7 +92,7 @@ const useTurns = (state: Parameters<typeof buildTranscript>[0], renderers: Acces
   const [turns, setTurns] = createStore<{ list: TurnData[] }>({ list: [] });
 
   createEffect(() => {
-    const built = buildTranscript(state, new Set(renderers().keys()));
+    const built = buildTranscript(state, new Set(renderers().events.keys()));
 
     setTurns("list", reconcile([...built], { key: "id" }));
   });
@@ -91,9 +100,50 @@ const useTurns = (state: Parameters<typeof buildTranscript>[0], renderers: Acces
   return () => turns.list;
 };
 
+/** The composer, or the first cover active in its place. */
+function ComposerPlace(props: CoverProps & { readonly covers: ReadonlyArray<ComposerCover> }) {
+  const [local, coverProps] = splitProps(props, ["covers"]);
+  const cover = () => local.covers.find((each) => each.active(coverProps));
+
+  return (
+    <Show
+      when={cover()}
+      fallback={
+        <SlotView
+          slot={composer}
+          running={props.running}
+          queued={props.queued}
+          send={props.send}
+          cancel={props.cancel}
+          pullBack={props.pullBack}
+        />
+      }
+    >
+      {(active) => <Dynamic component={active().component} {...coverProps} />}
+    </Show>
+  );
+}
+
+/** The first active mood, which the header and Porter both follow; none leaves them their own. */
+const moodOf = (moods: ReadonlyArray<Mood>, props: MoodProps) =>
+  moods.find((each) => each.active(props));
+
+/** Porter, in the mood's words and faces, else his own. */
+function Working(props: MoodProps & { readonly mood: Mood | undefined }) {
+  const [local, moodProps] = splitProps(props, ["mood"]);
+
+  return (
+    <box paddingLeft={3}>
+      <kit.Porter words={local.mood?.words(moodProps)} poses={local.mood?.poses} />
+    </box>
+  );
+}
+
 function SessionScreen(props: {
   readonly session: SessionId;
   readonly renderers: Accessor<Renderers>;
+  readonly covers: Accessor<ReadonlyArray<ComposerCover>>;
+  readonly moods: Accessor<ReadonlyArray<Mood>>;
   readonly isSidebarOpen: boolean;
   readonly closeSidebar: () => void;
   readonly draft: Draft;
@@ -102,23 +152,26 @@ function SessionScreen(props: {
   const run = useRun();
   const view = useSessionView(props.session);
   const turns = useTurns(view.state, props.renderers);
+  const mood = () => moodOf(props.moods(), { session: props.session, state: view.state });
 
   return (
     <Layout
-      header={<Header isWorking={view.state.running} />}
+      header={<Header isScanning={view.state.running && mood()?.header !== "still"} />}
       transcript={
         <>
-          <For each={turns()}>{(turn) => <Turn turn={turn} renderers={props.renderers()} />}</For>
+          <For each={turns()}>
+            {(turn) => <Turn turn={turn} renderers={props.renderers()} state={view.state} />}
+          </For>
           <Show when={view.state.running && !isWriting(view.state)}>
-            <box paddingLeft={3}>
-              <kit.Spinner />
-            </box>
+            <Working mood={mood()} session={props.session} state={view.state} />
           </Show>
         </>
       }
       composer={
-        <SlotView
-          slot={composer}
+        <ComposerPlace
+          covers={props.covers()}
+          session={props.session}
+          state={view.state}
           running={view.state.running}
           queued={view.state.queued}
           send={props.send}
@@ -226,28 +279,60 @@ const sendText = Effect.fn("ChatView.send")(function* (
   );
 });
 
+/** What other plugins added to the transcript and the composer's place, read once it draws. */
+const useAdded = (props: {
+  readonly views: ItemRenderer["Service"];
+  readonly toolRows: ToolRows["Service"];
+  readonly covers: ComposerCovers["Service"];
+  readonly moods: Moods["Service"];
+}) => {
+  const run = useRun();
+
+  const [renderers, setRenderers] = createSignal<Renderers>({
+    events: new Map(),
+    tools: new Map(),
+  });
+
+  const [covers, setCovers] = createSignal<ReadonlyArray<ComposerCover>>([]);
+  const [moods, setMoods] = createSignal<ReadonlyArray<Mood>>([]);
+
+  onMount(() => {
+    run(
+      Effect.map(
+        Effect.all([props.views.list, props.toolRows.list, props.covers.list, props.moods.list]),
+        ([views, rows, added, moodsAdded]) => {
+          setRenderers({
+            events: new Map(views.map((view) => [view.kind, view.component])),
+            tools: new Map(rows.map((row) => [row.tool, row.component])),
+          });
+
+          setCovers(added);
+          setMoods(moodsAdded);
+        },
+      ),
+    );
+  });
+
+  return { renderers, covers, moods };
+};
+
 export function ChatView(props: {
   readonly views: ItemRenderer["Service"];
+  readonly toolRows: ToolRows["Service"];
+  readonly covers: ComposerCovers["Service"];
+  readonly moods: Moods["Service"];
   readonly screen: Screen["Service"];
   readonly chatSend: ChatSend["Service"];
   readonly quit: () => void;
 }) {
   const run = useRun();
-  const [renderers, setRenderers] = createSignal<Renderers>(new Map());
+  const { renderers, covers, moods } = useAdded(props);
   const [isSidebarOpen, setSidebarOpen] = createSignal(false);
   const place = useSidebarPlace();
   const hasDrawer = () => props.screen.session() !== undefined && place().kind === "drawer";
   let root: BoxRenderable | undefined;
 
   useScreenKeys(props.quit, () => root, sidebarCommands(hasDrawer, isSidebarOpen, setSidebarOpen));
-
-  onMount(() => {
-    run(
-      Effect.map(props.views.list, (views) => {
-        setRenderers(new Map(views.map((view) => [view.kind, view.component])));
-      }),
-    );
-  });
 
   const send = (text: string, mode?: SendMode) => {
     run(sendText(props.screen, props.chatSend, text, mode));
@@ -270,6 +355,8 @@ export function ChatView(props: {
             <SessionScreen
               session={open}
               renderers={renderers}
+              covers={covers}
+              moods={moods}
               isSidebarOpen={isSidebarOpen()}
               closeSidebar={() => {
                 setSidebarOpen(false);

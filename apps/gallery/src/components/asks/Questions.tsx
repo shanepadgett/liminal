@@ -1,9 +1,9 @@
 /**
  * The model's questions, as a form in the draft's place: the form's title, a tab per question and a
- * last one for context, then the tab in view. A question with options lists them as rows to pick; a
- * note the user leaves hangs under its option, and a select question ends in a row for the user's
- * own answer. A written question and the context tab are a field. The answer the model suggests
- * closes the tab.
+ * last one for additional notes, then the tab in view. A question with options lists them as rows
+ * to pick; the user's note on the option they picked hangs under it, and a select question ends in
+ * a row for the user's own answer. A written question and the additional notes tab are a field. The
+ * answer the model suggests closes the tab.
  */
 
 import { Index, Match, Show, Switch } from "solid-js";
@@ -38,7 +38,7 @@ function Tabs(props: { readonly form: Form }) {
       text: `${index + 1}`,
       isDone: isAnswered(draft),
     })),
-    { text: "context", isDone: props.form.context.trim() !== "" },
+    { text: "notes", isDone: props.form.additionalNotes.trim() !== "" },
   ];
 
   return (
@@ -107,7 +107,7 @@ function ChoiceTab(props: {
   readonly question: Question;
   readonly draft: Choice;
   readonly row: number;
-  readonly noting: number | undefined;
+  readonly isNoting: boolean;
 }) {
   const options = () => optionsOf(props.question);
   const columns = () => labelColumnsOf(options().map((option) => option.label));
@@ -125,9 +125,9 @@ function ChoiceTab(props: {
               pick={props.draft.picked === index ? "picked" : "unpicked"}
             />
             <Note
-              note={props.draft.notes[index]}
-              isWriting={props.noting === index}
-              placeholder="Note on this option"
+              note={props.draft.picked === index ? props.draft.note : undefined}
+              isWriting={props.isNoting && props.draft.picked === index}
+              placeholder="Why this answer"
               indent={POINTER_COLUMNS + RING_COLUMNS}
             />
           </>
@@ -140,7 +140,7 @@ function ChoiceTab(props: {
   );
 }
 
-/** A field for a written answer or the context, after the composer's chevron. */
+/** A field for a written answer or the additional notes, after the composer's chevron. */
 function WriteField(props: { readonly text: string; readonly placeholder: string }) {
   return (
     <box marginTop={1}>
@@ -170,7 +170,7 @@ function QuestionTab(props: {
               question={props.question}
               draft={picking()}
               row={props.form.row}
-              noting={props.form.noting}
+              isNoting={props.form.isNoting === true}
             />
           )}
         </Match>
@@ -185,7 +185,7 @@ function QuestionTab(props: {
   );
 }
 
-function ContextTab(props: { readonly context: string }) {
+function AdditionalNotesTab(props: { readonly notes: string }) {
   const color = useColor();
 
   return (
@@ -194,7 +194,7 @@ function ContextTab(props: { readonly context: string }) {
         <span style={{ fg: color("text.base") }}>Anything else the model should know?</span>
         <span style={{ fg: color("text.faint") }}>{"  optional"}</span>
       </text>
-      <WriteField text={props.context} placeholder="Additional context" />
+      <WriteField text={props.notes} placeholder="Additional notes" />
     </>
   );
 }
@@ -207,7 +207,10 @@ export function Questions(props: { readonly form: Form }) {
     <Ask mark="?" markRole="text.accent" title={props.form.title}>
       <Tabs form={props.form} />
       <box marginTop={1}>
-        <Show when={question()} fallback={<ContextTab context={props.form.context} />}>
+        <Show
+          when={question()}
+          fallback={<AdditionalNotesTab notes={props.form.additionalNotes} />}
+        >
           {(asked) => (
             <Show when={draft()}>
               {(given) => <QuestionTab form={props.form} question={asked()} draft={given()} />}

@@ -19,10 +19,9 @@ export interface ToolContext {
   readonly attributes: Attributes;
 }
 
-/** A finished call: what the model sees, and the deferred tools it loads by name. */
+/** A finished call: what the model sees. */
 export interface ToolOutput {
   readonly content: ReadonlyArray<Text | Image>;
-  readonly loads?: ReadonlyArray<string> | undefined;
 }
 
 /** A call that failed, such as wrong params; the model sees `message`. */
@@ -34,7 +33,7 @@ export class ToolFailed extends Schema.TaggedError<ToolFailed, { readonly brand:
 interface ToolMarks {
   readonly name: string;
   readonly description: string;
-  /** Shown to the model by name only until a tool result loads it. */
+  /** Left out of a session's tools until a plugin offers it through `ToolList.offer`. */
   readonly deferred?: boolean | undefined;
   /** Makes every call in its reply run one after another. */
   readonly sequential?: boolean | undefined;

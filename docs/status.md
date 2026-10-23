@@ -56,7 +56,8 @@ Work: [plugins/coding.md](plugins/coding.md)
 - [ ] `edit` and `write` in `tools-files`, `tools-shell`, `tools-web`
 - [x] `instructions`, `environment`
 - [x] Recreate `.liminal/`; move `docs/instructions/` to `.liminal/instructions/` with `read-when` front matter
-- [ ] `approvals`, `questions`
+- [x] `questions`
+- [ ] `approvals`
 - [ ] Liminal works on its own repository
 - [ ] Settle the database schema: after this, a schema change adds a migration, and the one-migration rule in `.liminal/instructions/code.md` is removed
 

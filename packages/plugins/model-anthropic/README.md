@@ -9,6 +9,7 @@ Anthropic's Claude models as the `anthropic` provider in `ModelProviders`.
 - Lists the models Anthropic's API offers to the key. Their details come from the `anthropic` entries in the model catalog.
 - Sends the catalog's output limit as `max_tokens`. Without the catalog, Effect AI's default for the model applies.
 - Thinking: `off`, or an effort level such as `low`, `medium`, `high` or `max`. Unset leaves it to the model.
+- Tool changes mid-conversation go as `tool_addition` and `tool_removal` blocks, with the inline tools beta, for the Claude Opus 4.8 and 5.5, Sonnet and Haiku 5.5, Fable and Mythos 5 models. Other models get a note.
 
 ```jsonc
 {
