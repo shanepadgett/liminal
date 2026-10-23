@@ -14,7 +14,7 @@ read-when: Writing or changing code in `apps/`, `packages/` or `tools/`
 - Trust the types inside the boundary. Parse untrusted input once, at the edge.
 - No fallback paths or compatibility shims. Change the callers.
 - Model states that exclude each other as a tagged union, not optional fields or flags.
-- Until milestone 3 is done, each database keeps one migration. A schema change edits that migration in place, and existing data is deleted: remove `~/.liminal/liminal.db` after the change. Never add a second migration or code that carries old data forward. Remove this rule once milestone 3 is done.
+- Until the database schema is settled (Later in `docs/status.md`), each database keeps one migration. A schema change edits that migration in place, and existing data is deleted: remove `~/.liminal/liminal.db` after the change. Never add a second migration or code that carries old data forward. Remove this rule once the schema is settled.
 
 ## Naming
 
