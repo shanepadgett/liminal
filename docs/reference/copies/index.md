@@ -201,6 +201,13 @@ Bash parser with no dependencies: parse gives a ParsedScript of statements, pipe
 - API (types): `tools/planned/node_modules/unbash/dist/types.d.ts`
 - API (types): `tools/planned/node_modules/unbash/dist/parser.d.ts`
 
+## @xterm/headless 6.0.0
+
+xterm.js without a renderer: a terminal emulator in plain JavaScript that takes a program's output and keeps the screen and scrollback buffer to read back as text. For tools-processes, which shows the model what a process's terminal shows.
+
+- Docs: `docs/reference/copies/@xterm/headless/6.0.0/` (1 file: README.md)
+- API (types): `tools/planned/node_modules/@xterm/headless/typings/xterm-headless.d.ts`
+
 ## diff 9.0.0
 
 jsdiff: line diffs and unified patches. structuredPatch and formatPatch with OMIT_HEADERS give hunks only.

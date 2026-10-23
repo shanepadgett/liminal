@@ -150,6 +150,11 @@
     "fingerprint": "e6bed016db549f1a",
     "commits": []
   },
+  "@xterm/headless": {
+    "version": "6.0.0",
+    "fingerprint": "1e79e41e44f324e4",
+    "commits": []
+  },
   "diff": {
     "version": "9.0.0",
     "fingerprint": "6952459ae9ccd1d9",

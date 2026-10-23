@@ -6,6 +6,7 @@
   "peerDependencies": {
     "@effect/sql-pg": "4.0.5",
     "@opencode/codemode": "2.1.2",
+    "@xterm/headless": "6.0.0",
     "diff": "9.0.0",
     "electrobun": "2.0.4",
     "partial-json": "0.1.7",

@@ -310,6 +310,13 @@
       ]
     },
     {
+      "package": "@xterm/headless",
+      "versionSource": "lock",
+      "summary": "xterm.js without a renderer: a terminal emulator in plain JavaScript that takes a program's output and keeps the screen and scrollback buffer to read back as text. For tools-processes, which shows the model what a process's terminal shows.",
+      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
+      "api": [{ "kind": "types", "path": "typings/xterm-headless.d.ts" }]
+    },
+    {
       "package": "diff",
       "versionSource": "lock",
       "summary": "jsdiff: line diffs and unified patches. structuredPatch and formatPatch with OMIT_HEADERS give hunks only.",
