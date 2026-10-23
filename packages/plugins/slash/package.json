@@ -1,0 +1,23 @@
+{
+  "name": "@shanepadgett/liminal-slash",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tui": "./src/tui/index.tsx"
+  },
+  "dependencies": {
+    "fuzzysort": "4.0.2"
+  },
+  "peerDependencies": {
+    "@shanepadgett/liminal-chat": "workspace:*",
+    "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-tui": "workspace:*",
+    "effect": "*"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/index.ts"
+    ]
+  }
+}

@@ -665,12 +665,13 @@ export class ChatRpc extends RpcGroup.make(
 
 ## Step 7: commands, pickers, saved sessions, queue
 
-7a is three commits, 7b one:
+7a is four commits, 7b one:
 
 1. 7a-1: the four shared extension points, and moving stashes, `@` and `/` into `stash`, `tags` and `slash`.
-2. 7a-2: `model-choice` and `model-favorites`.
-3. 7a-3: the palette, `/theme`, `/connect`, `session-picker` and print mode's `--session`.
-4. 7b: queued inputs in `loop/state` and pulling one back.
+2. 7a-hints: hints follow the UI's state.
+3. 7a-2: `model-choice` and `model-favorites`.
+4. 7a-3: the palette, `/theme`, `/connect`, `session-picker` and print mode's `--session`.
+5. 7b: queued inputs in `loop/state` and pulling one back.
 
 - TUI commands are OpenTUI keymap commands with extra fields: `title`, `category`, `slash: { name, aliases? }`. The palette and the `/` menu read `keymap.getCommandEntries()`, which gives the commands reachable now and their keys (OpenCode `tui/src/context/keymap.tsx` and `component/prompt/autocomplete.tsx`, archive `sdk/src/tui/commands.ts`).
 - `loop`'s `Commands`, slash commands that run on the agent side, waits for milestone 5, where `/commit` and `/compact` first need it. Every step 7 command is a TUI action.
@@ -710,13 +711,13 @@ export class ChatRpc extends RpcGroup.make(
 
 ### 7a-1 code
 
-The keymap service, the picker pipeline, the draft trigger list and the chat screen service, and the three plugins that use them first: `stash`, `slash` and `tags`' `@` trigger.
+Built. The keymap service, the picker pipeline, the draft trigger list and the chat screen service, and the three plugins that use them first: `stash`, `slash` and `tags`' `@` trigger.
 
 ```text
 packages/tui/src/
   base.ts             makes the keymap and the Pickers pipeline; provides Keymap and Pickers
   commands.ts         Command fields (title, category, slash, hint), registerCommands, slashCommands, hints
-  pickers.ts          PickerSpec, Pickers, openPicker
+  pickers.tsx         PickerSpec, Pickers, openPicker
   dialogs.tsx         open remembers the focused renderable; closing focuses it again
   root.tsx            uses Keymap from base
   kit/Picker.tsx      keeps query and selection; up, down, enter, esc and the spec's actions
@@ -746,7 +747,7 @@ apps/cli/src/composition.ts   adds stash and slash
 ```
 
 ```ts
-// packages/tui/src/pickers.ts
+// packages/tui/src/pickers.tsx
 export interface PickerAction {
   readonly key: string; readonly label: string
   readonly run: (row: PickerRow) => void
@@ -770,13 +771,15 @@ export const openPicker: (spec: PickerSpec) => Effect.Effect<void, never, Picker
 export interface DraftToken { readonly query: string; readonly start: number; readonly end: number }
 export interface DraftRow { readonly id: string; readonly label: string; readonly detail?: string; readonly matches: ReadonlyArray<number> }
 export interface DraftKey {
-  readonly key: string; readonly label: string
+  readonly key: string                       // keymap syntax: "return", "tab"
+  readonly keys: string; readonly label: string   // the hint: "enter run"
   /** Edits the draft itself: tags puts an extmark in place of the token, slash clears it. */
   readonly run: (row: DraftRow, draft: TextareaRenderable, token: DraftToken) => void
 }
 export interface OpenTrigger {
   readonly rows: (query: string) => ReadonlyArray<DraftRow>
   readonly keys: ReadonlyArray<DraftKey>     // enter and tab; up, down and esc belong to the menu
+  readonly empty: string                     // shown when no row matches
 }
 export interface DraftTrigger {
   readonly char: string
@@ -819,31 +822,109 @@ flowchart LR
 - A trigger's key edits the draft itself through the textarea and the token's place.
 - `stash` takes the `stashes` table from chat under its own `stash_migrations`; the local database is deleted once.
 - `fuzzysort` moves from chat to `tags` and `slash`; chat's `tags` and `model` dependencies go if nothing else uses them.
+- `tags/attached` becomes `loop`'s `loop/added` (`Added`, `addedOf`): chat reads it from `loop`, so chat no longer imports `tags`, and `tags`' `tui` entry can import chat without a package cycle. A `Send` wrap that appends parts adds its count to the one set.
 
-### 7a code
+### 7a-hints
 
-The parts below predate the `model-choice` plugin, the plugin splits and the shared extension points in Step 7, and change to match them.
+A hint shows only for a key that does something now, on every hint line: the composer, pickers, `Confirm` and the draft menu. The keymap holds the rule; no component lists its hints by hand.
+
+- A command that cannot act now is disabled with the keymap's `enabled` field, from a Solid accessor through `reactiveMatcherFromSignal` (`@opentui/keymap/solid`). A disabled command neither runs nor shows a hint. `run` no longer declines by returning `false`. OpenCode does the same: `component/prompt/index.tsx` enables stash only with prompt text, and the stash list only with stashes.
+- Hints come from `keymap.getActiveKeys()`: each active key whose winning command has a `hint`. A higher-priority layer's command wins its key, so with the `@` menu open Enter shows `tag`, not `send`.
+- Commands that act on the chat screen are active only while the draft has focus: their layer targets the composer's textarea with `focus-within`. An open dialog takes focus, so they stop working and their hints go. App-wide commands, such as the palette's `ctrl+p`, have no target.
+- A hint may set its own key text for keys shown together: up carries `{ label: "choose", keys: "↑↓" }` and down has no hint.
+- Order: higher-priority layers first, such as an open menu; within a priority, the newer layer first, as the keymap sorts layers (`compareLayers` in `@opentui/keymap`). A key shows once, beside the first command it runs; a command bound to a key another command holds shows no hint.
+- Its own commit before 7a-2, so `model-choice`'s `shift+tab` and model line are built on it.
+
+| Key | Shows when |
+| --- | --- |
+| enter send, shift+enter new line, ctrl+s stash | The draft has text |
+| ctrl+c clear | The draft has text; with none, ctrl+c quits, with no hint |
+| tab follow-up | A turn runs and the draft has text |
+| esc stop | A turn runs |
+| ctrl+b sidebar | The screen is narrow and the sidebar closed |
+| picker enter, ctrl+d drop | A row is selected |
+| ↑↓ | More than one row |
+| draft menu enter, tab | A row matches; tab `open folder` only on a folder |
+| `/pop` in the `/` menu | Stashes exist |
+
+### 7a-hints code
+
+Built.
 
 ```text
 packages/tui/src/
-  base.ts             makes the keymap; provides Keymap; Dialogs gets the renderer
-  commands.ts         Command fields (title, category, slash), registerCommands, listed, slashCommands
-  dialogs.tsx         open remembers the focused renderable; closing focuses it again
-  root.tsx            uses Keymap from base
-  kit/Picker.tsx      keeps query and selection; onSelect, onMove, actions
-  kit/Confirm.tsx     a question with enter to confirm, esc to cancel
-  kit/SecretInput.tsx typed and pasted text drawn as dots, read with useKeyboard and usePaste
-packages/plugins/palette/            new
-  src/index.ts        plugin with no layer of its own; tui entry
-  src/tui/index.tsx   ctrl+p: Picker over `listed`, enter runs the command
+  commands.ts       Command gains enabled and a CommandHint; keymapCommand exported; activeHints, useHints
+  base.ts           registers the hint command field
+  kit/Picker.tsx    bindings target the picker's input; enabled per key; footer from useHints
+  kit/Confirm.tsx   enabled hints; footer from useHints
+  kit/Hints.tsx     columns: drops the hints that do not fit, from the end
+  dialogs.tsx       opening a dialog takes focus from the draft
+packages/plugins/chat/src/tui/
+  screen.ts         draft.text read live from the textarea; registerDraftCommands
+  Composer.tsx      its keys as commands with hints and enabled, targeting the textarea; hint row from useHints
+  ChatView.tsx      ctrl+b with enabled; screenHints goes
+  slots.ts          ComposerProps loses screenHints
+  draft-menu.ts     menu keys target the textarea; enabled while a row matches, and per row
+  triggers.ts       DraftKey gains enabled(row), loses keys
+  index.tsx         chat.new through registerDraftCommands
+packages/plugins/stash/src/tui/index.tsx   ctrl+s enabled with draft text; /pop enabled with stashes
+packages/plugins/tags/src/tui/index.tsx    tab enabled only on a folder
+```
+
+```ts
+// packages/tui/src/commands.ts
+export interface CommandHint { readonly label: string; readonly keys?: string }   // keys: "\u2191\u2193"
+export interface Command {
+  readonly name: string; readonly title: string
+  readonly category?: string; readonly slash?: Slash
+  readonly hint?: CommandHint
+  /** While false the command neither runs nor shows its hint; always on without one. */
+  readonly enabled?: Accessor<boolean>
+  readonly run: () => void
+}
+/** The keymap's form: enabled through reactiveMatcherFromSignal. useBindings layers use it too. */
+export const keymapCommand: (command: Command) => KeymapCommand
+export const registerCommands: (commands, keys) => Effect<void, never, Keymap | Scope>   // app-wide, no target
+/** Each active key whose winning command has a hint, higher priority first. */
+export const activeHints: (keymap) => ReadonlyArray<Hint>
+export const useHints: () => Accessor<ReadonlyArray<Hint>>   // useKeymapSelector(activeHints)
+
+// packages/plugins/chat/src/tui/screen.ts
+readonly draft: { readonly text: Accessor<string>; insert; clearIf }   // reads the textarea; tracks an edit counter
+/** Commands active only while the draft has focus: registered on each attached textarea, focus-within. */
+readonly registerDraftCommands: (commands: ReadonlyArray<Command>, keys: ReadonlyArray<CommandKey>) =>
+  Effect<void, never, Scope>
+
+// packages/plugins/chat/src/tui/triggers.ts
+export interface DraftKey { key; label; run; readonly enabled?: (row: DraftRow) => boolean }
+```
+
+```mermaid
+flowchart LR
+  state["Solid signals: draft text, running, rows, selection"] --> enabled["Command.enabled"]
+  enabled --> keymap["keymap: active keys, winner per key"]
+  keymap --> hints["activeHints"]
+  hints --> composer["composer hint row"]
+  hints --> picker["Picker and Confirm footers"]
+```
+
+- The composer's hint row shows only while the draft has focus; behind a dialog it is empty. A dialog's footer shows the active keys, which are its own and the app-wide ones.
+- Picker binds with its input as target and `focus-within`, so its keys stop when it loses focus. Confirm has no input and binds without a target.
+- `stash` keeps its stash list in a signal, set from `stash/list` on start and after each save and drop.
+- `getActiveKeys` returns keys by layer priority, and a disabled command drops out of the keymap's reachable commands, so out of `slashCommands` and the palette.
+- A draft menu with no matching row disables its Enter and Tab, so they reach the composer: Enter sends.
+
+### 7a-3 code
+
+A first pass from before the plugin splits; `session-picker` and the palette follow the 7a-1 shapes.
+
+```text
+packages/tui/src/kit/SecretInput.tsx   typed and pasted text drawn as dots, read with useKeyboard and usePaste
+packages/plugins/palette/            new, tui entry only
+  src/tui/index.tsx   ctrl+p: openPicker over listCommands(keymap) with a category; enter runs the command
 packages/plugins/theme/src/tui/
   index.tsx           palette signal gains its setter; registers /theme
   ThemePicker.tsx     preview on move, theme/set on enter, restore on close
-packages/plugins/model/src/
-  contract.ts         ListedModel, model/list, model/role, model/set
-  index.ts            handlers; a revision SubscriptionRef that model/set bumps
-  tui/index.tsx       registers /model
-  tui/ModelPicker.tsx Picker by provider; tab switches role
 packages/plugins/accounts/src/
   sign-in.ts          openUrl opens the browser, then sends OpenUrl
   tui/index.tsx       registers /connect
@@ -852,104 +933,32 @@ packages/plugins/session/src/
   contract.ts         SessionSummary, SessionLog.list, session/list
   migrations.ts       sessions.folder
   store.ts            open stores the workspace folder; list query
-packages/plugins/chat/src/tui/
-  ChatScreen.tsx      chat.new (ctrl+n, /new), chat.sessions (ctrl+o, /sessions); categories
-  Sessions.tsx        sessions Picker: day sections, relative times
-  Stashes.tsx         /pop Picker; ctrl+d asks with Confirm, then chat/unstash
-  DraftMenu.tsx       TagMenu made general: label, detail, matches; @ and / both use it
-  slash.ts            useSlashList: the / menu's rows and keys
-  Composer.tsx        / menu; chat.pop (/pop); the model line, watching model/role main
-  Sidebar.tsx         watches model/role main
+packages/plugins/session-picker/     new, tui entry only
+  src/tui/index.tsx   ctrl+o, /sessions: openPicker over session/list; a pick runs ChatScreen.show
 apps/cli/src/connect.ts   loses openBrowser; OpenUrl only prints the link
+apps/cli/src/print.ts     --session <id>
 ```
 
-Removed or replaced: `model/main` becomes `model/role`; `TagMenu.tsx` becomes `DraftMenu.tsx`; the kit `Picker` loses its `query` and `selected` props; `root.tsx` no longer makes the keymap.
-
 ```ts
-// packages/tui/src/commands.ts
-declare module "@opentui/keymap" {
-  interface Command {
-    readonly title?: string
-    /** The palette's section; a command without one stays out of the palette. */
-    readonly category?: string
-    /** The / menu's name; a command without one stays out of the / menu. */
-    readonly slash?: { readonly name: string; readonly aliases?: ReadonlyArray<string> }
-  }
-}
-export class Keymap extends Context.Service<Keymap, OpenTuiKeymap>()("tui/Keymap") {}
-/** Adds the layer's commands and keys until the plugin's scope closes. */
-export const registerCommands: (layer: Layer) => Effect.Effect<void, never, Keymap | Scope>
-export interface Listed { readonly name: string; readonly title: string; readonly category: string; readonly keys: string }
-export const listed: (keymap: OpenTuiKeymap) => ReadonlyArray<Listed>        // reachable, with a category
-export interface Slash { readonly name: string; readonly command: string; readonly title: string }
-export const slashCommands: (keymap: OpenTuiKeymap) => ReadonlyArray<Slash>  // reachable, one row per name and alias
-
-// packages/tui/src/kit/Picker.tsx
-export interface PickerRow { id; title; detail?; section? }               // as now
-export interface PickerAction { readonly key: string; readonly label: string; readonly run: (row: PickerRow) => void }
-export function Picker(props: {
-  title: string; placeholder: string; empty: string
-  rows: ReadonlyArray<PickerRow>
-  initial?: string                       // the row selected first; else the first row
-  onSelect: (row: PickerRow) => void
-  onMove?: (row: PickerRow) => void
-  actions?: ReadonlyArray<PickerAction>  // extra keys; the hints list them
-})
-export function Confirm(props: { title: string; question: string; action: string; onConfirm: () => void })
-
 // session/contract.ts
 export const SessionSummary = Schema.Struct({
   id: SessionId,
-  title: Schema.String,            // first line of the first user message, else "(no messages)"
-  updatedAt: Schema.DateTimeUtc,   // the latest event, else when it opened
+  title: Schema.String,            // first line of the first user message
+  updatedAt: Schema.DateTimeUtc,   // the latest event
 })
 SessionLog.list: Effect.Effect<ReadonlyArray<SessionSummary>, SessionStoreFailed>  // this folder's, latest first, 100
 Rpc.make("session/list", { success: Schema.Array(SessionSummary), error: SessionStoreFailed })
-
-// model/contract.ts
-export const ListedModel = Schema.Struct({
-  id: ModelId, name: Schema.String,
-  provider: Schema.String,                  // the provider's name, the picker's section
-  contextWindow: Schema.optional(Schema.Int),
-})
-const RoleName = Schema.Literals(["main", "small"])
-Rpc.make("model/list", { success: Schema.Array(ListedModel) })
-/** The role's model now, and again after each model/set. */
-Rpc.make("model/role", { payload: { role: RoleName }, success: RoleModel, error: Schema.Union([ModelNotFound, SettingsInvalid]), stream: true })
-/** Writes { model } at model.<role> in the global settings file. */
-Rpc.make("model/set", { payload: { role: RoleName, model: ModelId }, error: SettingsWriteFailed })
-// RoleModel gains thinking: Schema.optional(Schema.String), for the model line
 ```
 
-```mermaid
-flowchart LR
-  key["ctrl+p"] --> pal["palette: listed(keymap)"]
-  pal --> pick["Picker in Dialogs"]
-  pick --> close["close: focus returns"]
-  close --> run["keymap.runCommand(name)"]
-  slash["/ at draft start"] --> menu["useSlashList: slashCommands(keymap)"]
-  menu --> enter["enter: clear draft"] --> run
-  run --> theme["/theme ThemePicker"]
-  run --> model["/model ModelPicker"]
-  run --> connect["/connect Connect"]
-  run --> chat["/new /sessions /pop"]
-```
-
-- Commands with a screen's state stay in components with `useBindings` and gain `title`, `category` and `slash`: `/new`, `/sessions`, Toggle sidebar and Quit in `ChatScreen`, `/pop` in the composer. Commands without a component, `ctrl+p`, `/theme`, `/model` and `/connect`, use `registerCommands` in their plugin's `tui` layer and run their Effects through `FiberSet.makeRuntime`, as `root.tsx` does.
 - The palette reads the commands when it opens, while the composer still has focus. A pick closes the palette first, so `/pop` finds the composer focused (OpenCode `ui/dialog.tsx` `refocus`).
-- `/` menu: open while the whole draft is `/` and a word; up and down move, enter clears the draft and runs the command, tab completes `/name`, esc closes until the text changes. Rows show `/name` and the command's title (gallery `SlashMenu.tsx`).
-- Theme picker: rows from `PALETTES`, the saved one first. `onMove` sets the palette signal; enter runs `theme/set` and closes; closing without a pick puts the saved palette back, in `onCleanup`.
-- Model picker: title `Model for main` or `Model for small`; rows from `model/list` by provider, detail the context window, `current` on the role's model; `tab` switches role; enter runs `model/set` and closes.
+- Theme picker: rows from `PALETTES`, the saved one first. `onMove` sets the palette signal; enter runs `theme/set` and closes; `onClose` puts the saved palette back.
 - `/connect`: `accounts/methods`; a vendor Picker (detail `connected`), then a Picker of each login's ways (title the login, detail the way); a list of one is skipped, as `liminal connect` does. The SignIn dialog runs `accounts/sign-in` in a fiber the dialog owns, so esc stops it, and draws the latest step: `OpenUrl` shows the link, `ShowCode` the code and link, `c` copies either with `renderer.copyToClipboardOSC52`; `Ask` an input, or `SecretInput` when secret, whose enter sends `accounts/answer`; `Waiting` and `Told` their text; `Done` closes it. A failure shows its message in the danger color (gallery `ConnectKey`, `ConnectBrowser`).
-- Sessions picker: rows from `session/list` in sections Today, Yesterday and Earlier; detail `2h ago` today, `18:20` yesterday, `Oct 14` before (gallery `Sessions.states.tsx`). A pick shows that session.
-- Stashes picker: rows from `chat/stashes`, detail when it was saved. Enter puts the text after the draft with a blank line between, then runs `chat/unstash`; `ctrl+d` asks with `Confirm`, then runs `chat/unstash` and drops the row (archive `inbox/tui/stash.tsx`).
+- Sessions picker: rows from `session/list` in sections Today, Yesterday and Earlier; detail `2h ago` today, `18:20` yesterday, `Oct 14` before (gallery `Sessions.states.tsx`). Sessions with no user message stay out of the list.
 - `accounts` opens the browser itself before it sends `OpenUrl`, on the machine whose local server catches the redirect (archive `logins/server/browser.ts`); a failed open sends `Told` with "Could not open the browser; open the link above." Frontends only show the link.
 - `session` stores the workspace folder from `Directories` on each `open`, and `list` shows only that folder's sessions (archive `session-store` `listSessions(workspace)`, Pi per working folder, Crush per project).
-- Model line: under the draft, left of the hints, `◇ model • thinking` from `model/role` `main`, the thinking part only when set (gallery `Composer.tsx`). `model/role` sends the role's model when asked and again after each `model/set`, through a revision `SubscriptionRef` in `model`; the sidebar's context share watches it too.
 - Print mode `--session <id>`: sends to that session instead of opening one; an id the log does not have fails with its `SessionNotFound` message and exit code 1.
-- Print mode `--model provider/model`: a `loop/model` attribute on the input; the turn that input starts uses it, read from the latest `loop/turn-start`, and later turns go back to `main`.
 - `session/list` query: `sessions` left joined to `session_events` for the latest `at`, and a subquery for the first `session/message` whose `json_extract(data, '$.role')` is `user`; ordered by the latest activity (Pi `session-manager.ts` sorts by `modified`).
-- Docs: `docs/usage/cli.md` keys and commands; READMEs of `palette`, `theme`, `model`, `accounts`, `session`, `chat`, `packages/tui`; `architecture.md` gains a `palette` row; `docs/plugins/tui.md` and `status.md` check off what 7a builds.
+- Docs: `docs/usage/cli.md` keys and commands; READMEs of `palette`, `theme`, `accounts`, `session`, `session-picker`, `packages/tui`; `architecture.md` gains `palette` and `session-picker` rows; `docs/plugins/tui.md` and `status.md` check off what 7a-3 builds.
 
 ## Events in the references
 

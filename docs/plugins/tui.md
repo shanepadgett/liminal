@@ -16,17 +16,20 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 - Loads the `tui` entry of every plugin in the composition.
 - One `screen` slot (`single_winner`), which `chat` fills.
 - `Dialogs`: a stack with `open` and `close`, drawn above the screen with the dim.
+- `Keymap` and `registerCommands`: keymap commands with `title`, `category`, `slash`, `hint` and `enabled`; `listCommands` reads back the reachable ones. Every hint line shows only the keys that would run now (`activeHints`, `useHints`).
+- `Pickers`: a pipeline every picker spec passes through by name; `openPicker` draws the kit's `Picker` in a dialog.
 - Plugins gain `./view` and `./tui` exports; the plugin anatomy check and lint rules learn them and who may import each.
 - Previous code: `archive/packages/frontend`, `archive/apps/gallery`.
 
 ## `chat`
 
 - The chat screen. Builds the transcript in `view/`; owns `ItemRenderer` (by event kind) and the `sidebar` (`append`) and `composer` (`replace`) slots in its `tui` entry.
-- Sidebar: chat's Session section, and the context share from the latest `loop/step-end` over the model's `contextWindow`. Below 110 columns it is a drawer; the "Toggle sidebar" command (`ctrl+b`, in the palette) opens it, `escape` closes it, a footer hint shows while hidden.
+- Sidebar: chat's Session section, and the context share from the latest `loop/step-end` over the model's `contextWindow`. Below 110 columns it is a drawer; the "Toggle sidebar" command (`ctrl+b`, in the palette) opens it, `escape` closes it, and the `ctrl+b sidebar` hint shows while it is closed.
 - The transcript opens at the bottom: its first frame shows the latest items, with no scroll down after loading.
 - Each tool call and its result make one single-line row; consecutive tool rows sit next to each other, ungrouped.
-- Composer: OpenTUI `Textarea`, `@` tags as virtual extmarks, stashes, a `/` menu of the keymap's commands that have a slash name, and a line under the draft with the `main` model and its thinking level, kept current through `model/role`.
-- `@` list: `tags/list` once each time it opens, ranked in the TUI by `fuzzysort` times one plus frecency, 50 rows. `tags` adds each tag's text on send; the transcript hides the parts it added.
+- Composer: OpenTUI `Textarea`, the menus of `DraftTriggers` that other plugins add, and a line under the draft with the session's model and its thinking level from `model-choice`.
+- `ChatScreen`: the session on screen, showing another or none, and the draft, for other plugins' commands.
+- `@` list, in `tags`' `tui` entry: `tags/list` once each time it opens, ranked in the TUI by `fuzzysort` times one plus frecency, 50 rows. `tags` adds each tag's text on send; the transcript hides the parts it added.
 - Saved sessions: `SessionLog` gains the session list of the workspace folder, each listed by the first line of its first user message; the header shows a title only once `session-name` sets one. The chat screen opens a saved session (`ctrl+o`) and starts a new one (`ctrl+n`, `/new`); print mode gains `--session <id>`.
 - `loop/state` gains the queued inputs, and `loop` gains `pullBack`. A queued input can be pulled back until the turn takes it.
 - Previous code: `chat`, `inbox` (composer).
@@ -37,10 +40,19 @@ export const buildTranscript: (state: ViewState, drawn: ReadonlySet<string>) => 
 // tui/index.tsx
 type ChatSlots = {
   sidebar: { session: SessionId; state: ViewState }
-  composer: { running: boolean; send(text, mode?): void; cancel(): void; screenHints: readonly Hint[] }
+  composer: { running: boolean; send(text, mode?): void; cancel(): void }
 }
 export const ItemRenderer: Registry<{ kind: string; component: (props: { event: SessionEvent }) => JSX.Element }>
 ```
+
+## `stash`
+
+- Drafts set aside with `ctrl+s`, one list per workspace folder; `/pop` opens the stashes picker.
+- Previous code: `inbox` (stash).
+
+## `slash`
+
+- The `/` draft trigger: as the draft's first character, it lists the reachable commands that have a slash name.
 
 ## `palette`
 

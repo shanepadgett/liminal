@@ -1,9 +1,9 @@
 /** The turn: inputs into a session, the hooks that join each turn, and the session's next request. */
-import { Context, type Effect, Schema, type Stream } from "effect";
+import { Context, type Effect, Option, Schema, type Stream } from "effect";
 import { Response } from "effect/ai";
 import { Rpc, RpcGroup } from "effect/rpc";
 
-import { type Attributes, Pipeline, Registry } from "@shanepadgett/liminal-core";
+import { Attribute, type Attributes, Pipeline, Registry } from "@shanepadgett/liminal-core";
 import {
   Message,
   type ModelCallError,
@@ -163,3 +163,18 @@ export class LoopRpc extends RpcGroup.make(
   Rpc.make("loop/cancel", { payload: { session: SessionId }, success: Schema.Array(NewEvent) }),
   Rpc.make("loop/state", { payload: { session: SessionId }, success: LoopState, stream: true }),
 ) {}
+
+/**
+ * On a user message: how many of its last parts plugins added on send, such as a tagged file's
+ * text, so screens can show only what the user wrote. A `Send` wrap that appends parts adds its
+ * count to the one already set.
+ */
+export const Added = Attribute.make("loop/added", Schema.Int);
+
+/** How many of the message's last parts plugins added; 0 when none. */
+export const addedOf = (attributes: Attributes): number => {
+  const encoded = attributes[Added.key];
+  if (encoded === undefined) return 0;
+
+  return Option.getOrElse(Schema.decodeOption(Added.schema)(encoded), () => 0);
+};

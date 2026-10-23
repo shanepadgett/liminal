@@ -1,16 +1,6 @@
 # @shanepadgett/liminal-chat
 
-The chat screen: a landing until the first send opens a session, then the session's transcript, a composer and a sidebar. It fills the TUI's `screen` slot, and keeps stashes: drafts set aside with Ctrl+S, one list per workspace folder.
-
-## Contract
-
-`./contract` exports `ChatRpc`:
-
-- `chat/stash`: stashes a text in the workspace folder's list; the same text again keeps one stash.
-- `chat/stashes`: the folder's stashes, newest first, each with its `id`, `text` and `createdAt`.
-- `chat/unstash`: deletes the stash with an `id`.
-
-Each fails with `StashesFailed` when the `stashes` table cannot be read or written. The plugin requires `Directories` and `SqlClient`, and keeps its migrations in `chat_migrations`.
+The chat screen: a landing until the first send opens a session, then the session's transcript, a composer and a sidebar. It fills the TUI's `screen` slot. The plugin has only a `tui` entry.
 
 ## View
 
@@ -28,9 +18,16 @@ Each fails with `StashesFailed` when the `stashes` table cannot be read or writt
 | --- | --- |
 | `ItemRenderer` | A registry of `{ kind, component }`: how saved events of `kind` show in the transcript. Add to it from a `tui` entry |
 | `sidebar` | The column beside the transcript once a session starts; every fill shows, in order. Props: `session`, `state` |
-| `composer` | Where the user writes; the last fill wins. Props: `running`, `send(text, mode?)`, `cancel()`, `screenHints` (keys the screen adds to the hints, such as `ctrl+b` while the sidebar is hidden) |
+| `composer` | Where the user writes; the last fill wins. Props: `running`, `send(text, mode?)`, `cancel()` |
+| `ChatScreen` | The screen as commands reach it: `session()`, `show(session)`, `startNew()` (back to the landing; nothing is saved until the next send), `draft` with `text()`, `insert(text)` and `clearIf(text)`, and `registerDraftCommands(commands, keys)`: commands that work only while the draft has focus |
+| `DraftTriggers` | A registry of menus a character opens in the draft. See below |
+| `replaceToken(draft, token, text)` | Puts `text` in place of a trigger's token |
 
 Chat fills `sidebar` with the Session section (folder, git branch, context share) and `composer` with its own composer.
+
+### Draft triggers
+
+A `DraftTrigger` is `{ char, where, open }`. `where` is `any-word` (the start of the draft or after whitespace) or `draft-start`. Each time the character starts a token there, chat runs `open` and shows a menu above the draft with its `rows(query)` for the text after the character, or its `empty` line when none match. Up and Down move; each of its `keys` runs with the row, the textarea and the token, and edits the draft itself. A key works only while a row matches and its `enabled(row)`, if any, is true; otherwise Enter and Tab reach the composer. Esc closes the menu until the cursor leaves the token. The first trigger added wins a character.
 
 Keys:
 
@@ -40,10 +37,10 @@ Keys:
 | Shift+Enter | New line |
 | Tab | While a turn runs, send as a follow-up |
 | Esc | Close the open sidebar; otherwise, while a turn runs, stop it |
-| Ctrl+S | Stash the draft, then clear it once saved; a failure is logged and the draft stays |
 | Ctrl+C | Clear the draft; with no draft, quit |
 | Ctrl+B | Open or close the sidebar, below 110 columns |
+| Ctrl+N, `/new` | New session: back to the landing screen |
 
-`@` at the start of the draft or after whitespace opens the list of tags above the draft. It loads `tags/list` once each time it opens, and ranks rows by their `fuzzysort` match times one plus their frecency, 50 at most. While it is open, Up and Down move, Enter tags the row, Tab opens a folder (and tags a file), and Esc closes it until the cursor leaves the tag. A picked tag is a virtual extmark: the cursor steps over it and Backspace removes it whole. `buildTranscript` leaves out the parts `tags` added to a message, by its `tags/attached` attribute.
+The line under the draft shows a hint for each key that would do something now, while the draft has focus: Enter appears once the draft has text, Esc only while a turn runs. Hints that do not fit drop from the end. `buildTranscript` leaves out the parts plugins added to a message on send, by `loop`'s `loop/added` attribute.
 
-The `tui` entry requires `Slots` and `Renderer`, and calls `session/*`, `loop/*`, `chat/stash`, `tags/list`, `directories/workspace` and `model/main`.
+The `tui` entry requires `Slots`, `Renderer` and `Keymap`, and calls `session/*`, `loop/*`, `directories/workspace` and `model/main`.

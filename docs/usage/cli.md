@@ -19,6 +19,18 @@ With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; th
 | Ctrl+S | Stash the draft: save it for this folder and clear the composer |
 | Ctrl+C | Clear the draft; with no draft, quit |
 | Ctrl+B | Open or close the sidebar, below 110 columns |
+| Ctrl+N | New session: back to the start screen; nothing is saved until you send |
+
+The line under the draft shows only the keys that would do something now. The draft's keys stop while a dialog is open.
+
+### Commands with `/`
+
+Type `/` as the first character of the draft to list commands. Keep typing to filter; Up and Down move, Enter runs the command, Tab completes its name, Esc closes the list.
+
+| Command | Does |
+| --- | --- |
+| `/new` | New session, as Ctrl+N |
+| `/pop` | List this folder's stashes. Enter puts one back after the draft and removes it from the list; Ctrl+D asks, then removes it |
 
 ### Tag files with `@`
 
@@ -28,7 +40,7 @@ Type `@` at the start of the draft or after a space to list the workspace's file
 | --- | --- |
 | Up, Down | Move through the list |
 | Enter | Tag the file or folder |
-| Tab | Open the folder, listing what is in it; on a file, tag it |
+| Tab | Open the folder, listing what is in it |
 | Esc | Close the list until the cursor leaves the tag |
 
 A tag is one unit: the cursor steps over it, and Backspace removes it whole. Write a path with spaces as `@"my file.txt"`.

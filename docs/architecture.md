@@ -55,7 +55,7 @@ Versions are pinned in `package.json`; [reference/copies/index.md](reference/cop
 
 | Library | Used by |
 | --- | --- |
-| `fuzzysort` | `palette`, `chat` (the `@` list), model picker |
+| `fuzzysort` | `packages/tui` (pickers), `tags` (the `@` list), `slash` (the `/` list) |
 | `diff` | `tools-files` edit patches |
 | `partial-json` | `tools-files` `tui` entry, only if Effect AI gives no partial tool arguments |
 | `unbash` | `tools-shell` safety rules |
@@ -424,8 +424,10 @@ How `session` does these over `SqlClient` is open.
 | Hosting | `loader` | Plugin folders, `plugins.json`, trust, reload | host level | `trust`, `archive/packages/kernel` |
 | Hosting | `actors` | Who sent each input | Attach, Wrap | none |
 | Hosting | `http` | Serves plugins' RPC groups over HTTP | none | `archive/packages/kernel/src/server` |
-| TUI | `chat` | Chat screen, composer, the session slots, stashes | Add (slots) | `chat`, `inbox` (composer) |
-| TUI | `tags` | `@` tags: `TagSources`, the workspace's files and folders, their text added on send | Add, Wrap | `files`, `inbox` (tags) |
+| TUI | `chat` | Chat screen, composer, the session slots, `ChatScreen`, `DraftTriggers` | Add (slots) | `chat`, `inbox` (composer) |
+| TUI | `tags` | `@` tags: `TagSources`, the workspace's files and folders, their text added on send, the `@` draft trigger | Add, Wrap | `files`, `inbox` (tags) |
+| TUI | `stash` | Drafts set aside with `ctrl+s`, brought back with `/pop` | Add | `inbox` (stash) |
+| TUI | `slash` | The `/` draft trigger over commands with a slash name | Add | `sdk` (commands) |
 | TUI | `palette`, `theme`, `attention` | Command palette, theme, sounds | Add (slots) | same names |
 
 ## Example: the work order agent

@@ -11,9 +11,10 @@ import { type Host, SessionView } from "@shanepadgett/liminal-client";
 import type { SessionId } from "@shanepadgett/liminal-session/contract";
 
 import type { Dialogs } from "./dialogs.tsx";
+import type { Pickers } from "./pickers.tsx";
 
 /** What component work may use. */
-export type Services = Host | Dialogs;
+export type Services = Host | Dialogs | Pickers;
 
 /** Forks `effect` into the TUI's scope. */
 export type Fork = <A, E>(effect: Effect.Effect<A, E, Services>) => Fiber.Fiber<A, E>;

@@ -1,9 +1,12 @@
 /**
  * The chat screen: the landing until the first send opens a session, then the session's transcript,
- * built from its view. `ctrl+c` quits, after the composer declines it; `ctrl+b` opens the sidebar
- * drawer on a small screen, and the composer's hints name it while the drawer is closed.
+ * built from its view. Which one shows comes from the `ChatScreen` service, so other plugins'
+ * commands can change it. `ctrl+c` quits when the composer's `ctrl+c` has no draft to clear;
+ * `ctrl+b` opens and closes the sidebar drawer on a small screen, and its hint shows while the
+ * drawer is closed.
  */
 
+import type { BoxRenderable } from "@opentui/core";
 import { useBindings } from "@opentui/keymap/solid";
 import { Effect } from "effect";
 import {
@@ -21,18 +24,22 @@ import { createStore, reconcile } from "solid-js/store";
 import { Host } from "@shanepadgett/liminal-client";
 import { LoopRpc, type SendMode } from "@shanepadgett/liminal-loop/contract";
 import { MessageEvent, type SessionId, SessionRpc } from "@shanepadgett/liminal-session/contract";
-import { kit, SlotView, useRun, useSessionView } from "@shanepadgett/liminal-tui";
+import {
+  type Command,
+  keymapCommand,
+  kit,
+  SlotView,
+  useRun,
+  useSessionView,
+} from "@shanepadgett/liminal-tui";
 
 import { buildTranscript, isWriting, type Turn as TurnData } from "../view/index.ts";
 import { Header } from "./Header.tsx";
 import { Landing } from "./Landing.tsx";
 import { Layout, useSidebarPlace } from "./Layout.tsx";
+import type { ChatScreen as Screen } from "./screen.ts";
 import { composer, type ItemRenderer, sidebar } from "./slots.ts";
 import { Prompt, type Renderers, Turn } from "./Turn.tsx";
-
-type ScreenState =
-  | { readonly kind: "landing" }
-  | { readonly kind: "session"; readonly session: SessionId };
 
 /** Sends `text` to `session`: a new turn, or with `mode` a steer or follow-up of the running one. */
 const sendTo = (session: SessionId, text: string, mode: SendMode | undefined) =>
@@ -55,8 +62,6 @@ const cancel = (session: SessionId) =>
 
     yield* loop["loop/cancel"]({ session });
   }).pipe(Effect.scoped);
-
-const SIDEBAR_HINTS = [{ keys: "ctrl+b", label: "sidebar" }];
 
 /** The turns of the session on screen, keeping each turn's and item's identity across updates. */
 const useTurns = (state: Parameters<typeof buildTranscript>[0], renderers: Accessor<Renderers>) => {
@@ -82,10 +87,6 @@ function SessionScreen(props: {
   const view = useSessionView(props.session);
   const turns = useTurns(view.state, props.renderers);
   const lastIndex = () => turns().length - 1;
-  const place = useSidebarPlace();
-
-  const screenHints = () =>
-    place().kind === "drawer" && !props.isSidebarOpen ? SIDEBAR_HINTS : [];
 
   return (
     <Layout
@@ -117,7 +118,6 @@ function SessionScreen(props: {
           cancel={() => {
             run(cancel(props.session));
           }}
-          screenHints={screenHints()}
         />
       }
       sidebar={
@@ -135,44 +135,67 @@ function LandingScreen(props: { readonly send: (text: string, mode?: SendMode) =
   return (
     <Layout
       transcript={<Landing />}
-      composer={
-        <SlotView
-          slot={composer}
-          running={false}
-          send={props.send}
-          cancel={() => {}}
-          screenHints={[]}
-        />
-      }
+      composer={<SlotView slot={composer} running={false} send={props.send} cancel={() => {}} />}
     />
   );
 }
 
-const useScreenKeys = (quit: () => void, toggleSidebar: () => void) => {
+/** `ctrl+b` opens the drawer while it is closed and closes it while open. */
+const sidebarCommands = (
+  hasDrawer: Accessor<boolean>,
+  isOpen: Accessor<boolean>,
+  setOpen: (open: boolean) => void,
+): Command[] => [
+  {
+    name: "chat.sidebar.show",
+    title: "Show sidebar",
+    hint: { label: "sidebar" },
+    enabled: () => hasDrawer() && !isOpen(),
+    run: () => {
+      setOpen(true);
+    },
+  },
+  {
+    name: "chat.sidebar.hide",
+    title: "Hide sidebar",
+    enabled: () => hasDrawer() && isOpen(),
+    run: () => {
+      setOpen(false);
+    },
+  },
+];
+
+/** `ctrl+c` quits anywhere; the sidebar keys act while focus is on the screen. */
+const useScreenKeys = (
+  quit: () => void,
+  root: () => BoxRenderable | undefined,
+  drawerKeys: ReadonlyArray<Command>,
+) => {
   useBindings(() => ({
-    commands: [
-      { name: "chat.quit", title: "Quit", run: quit },
-      { name: "chat.sidebar", title: "Toggle sidebar", run: toggleSidebar },
-    ],
-    bindings: [
-      { key: "ctrl+c", cmd: "chat.quit" },
-      { key: "ctrl+b", cmd: "chat.sidebar" },
-    ],
+    commands: [{ name: "chat.quit", title: "Quit", run: quit }],
+    bindings: [{ key: "ctrl+c", cmd: "chat.quit" }],
+  }));
+
+  useBindings(() => ({
+    target: root,
+    commands: drawerKeys.map(keymapCommand),
+    bindings: drawerKeys.map(({ name }) => ({ key: "ctrl+b", cmd: name })),
   }));
 };
 
-export function ChatScreen(props: {
+export function ChatView(props: {
   readonly views: ItemRenderer["Service"];
+  readonly screen: Screen["Service"];
   readonly quit: () => void;
 }) {
   const run = useRun();
-  const [screenState, setScreenState] = createSignal<ScreenState>({ kind: "landing" });
   const [renderers, setRenderers] = createSignal<Renderers>(new Map());
   const [isSidebarOpen, setSidebarOpen] = createSignal(false);
+  const place = useSidebarPlace();
+  const hasDrawer = () => props.screen.session() !== undefined && place().kind === "drawer";
+  let root: BoxRenderable | undefined;
 
-  useScreenKeys(props.quit, () => {
-    setSidebarOpen((open) => !open);
-  });
+  useScreenKeys(props.quit, () => root, sidebarCommands(hasDrawer, isSidebarOpen, setSidebarOpen));
 
   onMount(() => {
     run(
@@ -186,23 +209,24 @@ export function ChatScreen(props: {
   const send = (text: string, mode?: SendMode) => {
     run(
       Effect.gen(function* () {
-        const current = screenState();
-        const session = current.kind === "session" ? current.session : yield* openSession;
-        setScreenState({ kind: "session", session });
+        const session = props.screen.session() ?? (yield* openSession);
+        props.screen.show(session);
         yield* sendTo(session, text, mode);
       }),
     );
   };
 
-  const session = () => {
-    const current = screenState();
-
-    return current.kind === "session" ? current.session : undefined;
-  };
+  const session = props.screen.session;
 
   // One root element: the screen slot draws its fill again whenever the fill's root changes.
   return (
-    <box width="100%" height="100%">
+    <box
+      ref={(made) => {
+        root = made;
+      }}
+      width="100%"
+      height="100%"
+    >
       <Switch>
         <Match when={session()} keyed>
           {(open) => (

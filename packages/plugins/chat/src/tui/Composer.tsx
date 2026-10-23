@@ -1,24 +1,32 @@
 /**
  * Where the user writes. No box: a gutter of marks runs down the left of the draft, the first a
- * bold chevron and the rest fading from light accent to dark. Below are the keys that apply now.
- * `enter` sends and `shift+enter` adds a line; while a turn runs, `enter` steers it, `tab` queues a
- * follow-up and `esc` stops it. `ctrl+s` stashes the draft and clears it once saved. `ctrl+c`
- * clears the draft, and with none passes on, so it quits. An `@` opens the list of files and
- * folders to tag above the draft; its keys come first.
+ * bold chevron and the rest fading from light accent to dark. Below are the hints of the keys that
+ * act now, while the draft has focus. `enter` sends and `shift+enter` adds a line; while a turn
+ * runs, `enter` steers it, `tab` queues a follow-up and `esc` stops it. `ctrl+c` clears the draft,
+ * and with none passes on, so it quits. A draft trigger, such as `@`, opens its menu above the
+ * draft; the menu's keys come first.
  */
 
-import { TextAttributes, type TextareaRenderable } from "@opentui/core";
-import { useBindings } from "@opentui/keymap/solid";
-import { Effect } from "effect";
-import { For, Show } from "solid-js";
+import { type BoxRenderable, TextAttributes, type TextareaRenderable } from "@opentui/core";
+import { useBindings, useKeymapSelector } from "@opentui/keymap/solid";
+import { createSignal, For, Show } from "solid-js";
 
-import { Host } from "@shanepadgett/liminal-client";
-import { kit, useColor, useMix, useRun, useSyntax } from "@shanepadgett/liminal-tui";
+import type { SendMode } from "@shanepadgett/liminal-loop/contract";
+import {
+  activeHints,
+  type Command,
+  keymapCommand,
+  kit,
+  useColor,
+  useMix,
+  useSyntax,
+} from "@shanepadgett/liminal-tui";
 
-import { ChatRpc } from "../contract.ts";
+import { useDraftMenu } from "./draft-menu.ts";
+import { DraftMenu } from "./DraftMenu.tsx";
+import type { ChatScreen } from "./screen.ts";
 import type { ComposerProps } from "./slots.ts";
-import { TAG_HINTS, TagMenu } from "./TagMenu.tsx";
-import { useTagList } from "./tags.ts";
+import type { DraftTriggers } from "./triggers.ts";
 
 const DRAFT_ROWS = 3;
 
@@ -50,130 +58,144 @@ function Gutter(props: { readonly rows: number }) {
   );
 }
 
-const IDLE_HINTS = [
-  { keys: "enter", label: "send" },
-  { keys: "shift+enter", label: "new line" },
-  { keys: "ctrl+s", label: "stash" },
-];
-
-const WORKING_HINTS = [
-  { keys: "enter", label: "steer" },
-  { keys: "tab", label: "follow-up" },
-  { keys: "esc", label: "stop" },
-  { keys: "ctrl+s", label: "stash" },
-];
-
+/** The textarea's own keys, under the composer's: with no draft, enter submits to nothing. */
 const DRAFT_KEYS = [
   { name: "return", action: "submit" },
   { name: "kpenter", action: "submit" },
   { name: "return", shift: true, action: "newline" },
 ] as const;
 
-const stash = (text: string) =>
-  Effect.gen(function* () {
-    const chat = yield* (yield* Host).client(ChatRpc);
+type Draft = () => TextareaRenderable | undefined;
 
-    yield* chat["chat/stash"]({ text });
-  }).pipe(Effect.scoped);
+/** Sends the draft and clears it; `mode` only while a turn runs. */
+const sender =
+  (props: ComposerProps, draft: Draft, text: () => string) => (mode?: SendMode) => () => {
+    const sent = text();
+    draft()?.clear();
+    props.send(sent, mode);
+  };
 
-/**
- * `ctrl+s`: stashes the draft, then clears it if it still holds the same text. Declines with no
- * draft, so the key passes on.
- */
-const useStashKey = (draft: () => TextareaRenderable | undefined) => {
-  const run = useRun();
+/** The draft's own keys, each acting only when it would do something now. */
+const composerCommands = (props: ComposerProps, draft: Draft, text: () => string): Command[] => {
+  const hasText = () => text() !== "";
+  const sendAs = sender(props, draft, text);
 
-  const current = () => draft()?.plainText.trim() ?? "";
-
-  useBindings(() => ({
-    commands: [
-      {
-        name: "chat.stash",
-        title: "Stash draft",
-        run: () => {
-          const text = current();
-          if (text === "") return false;
-
-          run(
-            Effect.andThen(
-              stash(text),
-              Effect.sync(() => {
-                if (current() === text) draft()?.clear();
-              }),
-            ),
-          );
-
-          return true;
-        },
+  return [
+    {
+      name: "chat.send",
+      title: "Send",
+      hint: { label: "send" },
+      enabled: () => hasText() && !props.running,
+      run: sendAs(),
+    },
+    {
+      name: "chat.steer",
+      title: "Steer the turn",
+      hint: { label: "steer" },
+      enabled: () => hasText() && props.running,
+      run: sendAs("steer"),
+    },
+    {
+      name: "chat.newline",
+      title: "New line",
+      hint: { label: "new line" },
+      enabled: hasText,
+      run: () => {
+        draft()?.newLine();
       },
-    ],
-    bindings: [{ key: "ctrl+s", cmd: "chat.stash" }],
-  }));
+    },
+    {
+      name: "chat.follow-up",
+      title: "Queue a follow-up",
+      hint: { label: "follow-up" },
+      enabled: () => hasText() && props.running,
+      run: sendAs("follow-up"),
+    },
+    {
+      name: "chat.stop",
+      title: "Stop",
+      hint: { label: "stop" },
+      enabled: () => props.running,
+      run: () => {
+        props.cancel();
+      },
+    },
+    {
+      name: "chat.clear",
+      title: "Clear draft",
+      hint: { label: "clear" },
+      enabled: hasText,
+      run: () => {
+        draft()?.clear();
+      },
+    },
+  ];
 };
 
-/** The draft's keys outside the textarea's own: `tab` and `esc` only while a turn runs. */
-const useComposerKeys = (props: ComposerProps, take: () => string | undefined) => {
-  useBindings(() => ({
-    commands: [
-      // Declines with no draft, so `ctrl+c` goes on to quit.
-      { name: "chat.clear", title: "Clear draft", run: () => take() !== undefined },
-      {
-        name: "chat.follow-up",
-        title: "Queue a follow-up",
-        run: () => {
-          const text = take();
-          if (text !== undefined) props.send(text, "follow-up");
-        },
-      },
-      { name: "chat.stop", title: "Stop", run: props.cancel },
-    ],
-    bindings: [
-      { key: "ctrl+c", cmd: "chat.clear" },
-      ...(props.running
-        ? [
-            { key: "tab", cmd: "chat.follow-up" },
-            { key: "escape", cmd: "chat.stop" },
-          ]
-        : []),
-    ],
-  }));
-};
+const COMPOSER_KEYS = [
+  { key: "return", cmd: "chat.send" },
+  { key: "return", cmd: "chat.steer" },
+  { key: "kpenter", cmd: "chat.send" },
+  { key: "kpenter", cmd: "chat.steer" },
+  { key: "shift+return", cmd: "chat.newline" },
+  { key: "tab", cmd: "chat.follow-up" },
+  { key: "escape", cmd: "chat.stop" },
+  { key: "ctrl+c", cmd: "chat.clear" },
+];
 
-export function Composer(props: ComposerProps) {
+/** The hints, right-aligned; those that do not fit drop from the end. */
+function HintRow(props: { readonly hints: ReadonlyArray<kit.Hint> }) {
+  let row: BoxRenderable | undefined;
+  const [columns, setColumns] = createSignal<number>();
+
+  return (
+    <box
+      ref={(made) => {
+        row = made;
+      }}
+      flexDirection="row"
+      justifyContent="flex-end"
+      marginTop={1}
+      onSizeChange={() => {
+        setColumns(row?.width);
+      }}
+    >
+      <kit.Hints hints={props.hints} columns={columns()} />
+    </box>
+  );
+}
+
+export function Composer(
+  props: ComposerProps & {
+    readonly screen: ChatScreen["Service"];
+    readonly triggers: DraftTriggers["Service"];
+  },
+) {
   const color = useColor();
   const syntax = useSyntax();
   let draft: TextareaRenderable | undefined;
-  const tags = useTagList(() => draft);
+  const menu = useDraftMenu(() => draft, props.triggers);
 
-  /** The draft's text, cleared from the textarea; nothing when it is blank. */
-  const take = () => {
-    const text = draft?.plainText.trim() ?? "";
-    if (text !== "") draft?.clear();
+  // Only while the draft has focus; behind a dialog the dialog shows its own keys.
+  const hints = useKeymapSelector((keymap) => (draft?.focused === true ? activeHints(keymap) : []));
 
-    return text === "" ? undefined : text;
-  };
-
-  useComposerKeys(props, take);
-  useStashKey(() => draft);
-
-  const hints = () =>
-    tags.rows() === undefined
-      ? [...(props.running ? WORKING_HINTS : IDLE_HINTS), ...props.screenHints]
-      : TAG_HINTS;
-
-  const submit = () => {
-    const text = take();
-    if (text !== undefined) props.send(text, props.running ? "steer" : undefined);
-  };
+  useBindings(() => ({
+    target: () => draft,
+    commands: composerCommands(props, () => draft, props.screen.draft.text).map(keymapCommand),
+    bindings: COMPOSER_KEYS,
+  }));
 
   return (
     <box flexShrink={0} paddingX={2} paddingTop={1}>
-      <Show when={tags.rows()}>{(rows) => <TagMenu rows={rows()} under={tags.under()} />}</Show>
+      <Show when={menu.rows()}>
+        {(rows) => <DraftMenu rows={rows()} under={menu.under()} empty={menu.empty()} />}
+      </Show>
       <box flexDirection="row" height={DRAFT_ROWS}>
         <Gutter rows={DRAFT_ROWS} />
         <textarea
           ref={(made) => {
             draft = made;
+            props.screen.attach(made);
           }}
           focused
           flexGrow={1}
@@ -185,14 +207,14 @@ export function Composer(props: ComposerProps) {
           wrapMode="word"
           syntaxStyle={syntax()}
           keyBindings={[...DRAFT_KEYS]}
-          onSubmit={submit}
-          onContentChange={tags.refresh}
-          onCursorChange={tags.refresh}
+          onContentChange={() => {
+            props.screen.edited();
+            menu.refresh();
+          }}
+          onCursorChange={menu.refresh}
         />
       </box>
-      <box flexDirection="row" justifyContent="flex-end" marginTop={1}>
-        <kit.Hints hints={hints()} />
-      </box>
+      <HintRow hints={hints()} />
     </box>
   );
 }

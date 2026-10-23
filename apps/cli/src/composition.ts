@@ -20,7 +20,9 @@ import modelOpenrouter from "@shanepadgett/liminal-model-openrouter";
 import persona from "@shanepadgett/liminal-persona";
 import session from "@shanepadgett/liminal-session";
 import settings from "@shanepadgett/liminal-settings";
+import slash from "@shanepadgett/liminal-slash";
 import sqlite from "@shanepadgett/liminal-sqlite";
+import stash from "@shanepadgett/liminal-stash";
 import systemPrompt from "@shanepadgett/liminal-system-prompt";
 import tags from "@shanepadgett/liminal-tags";
 import theme from "@shanepadgett/liminal-theme";
@@ -64,6 +66,8 @@ export const plugins = [
   tags,
   theme,
   chat,
+  stash,
+  slash,
 ] as const;
 
 /** The client host, with the composition built behind it. */

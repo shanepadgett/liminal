@@ -1,4 +1,4 @@
-/** The chat tables, one migration per change, applied in id order. */
+/** The stash tables, one migration per change, applied in id order. */
 import { Effect } from "effect";
 import { Migrator, SqlClient } from "effect/sql";
 
@@ -18,5 +18,5 @@ const createStashes = Effect.flatMap(
 /** Applies the migrations the database has not seen yet. */
 export const migrate = Migrator.make({})({
   loader: Migrator.fromRecord({ "0001_create_stashes": createStashes }),
-  table: "chat_migrations",
+  table: "stash_migrations",
 });

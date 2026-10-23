@@ -5,7 +5,7 @@ import type { SessionView } from "@shanepadgett/liminal-client";
 import { Registry } from "@shanepadgett/liminal-core";
 import type { SendMode } from "@shanepadgett/liminal-loop/contract";
 import type { SessionEvent, SessionId } from "@shanepadgett/liminal-session/contract";
-import { defineSlot, type kit } from "@shanepadgett/liminal-tui";
+import { defineSlot } from "@shanepadgett/liminal-tui";
 
 /** How a plugin's saved events of `kind` show in the transcript. */
 export interface ItemView {
@@ -30,8 +30,6 @@ export interface ComposerProps {
   readonly send: (text: string, mode?: SendMode) => void;
   /** Stops the running turn. */
   readonly cancel: () => void;
-  /** Keys the screen adds to the composer's own hints, such as `ctrl+b` while the sidebar is hidden. */
-  readonly screenHints: readonly kit.Hint[];
 }
 
 /** Where the user writes; the last fill wins. */

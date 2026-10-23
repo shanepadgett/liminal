@@ -44,6 +44,7 @@ Work: [plugins/tui.md](plugins/tui.md)
 - [x] `chat`: screen, transcript, sidebar, composer; `liminal` opens the TUI
 - [x] `chat`: `@` file tags (`tags`)
 - [x] `chat`: save stashes with `ctrl+s`
+- [x] Commands, pickers and draft triggers in `packages/tui` and `chat`; `stash` with `/pop`, `slash`, `ctrl+n` and `/new`
 - [ ] `palette`, with the stash list
 - [ ] Model picker and print mode `--model`
 - [ ] `/connect` in the TUI
@@ -111,7 +112,7 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 - A session event when the model changes mid-session, as Pi and OpenCode log, so the transcript shows where it switched.
 - Image generation built in: when a signed-in provider offers an image model, a simple way to make an image with it.
 - A place to read the TUI's logs, such as a file under `~/.liminal/` or OpenTUI's console overlay. Inside the TUI, OpenTUI captures console output, so logged errors such as a slot fill that fails to draw stay hidden.
-- Which input attributes `loop` copies onto a turn's events: it copies them all, so a message-only attribute such as `tags/attached` also lands on the reply and step events. Revisit with `actors`.
+- Which input attributes `loop` copies onto a turn's events: it copies them all, so a message-only attribute such as `loop/added` also lands on the reply and step events. Revisit with `actors`.
 
 ## Open
 

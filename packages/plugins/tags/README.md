@@ -6,10 +6,15 @@
 - `tags/list`: every source's rows, each with its frecency: uses over one plus the days since the last use, counted per workspace folder when a message sends the tag.
 - `tagsIn(text)`: the tags written in a draft, `@path` or `@"path with spaces"`. `tagText(tag)` writes one.
 - `windowOf(content)`: at most the first 2000 lines and 50 KB, with a note when it cuts any.
-- `Attached`: on a message, how many of its last parts its tags added, so screens can show only what the user wrote. `attachedOf(attributes)` reads it.
 
-Wraps `loop/Send`: a user message gains one text part per tag a source knows. A file sends `<file name="path">` with its window, a binary file a one-line note, and a folder `<folder name="path/">` with up to 200 entries one level down. A tag no source knows stays plain text, and a file that cannot be read sends a note, so a tag never fails a send.
+Wraps `loop/Send`: a user message gains one text part per tag a source knows, counted in `loop/added`. A file sends `<file name="path">` with its window, a binary file a one-line note, and a folder `<folder name="path/">` with up to 200 entries one level down. A tag no source knows stays plain text, and a file that cannot be read sends a note, so a tag never fails a send.
 
 Adds the workspace source: Git's tracked files and untracked ones not ignored, with the folders on their paths. Outside a repository its list is empty, and any path under the workspace still attaches.
 
 Requires `loop/Send`, `Directories`, `SqlClient`, `ChildProcessSpawner`, `FileSystem` and `Path`.
+
+## TUI
+
+The `tui` entry adds the `@` draft trigger to chat's `DraftTriggers`: `@` at the start of the draft or after whitespace opens the list of tags. It loads `tags/list` each time it opens, and ranks rows by their `fuzzysort` match times one plus their frecency, 50 at most. Enter tags the row; Tab, shown only on a folder, opens it to list what is inside. A picked tag is a virtual extmark: the cursor steps over it and Backspace removes it whole.
+
+The entry requires `Host`, `Colors` and `DraftTriggers`.

@@ -4,9 +4,9 @@ Liminal's terminal UI, on OpenTUI and Solid. `run(plugins)` loads each plugin's 
 
 | Plugin | Provides | Requires |
 | --- | --- | --- |
-| `tui`, first | `Host`, `Renderer`, `Slots`, `Dialogs` | |
+| `tui`, first | `Host`, `Renderer`, `Slots`, `Dialogs`, `Keymap`, `Pickers` | |
 | each `tui` entry | what it declares | what it declares |
-| `tui-root`, last | | `Host`, `Renderer`, `Colors`, `Slots`, `Dialogs` |
+| `tui-root`, last | | `Host`, `Renderer`, `Colors`, `Slots`, `Dialogs`, `Keymap`, `Pickers` |
 
 `Colors` comes from the theme's `tui` entry; without one the TUI does not start. A `tui` entry that does not default-export a plugin fails with `EntryInvalid`.
 
@@ -16,7 +16,23 @@ Liminal's terminal UI, on OpenTUI and Solid. `run(plugins)` loads each plugin's 
 
 ## Dialogs
 
-`Dialogs.open(dialog)` shows a dialog over a dimmed screen and returns a function that closes it; `escape` closes the top one.
+`Dialogs.open(view)` shows a dialog over a dimmed screen and returns a function that closes it. `view` is `(close) => element`. Opening one takes focus from what had it, such as the draft, so keys bound to the draft stop; `escape` closes the top one, and closing it focuses that again.
+
+## Commands
+
+`Keymap` is the TUI's OpenTUI keymap. `registerCommands(commands, keys)` adds app-wide commands and the keys that run them until the caller's scope closes. A `Command` has a `name`, a `title`, a `run`, and optionally a `category`, a `slash` name with `aliases`, a `hint` and `enabled`. While `enabled` reads false, the command neither runs nor shows its hint, and its key passes on.
+
+A `hint` is `{ label, keys? }`, shown beside the command's first key; `keys` sets other key text, such as `↑↓` for up and down shown together. `keymapCommand(command)` gives the keymap's form of a command, for `useBindings` in a component; `commandLayer(commands, keys, target?)` gives a layer, active only while `target` or something inside it has focus.
+
+A hint shows only for a key that would run now. `activeHints(keymap)` reads them from the keymap's active keys: higher-priority layers first, then newer layers. A key shows once, for the command that wins it. `useHints()` gives them as an accessor, which every hint line uses.
+
+`listCommands(keymap)` reads back the commands reachable now, with their keys; `slashCommands` keeps those with a slash name.
+
+## Pickers
+
+`openPicker(spec)` opens the kit's `Picker` in a dialog. A `PickerSpec` is the picker's props plus a `name`, such as `stash/stashes`. Every spec passes through the `Pickers` pipeline before it opens, so a plugin can wrap a picker by its name to change its rows or add keys.
+
+The picker filters its rows with `fuzzysort` as the user types, and groups them by `section`. Up and Down move, Enter calls `onSelect` and closes, Esc closes. Each action is a key with a label in the hints; it closes the picker unless `keepsOpen` is set. Enter and the actions work, and show their hints, only while a row is selected, and Up and Down only with more than one row. The picker's keys work while its input has focus. `onMove` runs as the selection moves and `onClose` when it closes.
 
 ## Hooks
 
@@ -30,6 +46,6 @@ Liminal's terminal UI, on OpenTUI and Solid. `run(plugins)` loads each plugin's 
 
 ## Kit
 
-`kit` holds the shared components: `Chip`, `ChoiceRow`, `Dialog`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Rule`, `Section`, `Spinner`. They read colors by role name from `@shanepadgett/liminal-client`.
+`kit` holds the shared components: `Chip`, `ChoiceRow`, `Confirm`, `Dialog`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Rule`, `Section`, `Spinner`. They read colors by role name from `@shanepadgett/liminal-client`.
 
 Run it with Bun's `@opentui/solid/preload`, which compiles `.tsx`.

@@ -1,8 +1,8 @@
-/** Stashes: drafts the user sets aside, one list per workspace folder, served over `ChatRpc`. */
+/** Stashes: drafts the user sets aside, one list per workspace folder, served over `StashRpc`. */
 import { Schema } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
-/** A stashed draft; `id` names it for `chat/unstash`. */
+/** A stashed draft; `id` names it for `stash/drop`. */
 export const Stash = Schema.Struct({
   id: Schema.Int,
   text: Schema.String,
@@ -18,10 +18,10 @@ export class StashesFailed extends Schema.TaggedError<
   { readonly brand: unique symbol }
 >()("StashesFailed", { message: Schema.String }) {}
 
-export class ChatRpc extends RpcGroup.make(
+export class StashRpc extends RpcGroup.make(
   /** Stashes `text` in the workspace folder's list; the same text again keeps one stash. */
-  Rpc.make("chat/stash", { payload: { text: Schema.String }, error: StashesFailed }),
+  Rpc.make("stash/save", { payload: { text: Schema.String }, error: StashesFailed }),
   /** The workspace folder's stashes, newest first. */
-  Rpc.make("chat/stashes", { success: Schema.Array(Stash), error: StashesFailed }),
-  Rpc.make("chat/unstash", { payload: { id: Schema.Int }, error: StashesFailed }),
+  Rpc.make("stash/list", { success: Schema.Array(Stash), error: StashesFailed }),
+  Rpc.make("stash/drop", { payload: { id: Schema.Int }, error: StashesFailed }),
 ) {}

@@ -2,7 +2,7 @@
 import { type Effect, Option, Schema } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
-import { Attribute, type Attributes, Registry } from "@shanepadgett/liminal-core";
+import { Registry } from "@shanepadgett/liminal-core";
 
 export const TagKind = Schema.Literals(["file", "folder"]);
 export type TagKind = typeof TagKind.Type;
@@ -38,17 +38,6 @@ export class TagSources extends Registry.Service<TagSources, TagSource>()("tags/
 export class TagsRpc extends RpcGroup.make(
   Rpc.make("tags/list", { success: Schema.Array(ListedTag) }),
 ) {}
-
-/** On a message: how many of its last parts its tags added, so a screen can leave them out. */
-export const Attached = Attribute.make("tags/attached", Schema.Int);
-
-/** How many of the message's last parts its tags added; 0 when none. */
-export const attachedOf = (attributes: Attributes): number => {
-  const encoded = attributes[Attached.key];
-  if (encoded === undefined) return 0;
-
-  return Option.getOrElse(Schema.decodeOption(Attached.schema)(encoded), () => 0);
-};
 
 /** `tag` as a draft writes it: `@path`, or `@"path"` when it holds a space. */
 export const tagText = (tag: string) => (/\s/.test(tag) ? `@"${tag}"` : `@${tag}`);

@@ -1,6 +1,7 @@
 /**
  * `@` tags: the workspace's files and folders as the first tag source, the list screens show, and
- * the `loop/Send` step that adds each tagged file's text to the message that tags it.
+ * the `loop/Send` step that adds each tagged file's text to the message that tags it. The `tui`
+ * entry adds the `@` draft trigger.
  */
 import { Effect, FileSystem, Layer, Option, Path } from "effect";
 import { ChildProcessSpawner } from "effect/process";
@@ -8,11 +9,11 @@ import { SqlClient } from "effect/sql";
 
 import { Attribute, definePlugin, Registry } from "@shanepadgett/liminal-core";
 import { Directories } from "@shanepadgett/liminal-directories/contract";
-import { type Input, Send } from "@shanepadgett/liminal-loop/contract";
+import { Added, addedOf, type Input, Send } from "@shanepadgett/liminal-loop/contract";
 import type { Message } from "@shanepadgett/liminal-model/contract";
 import { MessageEvent } from "@shanepadgett/liminal-session/contract";
 
-import { Attached, type TagSource, TagSources, TagsRpc, tagsIn } from "./contract.ts";
+import { type TagSource, TagSources, TagsRpc, tagsIn } from "./contract.ts";
 import { migrate } from "./migrations.ts";
 import * as Uses from "./uses.ts";
 import { workspaceSource } from "./workspace.ts";
@@ -58,7 +59,8 @@ const makeWithTags = Effect.gen(function* () {
       attached.map(({ tag }) => tag),
     );
 
-    const attributes = yield* Attribute.set(input.attributes, Attached, attached.length);
+    const added = addedOf(input.attributes) + attached.length;
+    const attributes = yield* Attribute.set(input.attributes, Added, added);
     const parts = attached.map(({ text }) => ({ type: "text" as const, text }));
 
     return yield* MessageEvent.make(
@@ -119,4 +121,5 @@ export default definePlugin({
   layer: Layer.mergeAll(steps, rpc).pipe(
     Layer.provideMerge(Layer.effect(TagSources, Registry.make<TagSource>())),
   ),
+  entries: { tui: () => import("./tui/index.tsx") },
 });

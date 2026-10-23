@@ -1,12 +1,18 @@
-/** The plugin under every `tui` entry: the host, the renderer, the slots and the dialogs. */
+/**
+ * The plugin under every `tui` entry: the host, the renderer, the keymap, the slots, the dialogs
+ * and the pickers pipeline.
+ */
 import type { CliRenderer } from "@opentui/core";
+import { createDefaultOpenTuiKeymap } from "@opentui/keymap/opentui";
 import { createSolidSlotRegistry } from "@opentui/solid";
 import { Context, Effect, FiberSet, Layer } from "effect";
 
 import { Host } from "@shanepadgett/liminal-client";
 import { definePlugin } from "@shanepadgett/liminal-core";
 
+import { Keymap } from "./commands.ts";
 import { Dialogs, makeDialogs } from "./dialogs.tsx";
+import { makePickers, Pickers } from "./pickers.tsx";
 import { makeSlots, Slots } from "./slots.tsx";
 
 /** The terminal the TUI draws in. */
@@ -27,18 +33,36 @@ const slotRegistry = Effect.fn("slotRegistry")(function* (renderer: CliRenderer)
   );
 });
 
+/** The default keymap, with a command's `hint` kept where hint lines read it. */
+const keymapOf = (renderer: CliRenderer) => {
+  const keymap = createDefaultOpenTuiKeymap(renderer);
+
+  keymap.registerCommandFields({
+    hint: (value, ctx) => {
+      ctx.attr("hint", value);
+    },
+  });
+
+  return keymap;
+};
+
+const make = Effect.fn("tui.base")(function* (host: Host["Service"], renderer: CliRenderer) {
+  const registry = yield* slotRegistry(renderer);
+  const pickers = yield* makePickers;
+
+  return Context.make(Host, host).pipe(
+    Context.add(Renderer, renderer),
+    Context.add(Keymap, keymapOf(renderer)),
+    Context.add(Slots, makeSlots(registry)),
+    Context.add(Dialogs, makeDialogs(renderer)),
+    Context.add(Pickers, pickers),
+  );
+});
+
 export const base = (host: Host["Service"], renderer: CliRenderer) =>
   definePlugin({
     name: "tui",
-    provides: [Host, Renderer, Slots, Dialogs],
+    provides: [Host, Renderer, Keymap, Slots, Dialogs, Pickers],
     requires: [],
-    layer: Layer.effectContext(
-      Effect.map(slotRegistry(renderer), (registry) =>
-        Context.make(Host, host).pipe(
-          Context.add(Renderer, renderer),
-          Context.add(Slots, makeSlots(registry)),
-          Context.add(Dialogs, makeDialogs()),
-        ),
-      ),
-    ),
+    layer: Layer.effectContext(make(host, renderer)),
   });

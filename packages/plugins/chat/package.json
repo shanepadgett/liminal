@@ -4,13 +4,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./contract": "./src/contract.ts",
     "./view": "./src/view/index.ts",
     "./tui": "./src/tui/index.tsx"
   },
   "dependencies": {
-    "beautiful-mermaid": "1.1.3",
-    "fuzzysort": "4.0.2"
+    "beautiful-mermaid": "1.1.3"
   },
   "peerDependencies": {
     "@opentui/core": "0.6.6",
@@ -22,7 +20,6 @@
     "@shanepadgett/liminal-loop": "workspace:*",
     "@shanepadgett/liminal-model": "workspace:*",
     "@shanepadgett/liminal-session": "workspace:*",
-    "@shanepadgett/liminal-tags": "workspace:*",
     "@shanepadgett/liminal-tui": "workspace:*",
     "effect": "*",
     "solid-js": "1.9.12"

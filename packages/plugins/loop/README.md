@@ -6,6 +6,7 @@ Runs turns: an input starts one, the model is called, the tools it asks for run,
 - `Inbox.cancel(session)`: stops the running turn and returns the inputs that were waiting.
 - `Inbox.state(session)`: whether a turn (or a fold) runs in the session now, then each change. Only `loop` knows this; the log can show a turn open that a crash left behind.
 - `Send`: the pipeline every input goes through; wrap it to attach attributes or turn inputs away.
+- `Added`: the `loop/added` attribute on a user message, how many of its last parts plugins added on send, so screens show only what the user wrote. A wrap that appends parts adds its count to the one set; `addedOf(attributes)` reads it.
 - `Turns.request(session)`: the session's next model request, read from its log.
 - `Turns.fold(session)`: waits for the running turn, then logs the system prompt and tool list again.
 - `BeforeCall`: hooks that run before each model call, after the system prompt and tool list sync.

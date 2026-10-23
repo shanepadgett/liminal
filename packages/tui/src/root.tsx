@@ -2,7 +2,6 @@
  * The plugin after every `tui` entry: it draws the screen slot and the dialogs over it. It requires
  * `Colors`, so a composition without a theme fails to start.
  */
-import { createDefaultOpenTuiKeymap } from "@opentui/keymap/opentui";
 import { KeymapProvider, useBindings } from "@opentui/keymap/solid";
 import { render } from "@opentui/solid";
 import { Effect, FiberSet, Layer } from "effect";
@@ -13,7 +12,9 @@ import { definePlugin } from "@shanepadgett/liminal-core";
 import { Renderer } from "./base.ts";
 import { ForkProvider, type Services } from "./bridge.ts";
 import { Colors, ColorsProvider, useColor } from "./colors.ts";
+import { Keymap } from "./commands.ts";
 import { DialogLayer, Dialogs } from "./dialogs.tsx";
+import { Pickers } from "./pickers.tsx";
 import { RegistryProvider, screen, Slots, SlotView } from "./slots.tsx";
 
 /** What shows while no plugin fills the screen; `ctrl+c` quits, as the screen would let it. */
@@ -48,7 +49,7 @@ const draw = Effect.gen(function* () {
   const slots = yield* Slots;
   const dialogs = yield* Dialogs;
   const fork = yield* FiberSet.makeRuntime<Services>();
-  const keymap = createDefaultOpenTuiKeymap(renderer);
+  const keymap = yield* Keymap;
 
   const quit = () => {
     renderer.destroy();
@@ -72,6 +73,6 @@ const draw = Effect.gen(function* () {
 export const root = definePlugin({
   name: "tui-root",
   provides: [],
-  requires: [Host, Renderer, Colors, Slots, Dialogs],
+  requires: [Host, Renderer, Keymap, Colors, Slots, Dialogs, Pickers],
   layer: Layer.effectDiscard(draw),
 });

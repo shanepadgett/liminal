@@ -1,8 +1,9 @@
 /**
- * The tags matching what follows a typed `@`, on a raised panel a row above the draft, as the
- * gallery's slash menu draws commands. Its pointer is a `➜`, not the draft's chevron, so the two
- * are not mistaken for each other. A line along the top edge of its first row tops the panel, and
- * its rows fade down into the composer's background. The row under the cursor stays in view.
+ * The rows a draft trigger offers, such as tags after `@` or commands after `/`, on a raised panel
+ * a row above the draft, as the gallery's slash menu draws them. Its pointer is a `➜`, not the
+ * draft's chevron, so the two are not mistaken for each other. A line along the top edge of its
+ * first row tops the panel, and its rows fade down into the composer's background. The row under
+ * the cursor stays in view.
  */
 
 import type { BorderCharacters, ScrollBoxRenderable } from "@opentui/core";
@@ -10,7 +11,7 @@ import { createEffect, For, Show } from "solid-js";
 
 import { kit, useColor, useMix } from "@shanepadgett/liminal-tui";
 
-import type { Ranked } from "./tags.ts";
+import type { DraftRow } from "./triggers.ts";
 
 const MENU_ROWS = 8;
 
@@ -33,23 +34,33 @@ const TOP_EDGE: BorderCharacters = {
   cross: EDGE,
 };
 
-const rowId = (index: number) => `chat-tag-${index}`;
+const rowId = (index: number) => `chat-menu-${index}`;
 
-export const TAG_HINTS: readonly kit.Hint[] = [
-  { keys: "↑↓", label: "choose" },
-  { keys: "enter", label: "tag" },
-  { keys: "tab", label: "open folder" },
-  { keys: "esc", label: "close" },
-];
+/** The line that tops the panel. */
+function TopEdge() {
+  const color = useColor();
 
-export function TagMenu(props: {
-  readonly rows: readonly Ranked[];
+  return (
+    <box
+      height={1}
+      border={["top"]}
+      customBorderChars={TOP_EDGE}
+      borderColor={color("border.base")}
+      backgroundColor={color("surface.raised")}
+    />
+  );
+}
+
+export function DraftMenu(props: {
+  readonly rows: ReadonlyArray<DraftRow>;
+  /** Shown when no row matches. */
+  readonly empty: string;
   /** The row under the cursor. */
   readonly under: number;
 }) {
   const color = useColor();
   const mix = useMix();
-  const columns = () => kit.labelColumnsOf(props.rows.map(({ row }) => `@${row.tag}`));
+  const columns = () => kit.labelColumnsOf(props.rows.map((row) => row.label));
   const shown = () => Math.max(1, Math.min(props.rows.length, MENU_ROWS));
   let list: ScrollBoxRenderable | undefined;
 
@@ -67,18 +78,12 @@ export function TagMenu(props: {
 
   return (
     <box marginBottom={1}>
-      <box
-        height={1}
-        border={["top"]}
-        customBorderChars={TOP_EDGE}
-        borderColor={color("border.base")}
-        backgroundColor={color("surface.raised")}
-      />
+      <TopEdge />
       <Show
         when={props.rows.length > 0}
         fallback={
           <box backgroundColor={fadeOf(0)}>
-            <text fg={color("text.faint")}> No files match</text>
+            <text fg={color("text.faint")}>{` ${props.empty}`}</text>
           </box>
         }
       >
@@ -90,11 +95,12 @@ export function TagMenu(props: {
           scrollbarOptions={{ visible: false }}
         >
           <For each={props.rows}>
-            {(ranked, index) => (
+            {(row, index) => (
               <box id={rowId(index())} backgroundColor={fadeOf(index())}>
                 <kit.ChoiceRow
-                  label={`@${ranked.row.tag}`}
-                  matches={ranked.matches.map((at) => at + 1)}
+                  label={row.label}
+                  detail={row.detail}
+                  matches={row.matches}
                   labelColumns={columns()}
                   isUnder={index() === props.under}
                   pointer={MENU_POINTER}

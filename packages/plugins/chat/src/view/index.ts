@@ -8,6 +8,7 @@ import { Option, Schema } from "effect";
 
 import type { SessionView } from "@shanepadgett/liminal-client";
 import {
+  addedOf,
   Interrupted,
   ReplyDelta,
   StepEnded,
@@ -23,7 +24,6 @@ import {
   Notice,
   type SessionEvent,
 } from "@shanepadgett/liminal-session/contract";
-import { attachedOf } from "@shanepadgett/liminal-tags/contract";
 
 export type ToolStatus = "running" | "done" | "failed";
 
@@ -103,7 +103,7 @@ type Builder = ReturnType<typeof makeBuilder>;
 
 const addInput = (builder: Builder, event: SessionEvent, message: Message) => {
   const turn = builder.current();
-  const text = textOf(message, attachedOf(event.attributes));
+  const text = textOf(message, addedOf(event.attributes));
 
   if (turn.input === undefined && turn.items.size === 0) turn.input = text;
   else builder.put({ kind: "input", id: String(event.seq), text });
