@@ -169,10 +169,5 @@
     "version": "4.0.2",
     "fingerprint": "1b9af2cd3cbd9541",
     "commits": []
-  },
-  "partial-json": {
-    "version": "0.1.7",
-    "fingerprint": "d84d2f87a2c811c0",
-    "commits": []
   }
 }

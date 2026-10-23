@@ -213,7 +213,7 @@ xterm.js without a renderer: a terminal emulator in plain JavaScript that takes 
 jsdiff: line diffs and unified patches. structuredPatch and formatPatch with OMIT_HEADERS give hunks only.
 
 - Docs: `docs/reference/copies/diff/9.0.0/` (1 file: README.md)
-- API (types): `tools/planned/node_modules/diff/libesm/index.d.ts`
+- API (types): `packages/plugins/tools-edit/node_modules/diff/libesm/index.d.ts`
 
 ## beautiful-mermaid 1.1.3
 
@@ -228,10 +228,3 @@ Fuzzy search with ranking and match highlighting: `go(search, targets, { key, ke
 
 - Docs: `docs/reference/copies/fuzzysort/4.0.2/` (1 file: README.md)
 - API (types): `apps/gallery/node_modules/fuzzysort/index.d.ts`
-
-## partial-json 0.1.7
-
-Parses incomplete JSON from a stream: `parse(text, Allow)` returns what is complete so far; `Allow` picks which types may be partial. For streaming tool arguments.
-
-- Docs: `docs/reference/copies/partial-json/0.1.7/` (1 file: README.md)
-- API (types): `tools/planned/node_modules/partial-json/dist/index.d.ts`

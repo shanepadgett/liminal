@@ -7,7 +7,7 @@ import { Effect, FileSystem, Option, Path, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import { Directories } from "@shanepadgett/liminal-directories/contract";
-import { entriesOf, isBinary, pageOf } from "@shanepadgett/liminal-tools-files/contract";
+import { entriesOf, isBinary, pageOf } from "@shanepadgett/liminal-tools-read/contract";
 
 import type { TagRow, TagSource } from "./contract.ts";
 

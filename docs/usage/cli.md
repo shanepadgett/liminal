@@ -226,6 +226,8 @@ Changes to these files reach the model before its next call.
 
 The model reads files and folders with its `read` tool, by a path relative to the folder you run Liminal in or an absolute one. It reads text in pages of up to 2,000 lines, and sees PNG, JPEG, GIF and WebP images when the model takes images.
 
+It changes files with `edit`, which replaces exact text, several places in one call, and keeps the file's line endings. It makes or replaces whole files with `write`, which makes missing folders. In the transcript each change is one row with the lines added and removed, such as `+3 -1`; click it to see the diff.
+
 It runs commands with `shell`, one `bash -c` per call in that folder, stopped after 2 minutes unless it asks for longer. Commands that keep running, such as dev servers and watchers, run with `process_start` in a terminal of their own; the model reads their output, types into them and stops them. They stop when Liminal exits.
 
 When a tool's output is over 2,000 lines or 50 KB, the model gets the first and last parts, and the whole output is saved in `liminal-tool-output` in the system temp folder, readable only by you. Saved output is removed after 7 days.

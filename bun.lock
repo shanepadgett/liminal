@@ -60,9 +60,11 @@
         "@shanepadgett/liminal-tool-definitions": "workspace:*",
         "@shanepadgett/liminal-tool-output": "workspace:*",
         "@shanepadgett/liminal-tools": "workspace:*",
-        "@shanepadgett/liminal-tools-files": "workspace:*",
+        "@shanepadgett/liminal-tools-edit": "workspace:*",
         "@shanepadgett/liminal-tools-processes": "workspace:*",
+        "@shanepadgett/liminal-tools-read": "workspace:*",
         "@shanepadgett/liminal-tools-shell": "workspace:*",
+        "@shanepadgett/liminal-tools-write": "workspace:*",
         "@shanepadgett/liminal-tui": "workspace:*",
         "effect": "4.0.5",
       },
@@ -459,7 +461,7 @@
         "@shanepadgett/liminal-loop": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-session": "workspace:*",
-        "@shanepadgett/liminal-tools-files": "workspace:*",
+        "@shanepadgett/liminal-tools-read": "workspace:*",
         "@shanepadgett/liminal-tui": "workspace:*",
         "effect": "*",
       },
@@ -510,14 +512,23 @@
         "effect": "*",
       },
     },
-    "packages/plugins/tools-files": {
-      "name": "@shanepadgett/liminal-tools-files",
+    "packages/plugins/tools-edit": {
+      "name": "@shanepadgett/liminal-tools-edit",
       "version": "0.1.0",
+      "dependencies": {
+        "diff": "9.0.0",
+      },
       "peerDependencies": {
+        "@opentui/solid": "0.6.6",
+        "@shanepadgett/liminal-chat": "workspace:*",
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
         "@shanepadgett/liminal-tools": "workspace:*",
+        "@shanepadgett/liminal-tools-read": "workspace:*",
+        "@shanepadgett/liminal-tui": "workspace:*",
         "effect": "*",
+        "solid-js": "1.9.12",
       },
     },
     "packages/plugins/tools-processes": {
@@ -537,6 +548,16 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/tools-read": {
+      "name": "@shanepadgett/liminal-tools-read",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-tools": "workspace:*",
+        "effect": "*",
+      },
+    },
     "packages/plugins/tools-shell": {
       "name": "@shanepadgett/liminal-tools-shell",
       "version": "0.1.0",
@@ -549,6 +570,24 @@
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-directories": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-tools": "workspace:*",
+        "@shanepadgett/liminal-tui": "workspace:*",
+        "effect": "*",
+        "solid-js": "1.9.12",
+      },
+    },
+    "packages/plugins/tools-write": {
+      "name": "@shanepadgett/liminal-tools-write",
+      "version": "0.1.0",
+      "dependencies": {
+        "diff": "9.0.0",
+      },
+      "peerDependencies": {
+        "@opentui/solid": "0.6.6",
+        "@shanepadgett/liminal-chat": "workspace:*",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
         "@shanepadgett/liminal-session": "workspace:*",
         "@shanepadgett/liminal-tools": "workspace:*",
         "@shanepadgett/liminal-tui": "workspace:*",
@@ -579,9 +618,7 @@
       "peerDependencies": {
         "@effect/sql-pg": "4.0.5",
         "@opencode/codemode": "2.1.2",
-        "diff": "9.0.0",
         "electrobun": "2.0.4",
-        "partial-json": "0.1.7",
       },
     },
   },
@@ -891,11 +928,15 @@
 
     "@shanepadgett/liminal-tools": ["@shanepadgett/liminal-tools@workspace:packages/plugins/tools"],
 
-    "@shanepadgett/liminal-tools-files": ["@shanepadgett/liminal-tools-files@workspace:packages/plugins/tools-files"],
+    "@shanepadgett/liminal-tools-edit": ["@shanepadgett/liminal-tools-edit@workspace:packages/plugins/tools-edit"],
 
     "@shanepadgett/liminal-tools-processes": ["@shanepadgett/liminal-tools-processes@workspace:packages/plugins/tools-processes"],
 
+    "@shanepadgett/liminal-tools-read": ["@shanepadgett/liminal-tools-read@workspace:packages/plugins/tools-read"],
+
     "@shanepadgett/liminal-tools-shell": ["@shanepadgett/liminal-tools-shell@workspace:packages/plugins/tools-shell"],
+
+    "@shanepadgett/liminal-tools-write": ["@shanepadgett/liminal-tools-write@workspace:packages/plugins/tools-write"],
 
     "@shanepadgett/liminal-tui": ["@shanepadgett/liminal-tui@workspace:packages/tui"],
 
@@ -1062,8 +1103,6 @@
     "p-try": ["p-try@2.2.0", "", {}, "sha512-R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ=="],
 
     "parse5": ["parse5@7.3.0", "", { "dependencies": { "entities": "^6.0.0" } }, "sha512-IInvU7fabl34qmi9gY8XOVxhYyMyuH2xUNpb2q8/Y+7552KlejkRvqvD19nMoUW/uQGGbqNpA6Tufu5FL5BZgw=="],
-
-    "partial-json": ["partial-json@0.1.7", "", {}, "sha512-Njv/59hHaokb/hRUjce3Hdv12wd60MtM9Z5Olmn+nehe0QDAsRtRbJPvJ0Z91TusF0SuZRIvnM+S4l6EIP8leA=="],
 
     "path-exists": ["path-exists@3.0.0", "", {}, "sha512-bpC7GYwiDYQ4wYLe+FA8lhRjhQCMcQGuSgGGqDkg/QerRWw9CmGRT0iSOVRSZJ29NMLZgIzqaljJ63oaL4NIJQ=="],
 

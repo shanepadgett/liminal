@@ -1,8 +1,9 @@
 /**
  * One line per tool call: an icon for where it stands, the tool and its input. Everything but the
  * icon sits dimmed, so the replies around the rows read first. An input too long for the line is
- * cut in the middle, keeping its end. While the model writes a call, its input inks in. A row with
- * details brightens under the mouse, and a click opens or closes the details under it.
+ * cut in the middle, keeping its end, before an optional note such as `+3 -1`. While the model
+ * writes a call, its input inks in. A row with details brightens under the mouse, and a click opens
+ * or closes the details under it.
  */
 
 import { type BoxRenderable } from "@opentui/core";
@@ -59,6 +60,8 @@ const cutMiddle = (cells: readonly string[], width: number): readonly string[] =
 
 interface WorkRowProps {
   readonly item: ToolItem;
+  /** A short fact after the input, such as `+3 -1` or `2 edits`. */
+  readonly note?: string | undefined;
   /**
    * Draws what a click opens under the row, such as the call's output; without it the row stays
    * still. Called each time the row opens, since closing it destroys what was drawn.
@@ -74,11 +77,12 @@ export function WorkRow(props: WorkRowProps) {
   const [isHovered, setHovered] = createSignal(false);
   const [isOpen, setOpen] = createSignal(false);
   const hasDetails = () => props.details !== undefined;
+  const note = () => (props.note === undefined || props.note === "" ? "" : `  ${props.note}`);
 
   const cells = () =>
     cutMiddle(
       kit.cellsOf(oneLine(inputOf(props.item.params))),
-      Math.max(1, width() - TOOL_COLUMNS),
+      Math.max(1, width() - TOOL_COLUMNS - kit.cellsOf(note()).length),
     );
 
   // A live call's newest cells warm up from the background; a saved one is settled.
@@ -118,6 +122,7 @@ export function WorkRow(props: WorkRowProps) {
           <text wrapMode="none">
             <span style={{ fg: color("text.base") }}>{props.item.name.padEnd(TOOL_COLUMNS)}</span>
             <For each={runs()}>{(run) => <span style={{ fg: run.fg }}>{run.text}</span>}</For>
+            <span style={{ fg: color("text.faint") }}>{note()}</span>
           </text>
         </box>
       </box>

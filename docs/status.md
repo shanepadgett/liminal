@@ -52,11 +52,11 @@ Planned dependencies are pinned in `tools/planned/package.json` so their docs ar
 
 Work: [plugins/coding.md](plugins/coding.md)
 
-- [x] `read` in `tools-files`, `tool-output`; tool results hold text and image parts
+- [x] `read`, `tool-output`; tool results hold text and image parts
 - [x] `tools-shell`; `ToolContext.progress`
 - [x] `tools-processes`
 - [ ] `tools-web`
-- [ ] Split `tools-files` into `tools-read`, `tools-edit`, `tools-write`; build `edit` and `write`
+- [x] `tools-read`, `tools-edit`, `tools-write`; diffs in chat
 - [x] `instructions`, `environment`
 - [x] Recreate `.liminal/`; move `docs/instructions/` to `.liminal/instructions/` with `read-when` front matter
 - [x] `questions`
@@ -120,6 +120,8 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 - Older history in the transcript: the chat screen shows a session's latest 100 events and never calls the session view's `loadOlder`.
 - Telling the model when a `tools-processes` process exits on its own, without a `process_output` call, as OpenCode notifies on a background command's exit.
 - A cap on how many `tools-processes` processes run at once.
+- A live diff in the `edit` row while the call's params stream, as DeepSeek draws one from the params.
+- A read-before-edit check, as Crush has: `edit` and `write` refuse a file the model has not read, or one changed since it read it.
 - Which input attributes `loop` copies onto a turn's events: it copies them all, so a message-only attribute such as `loop/added` also lands on the reply and step events. Revisit with `actors`.
 
 ## Open

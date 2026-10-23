@@ -42,9 +42,11 @@
     "@shanepadgett/liminal-tool-definitions": "workspace:*",
     "@shanepadgett/liminal-tool-output": "workspace:*",
     "@shanepadgett/liminal-tools": "workspace:*",
-    "@shanepadgett/liminal-tools-files": "workspace:*",
+    "@shanepadgett/liminal-tools-edit": "workspace:*",
     "@shanepadgett/liminal-tools-processes": "workspace:*",
+    "@shanepadgett/liminal-tools-read": "workspace:*",
     "@shanepadgett/liminal-tools-shell": "workspace:*",
+    "@shanepadgett/liminal-tools-write": "workspace:*",
     "@shanepadgett/liminal-tui": "workspace:*",
     "effect": "4.0.5"
   }

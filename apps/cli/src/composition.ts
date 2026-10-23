@@ -37,9 +37,11 @@ import theme from "@shanepadgett/liminal-theme";
 import toolDefinitions from "@shanepadgett/liminal-tool-definitions";
 import toolOutput from "@shanepadgett/liminal-tool-output";
 import tools from "@shanepadgett/liminal-tools";
-import toolsFiles from "@shanepadgett/liminal-tools-files";
+import toolsEdit from "@shanepadgett/liminal-tools-edit";
 import toolsProcesses from "@shanepadgett/liminal-tools-processes";
+import toolsRead from "@shanepadgett/liminal-tools-read";
 import toolsShell from "@shanepadgett/liminal-tools-shell";
+import toolsWrite from "@shanepadgett/liminal-tools-write";
 
 /** Bun's files, paths, crypto, HTTP and child processes for the plugins that ask for them. */
 const runtime = definePlugin({
@@ -70,7 +72,9 @@ export const plugins = [
   modelOpenrouter,
   modelOpencodeGo,
   tools,
-  toolsFiles,
+  toolsRead,
+  toolsEdit,
+  toolsWrite,
   toolsShell,
   toolsProcesses,
   toolOutput,

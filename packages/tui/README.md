@@ -50,6 +50,6 @@ Outside components, a `tui` entry's commands run effects with `makeEntryRun(mess
 
 ## Kit
 
-`kit` holds the shared components: `Chip`, `ChoiceRow`, `Confirm`, `Dialog`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Porter`, `Rule`, `SecretInput`, `Section`. `SecretInput` takes typed and pasted text and draws it as dots. `Porter` is the little face that murmurs words while a turn works; give him `words` and `poses` (`{ face, weight, hold }`, each face seven cells) in place of his own, and a single word holds still. `useInkHead` paces streaming text so `Inked` writes it out evenly, however it arrives. They read colors by role name from `@shanepadgett/liminal-client`.
+`kit` holds the shared components: `Chip`, `ChoiceRow`, `Confirm`, `Dialog`, `Diff`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Porter`, `Rule`, `SecretInput`, `Section`. `SecretInput` takes typed and pasted text and draws it as dots. `Diff` draws a unified patch with line numbers and the file's syntax colors, and `changesOf(patch)` counts the lines it adds and removes. `Porter` is the little face that murmurs words while a turn works; give him `words` and `poses` (`{ face, weight, hold }`, each face seven cells) in place of his own, and a single word holds still. `useInkHead` paces streaming text so `Inked` writes it out evenly, however it arrives. They read colors by role name from `@shanepadgett/liminal-client`.
 
 Run it with Bun's `@opentui/solid/preload`, which compiles `.tsx`.

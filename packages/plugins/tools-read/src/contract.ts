@@ -36,11 +36,11 @@ export const entriesOf = Effect.fn("entriesOf")(function* (
   );
 });
 
-/** `text`'s lines; a newline at the end starts no line of its own. */
+/** `text`'s lines, without their LF or CRLF endings; a newline at the end starts no line of its own. */
 const linesOf = (text: string) => {
   if (text === "") return [];
 
-  const lines = text.split("\n");
+  const lines = text.split(/\r?\n/u);
 
   return text.endsWith("\n") ? lines.slice(0, -1) : lines;
 };

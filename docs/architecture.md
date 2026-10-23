@@ -23,7 +23,7 @@ core                      definePlugin, compose, Registry, Pipeline, Attribute  
   ↑
 base plugins              directories · settings · model · session · tools · history · system-prompt · persona · tool-definitions · loop      "an agent"
   ↑
-providers & features      model-anthropic, sqlite, tools-files, approvals, memory, …
+providers & features      model-anthropic, sqlite, tools-read, approvals, memory, …
   ↑
 frontend kit              client (framework-free, Effect RPC) · tui (OpenTUI + slots)
   ↑
@@ -56,8 +56,7 @@ Versions are pinned in `package.json`; [reference/copies/index.md](reference/cop
 | Library | Used by |
 | --- | --- |
 | `fuzzysort` | `packages/tui` (pickers), `tags` (the `@` list), `slash` (the `/` list) |
-| `diff` | `tools-files` edit patches |
-| `partial-json` | `tools-files` `tui` entry, only if Effect AI gives no partial tool arguments |
+| `diff` | `tools-edit`, `tools-write` (patches of each change) |
 | `unbash` | `tools-shell` safety rules |
 | `@xterm/headless` | `tools-processes` (each process's screen) |
 | `@opencode/codemode` | `tools-execute` |
@@ -426,7 +425,9 @@ How `session` does these over `SqlClient` is open.
 | Providers | `model-catalog` | Names, limits, prices from models.dev | base service | `model-catalog` |
 | Providers | `accounts` | Credentials, login methods, `liminal connect` and `/connect` | Add | `logins`, `credential-store` |
 | Storage | `sqlite`, `postgres` | The database: Effect's `SqlClient`; plugins that keep state own their tables | Replace | `session-store`, `credential-store` |
-| Tools | `tools-files` | `read`, `edit`, `write` | Add | `files`, `tools-read`, `tools-edit` |
+| Tools | `tools-read` | `read` | Add | `files`, `tools-read` |
+| Tools | `tools-edit` | `edit`: exact replacements, a diff row in chat | Add | `tools-edit` |
+| Tools | `tools-write` | `write`: whole files, a diff row in chat | Add | `tools-edit` |
 | Tools | `tools-shell` | `shell`, command runner, shell safety | Add | `tools-shell`, `command-runner`, `shell-safety` |
 | Tools | `tools-processes` | `process_start`, `process_output`, `process_input`, `process_stop` in a pseudo-terminal | Add | `processes` |
 | Tools | `tools-web` | `websearch`, `webfetch` | Add | `tools-web` |

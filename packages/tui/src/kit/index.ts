@@ -12,6 +12,7 @@ export {
 
 export { Confirm } from "./Confirm.tsx";
 export { Dialog } from "./Dialog.tsx";
+export { changesOf, Diff } from "./Diff.tsx";
 export { cellsOf, Gradient, gradientOf } from "./Gradient.tsx";
 export { Hatch } from "./Hatch.tsx";
 export type { Hint } from "./hint-layout.ts";

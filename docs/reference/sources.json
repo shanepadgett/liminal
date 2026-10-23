@@ -336,13 +336,6 @@
       "summary": "Fuzzy search with ranking and match highlighting: `go(search, targets, { key, keys, limit, threshold })`, `prepare` for cached targets, `result.highlight`. For the palette and `@` completion.",
       "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
       "api": [{ "kind": "types", "path": "index.d.ts" }]
-    },
-    {
-      "package": "partial-json",
-      "versionSource": "lock",
-      "summary": "Parses incomplete JSON from a stream: `parse(text, Allow)` returns what is complete so far; `Allow` picks which types may be partial. For streaming tool arguments.",
-      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
-      "api": [{ "kind": "types", "path": "dist/index.d.ts" }]
     }
   ]
 }
