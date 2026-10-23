@@ -53,7 +53,9 @@ Planned dependencies are pinned in `tools/planned/package.json` so their docs ar
 Work: [plugins/coding.md](plugins/coding.md)
 
 - [x] `read` in `tools-files`, `tool-output`; tool results hold text and image parts
-- [ ] `edit` and `write` in `tools-files`, `tools-shell`, `tools-web`
+- [x] `tools-shell`; `ToolContext.progress`. Joins the CLI composition with `approvals`
+- [ ] `tools-processes`, `tools-web`
+- [ ] Split `tools-files` into `tools-read`, `tools-edit`, `tools-write`; build `edit` and `write`
 - [x] `instructions`, `environment`
 - [x] Recreate `.liminal/`; move `docs/instructions/` to `.liminal/instructions/` with `read-when` front matter
 - [x] `questions`

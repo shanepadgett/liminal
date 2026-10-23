@@ -206,7 +206,8 @@ interface SessionLog {
 // tools
 interface Tool { name; description; deferred?; sequential?; input: JsonSchema; run(params: Json, ctx: ToolContext): Effect<ToolOutput, ToolFailed> }
 defineTool({ name; description; input: Schema<I>; run(input: I, ctx) }): Tool   // checks params before run
-type ToolContext = { session; callId; attributes }   // attributes of the latest input the turn consumed
+type ToolContext = { session; callId; attributes; progress(data: Json): Effect<void> }   // attributes of the latest input the turn consumed
+ToolProgress: delta { callId; data }           // what progress publishes; holds the whole progress so far, frontends draw the latest
 type ToolOutput = { content: (Text | Image)[] }
 // a deferred tool is left out of a session's tools until a plugin offers it through ToolList.offer
 Tools: Registry<Tool>                          // of two with one name, the last added is used

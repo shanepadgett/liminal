@@ -158,6 +158,7 @@ yield* (yield* Tools).add(add);
 - With `tool-output` composed, text over 2,000 lines or 50 KB is cut to its first and last halves, and the whole text is saved to a file the model can `read`. Page long output yourself, as `read` does, to keep it whole.
 
 - Fail with `ToolFailed` for a failure the model should read; a crash also reaches the model as a failed result.
+- `run`'s second argument, `ToolContext`, has `progress(data)` for showing a long call's progress while it runs, such as `shell`'s last lines. It publishes a `ToolProgress` delta that is not saved; a frontend draws only the latest, so send the whole progress so far each time. Your tool's row in `ToolRows` decodes `data`.
 - Every call goes through the `ToolCall` pipeline; wrap it to see or change each call.
 - To change what the model is told about another plugin's tool, wrap `ToolDefinitions` from `@shanepadgett/liminal-tool-definitions/contract`.
 - Tools added or removed mid-session reach the model before its next call, in the provider's own form or as a note.

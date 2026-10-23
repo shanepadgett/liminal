@@ -38,15 +38,17 @@ flowchart LR
 1. instructions, environment       prompt sections; .liminal/ and docs/instructions/ move
 2. tools-files read, tool-output   ToolResult gains text and image parts
 3. questions                       questions as events, answers as inputs
-4. approvals                       Tool gains hints; asks before risky calls
-5. tools-files edit, write         diffs in chat
-6. tools-shell                     ToolContext gains progress; output as it runs; environment lists found tools (rg, jq)
+4. tools-shell, tools-processes    ToolContext gains progress; output as it runs; shell lists found tools (rg, jq); processes on a pseudo-terminal
+5. approvals                       Tool gains access; asks before risky calls; shell joins the CLI with it
+6. tools-read, tools-edit,         tools-files splits one plugin per tool; diffs in chat
+   tools-write
 7. tools-web                       websearch, webfetch
 8. Liminal on its own repository; settle the database schema
 ```
 
 - Nothing that changes files or runs commands exists before the user can approve it. Pi runs every call with the process's permissions and leaves confirmation to extensions that read MCP-style hints (`readOnlyHint`, `destructiveHint`; Pi `docs/extensions.md`); OpenCode (`core/src/permission`) and Crush (`internal/permission`) ask before risky calls.
-- Each contract change lands with its first user: content parts with `read`, hints with `approvals`, progress with `shell`. Their shapes come from the code that needs them.
+- Each tool is its own plugin, so one can be swapped, such as an OpenAI patch tool for `edit` and `write`. `tools-files` splits into `tools-read`, `tools-edit` and `tools-write` before `edit` and `write` are built.
+- Each contract change lands with its first user: content parts with `read`, `access` with `approvals`, progress with `shell`. Their shapes come from the code that needs them.
 - Size guide from the previous code: `tools-read`, `tools-edit` and `files` about 700 lines; `tools-shell`, `command-runner`, `shell-safety` and `processes` about 2,900; `tools-web` 800; `tool-output` 260; `approval` 1,900; `questions` 2,100; `agents-files`, `instruction-files` and `environment` 1,150.
 
 ## Step 1: prompt sections
@@ -387,6 +389,231 @@ docs/architecture.md                   model, tools, tool-definitions and chat c
 apps/cli                               composition
 ```
 
+## Step 4: shell
+
+`tools-shell` adds `shell`, so approvals is shaped around a real command tool. It joins the CLI composition together with approvals, since nothing runs commands before the user can approve them.
+
+### Prior art
+
+| | Tool | Runs with | Output | Timeout | Background |
+| --- | --- | --- | --- | --- | --- |
+| DeepSeek | `bash`: `command`, `timeout`, `run_in_background` | A fresh `bash -c`, no rc files; an executor service (`dsh-bash-local`, `dsh-bash-sandbox`) the tool talks to | stdout, stderr, exit marker; spill file on overflow | A foreground command past its timeout keeps running as a job and returns its id | Every command is a job when a job registry is composed; `job_output`, `job_kill` |
+| OpenCode | `shell`: `command`, `workdir`, `timeout`, `background` | The user's shell | Merged, truncated, full output saved to a file | Default 2 minutes, `0` for none | `background` returns at once and notifies on exit |
+| Pi | `bash`: `command`, `timeout` | `bash` | Merged, the tail kept | None by default | None |
+| Claude Code | `Bash`: `command`, `timeout`, `description` (5 to 10 words), `run_in_background` | `bash` | Merged | Default 2 minutes | `run_in_background` |
+| archive | `shell`: `command`, `timeout` required; `process_start`, `process_wait`, `process_read`, `process_write`, `process_stop`, `process_list` in `processes` | `/bin/sh` through a `command-runner` service | stdout, then stderr, then the exit line | Stopped at the timeout | A holder program kept processes alive across restarts, with a terminal for REPLs; about 1,750 lines |
+
+Sources: DeepSeek `packages/shell/{shell,bash-local,tool-bash}/README.md`; OpenCode `packages/core/src/tool/plugin/shell.ts`; Pi `packages/coding-agent/src/core/tools/bash.ts`; Claude Code tool prompt (community extraction) and permissions docs; `archive/packages/plugins/{tools-shell,command-runner,shell-safety,processes}`.
+
+### Settled
+
+- `shell` runs `bash -c <command>` in the workspace with `ChildProcess` from `effect/process`: a fresh non-login shell with no rc files, so nothing carries over between calls, as DeepSeek and Pi do. The runner is a module inside `tools-shell`, not its own plugin; a sandbox would replace it later, and that is the time to pull it out.
+- stdin is closed, and `PAGER=cat`, `GIT_PAGER=cat` and `GIT_TERMINAL_PROMPT=0` are set, so a command that would wait for input or a pager fails or finishes instead of hanging.
+- The model reads stdout and stderr merged in the order they came, as a terminal shows them, then one line for how it ended: `[exit code 1]` or `[stopped after 120 seconds]`. A nonzero exit is a result for the model to read, not a failed call. Long output is cut by `tool-output`, which already wraps every call.
+- Interrupting the call, such as Esc ending the turn, stops the command and everything it started: it runs in its own process group, which gets `SIGTERM`, then `SIGKILL` after a few seconds.
+- While it runs, the command's output reaches the transcript row: `ToolContext` gains `progress`, which publishes a delta through the session log, as reply text streams today. Deltas are not saved; the finished result is. `tools-shell`'s `tui` entry adds a row to chat's `ToolRows` that shows the last lines while it runs.
+- The read-only command check on `unbash` and `shell`'s `access` are built with approvals, in the same change that adds `access` to `Tool`. `unbash` 6.0.1 is already pinned in `tools/planned` and listed in `docs/reference/sources.json`.
+
+### Agreed
+
+- `shell` runs foreground commands only. Commands that keep going, such as dev servers, long builds and REPLs, belong to a separate `tools-processes` plugin built right after `shell`: `process_start`, `process_output`, `process_input`, `process_stop`. `shell` does not depend on it. Its processes run on a real pseudo-terminal the agent can type into, and stop when Liminal exits; keeping them alive across restarts, as the archive's holder program did, is left out.
+- The pseudo-terminal is Bun's own (`Bun.spawn`'s `terminal` option, `Bun.Terminal`; openpty on macOS and Linux, ConPTY on Windows). Its output runs through `@xterm/headless` 6.0.0, a terminal emulator in plain JavaScript, so `process_output` returns the screen as a person would see it and the lines that scrolled past; menus redrawn in place, as `npm create vite` draws them, read correctly instead of as repeats. DeepSeek's `terminal-bash` strips escape codes instead and leaves full-screen programs out. `@xterm/headless` is pinned in `tools/planned` until `tools-processes` is built.
+- `shell`'s `timeout` is optional: 120 seconds when left out, 3,600 at most. A command past it is stopped, and the result tells the model to use `process_start` for a command that keeps going.
+- `shell` takes a required `description` of 5 to 10 words, which the transcript row shows as its label; opening the row shows the full command. It is only a label: approvals uses the reviewer's words.
+- `shell`'s own description lists the command-line tools found on `PATH` at start from a fixed list (`rg`, `fd`, `jq`, `git`, `gh`, `bun`, `node`, `python3`), so they show only when `shell` is composed, in place of the work file's line in `environment`.
+
+### Code plan
+
+Mechanisms: `tools-shell` **Adds** `shell` to `Tools` and a row to chat's `ToolRows`. The one contract change is in the base `tools` plugin: `ToolContext` gains `progress`. `docs/architecture.md` line 209 changes in the same change.
+
+Contract change in `packages/plugins/tools/src/contract.ts`:
+
+```ts
+export interface ToolContext {
+  readonly session: SessionId;
+  readonly callId: string;
+  readonly attributes: Attributes;
+  /** Shows the call's progress live; not saved, and only the latest one counts. */
+  readonly progress: (data: Schema.Json) => Effect.Effect<void>;
+}
+
+/** A running call's latest progress, published as a delta. Each tool reads its own `data`. */
+export const ToolProgress = defineEvent(
+  "tools/progress",
+  Schema.Struct({ callId: Schema.String, data: Schema.Json }),
+);
+```
+
+`tools`' `runTool` builds `progress` as `(data) => ToolProgress.make({ callId, data }).pipe(Effect.flatMap((delta) => log.publish(session, delta)))`, so `tools` requires `SessionLog`. Each delta carries the whole current state, not an increment: the session view drops deltas whenever an event is saved, and the latest delta alone must be enough to draw.
+
+`tools-shell`:
+
+```ts
+// src/contract.ts — what the tool takes and what its row reads
+export const ShellParams = Schema.Struct({
+  command: Schema.String,
+  description: Schema.String,   // 5 to 10 words; the row's label
+  timeout: Schema.optional(Schema.Int.check(between(1, 3600))),
+});
+export const ShellProgress = Schema.Struct({ tail: Schema.Array(Schema.String) }); // last 5 lines
+
+// src/run.ts — the runner module
+type Ending = { kind: "exited"; code: number } | { kind: "stopped"; seconds: number };
+interface Ran { readonly output: string; readonly ending: Ending }
+const run: (command: string, options: RunOptions) => Effect<Ran, PlatformError>
+// RunOptions = { cwd, timeout: Duration, onTail: (lines) => Effect<void> }
+```
+
+Call path:
+
+```
+loop ─► ToolCall pipeline ─► tools.runTool (builds context with progress)
+  ─► shell.run(params, context)                         src/index.ts, defineTool
+       ─► run(command, { cwd: workspace, timeout, onTail: (tail) => context.progress({ tail }) })
+            ChildProcess.make("bash", ["-c", command], {
+              cwd, stdin: "ignore", extendEnv: true,
+              env: { PAGER: "cat", GIT_PAGER: "cat", GIT_TERMINAL_PROMPT: "0" },
+              killSignal: "SIGTERM", forceKillAfter: "3 seconds" })
+            handle.all ─► decode text ─► keep head and tail, 10 MB at most
+                       ─► onTail at most every 200 ms
+            race handle.exitCode with the timeout; the scope's end kills the process group
+       ◄─ text: output, then "[exit code N]" or "[stopped after N seconds]"
+  ◄─ tool-output's wrap cuts long text and saves the whole to a file
+```
+
+Esc interrupts the call's fiber; the spawn's scope closes and Effect's spawner kills the group (`detached` is on by default outside Windows, so the command leads its own group). A spawn failure, such as `bash` missing, is a `ToolFailed`.
+
+The tools list: once, when the plugin starts, `bash -c 'command -v rg fd jq git gh bun node python3'` gives the ones on `PATH`, and the description ends with `Installed: rg, git, …`. None found leaves the line out.
+
+The row, `src/tui/ShellRow.tsx`, registered in `ToolRows` for `shell`:
+
+- The label is the description. It reuses `AskRow`'s way: it passes `WorkRow` the item with `params: { description }`, so chat does not change.
+- While the call runs, the last lines of the newest `ToolProgress` delta for its call sit under the row, dimmed. A memo keeps the last tail it saw, so the lines stay while another event's save clears the deltas.
+- Opening the done row shows the command, then the last 10 lines of the result.
+
+Files: `packages/plugins/tools-shell/{package.json, README.md}`, `src/{index.ts, contract.ts, run.ts, installed.ts}`, `src/tui/{index.tsx, ShellRow.tsx}`. `tools` changes in `src/contract.ts` and `src/index.ts`; `docs/architecture.md` gets the new `ToolContext`.
+
+Settled while planning:
+
+- The timeout ending stays plain, `[stopped after 120 seconds]`. `shell` cannot know `tools-processes` is composed, so `process_start`'s description tells the model to use it for commands that keep going.
+- `shell` joins the CLI composition with approvals. Until then a scratch composition runs it, and the row is checked by composing it into a scratch TUI run.
+
+Settled while building:
+
+- A command killed by a signal has no exit code, so it ends with `[ended by a signal]`.
+- After the command exits, output may keep coming for 1 second, such as from a child it left in the background; then the process group is stopped.
+- `tool-output` cuts for the model; `shell` itself keeps at most the first and last 5 MB, so a command that writes without end cannot fill memory.
+- The row's tail shows what a terminal would show of a line with carriage returns: the part after the last one.
+
+## Step 5: approvals
+
+Today every call runs: `ToolCall` (the pipeline every tool call takes) hands it straight to the tool. Step 3 gives the pieces approvals needs. `Questions.ask` waits on the user inside a call, its cover shows waiting asks one at a time, oldest first, so calls in one reply ask in turn, and `Models.generateObject` runs one-off calls on the `small` model.
+
+The chain the work file sets, as a `ToolCall` wrap:
+
+```mermaid
+flowchart LR
+  call[tool call] --> policy
+  policy -->|allow| run[tool runs]
+  policy -->|unsure| review[small model]
+  policy -->|ask| ask[user]
+  review -->|safe| run
+  review -->|unsafe| ask
+  ask -->|approve| run
+  ask -->|reject + note| denied[failed result]
+```
+
+### Prior art
+
+| | What decides | Answers | Grants kept | No one to ask |
+| --- | --- | --- | --- | --- |
+| DeepSeek | An OS sandbox mode per session (read-only, workspace-write, full access) and an approval policy, `ask` or `never`. Experimental Auto review sends every call to a reviewer model; a denial goes to the user with the reviewer's reason; a reviewer failure denies | Allow once, reject | None; `allow_always` deferred because scope and revocation need design | `never` rejects; no answerer is `unavailable` and fails closed |
+| OpenCode | Rules `{ action, resource, effect: allow \| ask \| deny }`, last match wins, default `ask`; each tool asks with the paths or patterns its call touches | Once, always, reject with a message; a reject fails every waiting ask in the session | `always` saved per project | |
+| Crush | Per tool, action and path; `allowed_tools` in config | Allow, allow for the session, deny | Session | `--yolo` skips asking |
+| Pi | Nothing built in; an example extension matches dangerous bash patterns | Yes, no | None | Blocks |
+| Tau (main) | Only `bash` and `eval` are reviewed. Parsed read-only bash commands skip review; a Jev or Luna classifier approves routine local requests at face value (3 s limit); the rest go to a reviewer model that may ask the host to read up to 4 referenced files, then decides; then the user | Approve, reject, a note on either | None | |
+| archive `approval` | Modes `auto`, `ask`, `full`; safe and ask command prefix lists; a decision model, then a reviewer, then the user | Approve, reject | | |
+
+Sources: Tau `packages/agent/extensions/tool-approval/` (`index.ts`, `decision.ts`, `evidence.ts`, `allowlist.ts`) and `extensions/decisions/classifier.ts`; DeepSeek `.agents/notes/implemented/feature/2026-07-06-approval-seam.md`, `2026-08-28-auto-review.md`, `2026-09-24-auto-review-user-approval-fallback.md`, `packages/interaction/permission-presets/README.md`; OpenCode `packages/core/src/permission.ts`; Crush `internal/permission/permission.go`; Pi `examples/extensions/permission-gate.ts`; `archive/packages/plugins/approval`.
+
+- DeepSeek's reviewer sees a fixed policy, the folder, the project instructions, the user's messages, earlier calls with their input, and the pending call with its schema. It leaves out the main model's text and every tool result, so a file the model read cannot talk the reviewer into a yes.
+- DeepSeek keeps approvals apart from its questions seam because an approval is a closed outcome tied to one call and must fail closed. `defineQuestion` already gives a closed answer schema, logs the ask and the answer, and ties the ask to its call, so approvals is a question kind, as the work file says.
+
+- Tau's classifier asks three questions: does the request run code it does not show (`hidden`), where is the most consequential change (`none`, `workspace`, `user_home`, `system`, `remote`, `exposure`), and is it a normal step toward the user's request (`intent`). It approves when `hidden` ≤ 0.5, `none` + `workspace` ≥ 0.8, and either `none` ≥ 0.8 or `intent` ≥ 0.5. Its state is the tool, the folder, the latest user request (last 800 characters) and the last four assistant messages (4,000 characters in all).
+- Classifier guidance (Pydantic, Cloudflare and community guides on Jev; OpenAI's Decisions API on `gpt-6-luna`): state each condition exactly, keep a question and its criteria saying the same thing, describe situations rather than degrees, and trim the state to what the question needs. Probabilities are not calibrated until tested on known inputs.
+- Claude Code's auto mode (Anthropic, "Claude Code auto mode" engineering post) lets reads and searches run, lets edits inside the project run unreviewed, and sends everything else to a classifier in two stages: a fast yes or no filter that leans toward blocking, then reasoning only on what it flags, which cut false positives from 8.5% to 0.4%. The classifier sees the user's messages and the agent's tool calls; the agent's own text is stripped so the agent cannot argue its case, and tool results are stripped as the main defense against injected instructions. Most misses saw the danger but took a vague request, such as "clean up the PR", as consent for a larger action, such as a force-push.
+- What an ask shows. Tau and the archive show the reviewer's plain-words summary and its reason, not the raw call; Tau's reviewer writes "for a junior engineer": the main real-world effect and who or what it touches, then why approval is needed, what could be lost and how hard it is to recover. Claude Code's Bash tool and OpenCode's `shell` take a short `description` the agent writes; Codex takes a `justification` when a command asks to leave its sandbox. Warning research (Bravo-Lillo et al., "Improving Computer Security Dialogs", INTERACT 2011; "Your attention please", SOUPS 2013) says name the specific risk and its consequence, keep it short and nontechnical, and draw the eye to the critical part, which cut unsafe clicks. Hermes issue #6959 proposes a short structure: likely action, risk to the user, why it was flagged. The NHI Mgmt Group write-up on approval prompts warns that a summary the agent shapes turns approval into a formality, so the summary should come from somewhere independent and what was shown should be logged.
+- Decision model guides (OpenRouter on Jev, inovex, OpenAI Decisions write-ups) add: give a choice question an unknown option so the model is not forced to pick, and set thresholds from what each kind of error costs.
+- An independent test of Claude Code's auto mode (arXiv 2604.04978) found most missed risks were file edits the classifier never saw, since agents reach the same effect by editing files when a command is missing.
+
+### Agreed
+
+- Approvals work as Tau's main branch does: a classifier first, then a small reviewer model, then the user. No approve-once or remembered grants; the user approves or rejects, with a note.
+- The classifier approves what it can judge at face value; the rest goes to the reviewer. Its state is the tool and its input, the folder, the allowed folders, the latest user request (last 800 characters) and the turn's earlier tool calls by name and input, trimmed. Neither the classifier nor the reviewer sees the agent's own text or any tool result, as Claude Code's auto mode strips them: the agent cannot argue its case, and injected instructions arrive through tool results.
+- The classifier asks three questions, from Tau's:
+  - `hidden`: does the call run code it does not show?
+  - `impact`: where is the most consequential change: `none`, `workspace` (the workspace, the allowed folders or the system temp folder), `user_home`, `system`, `remote`, `exposure` or `unknown`.
+  - `asked`: did the user ask for this action, or for a task it is plainly part of? Its criteria say a vague request does not cover a destructive or remote action, the miss Anthropic found most often.
+- It approves when `hidden` ≤ 0.5, `none` + `workspace` ≥ 0.8, and either `none` ≥ 0.8 or `asked` ≥ 0.5, Tau's thresholds, kept until the test milestone checks them on known inputs. An input over 6,000 characters, no answer within 3 seconds, a classifier error or no connected classifier sends the call to the reviewer.
+- The reviewer has read-only tools, so it can open a script the agent wrote to a temp folder before it runs, and query the current session for context in few tokens.
+- `read` and other read tools fail outside the workspace and the folders allowed beside it, such as references. The reviewer is told the same folders, so it sees when a call reaches outside them. The model can ask to allow a folder or a file, choosing the highest level it needs so one ask covers several files.
+- `tools-shell` is built before approvals, so approvals is shaped around a real command tool; it joins the CLI composition together with approvals. The order becomes shell, approvals, then `edit` and `write`.
+- The reviewer is one `Models.generateObject` call given tools: an optional `tools` and `maxSteps`. The schema becomes an `answer` tool, every step must call a tool (`toolChoice: { mode: "required" }`), and the call ends when `answer` decodes; an answer that fails to decode goes back to the model and counts as a step. Each step goes through `ModelCall`; the tools run directly, not through `ToolCall`. The steps are not logged; approvals logs its verdict, who decided and which files the reviewer read. Pi's standalone `agentLoop` and Tau's `submit_tool_review` are the prior art; a child session was rejected as heavier than a read-only reviewer needs.
+- An access request is judged like any other call: the classifier or the reviewer allows it when the user clearly asked for that place, else it goes to the user.
+- A tool says what each call touches through an optional `access` function on `Tool`, worked out from the call's params, in place of the work file's read-only and destructive hints. A tool without one counts as `run`. Approvals only checks the paths of `read` and `write` calls against the allowed folders and fails a call outside them; edits inside the workspace are not reviewed, since git undoes them. `run` calls go to the classifier, the reviewer, then the user.
+
+  ```ts
+  type Access =
+    | { kind: "read"; paths: ReadonlyArray<string> }
+    | { kind: "write"; paths: ReadonlyArray<string> }
+    | { kind: "run" }
+  readonly access?: (params: Schema.Json) => Access
+  ```
+
+- The allowed folders are the workspace, the folders in an `approvals` settings section, such as reference repos, and the system temp folder. An allowed access request lasts for the session and is saved as a session event, so it survives a restart.
+- Tau's list of read-only commands lives in `tools-shell`, as the work file's shell safety rules on `unbash`: `shell`'s `access` returns `read` for a command the parser proves read-only and `run` for the rest. `unbash` needs approval as a new dependency when `tools-shell` is planned.
+- The reviewer's tools are `session_search` and the registered `read` tool. `session_search` is a literal search over the current session's user messages and earlier tool-call inputs, returning about ten short excerpts and never tool results, as DeepSeek leaves them out so a file the agent read cannot talk the reviewer into a yes. The reviewer runs `read` directly after checking its `access` paths against the allowed folders, so a replaced `read` tool is the one the reviewer uses.
+- When the reviewer fails, from a provider error or no valid answer within `maxSteps`, the user is asked and told the review failed, as Tau does. DeepSeek fails the call instead, since a technical failure says nothing about risk; a person is there to decide here. Print mode denies unless `--approve` is passed.
+- The user never reads the command or script. The reviewer, not the agent, writes what an ask shows, since a summary the agent shapes turns approval into a formality. When it sends a call to the user its answer is:
+
+  ```ts
+  type Verdict =
+    | { decision: "allow" }
+    | {
+        decision: "ask"
+        summary: string                    // one sentence, plain words, starts with a verb
+        effects: ReadonlyArray<{           // at most 5
+          kind: "creates" | "changes" | "deletes" | "sends" | "installs" | "starts"
+          target: string                   // a path, host or named thing, short: build/, ~/.zshrc, github.com
+        }>
+        risk: string                       // why it needs the user: what could be lost, and whether it can be undone
+      }
+  ```
+
+- The ask shows the tool, the summary, one line per effect with `deletes` and `sends` in the warning color, and the risk, then Approve and Reject with a note on Reject. When the review failed it says so in the summary's place: "The review failed: <error>. No one checked this call." The raw input stays in the call's transcript row.
+
+  ```text
+  △ Run shell?                                          1 more waiting
+    Clears the project's build output and rebuilds it.
+    deletes   build/
+    creates   build/
+    Can be undone by running the build again.
+
+    ▸ Approve
+      Reject
+  ```
+
+- The model asks for a folder with `request_access({ path, write, reason })`, judged by the same chain. When the classifier and the reviewer cannot tell whether the user wants it, the ask shows the folder, reading or changing, and the agent's reason labelled as the agent's; the folder is shown exactly, so the reason cannot hide what is granted. A write grant allows reads too, and changes inside that folder then go unreviewed, as in the workspace.
+
+  ```text
+  △ Allow reading outside the workspace?
+    ~/dev/other-repo
+    The agent says: "You asked me to match the router in other-repo."
+
+    ▸ Approve
+      Reject
+  ```
+
 ## Open
 
-- Whether `approvals` asks one question at a time when calls in one reply run together.
+- Step 5 code plan, after `tools-shell` is built: the events approvals logs (verdicts, who decided, files read, grants), the question kinds, and the `generateObject` contract change.
