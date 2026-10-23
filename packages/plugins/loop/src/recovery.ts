@@ -7,7 +7,6 @@ import type { Message, ToolCall, ToolResult } from "@shanepadgett/liminal-model/
 import {
   MessageEvent,
   type NewEvent,
-  Notice,
   type SessionEvent,
   type SessionId,
   type SessionLog,
@@ -63,7 +62,7 @@ const unanswered = (messages: ReadonlyArray<Message>) => {
 
 /**
  * Logs what ends a turn a crash left unfinished: interrupted results for its calls, the end of an
- * open step, a notice and the turn's end. A session whose last turn ended is left alone.
+ * open step and the turn's end. A session whose last turn ended is left alone.
  */
 export const closeUnfinished = Effect.fn("Loop.closeUnfinished")(function* (
   log: SessionLog["Service"],
@@ -79,7 +78,6 @@ export const closeUnfinished = Effect.fn("Loop.closeUnfinished")(function* (
   const stepEnd = hasOpenStep(events) ? [yield* StepEnded.make({ outcome: "interrupted" })] : [];
 
   const closing: NonEmptyReadonlyArray<NewEvent> = [
-    yield* Notice.make({ level: "warning", text: "The last turn stopped when Liminal stopped." }),
     yield* TurnEnded.make({ outcome: "interrupted" }),
   ];
 
