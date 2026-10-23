@@ -230,7 +230,7 @@ History: Pipeline<SessionEvent[], Message[]> // the log, through the converters,
 interface Inbox {
   send(id, input: Input, mode: "steer" | "follow-up"): Effect<void>   // input: event kind + data + attributes
   cancel(id): Effect<Input[]>                // stops the running turn; returns the queued inputs
-  pullBack(id, queued): Effect<Option<Input>>
+  pullBack(id): Effect<Input[]>               // returns the queued inputs; the turn goes on
   state(id): Stream<LoopState>               // whether a turn runs and the queued inputs: now, then each change
 }
 Send: Pipeline<{ session, input, mode }, void>
@@ -290,7 +290,7 @@ log steers → sync system prompt and tool list → BeforeCall hooks → Turns.r
 - Event kinds declare whether the model sees them. Notices are events the model never sees.
 - Live streaming deltas are not stored. A finished assistant message is committed as one event.
 - Every way into a session is an input through `Inbox.send`: a user message, an answer to a question, a notification, chat history, a command.
-- An input sent during a turn is a steer or a follow-up. A steer joins before the turn's next model call. A follow-up waits until the turn would end, then continues it. A queued input can be pulled back until the turn takes it. An input sent to an idle session starts a turn.
+- An input sent during a turn is a steer or a follow-up. A steer joins before the turn's next model call. A follow-up waits until the turn would end, then continues it. Queued inputs can be pulled back until the turn takes them. An input sent to an idle session starts a turn.
 - Queued inputs live in memory. An input is logged when a turn takes it, so the log holds what the model saw, in order.
 - A command runs as soon as it is sent and never queues; the log records it. A command that changes the log, such as `/compact`, waits for the running turn to end.
 - One runner per session: within one process, `loop` runs one turn per session at a time.
@@ -324,7 +324,7 @@ view.loadOlder    // loads the page before the oldest event held
 - The view knows no event kinds; it tells saved events from deltas. A screen decodes the kinds it draws and builds what it needs from them, such as the chat transcript or pending questions.
 - `running` comes from `loop`'s `loop/state` stream, since only `loop` knows whether a turn runs: the events a view holds may not reach back to the turn's start, and after a crash the log shows a turn open that nothing runs. Sending, cancelling and answering are RPC calls, not view methods.
 
-- Each plugin's contract declares the functions its screens may call as an Effect RPC group: names, input and output schemas, one-shot calls or streams. `session` declares `open`, `page` and `live`; `loop` declares `send`, `cancel`, `state` and `pullBack`; `accounts` declares the login methods, the sign-in stream and `answer`.
+- Each plugin's contract declares the functions its screens may call as an Effect RPC group: names, input and output schemas, one-shot calls or streams. `session` declares `open`, `page` and `live`; `loop` declares `send`, `cancel`, `pull-back` and `state`; `accounts` declares the login methods, the sign-in stream and `answer`.
 - The code behind a group's functions is an ordinary service in the plugin's layer. RPC calls go from screen to plugin only, so a plugin reaches a screen by streaming, as sign-in does.
 - A frontend gets a client for a group with `host.client(Group)`. The host picks the connection: Effect's in-memory client in the same process, the desktop shell's IPC, or HTTP through `http`. A plugin's screen code is the same in every host.
 

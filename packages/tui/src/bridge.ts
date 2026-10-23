@@ -84,7 +84,7 @@ export const useWatch = <A, E>(stream: Stream.Stream<A, E, Services>, initial: A
   return value;
 };
 
-const EMPTY: SessionView.ViewState = { events: [], streaming: [], running: false };
+const EMPTY: SessionView.ViewState = { events: [], streaming: [], running: false, queued: [] };
 
 /**
  * `session` as the view keeps it, as a Solid store whose events keep their identity by `seq`, so a

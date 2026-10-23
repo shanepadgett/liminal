@@ -57,15 +57,24 @@ export class Inbox extends Context.Service<
     ) => Effect.Effect<void, LogError>;
     /** Stops the running turn and returns the inputs that were waiting, oldest first. */
     readonly cancel: (session: SessionId) => Effect.Effect<ReadonlyArray<Input>>;
+    /** Returns the inputs that were waiting, oldest first; the running turn goes on. */
+    readonly pullBack: (session: SessionId) => Effect.Effect<ReadonlyArray<Input>>;
     /** The session's state now, then each change. */
     readonly state: (session: SessionId) => Stream.Stream<LoopState>;
   }
 >()("loop/Inbox") {}
 
+/** An input sent while something runs, waiting for the turn to take it. */
+export const Queued = Schema.Struct({ input: NewEvent, mode: SendMode });
+
+export type Queued = typeof Queued.Type;
+
 /** What `loop` holds in memory for a session; only it knows whether a turn runs. */
 export const LoopState = Schema.Struct({
   /** A turn, or a fold of the system prompt and tool list, runs in the session. */
   running: Schema.Boolean,
+  /** The inputs waiting, oldest first. */
+  queued: Schema.Array(Queued),
 });
 
 export type LoopState = typeof LoopState.Type;
@@ -176,6 +185,7 @@ export class LoopRpc extends RpcGroup.make(
     error: Schema.Union([SessionNotFound, SessionStoreFailed, EventInvalid]),
   }),
   Rpc.make("loop/cancel", { payload: { session: SessionId }, success: Schema.Array(NewEvent) }),
+  Rpc.make("loop/pull-back", { payload: { session: SessionId }, success: Schema.Array(NewEvent) }),
   Rpc.make("loop/state", { payload: { session: SessionId }, success: LoopState, stream: true }),
 ) {}
 

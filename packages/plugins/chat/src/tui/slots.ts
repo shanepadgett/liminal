@@ -6,7 +6,7 @@ import type { JSX } from "@opentui/solid";
 
 import type { SessionView } from "@shanepadgett/liminal-client";
 import { Pipeline, Registry } from "@shanepadgett/liminal-core";
-import type { SendMode } from "@shanepadgett/liminal-loop/contract";
+import type { Queued, SendMode } from "@shanepadgett/liminal-loop/contract";
 import type {
   EventInvalid,
   NewEvent,
@@ -36,10 +36,14 @@ export const sidebar = defineSlot<SidebarProps>("chat/sidebar", "append");
 
 export interface ComposerProps {
   readonly running: boolean;
+  /** Inputs sent while the turn runs, oldest first, until it takes them. */
+  readonly queued: ReadonlyArray<Queued>;
   /** Starts a turn; while one runs, `mode` says whether the text steers it or follows it. */
   readonly send: (text: string, mode?: SendMode) => void;
-  /** Stops the running turn. */
+  /** Stops the running turn and puts the queued inputs back into the draft. */
   readonly cancel: () => void;
+  /** Puts the queued inputs back into the draft; the turn goes on. */
+  readonly pullBack: () => void;
 }
 
 /** Where the user writes; the last fill wins. */

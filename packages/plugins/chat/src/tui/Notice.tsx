@@ -1,4 +1,4 @@
-/** A line from Liminal itself in the transcript: a retry, a switch, a stop. */
+/** A line from Liminal itself in the transcript: a retry, a switch. */
 
 import type { RoleName } from "@shanepadgett/liminal-client";
 import { useColor } from "@shanepadgett/liminal-tui";

@@ -31,7 +31,7 @@ Work for [status.md](../status.md) milestone 2. UI layers and slots are in [arch
 - `ChatScreen`: the session on screen, showing another or none, and the draft, for other plugins' commands.
 - `@` list, in `tags`' `tui` entry: `tags/list` once each time it opens, ranked in the TUI by `fuzzysort` times one plus frecency, 50 rows. `tags` adds each tag's text on send; the transcript hides the parts it added.
 - Saved sessions: `SessionLog` gains the session list of the workspace folder, each listed by the first line of its first user message; the header shows a title only once `session-name` sets one. The chat screen opens a saved session (`ctrl+o`) and starts a new one (`ctrl+n`, `/new`); print mode gains `--session <id>`.
-- `loop/state` gains the queued inputs, and `loop` gains `pullBack`. A queued input can be pulled back until the turn takes it.
+- `loop/state` carries the queued inputs, shown above the draft; `loop/pull-back` (`alt+up`) and `esc` put them back into the draft until the turn takes them.
 - Previous code: `chat`, `inbox` (composer).
 
 ```ts

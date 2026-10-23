@@ -22,6 +22,7 @@ import {
   type Delta,
   type EventKind,
   MessageEvent,
+  type NewEvent,
   Notice,
   type SessionEvent,
 } from "@shanepadgett/liminal-session/contract";
@@ -48,6 +49,8 @@ export type Item =
       readonly level: NoticeLevel;
       readonly text: string;
     }
+  /** The user stopped the turn. */
+  | { readonly kind: "stopped"; readonly id: string }
   /** Another plugin's event, drawn by the renderer it adds for its kind. */
   | { readonly kind: "event"; readonly id: string; readonly event: SessionEvent };
 
@@ -75,6 +78,14 @@ const textOf = (message: Message, attached: number) =>
     .slice(0, message.parts.length - attached)
     .flatMap((part) => (part.type === "text" ? [part.text] : []))
     .join("\n");
+
+/** What the user wrote in `input`, such as a queued message; none for other inputs or no text. */
+export const draftTextOf = (input: NewEvent): Option.Option<string> =>
+  decoded(MessageEvent, input).pipe(
+    Option.filter((message) => message.role === "user"),
+    Option.map((message) => textOf(message, addedOf(input.attributes)).trim()),
+    Option.filter((text) => text !== ""),
+  );
 
 const makeBuilder = () => {
   const turns: Building[] = [];
@@ -158,7 +169,7 @@ const endTurn = (builder: Builder, event: SessionEvent, outcome: string) => {
   }
 
   if (outcome === "cancelled") {
-    builder.put({ kind: "notice", id: String(event.seq), level: "info", text: "Stopped." });
+    builder.put({ kind: "stopped", id: String(event.seq) });
   }
 };
 

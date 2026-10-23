@@ -8,14 +8,15 @@ Run it from the repository with `bun apps/cli/src/main.ts`, or as `liminal` once
 liminal
 ```
 
-With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; the first send starts a new session. The reply streams into the transcript, and the sidebar shows the folder, the git branch and how much of the model's context window the session uses.
+With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; the first send starts a new session. The reply streams into the transcript. When you scroll up, the message a reply answers stays at the top until the next message pushes it out. The sidebar shows the folder, the git branch and how much of the model's context window the session uses.
 
 | Key | Does |
 | --- | --- |
 | Enter | Send; while a turn runs, steer it |
 | Shift+Enter | New line |
 | Tab | While a turn runs, send as a follow-up |
-| Esc | Close the open sidebar; otherwise, while a turn runs, stop it |
+| Esc | Close the open sidebar; otherwise, while a turn runs, stop it and put the queued inputs back into the draft |
+| Alt+Up | Put the queued inputs back into the draft, oldest first, before what is there; the turn goes on |
 | Shift+Tab | The next thinking level of the model on the model line, when it has more than one |
 | Ctrl+S | Stash the draft: save it for this folder and clear the composer |
 | Ctrl+C | Clear the draft; with no draft, quit |
@@ -24,6 +25,8 @@ With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; th
 | Ctrl+O | Open a saved session. See below |
 | Ctrl+P | The command palette: every command with its keys, by category. Enter runs one |
 | Ctrl+G | Show every key hint on a line too narrow for them, in columns; again to go back to one line |
+
+Steers and follow-ups sent while a turn runs show above the draft, `↳` for a steer and `↓` for a follow-up, until the turn takes them.
 
 The line under the draft shows the model line, `◇ model • thinking`, and only the keys that would do something now. Enter and Esc come first. When the keys do not fit, the line ends with `ctrl+g more`. Lists and dialogs leave out hints for Up, Down, Enter and Esc; those keys still work. The draft's keys stop while a dialog is open.
 

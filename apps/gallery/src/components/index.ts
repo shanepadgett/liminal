@@ -17,6 +17,7 @@ import { memoryStates } from "./transcript/Memory.states.tsx";
 import { noticeStates } from "./transcript/Notice.states.tsx";
 import { replyStates } from "./transcript/Reply.states.tsx";
 import { turnStates } from "./transcript/Turn.states.tsx";
+import { turnEndStates } from "./transcript/TurnEnd.states.tsx";
 import { workRowsStates } from "./transcript/WorkRows.states.tsx";
 
 export const components: Group = {
@@ -40,6 +41,7 @@ export const components: Group = {
         { id: "reply", title: "Reply", states: replyStates },
         { id: "work-rows", title: "Work rows", states: workRowsStates },
         { id: "notice", title: "Notice", states: noticeStates },
+        { id: "turn-end", title: "Turn end", states: turnEndStates },
         { id: "memory", title: "Memory", states: memoryStates },
         { id: "checkpoint", title: "Checkpoint", states: checkpointStates },
       ],

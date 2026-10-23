@@ -515,7 +515,7 @@ buildTranscript(state, drawn): one closed switch, saved events first, then delta
   loop/interrupted              → the same, for the reply a cancel cut short
   session/message tool results  → the tool (id call id): done or failed
   session/notice                → notice
-  loop/turn-end cancelled       → notice "Stopped."
+  loop/turn-end cancelled       → stopped
   a kind in drawn               → event item
   loop/reply text delta         → live reply (id key), its text appended
   loop/reply reasoning delta    → nothing
@@ -1156,6 +1156,95 @@ interface DraftKey { key; title: string; hint?: string; enabled?; run }
 - `Hints` takes the width its parent gives it and clips what does not fit. In the composer the `status` fills keep their own width and the hints get the rest, three cells after them; the hints' box has no width of its own (`flexBasis` 0), so what they show never changes the room they get.
 - Important: `enter send`, `enter steer`, `esc stop`. The rest keep keymap order after them.
 - Docs: `packages/tui` README (hints, `ctrl+g`, action labels), `chat` README if it lists `DraftKey`, `docs/usage/cli.md` (`ctrl+g`, hints).
+
+### 7b
+
+Inputs sent while a turn runs show above the draft until the turn takes them, and the user can pull them back into the draft to edit.
+
+```text
+chat composer ──loop/state──▶ loop sessions     queued: [{ mode, input }] now in the state
+      │       ──loop/pull-back▶ empties the queue, the turn runs on; returns the inputs
+      │       ──loop/cancel──▶ empties the queue, stops the turn; returns the inputs
+      ▼
+draft: the inputs' text, oldest first, then the draft, blank lines between
+```
+
+| Reference | Shows the queue | Gets it back |
+| --- | --- | --- |
+| Pi `interactive-mode.ts` `restoreQueuedMessagesToEditor` | `Steering:` and `Follow-up:` lines above the editor | `alt+up` puts all of it in the editor, before the draft; abort does the same |
+| OpenCode `routes/session/index.tsx`, `config/keybind.ts` | `N queued · next` dock | a picker: `ctrl+u` back to the draft, `ctrl+d` delete |
+| Crush `ui/model/pills.go` | `N Queued` pill, expands to a list | clear only |
+| Gallery `components/chat/Composer.tsx`, archive `inbox` | one line each above the draft, `↳` steer, `↓` follow-up | none |
+
+- The queue shows as the gallery draws it: one line per input above the draft, `↳` in the accent for a steer, `↓` muted for a follow-up, the first line of what the user wrote in faint text, cut at the width.
+- `alt+up` pulls back every queued input, oldest first, into the draft before what is there, blank lines between, and the turn runs on (Pi `app.message.dequeue`). Its hint, `alt+up edit queued`, shows only while inputs wait; the hint names the key itself, since the keymap would show `meta+up`.
+- A line shows what the user wrote: a message's text without the parts plugins added (`addedOf`), as the transcript shows it.
+- `esc` stops the turn and puts the queued inputs back into the draft, as Pi does. Today chat drops what `loop/cancel` returns, so those inputs are lost.
+- It stays in `chat`: the lines, the key and putting text back into the draft are one feature of the composer, and `esc` needs the same putting back.
+- A pick or tagged files already went through the send pipeline with the input. Putting the text back keeps the `@path` marks, so sending again attaches the files again; a logged `model-choice/pick` stays, as the session's model.
+- No schema change: the queue lives in memory.
+- Once taken, a steer shows in its turn where it joined. Every input sits at the left edge in the order sent, the latest at the bottom. Once an input scrolls up past the top of the transcript, a copy stays there until the next input pushes it out; the transcript checks row positions before each frame, as OpenTUI has no scroll event. Replies, tools and notices sit three columns in. A stopped turn ends in a bold red "Stopped" with no glyph.
+
+### 7b code
+
+```text
+packages/plugins/loop/src/contract.ts  Queued schema; LoopState gains queued; Inbox.pullBack; loop/pull-back
+packages/plugins/loop/src/sessions.ts  queue holds contract Queued; pullBack; state compares the queue
+packages/plugins/loop/src/index.ts     Inbox.pullBack, the loop/pull-back handler
+packages/client/src/session-view.ts    ViewState gains queued
+packages/plugins/chat/src/view/        draftTextOf(input): what the user wrote, for the lines and the draft
+packages/plugins/chat/src/tui/         slots.ts ComposerProps; screen.ts Draft.prepend; ChatView pullBack
+                                       and cancel put text back; Composer draws the lines, binds the key
+```
+
+```ts
+// loop contract.ts
+const Queued = Schema.Struct({ input: NewEvent, mode: SendMode })
+const LoopState = Schema.Struct({ running: Schema.Boolean, queued: Schema.Array(Queued) })
+Inbox.pullBack: (session) => Effect<ReadonlyArray<Input>>   // oldest first; the turn runs on
+Rpc.make("loop/pull-back", { payload: { session }, success: Schema.Array(NewEvent) })
+// client session-view.ts
+interface ViewState { running; queued: ReadonlyArray<Queued>; events; streaming }
+// chat slots.ts
+interface ComposerProps { running; queued: ReadonlyArray<Queued>; send; cancel; pullBack: () => void }
+// chat screen.ts
+interface Draft { text; insert; prepend: (text: string) => void; clearIf }
+```
+
+- `sessions.state` compares states before it maps them to the view: same `running` and the same queue array, so a turn's step change sends nothing.
+- `pullBack` and `cancel` share one function that empties the queue under the lock; `cancel` also returns the step to interrupt.
+- ChatView: `pullBack` and `cancel` run the RPC, then `screen.draft.prepend` the returned texts joined by blank lines; inputs with no text the user wrote are left out.
+- Landing screen: `queued` is empty and `pullBack` does nothing.
+- Docs: `loop` and `chat` READMEs, `docs/usage/cli.md` (the key, the lines, `esc`), `docs/architecture.md` if its `loop/state` line differs, `docs/plugins/tui.md` and `docs/status.md`.
+
+### 7c turn end line
+
+Every closed turn ends in one line: a square, how it ended, then the model and how long the turn ran, in faint text. The gallery's `Turn end` entry draws it.
+
+```text
+■ Done · claude-sonnet-4.5 · 38s        square text.accent, word text.muted
+■ Stopped · claude-sonnet-4.5 · 14s     square and word feedback.danger, word bold
+```
+
+- The data is already saved; no schema change and no change to `loop`. The time is `loop/turn-end`'s `at` less `loop/turn-start`'s. The model is the turn's latest `loop/step-start` model, shown without its provider as the composer's model line shows it.
+- A running turn has no line; it shows once `loop/turn-end` is saved.
+- A turn whose start lies before the loaded events shows no time; a turn that ended before any model call shows no model.
+- Times read `14s`, `2m 05s`, `1h 02m`.
+- Open: whether a failed turn, which already ends in its error notice, also gets a line; whether a turn a crash left unfinished (`interrupted`) gets `■ Interrupted · model` with no time, or nothing.
+
+### 7c code
+
+```text
+packages/plugins/chat/src/view/index.ts  Building gains startedAt and model; turn-start sets startedAt,
+                                         step-start sets model; the "stopped" item becomes
+                                         { kind: "end", id, ending: "done" | "stopped", model?, millis? };
+                                         addEvent splits out the loop/turn and step events to stay under
+                                         the complexity limit
+packages/plugins/chat/src/tui/TurnEnd.tsx  the line, copied from the gallery; elapsedOf(millis)
+packages/plugins/chat/src/tui/Turn.tsx   ItemBody draws "end" with TurnEnd; Stopped goes
+packages/plugins/chat/README.md          buildTranscript's items: a turn's end
+docs/usage/cli.md                        each turn ends with how it ended, the model and the time
+```
 
 ## Events in the references
 

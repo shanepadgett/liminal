@@ -1,10 +1,10 @@
 /**
- * A session as a frontend shows it: its saved events, the deltas streaming now, and whether a turn
- * runs.
+ * A session as a frontend shows it: its saved events, the deltas streaming now, whether a turn runs
+ * and the inputs waiting for it.
  */
 import { Effect, Predicate, Stream, SubscriptionRef } from "effect";
 
-import { LoopRpc } from "@shanepadgett/liminal-loop/contract";
+import { LoopRpc, type Queued } from "@shanepadgett/liminal-loop/contract";
 import {
   type Delta,
   type LiveItem,
@@ -23,6 +23,8 @@ export interface ViewState {
   /** Every delta since the last saved event, such as the reply being written. */
   readonly streaming: ReadonlyArray<Delta>;
   readonly running: boolean;
+  /** Inputs sent while a turn runs, oldest first, until the turn takes them. */
+  readonly queued: ReadonlyArray<Queued>;
 }
 
 export interface SessionView {
@@ -53,7 +55,8 @@ const addOlder = (state: ViewState, older: ReadonlyArray<SessionEvent>): ViewSta
 
 /**
  * Opens a view of `session` for the caller's scope: the latest page, then each new event, delta and
- * change of `running`. A stream that fails later logs the error and the view stops updating.
+ * change of `running` and `queued`. A stream that fails later logs the error and the view stops
+ * updating.
  */
 export const open = Effect.fn("SessionView.open")(function* (session: SessionId) {
   const host = yield* Host;
@@ -65,6 +68,7 @@ export const open = Effect.fn("SessionView.open")(function* (session: SessionId)
     events: latest,
     streaming: [],
     running: false,
+    queued: [],
   });
 
   const follow = <A, E>(
@@ -81,9 +85,10 @@ export const open = Effect.fn("SessionView.open")(function* (session: SessionId)
 
   yield* follow(sessions["session/live"]({ session, after: lastSeq(latest) }), addItem);
 
-  yield* follow(loop["loop/state"]({ session }), (current, { running }) => ({
+  yield* follow(loop["loop/state"]({ session }), (current, { running, queued }) => ({
     ...current,
     running,
+    queued,
   }));
 
   const loadOlder = Effect.gen(function* () {

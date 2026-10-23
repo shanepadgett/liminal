@@ -8,7 +8,7 @@
 
 import type { BoxRenderable } from "@opentui/core";
 import { useBindings } from "@opentui/keymap/solid";
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 import {
   type Accessor,
   createEffect,
@@ -33,11 +33,11 @@ import {
   useSessionView,
 } from "@shanepadgett/liminal-tui";
 
-import { buildTranscript, isWriting, type Turn as TurnData } from "../view/index.ts";
+import { buildTranscript, draftTextOf, isWriting, type Turn as TurnData } from "../view/index.ts";
 import { Header } from "./Header.tsx";
 import { Landing } from "./Landing.tsx";
 import { Layout, useSidebarPlace } from "./Layout.tsx";
-import type { ChatScreen as Screen } from "./screen.ts";
+import type { Draft, ChatScreen as Screen } from "./screen.ts";
 import {
   type ChatSend,
   type ChatSendRequest,
@@ -45,7 +45,7 @@ import {
   type ItemRenderer,
   sidebar,
 } from "./slots.ts";
-import { Prompt, type Renderers, Turn } from "./Turn.tsx";
+import { type Renderers, Turn } from "./Turn.tsx";
 
 /** The end of `ChatSend`: a new turn, or with `mode` a steer or follow-up of the running one. */
 export const sendToLoop = Effect.map(Host, (host) =>
@@ -62,12 +62,21 @@ const openSession = Effect.gen(function* () {
   return yield* sessions["session/open"]();
 }).pipe(Effect.scoped);
 
-const cancel = (session: SessionId) =>
-  Effect.gen(function* () {
-    const loop = yield* (yield* Host).client(LoopRpc);
+/** Stops the turn, or only empties its queue; the queued inputs' text goes back into the draft. */
+const takeBack = Effect.fn("ChatView.takeBack")(function* (
+  session: SessionId,
+  draft: Draft,
+  how: "loop/cancel" | "loop/pull-back",
+) {
+  const loop = yield* (yield* Host).client(LoopRpc);
+  const inputs = yield* loop[how]({ session });
+  const texts = inputs.flatMap((input) => Option.toArray(draftTextOf(input)));
+  if (texts.length === 0) return;
 
-    yield* loop["loop/cancel"]({ session });
-  }).pipe(Effect.scoped);
+  yield* Effect.sync(() => {
+    draft.prepend(texts.join("\n\n"));
+  });
+}, Effect.scoped);
 
 /** The turns of the session on screen, keeping each turn's and item's identity across updates. */
 const useTurns = (state: Parameters<typeof buildTranscript>[0], renderers: Accessor<Renderers>) => {
@@ -87,28 +96,19 @@ function SessionScreen(props: {
   readonly renderers: Accessor<Renderers>;
   readonly isSidebarOpen: boolean;
   readonly closeSidebar: () => void;
+  readonly draft: Draft;
   readonly send: (text: string, mode?: SendMode) => void;
 }) {
   const run = useRun();
   const view = useSessionView(props.session);
   const turns = useTurns(view.state, props.renderers);
-  const lastIndex = () => turns().length - 1;
 
   return (
     <Layout
       header={<Header isWorking={view.state.running} />}
-      pinned={<Show when={turns().at(-1)?.input}>{(input) => <Prompt input={input()} />}</Show>}
       transcript={
         <>
-          <For each={turns()}>
-            {(turn, index) => (
-              <Turn
-                turn={turn}
-                showsInput={index() !== lastIndex()}
-                renderers={props.renderers()}
-              />
-            )}
-          </For>
+          <For each={turns()}>{(turn) => <Turn turn={turn} renderers={props.renderers()} />}</For>
           <Show when={view.state.running && !isWriting(view.state)}>
             <box paddingLeft={3}>
               <kit.Spinner />
@@ -120,9 +120,13 @@ function SessionScreen(props: {
         <SlotView
           slot={composer}
           running={view.state.running}
+          queued={view.state.queued}
           send={props.send}
           cancel={() => {
-            run(cancel(props.session));
+            run(takeBack(props.session, props.draft, "loop/cancel"));
+          }}
+          pullBack={() => {
+            run(takeBack(props.session, props.draft, "loop/pull-back"));
           }}
         />
       }
@@ -141,7 +145,16 @@ function LandingScreen(props: { readonly send: (text: string, mode?: SendMode) =
   return (
     <Layout
       transcript={<Landing />}
-      composer={<SlotView slot={composer} running={false} send={props.send} cancel={() => {}} />}
+      composer={
+        <SlotView
+          slot={composer}
+          running={false}
+          queued={[]}
+          send={props.send}
+          cancel={() => {}}
+          pullBack={() => {}}
+        />
+      }
     />
   );
 }
@@ -261,6 +274,7 @@ export function ChatView(props: {
               closeSidebar={() => {
                 setSidebarOpen(false);
               }}
+              draft={props.screen.draft}
               send={send}
             />
           )}

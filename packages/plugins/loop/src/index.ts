@@ -69,7 +69,7 @@ const make = Effect.gen(function* () {
   });
 
   const cancel = Effect.fn("Inbox.cancel")(function* (session: SessionId) {
-    const { inputs, step } = yield* sessions.cancel(session);
+    const { inputs, step } = yield* sessions.empty(session);
     if (Option.isSome(step)) yield* Fiber.interrupt(step.value);
 
     return inputs;
@@ -80,6 +80,7 @@ const make = Effect.gen(function* () {
     inbox: Inbox.of({
       send: (session, input, mode = "steer") => send.run({ session, input, mode }),
       cancel,
+      pullBack: (session) => Effect.map(sessions.empty(session), ({ inputs }) => inputs),
       state: sessions.state,
     }),
     turns: Turns.of({ request: makeRequest(turnServices), fold }),
@@ -102,6 +103,7 @@ const rpc = LoopRpc.toLayer(
     LoopRpc.of({
       "loop/send": ({ session, input, mode }) => inbox.send(session, input, mode),
       "loop/cancel": ({ session }) => inbox.cancel(session),
+      "loop/pull-back": ({ session }) => inbox.pullBack(session),
       "loop/state": ({ session }) => inbox.state(session),
     }),
   ),

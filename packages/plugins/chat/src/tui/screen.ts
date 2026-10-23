@@ -15,6 +15,8 @@ export interface Draft {
   readonly text: Accessor<string>;
   /** Adds `text` after the draft, with a blank line between. */
   readonly insert: (text: string) => void;
+  /** Puts `text` before the draft, with a blank line between. */
+  readonly prepend: (text: string) => void;
   /** Clears the draft, only if it still holds `text`. */
   readonly clearIf: (text: string) => void;
 }
@@ -55,11 +57,19 @@ const makeDraft = (
     input.insertText(text() === "" ? added : `\n\n${added}`);
   };
 
+  const prepend = (added: string) => {
+    const input = textarea();
+    if (input === undefined) return;
+
+    input.gotoBufferHome();
+    input.insertText(text() === "" ? added : `${added}\n\n`);
+  };
+
   const clearIf = (expected: string) => {
     if (text() === expected) textarea()?.clear();
   };
 
-  return { text, insert, clearIf };
+  return { text, insert, prepend, clearIf };
 };
 
 interface DraftCommands {

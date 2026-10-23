@@ -1,8 +1,9 @@
 /**
  * The chat screen's layout: a column with the header on top once the session starts, then the
- * transcript and the composer. The sidebar sits beside the whole column, wider on a large screen;
- * on a small one it is a drawer over the right edge, shown only when opened, that dims the rest and
- * closes on `escape`. The latest turn's input stays pinned above the transcript while it scrolls.
+ * transcript and the composer. The transcript opens at the bottom, follows new lines and keeps the
+ * input scrolled past on top. The sidebar sits beside the whole column, wider on a large screen; on
+ * a small one it is a drawer over the right edge, shown only when opened, that dims the rest and
+ * closes on `escape`.
  */
 
 import { useBindings } from "@opentui/keymap/solid";
@@ -10,6 +11,8 @@ import { type JSX, useTerminalDimensions } from "@opentui/solid";
 import { Show } from "solid-js";
 
 import { kit, useColor } from "@shanepadgett/liminal-tui";
+
+import { StickyScroll } from "./sticky.tsx";
 
 /** Where the sidebar goes at a screen width: beside the column, from the widest step that fits. */
 const DOCKED_STEPS = [
@@ -35,28 +38,6 @@ export const useSidebarPlace = () => {
 
   return () => sidebarPlaceOf(screen().width);
 };
-
-/** The transcript under its pinned input; it opens at the bottom and follows new lines. */
-function Transcript(props: { readonly pinned?: JSX.Element; readonly transcript: JSX.Element }) {
-  return (
-    <box flexGrow={1}>
-      <Show when={props.pinned}>
-        <box flexShrink={0} paddingX={2} marginBottom={1}>
-          {props.pinned}
-        </box>
-      </Show>
-      <scrollbox
-        flexGrow={1}
-        stickyScroll
-        stickyStart="bottom"
-        paddingX={2}
-        scrollbarOptions={{ visible: false }}
-      >
-        {props.transcript}
-      </scrollbox>
-    </box>
-  );
-}
 
 function Drawer(props: { readonly close: () => void; readonly children: JSX.Element }) {
   const color = useColor();
@@ -84,8 +65,6 @@ function Drawer(props: { readonly close: () => void; readonly children: JSX.Elem
 
 export function Layout(props: {
   readonly header?: JSX.Element;
-  /** The latest turn's input, held in place above the transcript. */
-  readonly pinned?: JSX.Element;
   readonly transcript: JSX.Element;
   readonly composer: JSX.Element;
   /** Left out before the session starts. */
@@ -107,7 +86,7 @@ export function Layout(props: {
       <box flexGrow={1} paddingBottom={1} gap={1}>
         {props.header}
         <box flexGrow={1}>
-          <Transcript pinned={props.pinned} transcript={props.transcript} />
+          <StickyScroll>{props.transcript}</StickyScroll>
           {props.composer}
         </box>
       </box>

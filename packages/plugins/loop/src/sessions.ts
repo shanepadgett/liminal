@@ -24,13 +24,15 @@ import type {
   SessionStoreFailed,
 } from "@shanepadgett/liminal-session/contract";
 
-import { type Input, type LoopState, type SendMode, TurnEnded, TurnStarted } from "./contract.ts";
+import {
+  type Input,
+  type LoopState,
+  type Queued,
+  type SendMode,
+  TurnEnded,
+  TurnStarted,
+} from "./contract.ts";
 import { closeUnfinished } from "./recovery.ts";
-
-interface Queued {
-  readonly input: Input;
-  readonly mode: SendMode;
-}
 
 /** A turn or a fold; `done` completes when the session goes idle. */
 interface Running {
@@ -72,7 +74,14 @@ const updateState = (
   );
 
 /** What viewers see of `state`. */
-const viewOf = (state: SessionState): LoopState => ({ running: Option.isSome(state.running) });
+const viewOf = (state: SessionState): LoopState => ({
+  running: Option.isSome(state.running),
+  queued: state.queue,
+});
+
+/** Whether viewers would see the same; a turn's next step changes nothing they see. */
+const looksSame = (before: SessionState, after: SessionState) =>
+  Option.isSome(before.running) === Option.isSome(after.running) && before.queue === after.queue;
 
 const closeOnce = Effect.fn("Loop.closeOnce")(function* (store: Store, session: SessionId) {
   if ((yield* Ref.get(store.checked)).has(session)) return;
@@ -171,10 +180,10 @@ const setStep = (store: Store, session: SessionId, step: Fiber.Fiber<unknown, un
     running: Option.map(state.running, (running) => ({ ...running, step: Option.some(step) })),
   }));
 
-/** Empties the queue; returns it with the step to interrupt. */
-const cancel = Effect.fn("Loop.cancel")(function* (store: Store, session: SessionId) {
+/** Empties the queue; returns it with the step a cancel interrupts. */
+const empty = Effect.fn("Loop.empty")(function* (store: Store, session: SessionId) {
   const { queue, running } = yield* stateOf(store, session);
-  yield* updateState(store, session, (state) => ({ ...state, queue: [] }));
+  if (queue.length > 0) yield* updateState(store, session, (state) => ({ ...state, queue: [] }));
 
   return {
     inputs: queue.map(({ input }) => input),
@@ -215,12 +224,14 @@ export const makeSessions = Effect.fn("Loop.makeSessions")(function* (log: Sessi
       lock.withPermit(
         Effect.tap(Effect.forkChild(steps), (fiber) => setStep(store, session, fiber)),
       ),
-    cancel: (session: SessionId) => lock.withPermit(cancel(store, session)),
+    /** Empties the queue; a cancel also interrupts the step, a pull-back leaves it running. */
+    empty: (session: SessionId) => lock.withPermit(empty(store, session)),
     /** The session's state now, then each change. */
     state: (session: SessionId) =>
       SubscriptionRef.changes(store.states).pipe(
-        Stream.map((all) => viewOf(all.get(session) ?? idle)),
-        Stream.changesWith((before, after) => before.running === after.running),
+        Stream.map((all) => all.get(session) ?? idle),
+        Stream.changesWith(looksSame),
+        Stream.map(viewOf),
       ),
   };
 });
