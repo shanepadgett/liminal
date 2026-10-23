@@ -1,6 +1,6 @@
 # Plan: milestone 2, the TUI
 
-The session view, `packages/tui`, and the `tui` entries of `chat`, `palette`, `theme`, `model` and `accounts`. Work list: [plugins/tui.md](../plugins/tui.md). Designs: `apps/gallery`, plan in [_archive/gallery.md](_archive/gallery.md).
+The session view, `packages/tui`, and the `tui` entries of `chat`, `palette`, `theme`, `model` and `accounts`. Milestone 2 in [status.md](../../status.md). Designs: `apps/gallery`, plan in [gallery.md](gallery.md).
 
 ## Systems
 
