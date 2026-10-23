@@ -23,7 +23,7 @@ import {
   type Turn,
   type TurnEnd,
 } from "./contract.ts";
-import { cancelUnanswered } from "./recovery.ts";
+import { cancelUnanswered, closeUnfinished } from "./recovery.ts";
 import { streamReply } from "./reply.ts";
 import type { Outcome, Sessions } from "./sessions.ts";
 import { failTruncated, runCalls } from "./tool-calls.ts";
@@ -184,7 +184,18 @@ export const makeRunTurn = (services: TurnServices, sessions: Sessions) => {
   const runTurn = (session: SessionId, attributes: Attributes): Effect.Effect<void> =>
     Effect.gen(function* () {
       const turn = { session, attributes };
-      const exit = yield* Fiber.await(yield* sessions.startSteps(session, steps(turn)));
+      const running = yield* sessions.startSteps(session, steps(turn));
+
+      // Liminal stopping interrupts the turn: once the step has logged what it had, the turn closes.
+      const exit = yield* Fiber.await(running).pipe(
+        Effect.onInterrupt(() =>
+          Fiber.interrupt(running).pipe(
+            Effect.andThen(closeUnfinished(services.log, session)),
+            Effect.catchCause((cause) => Effect.logError("A stopped turn could not close", cause)),
+          ),
+        ),
+      );
+
       const next = yield* sessions.endTurn(session, yield* settle(services.log, turn, exit));
 
       if (Option.isSome(next)) yield* runTurn(session, next.value);

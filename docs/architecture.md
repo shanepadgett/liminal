@@ -256,7 +256,7 @@ log steers → sync system prompt and tool list → BeforeCall hooks → Turns.r
 - Each turn ends with `loop/turn-end`: `answered`, `failed`, `cancelled` or `interrupted`. A failed turn logs a notice and keeps its input.
 - Deltas are published as they arrive; each viewer limits its own rate.
 - Tool calls in one reply run at the same time unless one is marked `sequential`. Each result is its own tool message, logged in the order asked; each finish is published as `loop/tool-done`, and the reply streams as `loop/reply`.
-- A turn left unfinished by a crash is closed when the session next opens: interrupted results, a notice, and no restart.
+- When Liminal stops, a running turn closes before it exits: the step logs what it had, then interrupted results, a notice and an `interrupted` turn end. A turn a crash left unfinished closes the same way when the session next takes an input. Neither restarts.
 - Shared provider code, such as an OpenAI-compatible wire format, is a library the provider plugins import, not a contract.
 - The session log stores Liminal's own `Message` and `Part` schema, so saved sessions outlive Effect AI changes. Base `model` converts them to and from Effect AI's types in one place. The live reply stream and errors are Effect AI's `Response` parts and `AiError`, since nothing stores them.
 - Each provider lists the models it offers and names its `catalogId`. `model` adds their details from `ModelCatalog` to `Models.list` and passes a model's details to `languageModel`. When the catalog is unavailable, models list without details and calls still go out.
@@ -294,7 +294,7 @@ log steers → sync system prompt and tool list → BeforeCall hooks → Turns.r
 - Queued inputs live in memory. An input is logged when a turn takes it, so the log holds what the model saw, in order.
 - A command runs as soon as it is sent and never queues; the log records it. A command that changes the log, such as `/compact`, waits for the running turn to end.
 - One runner per session: within one process, `loop` runs one turn per session at a time.
-- Recovery is per turn. After a crash or shutdown, an unfinished turn is closed when the session is next used: interrupted results, a notice and an `interrupted` turn end. It does not restart.
+- Recovery is per turn. On shutdown a running turn closes itself; after a crash, an unfinished turn is closed when the session next takes an input: interrupted results, a notice and an `interrupted` turn end. It does not restart.
 
 ### Multiplayer
 

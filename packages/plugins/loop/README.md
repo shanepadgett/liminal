@@ -5,7 +5,7 @@ Runs turns: an input starts one, the model is called, the tools it asks for run,
 - `Inbox.send(session, input, mode?)`: logs the input and starts a turn when the session is idle. During a turn the input waits in memory: a `steer` (the default) joins before the next model call, a `follow-up` waits until the turn would end.
 - `Inbox.cancel(session)`: stops the running turn and returns the inputs that were waiting.
 - `Inbox.pullBack(session)`: returns the inputs that were waiting, oldest first; the turn goes on.
-- `Inbox.state(session)`: whether a turn (or a fold) runs in the session now and the inputs waiting, then each change. Only `loop` knows this; the log can show a turn open that a crash left behind.
+- `Inbox.state(session)`: whether a turn (or a fold) runs in the session now and the inputs waiting, then each change. Only `loop` knows this; the log can show a turn open that a crash left behind. When Liminal stops, a running turn closes as `interrupted` before it exits.
 - `Send`: the pipeline every input goes through; wrap it to attach attributes or turn inputs away.
 - `Added`: the `loop/added` attribute on a user message, how many of its last parts plugins added on send, so screens show only what the user wrote. A wrap that appends parts adds its count to the one set; `addedOf(attributes)` reads it.
 - `SessionModel`: the pipeline that says which model a session's next call runs, from its events. It ends at the first signed-in provider's `main` default, else fails with `ModelNotFound`; `model-choice` wraps it.
