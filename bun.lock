@@ -32,7 +32,9 @@
         "@shanepadgett/liminal-client": "workspace:*",
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-environment": "workspace:*",
         "@shanepadgett/liminal-history": "workspace:*",
+        "@shanepadgett/liminal-instructions": "workspace:*",
         "@shanepadgett/liminal-loop": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-model-anthropic": "workspace:*",
@@ -143,6 +145,16 @@
         "effect": "*",
       },
     },
+    "packages/plugins/environment": {
+      "name": "@shanepadgett/liminal-environment",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-system-prompt": "workspace:*",
+        "effect": "*",
+      },
+    },
     "packages/plugins/history": {
       "name": "@shanepadgett/liminal-history",
       "version": "0.1.0",
@@ -150,6 +162,18 @@
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-session": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/instructions": {
+      "name": "@shanepadgett/liminal-instructions",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-settings": "workspace:*",
+        "@shanepadgett/liminal-system-prompt": "workspace:*",
         "effect": "*",
       },
     },
@@ -703,9 +727,13 @@
 
     "@shanepadgett/liminal-directories": ["@shanepadgett/liminal-directories@workspace:packages/plugins/directories"],
 
+    "@shanepadgett/liminal-environment": ["@shanepadgett/liminal-environment@workspace:packages/plugins/environment"],
+
     "@shanepadgett/liminal-gallery": ["@shanepadgett/liminal-gallery@workspace:apps/gallery"],
 
     "@shanepadgett/liminal-history": ["@shanepadgett/liminal-history@workspace:packages/plugins/history"],
+
+    "@shanepadgett/liminal-instructions": ["@shanepadgett/liminal-instructions@workspace:packages/plugins/instructions"],
 
     "@shanepadgett/liminal-loop": ["@shanepadgett/liminal-loop@workspace:packages/plugins/loop"],
 

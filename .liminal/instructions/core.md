@@ -1,3 +1,7 @@
+---
+read-when: Changing `packages/core` or a base plugin's contract
+---
+
 # Core and base contracts
 
 - Core stays agent-free: no sessions, messages, models, transports or loaders. It must still compose a program that is not an agent.

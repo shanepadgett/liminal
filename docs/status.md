@@ -53,11 +53,11 @@ Planned dependencies are pinned in `tools/planned/package.json` so their docs ar
 Work: [plugins/coding.md](plugins/coding.md)
 
 - [ ] `tools-files`, `tools-shell`, `tools-web`, `tool-output`
-- [ ] `instructions`, `environment`
-- [ ] Recreate `.liminal/`; move `docs/instructions/` to `.liminal/instructions/` with `read-when` front matter
+- [x] `instructions`, `environment`
+- [x] Recreate `.liminal/`; move `docs/instructions/` to `.liminal/instructions/` with `read-when` front matter
 - [ ] `approvals`, `questions`
 - [ ] Liminal works on its own repository
-- [ ] Settle the database schema: after this, a schema change adds a migration, and the one-migration rule in `docs/instructions/code.md` is removed
+- [ ] Settle the database schema: after this, a schema change adds a migration, and the one-migration rule in `.liminal/instructions/code.md` is removed
 
 ### 4. Cost and naming
 
@@ -103,6 +103,7 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 
 ## Later
 
+- Instruction files that run shell commands and put the output in the text when the prompt is built, so a file can carry live project facts.
 - MCP servers as a source of tools, connecting and disconnecting mid-session.
 - Change notes as system-role messages where the model accepts them mid-conversation, as DeepSeek does; Effect AI's Anthropic provider has a per-model flag for it. Needs a `system` role in `Message`.
 - A turn that ends in structured output: the final answer, after any tool use, must decode through a schema the prompt gives, as OpenCode's `format` option does. `Models.generateObject` covers one-off calls.

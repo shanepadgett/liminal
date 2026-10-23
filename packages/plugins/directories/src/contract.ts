@@ -1,5 +1,5 @@
 /** The folders Liminal reads and writes. */
-import { Context, Schema } from "effect";
+import { Context, type Effect, type Option, Schema } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 export class Directories extends Context.Service<
@@ -11,6 +11,10 @@ export class Directories extends Context.Service<
     readonly workspace: string;
     /** The project's own files: `<workspace>/.liminal`. */
     readonly project: string;
+    /** The folder holding `.git`: the workspace or the nearest folder above it, found at start. */
+    readonly repository: Option.Option<string>;
+    /** The Git branch checked out, or a short commit id; read on each call. */
+    readonly branch: Effect.Effect<Option.Option<string>>;
   }
 >()("directories/Directories") {}
 

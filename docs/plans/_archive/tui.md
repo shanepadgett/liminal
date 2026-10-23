@@ -262,7 +262,7 @@ tools/lint/plugin-rules.test.ts  cases for each
 .oxlintrc.json                   turns on liminal/view-imports
 tools/checks/plugin-anatomy.ts   "./view" export; folder targets
 tools/checks/fixtures/           good: a ./view export, a tui folder; broken: messages updated
-docs/instructions/plugins.md     Checked section
+.liminal/instructions/plugins.md Checked section
 ```
 
 Which other plugins' exports each importer may use (`plugin-imports`):

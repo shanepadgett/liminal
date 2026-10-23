@@ -216,7 +216,7 @@ ToolList.current(events): ToolDefinition[]    // a removed tool is still sent, w
 ToolList.fold(id): Effect<void>               // logs the full tool list again
 
 // system-prompt: the system prompt, built from sections
-Sections: Registry<Section>                  // Section = { name; text: Effect<string> }; empty text is left out
+Sections: Registry<Section>                  // Section = { name; text: (session) => Effect<string> }; empty text is left out
 SystemPrompt.sync(id): Effect<void>          // logs the prompt at start, then a note with each changed section's full text
 SystemPrompt.current(events): string         // the prompt the log says the model is sent
 SystemPrompt.fold(id): Effect<void>          // logs the prompt again from the current sections
@@ -393,14 +393,14 @@ How `session` does these over `SqlClient` is open.
 
 | Group | Plugin | Does | Mechanism | Previous code in `archive/packages/plugins/` |
 | --- | --- | --- | --- | --- |
-| Base | `directories` | `Directories`: the global, workspace and project folders | base | `archive/packages/sdk/src/core/directories.ts` |
+| Base | `directories` | `Directories`: the global, workspace and project folders, the Git repository and branch | base | `archive/packages/sdk/src/core/directories.ts` |
 | Base | `settings` | `Settings` over the global and project settings files, `Setting`, `DeclaredSettings` | base | `settings` |
 | Base | `model` | Message types, providers, `ModelCall`, `Models`, classifiers | base | `models`, `decisions` |
 | Base | `session` | The session log over `SqlClient`, event kinds, deltas | base | `session-log`, `session-store`, `notices` |
 | Base | `tools` | Tool registry, `ToolCall` | base | `tools` |
 | Base | `tool-definitions` | `ToolDefinitions`, tool list records and notes | base | `tools` |
 | Base | `system-prompt` | `Sections`, the logged system prompt, change notes, fold | base | `context` |
-| Base | `persona` | Who the agent is and how it talks, as a section | base | `context` |
+| Base | `persona` | Who the agent is, how it talks and how it works, as a section | base | `context`, `system-prompt` |
 | Base | `history` | `Converters`, `History` | base | `context` |
 | Base | `loop` | The turn, the inbox, `Send`, `Commands`, `BeforeCall`, `TurnEnd`, cancel | base | `agent-loop`, `cancel`, `inbox` |
 | Providers | `model-anthropic`, `model-openai`, `model-openrouter`, `model-opencode-go` | Model providers and their logins; `model-openai` adds `openai`, `chatgpt` and `codex` | Add | same names, `model-codex` |
@@ -414,8 +414,8 @@ How `session` does these over `SqlClient` is open.
 | Tools | `tools-execute` | Code mode | Add | `tools-execute` |
 | Tools | `tools-search` | Deferred tools | Add, Wrap | `tools-search` |
 | Tools | `tool-output` | Output limits | Wrap | `tool-output` |
-| Context | `instructions` | Base prompt, `AGENTS.md`, `.liminal/instructions/` | Add | `system-prompt`, `agents-files`, `instruction-files` |
-| Context | `environment` | Workspace facts | Add | `environment` |
+| Context | `instructions` | `.liminal/instructions/` files; `AGENTS.md` files once turned on | Add | `agents-files`, `instruction-files` |
+| Context | `environment` | Workspace, Git, platform, date and the workspace root's entries | Add | `environment` |
 | Context | `skills`, `references`, `vocabulary` | Skill folders, reference repos, project terms | Add | same names |
 | Features | `approvals` | Tool call gate: decision model, reviewer, user | Wrap | `approval` |
 | Features | `questions` | `ask_question`, `/qna` | Add | `questions` |

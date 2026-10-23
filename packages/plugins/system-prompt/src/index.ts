@@ -12,17 +12,18 @@ const make = Effect.gen(function* () {
   const sections = yield* Sections;
   const log = yield* SessionLog;
 
-  const build = Effect.flatMap(sections.list, (current) =>
-    Effect.map(
-      Effect.forEach(current, ({ name, text }) =>
-        Effect.map(text, (value) => ({ name, text: value })),
+  const build = (session: SessionId) =>
+    Effect.flatMap(sections.list, (current) =>
+      Effect.map(
+        Effect.forEach(current, ({ name, text }) =>
+          Effect.map(text(session), (value) => ({ name, text: value })),
+        ),
+        (built) => built.filter(({ text }) => text.length > 0),
       ),
-      (built) => built.filter(({ text }) => text.length > 0),
-    ),
-  );
+    );
 
   const fold = (session: SessionId) =>
-    build.pipe(
+    build(session).pipe(
       Effect.flatMap((built) => PromptRecord.make({ sections: built })),
       Effect.flatMap((event) => log.append(session, [event])),
       Effect.asVoid,
@@ -38,7 +39,7 @@ const make = Effect.gen(function* () {
     }
 
     const known = yield* replay(prompt.value.sections, prompt.value.after);
-    const changed = diff(known, yield* build);
+    const changed = diff(known, yield* build(session));
 
     if (changed.length > 0) {
       yield* log.append(session, [yield* PromptChange.make({ sections: changed })]);

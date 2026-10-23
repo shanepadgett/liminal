@@ -1,3 +1,7 @@
+---
+read-when: Changing lint rules, checks, fallow config or reference tooling
+---
+
 # Tools
 
 - A rule that a check can enforce becomes a lint rule, a fallow boundary or a repository check, and leaves the instruction files.

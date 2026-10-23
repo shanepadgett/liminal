@@ -19,15 +19,15 @@ Read an instruction file only when you are about to do the work it covers.
 
 | Read | Only when |
 | --- | --- |
-| `docs/instructions/code.md` | Writing or changing code in `apps/`, `packages/` or `tools/` |
-| `docs/instructions/core.md` | Changing `packages/core` or a base plugin's contract |
-| `docs/instructions/plugins.md` | Building or changing a plugin |
-| `docs/instructions/dependencies.md` | Writing code against a dependency, or adding or updating one |
-| `docs/instructions/docs.md` | Writing or changing a file in `docs/` |
-| `docs/instructions/planning.md` | Planning work, in chat or in `docs/plans/` |
-| `docs/instructions/tools.md` | Changing lint rules, checks, fallow config or reference tooling |
-| `docs/instructions/gallery.md` | Changing `apps/gallery`, or taking a design from it into the product |
-| `docs/instructions/instructions.md` | Changing `AGENTS.md` or `docs/instructions/` |
+| `.liminal/instructions/code.md` | Writing or changing code in `apps/`, `packages/` or `tools/` |
+| `.liminal/instructions/core.md` | Changing `packages/core` or a base plugin's contract |
+| `.liminal/instructions/plugins.md` | Building or changing a plugin |
+| `.liminal/instructions/dependencies.md` | Writing code against a dependency, or adding or updating one |
+| `.liminal/instructions/docs.md` | Writing or changing a file in `docs/` |
+| `.liminal/instructions/planning.md` | Planning work, in chat or in `docs/plans/` |
+| `.liminal/instructions/tools.md` | Changing lint rules, checks, fallow config or reference tooling |
+| `.liminal/instructions/gallery.md` | Changing `apps/gallery`, or taking a design from it into the product |
+| `.liminal/instructions/instructions.md` | Changing `AGENTS.md` or `.liminal/instructions/` |
 
 ## Scope
 

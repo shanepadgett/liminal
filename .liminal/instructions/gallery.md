@@ -1,3 +1,7 @@
+---
+read-when: Changing `apps/gallery`, or taking a design from it into the product
+---
+
 # Gallery
 
 - Treat `apps/gallery` as a sketchpad for trying designs. Change it freely; no product code depends on it.

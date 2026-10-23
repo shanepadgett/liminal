@@ -162,3 +162,34 @@ Set models in `~/.liminal/settings.json`, or in `.liminal/settings.json` in the 
 - A model is named `provider/model`. `thinking` is optional.
 - `attempts` sets how often a failing call is tried, the first try included. The default is 5.
 - `classifier` names the model plugins use to classify, such as `openai/gpt-6-luna`. Unset, it is the first classifier a connected provider offers.
+
+## Give instructions
+
+Put Markdown files in `.liminal/instructions/` in the folder you run Liminal in, or in `~/.liminal/instructions/` for every project. A project file replaces a global one with the same name. Front matter says when the model follows a file:
+
+```md
+---
+read-when: Writing or changing code in `packages/`
+---
+
+# Code
+
+- Handle failures first and return.
+```
+
+- `read-when: <situation>`: the model sees only the path and the situation, and reads the file when the situation comes up.
+- `always: true`: the whole file goes in every prompt.
+
+A file without either is left out, and the session shows a warning.
+
+Liminal reads `AGENTS.md` files only when you turn them on:
+
+```jsonc
+{
+  "instructions": { "agentsFiles": true },
+}
+```
+
+It then reads `~/.agents/AGENTS.md`, `~/.liminal/AGENTS.md`, and each `AGENTS.md` from the repository root down to the folder you run Liminal in.
+
+Changes to these files reach the model before its next call.

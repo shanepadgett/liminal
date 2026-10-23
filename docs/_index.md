@@ -4,7 +4,6 @@
 | --- | --- | --- |
 | [architecture.md](architecture.md) | The intended design | Changes when the user agrees to a design change; corrected when built code differs |
 | [status.md](status.md) | Scope rules, current focus, milestones | Ticked as work lands |
-| [instructions/](instructions/) | Rules for agents, each read only when doing that work; listed in `AGENTS.md` | Changes with the user's approval |
 | [extension-basics.md](extension-basics.md) | Add, Wrap, Attach and Replace with examples | Moves into `guides/` once core is built |
 | [plans/](plans/) | One plan per piece of work, written in rounds | Moved to `plans/_archive/` once built and verified |
 | [plugins/](plugins/) | Work files: what each milestone's plugins must do | A section is deleted once its plugin is built; a file once it is empty |

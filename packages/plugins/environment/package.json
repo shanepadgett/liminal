@@ -1,0 +1,19 @@
+{
+  "name": "@shanepadgett/liminal-environment",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-directories": "workspace:*",
+    "@shanepadgett/liminal-system-prompt": "workspace:*",
+    "effect": "*"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/index.ts"
+    ]
+  }
+}

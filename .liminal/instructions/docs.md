@@ -1,3 +1,7 @@
+---
+read-when: Writing or changing a file in `docs/`
+---
+
 # Docs
 
 - `docs/_index.md` lists what each docs folder holds. Update it when you add, move or delete a doc.

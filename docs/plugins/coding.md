@@ -31,21 +31,6 @@ Work for [status.md](../status.md) milestone 3.
 ToolCall.wrap((req, next) => next(req).pipe(Effect.map(limitOutput)))
 ```
 
-## `instructions`
-
-- Adds `Sections`: base prompt, `AGENTS.md` files, `.liminal/instructions/`.
-- The base prompt is the `<execution>` part of `archive/packages/plugins/system-prompt/src/server/base.ts`; `persona` already has `<communication>` and `<discussion>`.
-- Previous code: `system-prompt`, `agents-files`, `instruction-files`.
-
-```ts
-Sections.add({ name: "agents-files", text: readAgentsFiles(cwd) }, { order: 20 })
-```
-
-## `environment`
-
-- Adds a `Section` with workspace facts: cwd, platform, date, git state.
-- Previous code: `environment`.
-
 ## `approvals`
 
 - Wraps `ToolCall`: a policy, then the small model's verdict, then the user.

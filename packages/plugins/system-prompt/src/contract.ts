@@ -14,7 +14,8 @@ import {
 /** One part of the system prompt; empty text leaves it out. */
 export interface Section {
   readonly name: string;
-  readonly text: Effect.Effect<string>;
+  /** The text for one session's next model call; a section may tell that session of a problem. */
+  readonly text: (session: SessionId) => Effect.Effect<string>;
 }
 
 /** The sections, in prompt order: lowest `order` first. */

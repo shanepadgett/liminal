@@ -162,13 +162,13 @@ yield* (yield* Tools).add(add);
 
 ## Add a prompt section
 
-`Sections` from `@shanepadgett/liminal-system-prompt/contract` holds the parts of the system prompt. Lower `order` comes first; `persona` uses -100.
+`Sections` from `@shanepadgett/liminal-system-prompt/contract` holds the parts of the system prompt. Lower `order` comes first: `persona` -100, `agents-files` 0, `instruction-files` 10, `environment` 100.
 
 ```ts
-yield* (yield* Sections).add({ name: "environment", text: readEnvironment }, { order: 10 });
+yield* (yield* Sections).add({ name: "project", text: (session) => readProject(session) }, { order: 20 });
 ```
 
-- `text` is an `Effect<string>`, run before each model call. Empty text leaves the section out.
+- `text` takes the session and returns an `Effect<string>`, run before each model call. Empty text leaves the section out. The session lets a section tell it of a problem with a `Notice`.
 - The prompt is logged once. When a section's text changes, the model gets a note with its full new text, so keep text that changes often out of sections.
 
 ## Send events to the model

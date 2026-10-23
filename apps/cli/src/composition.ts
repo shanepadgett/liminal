@@ -9,7 +9,9 @@ import chat from "@shanepadgett/liminal-chat";
 import { inMemory } from "@shanepadgett/liminal-client";
 import { compose, definePlugin } from "@shanepadgett/liminal-core";
 import directories from "@shanepadgett/liminal-directories";
+import environment from "@shanepadgett/liminal-environment";
 import history from "@shanepadgett/liminal-history";
+import instructions from "@shanepadgett/liminal-instructions";
 import loop from "@shanepadgett/liminal-loop";
 import model from "@shanepadgett/liminal-model";
 import modelAnthropic from "@shanepadgett/liminal-model-anthropic";
@@ -65,6 +67,8 @@ export const plugins = [
   history,
   systemPrompt,
   persona,
+  instructions,
+  environment,
   toolDefinitions,
   loop,
   modelChoice,

@@ -1,6 +1,6 @@
 # @shanepadgett/liminal-persona
 
-Who the agent is and how it talks: the `persona` section of the system prompt, placed first (`order` -100).
+Who the agent is, how it talks and how it works: the `persona` section of the system prompt, placed first (`order` -100).
 
 Requires `Sections` from `system-prompt`.
 

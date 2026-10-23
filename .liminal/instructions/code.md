@@ -1,3 +1,7 @@
+---
+read-when: Writing or changing code in `apps/`, `packages/` or `tools/`
+---
+
 # Code
 
 ## Design

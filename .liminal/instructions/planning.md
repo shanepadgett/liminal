@@ -1,3 +1,7 @@
+---
+read-when: Planning work, in chat or in `docs/plans/`
+---
+
 # Planning
 
 ## Investigation

@@ -1,3 +1,7 @@
+---
+read-when: Writing code against a dependency, or adding or updating one
+---
+
 # Dependencies
 
 - Find the dependency's entry in `docs/reference/copies/index.md` and read its docs and API there. Never guess an API.
