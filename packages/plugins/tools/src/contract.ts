@@ -9,7 +9,7 @@ import type {
   ToolCall as ToolCallPart,
   ToolResult,
 } from "@shanepadgett/liminal-model/contract";
-import type { SessionId } from "@shanepadgett/liminal-session/contract";
+import { defineEvent, type SessionId } from "@shanepadgett/liminal-session/contract";
 
 /** What a tool knows about the call it runs. */
 export interface ToolContext {
@@ -17,7 +17,18 @@ export interface ToolContext {
   readonly callId: string;
   /** The attributes of the latest input the turn consumed, such as who sent it. */
   readonly attributes: Attributes;
+  /**
+   * Shows the call's progress while it runs. Not saved; a frontend draws only the latest, so `data`
+   * holds the whole progress so far, not what changed.
+   */
+  readonly progress: (data: Schema.Json) => Effect.Effect<void>;
 }
+
+/** A running call's latest progress, published as a delta. Each tool decodes its own `data`. */
+export const ToolProgress = defineEvent(
+  "tools/progress",
+  Schema.Struct({ callId: Schema.String, data: Schema.Json }),
+);
 
 /** A finished call: what the model sees. */
 export interface ToolOutput {

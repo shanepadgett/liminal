@@ -3,8 +3,16 @@ import { Effect, Layer } from "effect";
 
 import { definePlugin, Pipeline, Registry } from "@shanepadgett/liminal-core";
 import type { ToolResult } from "@shanepadgett/liminal-model/contract";
+import { SessionLog } from "@shanepadgett/liminal-session/contract";
 
-import { type Tool, ToolCall, type ToolCallRequest, Tools } from "./contract.ts";
+import {
+  type Tool,
+  ToolCall,
+  type ToolCallRequest,
+  type ToolContext,
+  ToolProgress,
+  Tools,
+} from "./contract.ts";
 
 const failed = (request: ToolCallRequest, message: string): ToolResult => ({
   type: "tool-result",
@@ -14,13 +22,22 @@ const failed = (request: ToolCallRequest, message: string): ToolResult => ({
   isFailure: true,
 });
 
+/** What the call's tool knows about it; its progress is published to the call's session. */
+const contextOf = (log: SessionLog["Service"], request: ToolCallRequest): ToolContext => ({
+  session: request.session,
+  callId: request.call.id,
+  attributes: request.attributes,
+  progress: (data) =>
+    Effect.flatMap(ToolProgress.make({ callId: request.call.id, data }), (delta) =>
+      log.publish(request.session, delta),
+    ),
+});
+
 /** Runs the tool by the call's name; every way a call can go wrong becomes a failed result. */
-const runTool = (tools: ReadonlyArray<Tool>, request: ToolCallRequest) => {
+const runTool = (tools: ReadonlyArray<Tool>, context: ToolContext, request: ToolCallRequest) => {
   const { call } = request;
   const tool = tools.findLast(({ name }) => name === call.name);
   if (tool === undefined) return Effect.succeed(failed(request, `No tool is named ${call.name}.`));
-
-  const context = { session: request.session, callId: call.id, attributes: request.attributes };
 
   return tool.run(call.params, context).pipe(
     Effect.map(({ content }): ToolResult => ({
@@ -44,9 +61,10 @@ const toolCall = Layer.effect(
   ToolCall,
   Effect.gen(function* () {
     const tools = yield* Tools;
+    const log = yield* SessionLog;
 
     return yield* Pipeline.make((request: ToolCallRequest) =>
-      Effect.flatMap(tools.list, (current) => runTool(current, request)),
+      Effect.flatMap(tools.list, (current) => runTool(current, contextOf(log, request), request)),
     );
   }),
 );
@@ -54,6 +72,6 @@ const toolCall = Layer.effect(
 export default definePlugin({
   name: "tools",
   provides: [Tools, ToolCall],
-  requires: [],
+  requires: [SessionLog],
   layer: toolCall.pipe(Layer.provideMerge(Layer.effect(Tools, Registry.make<Tool>()))),
 });
