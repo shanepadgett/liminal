@@ -22,6 +22,7 @@ const ICON: Readonly<Record<ToolStatus, { readonly glyph: string; readonly role:
   failed: { glyph: "×", role: "feedback.danger" },
 };
 
+/** The columns a tool's name takes with its gap; a longer name keeps one space after it. */
 const TOOL_COLUMNS = 7;
 
 /** How much of its brightness a row keeps beside a reply. */
@@ -78,11 +79,12 @@ export function WorkRow(props: WorkRowProps) {
   const [isOpen, setOpen] = createSignal(false);
   const hasDetails = () => props.details !== undefined;
   const note = () => (props.note === undefined || props.note === "" ? "" : `  ${props.note}`);
+  const label = () => `${props.item.name.padEnd(TOOL_COLUMNS - 1)} `;
 
   const cells = () =>
     cutMiddle(
       kit.cellsOf(oneLine(inputOf(props.item.params))),
-      Math.max(1, width() - TOOL_COLUMNS - kit.cellsOf(note()).length),
+      Math.max(1, width() - kit.cellsOf(label()).length - kit.cellsOf(note()).length),
     );
 
   // A live call's newest cells warm up from the background; a saved one is settled.
@@ -120,7 +122,7 @@ export function WorkRow(props: WorkRowProps) {
           }}
         >
           <text wrapMode="none">
-            <span style={{ fg: color("text.base") }}>{props.item.name.padEnd(TOOL_COLUMNS)}</span>
+            <span style={{ fg: color("text.base") }}>{label()}</span>
             <For each={runs()}>{(run) => <span style={{ fg: run.fg }}>{run.text}</span>}</For>
             <span style={{ fg: color("text.faint") }}>{note()}</span>
           </text>

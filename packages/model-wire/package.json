@@ -6,7 +6,8 @@
     "./chat": "./src/chat.ts",
     "./decisions": "./src/decisions.ts",
     "./messages": "./src/messages.ts",
-    "./responses": "./src/responses.ts"
+    "./responses": "./src/responses.ts",
+    "./search": "./src/search.ts"
   },
   "dependencies": {
     "@effect/ai-anthropic": "4.0.5",

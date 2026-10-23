@@ -27,6 +27,13 @@ Chat Completions, the OpenAI request format most other hosts copy, through Effec
 
 Requires an `HttpClient`.
 
+## `./search`
+
+A provider's own web search, run on its `small` model.
+
+- `hostedSearch(providers, id, toolkit, query)`: finds provider `id` in `providers` when it runs, runs its `defaults.small` through its `languageModel` with `toolkit`'s search tool required, and answers `{ text, sources }`, up to 8 sources. A provider is any value shaped as a `SearchProvider`, such as a `ModelProvider`. Fails with `NotSearched` when the provider is missing or signed out, or no search succeeded.
+- `messagesSearch`: Anthropic's `web_search_20250305`, at most 3 searches a call. `responsesSearch`: OpenAI's `web_search`.
+
 ## `./decisions`
 
 OpenAI's Decisions API through Effect AI's OpenAI provider.

@@ -16,7 +16,7 @@ Milestone 3, step 7: `tools-web`. The stack is settled in [architecture.md](arch
 
 ## Next
 
-1. Plan `tools-web` part 2, hosted web search, in [plans/coding-web.md](plans/coding-web.md). Milestone 3's overview and step plans: [plans/coding.md](plans/coding.md). Earlier plans: [plans/_archive/base.md](plans/_archive/base.md) for milestone 1, [plans/_archive/tui.md](plans/_archive/tui.md) for milestone 2, [plans/_archive/gallery.md](plans/_archive/gallery.md) for the gallery's designs.
+1. Step 7 is built; archive [plans/coding-web.md](plans/coding-web.md) once the user has checked it, then plan step 8. Milestone 3's overview and step plans: [plans/coding.md](plans/coding.md). Earlier plans: [plans/_archive/base.md](plans/_archive/base.md) for milestone 1, [plans/_archive/tui.md](plans/_archive/tui.md) for milestone 2, [plans/_archive/gallery.md](plans/_archive/gallery.md) for the gallery's designs.
 2. Built: `packages/core` (`definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`), `directories`, `settings`, `sqlite`, `session`, `model` with classifiers over Effect AI's `Decision`, `model-wire` with Anthropic Messages, OpenAI Responses, Chat Completions and OpenAI Decisions, `accounts` with API keys, command credentials, OAuth tokens, logins grouped by vendor, the sign-in RPC and logout, `model-anthropic` with its API key and Claude subscription logins and `ANTHROPIC_API_KEY` as fallback, `model-openai` with `openai` (API key, `OPENAI_API_KEY` as fallback, GPT-6 Luna as classifier), `chatgpt` (Sign in with ChatGPT) and `codex` (Codex login), `model-openrouter` (API key, `OPENROUTER_API_KEY` as fallback, Jev as classifier), `model-opencode-go` (API key, `OPENCODE_API_KEY` as fallback, each model on the wire the catalog names), `model-catalog` providing `model`'s `ModelCatalog` from models.dev, `tools`, `history`, `system-prompt`, `persona`, `tool-definitions`, `loop`, `packages/client` with the in-memory `Host`, and `apps/cli` with `liminal -p`, which reads piped stdin, writes JSON lines with `--json` and sets exit codes, `liminal connect` and `liminal logout`. A host composes a plugin of its own that provides Effect's runtime services, such as `Path`, `FileSystem` and `HttpClient`. Milestone 2 added the session view in `packages/client`, `packages/tui` with its UI kit, `theme`, `chat`, `tags`, `stash`, `slash`, `palette`, `session-picker`, `model-choice`, `model-favorites`, and `/connect` in the `accounts` `tui` entry.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
@@ -56,7 +56,7 @@ Work: [plugins/coding.md](plugins/coding.md)
 - [x] `tools-shell`; `ToolContext.progress`
 - [x] `tools-processes`
 - [x] `tools-web`: `websearch` with Exa, `webfetch`; `ToolContext.model`
-- [ ] Hosted web search: `web-search-anthropic`, `web-search-openai`
+- [x] Hosted web search: `web-search-anthropic`, `web-search-openai`
 - [x] `tools-read`, `tools-edit`, `tools-write`; diffs in chat
 - [x] `instructions`, `environment`
 - [x] Recreate `.liminal/`; move `docs/instructions/` to `.liminal/instructions/` with `read-when` front matter

@@ -36,4 +36,4 @@ Adds both rows to `ToolRows`. The `websearch` row shows the query, then `N sourc
 
 ## Replace it
 
-Add a tool named `websearch` or `webfetch` after `tools-web`; of two tools with one name, the one added last is used. Add a hosted search with `WebSearchers.add`.
+Add a tool named `websearch` or `webfetch` after `tools-web`; of two tools with one name, the one added last is used. Add a hosted search with `WebSearchers.add`, as `web-search-anthropic` and `web-search-openai` do.

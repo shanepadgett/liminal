@@ -230,7 +230,7 @@ It changes files with `edit`, which replaces exact text, several places in one c
 
 It runs commands with `shell`, one `bash -c` per call in that folder, stopped after 2 minutes unless it asks for longer. Commands that keep running, such as dev servers and watchers, run with `process_start` in a terminal of their own; the model reads their output, types into them and stops them. They stop when Liminal exits.
 
-It searches the web with `websearch` through Exa's free search, which needs no key and has a rate limit. It reads one web page with `webfetch`: text pages up to 5 MB, HTML as Markdown. A fetch is checked like a command, since an address can carry data out. In the transcript a search row shows how many sources it found; click it to see them.
+It searches the web with `websearch`. On an Anthropic, OpenAI, ChatGPT or Codex model the search runs on that provider's own web search, with its small model and your login; Anthropic bills its searches. Other providers, or a hosted search that fails, use Exa's free search, which needs no key and has a rate limit. It reads one web page with `webfetch`: text pages up to 5 MB, HTML as Markdown. A fetch is checked like a command, since an address can carry data out. In the transcript a search row shows how many sources it found; click it to see them.
 
 When a tool's output is over 2,000 lines or 50 KB, the model gets the first and last parts, and the whole output is saved in `liminal-tool-output` in the system temp folder, readable only by you. Saved output is removed after 7 days.
 

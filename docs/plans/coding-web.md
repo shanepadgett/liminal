@@ -192,6 +192,132 @@ webfetch(url, context)
 - `webfetch` returns a page whatever its status; the status is in the header lines and the row.
 - The `websearch` row's note counts sources and names the searcher; the source list opens only when there are sources.
 
-## Open
+## Part 2, round 1: hosted search
 
-- Part 2: `web-search-anthropic` and `web-search-openai`, planned after part 1 is built.
+### Today
+
+| Provider | Wire | `small` default | Hosted search |
+| --- | --- | --- | --- |
+| `anthropic` | Messages, API key or subscription (`model-anthropic`) | `anthropic/claude-haiku-5-5` | Exa |
+| `openai` | Responses, `api.openai.com/v1` | `openai/gpt-6-luna` | Exa |
+| `chatgpt` | Responses, `api.openai.com/v1` with the ChatGPT token | `chatgpt/gpt-6-luna` | Exa |
+| `codex` | Responses, `chatgpt.com/backend-api/codex`, signed inside `languageModel` (`codex/backend.ts` `signedAs`) | `codex/gpt-6-luna` | Exa |
+| `opencode-go`, `openrouter` | Chat completions | | Exa, no hosted search planned |
+
+Signing lives inside each provider's `languageModel`, so a search plugin that calls `provider.languageModel(small)` gets the provider's auth for free. Nothing outside `model-openai` can sign a plain HTTP request to the Codex backend.
+
+### Findings
+
+- Effect AI 4.0.5 (pinned) has `AnthropicTool.WebSearch_20250305` and `OpenAiTool.WebSearch`. Claude's docs list newer `web_search_20260209` and `web_search_20260318`; the pin only has `20250305`. Anthropic bills $10 per 1000 searches.
+- The previous `archive/packages/sdk/src/ai/search.ts` (95 lines) runs either tool with `toolChoice: "required"` and reads sources from `source` parts and tool results. It carries over as the core of both plugins.
+- Codex: Tau Agent (`extensions/web/search.ts`, `hosted-search.ts`) sends the hosted `{ type: "web_search" }` tool to the Codex backend on `gpt-6-luna` with `tool_choice: "required"` and `include: ["web_search_call.action.sources"]`, and it works. Effect AI's `OpenAiLanguageModel` adds that `include` entry itself when `OpenAiTool.WebSearch` is in the request (line 977). So `codex` takes the same path as `openai` and `chatgpt`, through `languageModel`, with no Codex-only code.
+- Tau Agent covers `openai-codex`, `anthropic` and `xai`; everything else uses Exa, and a failed hosted search falls back to Exa without trying another provider. Same rule as part 1.
+
+### Agreed
+
+| Plugin | Covers | Mechanism | Reuses |
+| --- | --- | --- | --- |
+| `web-search-anthropic` | `anthropic` | Add a `WebSearchers` entry | `search.ts` |
+| `web-search-openai` | `openai`, `chatgpt`, `codex` | Add one `WebSearchers` entry per provider id | `search.ts` |
+
+- Every hosted search runs on the provider's `small` default (`defaults.small`, with its thinking level), never the session's model. The `model.small` setting is not used: it can name another provider, whose model cannot run this provider's search tool.
+- Anthropic uses `web_search_20250305`, the version the Effect AI pin has.
+- Provider plugins stay unchanged; nothing is deleted.
+
+## Code plan, part 2
+
+### Files
+
+| File | What |
+| --- | --- |
+| `packages/model-wire/src/search.ts` (new export `./search`) | The two toolkits and `hostedSearch`, from the archived `search.ts`. `model-wire` already owns `@effect/ai-anthropic` and `@effect/ai-openai`, so the plugins add no dependency. |
+| `packages/plugins/web-search-anthropic/` | `package.json`, `README.md`, `src/index.ts` |
+| `packages/plugins/web-search-openai/` | `package.json`, `README.md`, `src/index.ts` |
+| `apps/cli/package.json`, `apps/cli/src/composition.ts` | Both plugins, after `tools-web` and the provider plugins |
+
+### Types
+
+```ts
+// model-wire/src/search.ts
+export interface HostedAnswer {
+  readonly text: string;
+  readonly sources: ReadonlyArray<{ readonly url: string; readonly title: string }>;
+}
+
+/** Anthropic's search tool, at most 3 searches a call (Tau Agent's limit). */
+export const messagesSearch = Toolkit.make(AnthropicTool.WebSearch_20250305({ maxUses: 3 }));
+/** OpenAI's search tool. */
+export const responsesSearch = Toolkit.make(OpenAiTool.WebSearch({}));
+
+/** The model answered without a search that worked. */
+export class NotSearched extends Schema.TaggedError<...>()("NotSearched", { message }) {}
+
+export const hostedSearch: (
+  language: LanguageModel.Service,
+  toolkit: typeof messagesSearch | typeof responsesSearch,
+  query: string,
+) => Effect<HostedAnswer, AiError | NotSearched>;
+```
+
+No contract changes: `WebSearcher`, `ModelProvider` and `ModelProviders` stay as they are.
+
+### Call path
+
+```text
+tools-web websearch (part 1, unchanged)
+  -> WebSearchers entry for the session model's provider
+     web-search-openai / web-search-anthropic: search(query)
+       provider = ModelProviders.list, find id        missing -> SearchFailed
+       provider.signedIn                              false   -> SearchFailed
+       { model, thinking } = provider.defaults.small; strip "provider/"
+       language = provider.languageModel(model, { thinking })   signing inside, as for turns
+       hostedSearch(language, toolkit, query)
+         streamText({ prompt: system instructions + user query, toolkit, toolChoice: "required" })
+         collect parts
+         no successful provider-run tool-result -> NotSearched
+         text    = text deltas joined
+         sources = `source` parts (cited pages), each URL once, first title kept
+       AiError | NotSearched -> SearchFailed { message }
+  -> on SearchFailed or 30 s: Exa (part 1)
+```
+
+### Plugins
+
+```ts
+// web-search-openai/src/index.ts
+const covered = ["openai", "chatgpt", "codex"];
+
+export default definePlugin({
+  name: "web-search-openai",
+  requires: [ModelProviders, WebSearchers],
+  register: Effect.gen(function* () {
+    const providers = yield* ModelProviders;
+    const searchers = yield* WebSearchers;
+    yield* Effect.forEach(covered, (id) =>
+      searchers.add({ provider: id, name: "OpenAI", search: searchWith(providers, id) }));
+  }),
+});
+// web-search-anthropic: same, covered = ["anthropic"], name "Claude", messagesSearch
+```
+
+`searchWith(providers, id)` is the find, sign-in check and `languageModel` step above, about 15 lines in each plugin. If the duplicate check flags it, it moves into `model-wire/search.ts` taking the provider's `languageModel` and `small` as plain values.
+
+### Recorded calls
+
+- `streamText`, collected, not `generateText`: Tau Agent streams its Codex search over SSE, and the Codex backend is only exercised streaming today.
+- Sources are the pages the answer cites (`source` parts), not every search hit. Tau Agent does the same; hits include pages the answer never used. This drops the archive's tool-result decoding.
+- A search counts only when the provider's search tool returned a result; an answer from memory fails and Exa answers instead (Tau Agent's `searched` check).
+- Instructions are the archive's three sentences; the user message is the query and "Cite at most 8 sources."
+- The row's searcher name is "OpenAI" for all three OpenAI providers and "Claude" for Anthropic.
+- The search call is a side call: it goes straight to `languageModel`, not through `ModelCall`, so it has no retries (Exa is the fallback) and is not logged; the session logs the `websearch` result the model sees.
+- Hand-check: `--yolo --json` on `codex/`, `chatgpt/` and `anthropic/` with a temp dir; the `tools-web/searched` event names the hosted searcher.
+
+### Docs
+
+`docs/architecture.md` rows for both plugins and the hosted line in "Web tools"; `docs/status.md` tick; `docs/plugins/coding.md` drops "Hosted web search"; `docs/usage/cli.md` web paragraph; `tools-web/README.md` names the two plugins; a README for each.
+
+## Settled while building part 2
+
+- The find, sign-in check and `languageModel` step lives in `model-wire`'s `hostedSearch(providers, id, toolkit, query)`, which takes providers shaped like `ModelProvider`; each plugin only adds its entries and maps the error.
+- Sources are Effect AI's `source` parts: OpenAI's cited pages, and on Anthropic every search hit, as Effect AI emits them. An OpenAI answer that cites nothing has no sources.
+- Hand-checked on `codex/gpt-6.1-sol`: the search ran on OpenAI with cited sources. `anthropic` and `chatgpt` were not signed in here and are not hand-checked.

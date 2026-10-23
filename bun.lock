@@ -67,6 +67,8 @@
         "@shanepadgett/liminal-tools-web": "workspace:*",
         "@shanepadgett/liminal-tools-write": "workspace:*",
         "@shanepadgett/liminal-tui": "workspace:*",
+        "@shanepadgett/liminal-web-search-anthropic": "workspace:*",
+        "@shanepadgett/liminal-web-search-openai": "workspace:*",
         "effect": "4.0.5",
       },
     },
@@ -610,6 +612,28 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/web-search-anthropic": {
+      "name": "@shanepadgett/liminal-web-search-anthropic",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-model-wire": "workspace:*",
+        "@shanepadgett/liminal-tools-web": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/web-search-openai": {
+      "name": "@shanepadgett/liminal-web-search-openai",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-model-wire": "workspace:*",
+        "@shanepadgett/liminal-tools-web": "workspace:*",
+        "effect": "*",
+      },
+    },
     "packages/tui": {
       "name": "@shanepadgett/liminal-tui",
       "version": "0.1.0",
@@ -956,6 +980,10 @@
     "@shanepadgett/liminal-tools-write": ["@shanepadgett/liminal-tools-write@workspace:packages/plugins/tools-write"],
 
     "@shanepadgett/liminal-tui": ["@shanepadgett/liminal-tui@workspace:packages/tui"],
+
+    "@shanepadgett/liminal-web-search-anthropic": ["@shanepadgett/liminal-web-search-anthropic@workspace:packages/plugins/web-search-anthropic"],
+
+    "@shanepadgett/liminal-web-search-openai": ["@shanepadgett/liminal-web-search-openai@workspace:packages/plugins/web-search-openai"],
 
     "@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
 

@@ -431,6 +431,7 @@ How `session` does these over `SqlClient` is open.
 | Tools | `tools-shell` | `shell`, command runner, shell safety | Add | `tools-shell`, `command-runner`, `shell-safety` |
 | Tools | `tools-processes` | `process_start`, `process_output`, `process_input`, `process_stop` in a pseudo-terminal | Add | `processes` |
 | Tools | `tools-web` | `websearch`, `webfetch`, `WebSearchers`: hosted searches by provider | Add | `tools-web` |
+| Tools | `web-search-anthropic`, `web-search-openai` | The provider's hosted search in `WebSearchers` | Add | `sdk` (search) |
 | Tools | `tools-execute` | Code mode | Add | `tools-execute` |
 | Tools | `tools-search` | Deferred tools | Add, Wrap | `tools-search` |
 | Tools | `tool-output` | Output limits | Wrap | `tool-output` |
@@ -464,6 +465,7 @@ How `session` does these over `SqlClient` is open.
 ### Web tools
 
 - `websearch` asks the hosted search in `WebSearchers` whose `provider` is the provider of `ToolContext.model`; with none, or when it fails, it asks Exa's free MCP search, which `tools-web` holds itself. `WebSearcher = { provider; name; search(query): Effect<WebAnswer, SearchFailed> }`, `WebAnswer = { text; sources: { url; title }[] }`.
+- `web-search-openai` adds searchers for `openai`, `chatgpt` and `codex`, `web-search-anthropic` one for `anthropic`. Each finds its provider in `ModelProviders` when it searches and runs `model-wire`'s `hostedSearch` on the provider's `defaults.small`, never the session's model: the provider's own search tool through `languageModel`, outside `ModelCall`.
 - `webfetch` reads one http(s) page of a text type up to 5 MB; HTML becomes light Markdown through Bun's `HTMLRewriter`. It has no `access`, so approvals judges it as `run`.
 - Each result starts with a line marking the content as untrusted web data. The tools save `tools-web/searched` and `tools-web/fetched` for their rows.
 
@@ -502,7 +504,7 @@ All packages publish to npm as ESM JavaScript with type declarations, so Node, B
 | `@shanepadgett/liminal-directories`, `-settings`, `-model`, `-session`, `-tools`, `-tool-definitions`, `-system-prompt`, `-persona`, `-history`, `-loop` | Base plugins with their contracts |
 | `@shanepadgett/liminal-agent` | `agent()`: the base plugin list, for embedding in one import |
 | `@shanepadgett/liminal-<plugin>` | Providers and features |
-| `@shanepadgett/liminal-model-wire` | The Anthropic Messages, OpenAI Responses and Chat Completions wire code providers share; a library, not a plugin |
+| `@shanepadgett/liminal-model-wire` | The Anthropic Messages, OpenAI Responses and Chat Completions wire code providers share, and the providers' hosted web search; a library, not a plugin |
 | `@shanepadgett/liminal-client` | Client and session view |
 | `@shanepadgett/liminal-tui` | TUI frontend and the UI kit for `tui` entries |
 
