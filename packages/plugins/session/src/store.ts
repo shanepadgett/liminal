@@ -122,6 +122,16 @@ export const after = Effect.fn("SessionStore.after")(function* (
   return yield* decodeRows(rows);
 });
 
+/** The newest event of `kind` in any session. */
+export const latest = Effect.fn("SessionStore.latest")(function* (sql: Sql, kind: string) {
+  const rows = yield* Effect.mapError(
+    sql`SELECT * FROM session_events WHERE kind = ${kind} ORDER BY at DESC, seq DESC LIMIT 1`,
+    failed,
+  );
+
+  return Arr.head(yield* decodeRows(rows));
+});
+
 /** The latest `limit` events, or the `limit` before `seq`, oldest first. */
 export const before = Effect.fn("SessionStore.before")(function* (
   sql: Sql,

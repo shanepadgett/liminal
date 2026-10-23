@@ -7,6 +7,8 @@ import { Attribute, type Attributes, Pipeline, Registry } from "@shanepadgett/li
 import {
   Message,
   type ModelCallError,
+  type ModelChoice,
+  type ModelNotFound,
   type ModelRequest,
   ModelId,
   ToolCall,
@@ -17,9 +19,11 @@ import {
   EventInvalid,
   NewEvent,
   SessionId,
+  type SessionEvent,
   SessionNotFound,
   SessionStoreFailed,
 } from "@shanepadgett/liminal-session/contract";
+import type { SettingsInvalid } from "@shanepadgett/liminal-settings/contract";
 
 /** Any event that starts or joins a turn, such as a user `session/message`. */
 export type Input = NewEvent;
@@ -80,6 +84,17 @@ export class BeforeCall extends Registry.Service<BeforeCall, Hook>()("loop/Befor
 
 /** Runs when the model answers without tool calls; a hook continues the turn by sending a follow-up. */
 export class TurnEnd extends Registry.Service<TurnEnd, Hook>()("loop/TurnEnd") {}
+
+/**
+ * The model a session's next turn runs, from its events; no events asks for a new session's. The
+ * end is the first signed-in provider's `main` default; wrap it to choose, as `model-choice` does.
+ */
+export class SessionModel extends Pipeline.Service<
+  SessionModel,
+  ReadonlyArray<SessionEvent>,
+  ModelChoice,
+  ModelNotFound | SettingsInvalid | SessionStoreFailed
+>()("loop/SessionModel") {}
 
 export class Turns extends Context.Service<
   Turns,

@@ -83,6 +83,7 @@ const make = Effect.gen(function* () {
     page: (session, before) => Store.before(sql, session, before, pageSize),
     live,
     publish,
+    latest: (kind) => Store.latest(sql, kind),
   });
 });
 

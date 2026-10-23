@@ -68,9 +68,9 @@ export const ItemRenderer: Registry<{ kind: string; component: (props: { event: 
 
 ## Model picker
 
-- The `model` TUI entry: picks the `main` or `small` model, filtered with `fuzzysort`.
-- Picking a model saves it as the role's model in the global settings file. Until a role is set, it uses the first signed-in provider's default.
-- Print mode gains `--model provider/model`.
+- `model-choice`: `/model`, the model line in chat's `status` slot and `shift+tab` thinking levels. Each session logs a `model-choice/pick` event when its model changes; a new session runs `model-choice.default`, else the newest pick in any session, else the first signed-in provider's default. `ctrl+d` in the picker saves the default.
+- `model-favorites`: a Favorites section in the picker and `ctrl+f`.
+- Print mode's `--model provider/model` sets the `model-choice/pick` attribute.
 
 ## `/connect` in the TUI
 

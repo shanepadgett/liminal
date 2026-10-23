@@ -12,10 +12,10 @@ OpenRouter's models as the `openrouter` provider in `ModelProviders`.
 
 ```jsonc
 {
-  "model": {
-    "main": { "model": "openrouter/deepseek/deepseek-v4.1-flash-1017", "thinking": "high" },
+  "model-choice": {
+    "default": { "model": "openrouter/deepseek/deepseek-v4.1-flash-1017", "thinking": "high" },
   },
-  "classifier": "openrouter/typesafe/jev-1.13",
+  "model": { "classifier": "openrouter/typesafe/jev-1.13" },
 }
 ```
 

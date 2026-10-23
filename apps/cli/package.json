@@ -19,6 +19,8 @@
     "@shanepadgett/liminal-model": "workspace:*",
     "@shanepadgett/liminal-model-anthropic": "workspace:*",
     "@shanepadgett/liminal-model-catalog": "workspace:*",
+    "@shanepadgett/liminal-model-choice": "workspace:*",
+    "@shanepadgett/liminal-model-favorites": "workspace:*",
     "@shanepadgett/liminal-model-openai": "workspace:*",
     "@shanepadgett/liminal-model-opencode-go": "workspace:*",
     "@shanepadgett/liminal-model-openrouter": "workspace:*",

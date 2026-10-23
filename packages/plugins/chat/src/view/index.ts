@@ -12,6 +12,7 @@ import {
   Interrupted,
   ReplyDelta,
   StepEnded,
+  StepStarted,
   ToolDone,
   TurnEnded,
   TurnStarted,
@@ -267,6 +268,16 @@ export const contextUsed = (state: SessionView.ViewState): number | undefined =>
     if (Option.isSome(ended) && ended.value.outcome === "finished") {
       return ended.value.usage.inputTokens.total;
     }
+  }
+
+  return undefined;
+};
+
+/** The model of the latest model call, which spent the tokens `contextUsed` counts. */
+export const stepModel = (state: SessionView.ViewState): string | undefined => {
+  for (const event of state.events.toReversed()) {
+    const started = decoded(StepStarted, event);
+    if (Option.isSome(started)) return started.value.model;
   }
 
   return undefined;

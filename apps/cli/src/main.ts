@@ -64,8 +64,12 @@ const liminal = Command.make(
       Flag.withDescription("With -p, write every saved event and delta as a JSON line"),
       Flag.withDefault(false),
     ),
+    model: Flag.String("model").pipe(
+      Flag.withDescription("With -p, run this model, such as anthropic/claude-sonnet-4-5"),
+      Flag.optional,
+    ),
   },
-  Effect.fn(function* ({ print: flag, json }) {
+  Effect.fn(function* ({ print: flag, json, model }) {
     if (Option.isNone(flag)) {
       return yield* tui.pipe(
         Effect.catch((error) =>
@@ -78,7 +82,7 @@ const liminal = Command.make(
 
     // The plugins start only once the command is known, so help never opens the session store.
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- print mode's entry point.
-    return yield* Effect.scoped(print(prompt, json)).pipe(Effect.provide(host));
+    return yield* Effect.scoped(print(prompt, json, model)).pipe(Effect.provide(host));
   }),
 ).pipe(
   Command.withDescription("An agent harness where everything is a plugin"),

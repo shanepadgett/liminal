@@ -1,4 +1,4 @@
-/** `Models`: roles, the model list and one-off calls. */
+/** `Models`: the `small` role, the model list and one-off calls. */
 import { Effect, Option, Schema, Stream } from "effect";
 import { AiError } from "effect/ai";
 
@@ -17,12 +17,9 @@ import {
   type ModelRequest,
   Models,
   Reply,
-  type Role,
   type StructuredOutput,
 } from "./contract.ts";
 import { ModelSetting } from "./setting.ts";
-
-const isRole = (model: string): model is Role => model === "main" || model === "small";
 
 /** The reply's text, which holds the JSON of a structured output. */
 const textOf = (reply: Reply) =>
@@ -89,13 +86,13 @@ export const make = (
   catalog: ModelCatalog["Service"],
 ) => {
   const resolve = Effect.fn("Models.resolve")(function* (model: string) {
-    if (!isRole(model)) return { model } satisfies ModelChoice;
+    if (model !== "small") return { model } satisfies ModelChoice;
 
-    const chosen = (yield* settings.get(ModelSetting))[model];
+    const chosen = (yield* settings.get(ModelSetting)).small;
     if (chosen !== undefined) return chosen;
 
     const signedIn = yield* Effect.findFirst(yield* providers.list, (each) => each.signedIn);
-    if (Option.isSome(signedIn)) return signedIn.value.defaults[model];
+    if (Option.isSome(signedIn)) return signedIn.value.defaults.small;
 
     return yield* new ModelNotFound({
       model,

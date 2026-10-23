@@ -3,7 +3,7 @@
  * the draft has text and focus. `/pop` opens the stashes picker while there are stashes: enter puts
  * the stash after the draft and drops it, `ctrl+d` asks, then drops it.
  */
-import { Cause, Effect, FiberSet, Layer } from "effect";
+import { Effect, Layer } from "effect";
 import { type Accessor, createSignal } from "solid-js";
 
 import { ChatScreen } from "@shanepadgett/liminal-chat/tui";
@@ -11,19 +11,16 @@ import { Host } from "@shanepadgett/liminal-client";
 import { definePlugin } from "@shanepadgett/liminal-core";
 import {
   Dialogs,
+  type EntryRun,
   kit,
   Keymap,
+  makeEntryRun,
   openPicker,
   Pickers,
   registerCommands,
 } from "@shanepadgett/liminal-tui";
 
 import { type Stash, StashRpc } from "../contract.ts";
-
-type Needs = Host | Dialogs | Pickers;
-
-/** Forks `effect` into the TUI's scope; a failure is logged. */
-type Run = <A, E>(effect: Effect.Effect<A, E, Needs>) => void;
 
 const client = Effect.flatMap(Host, (host) => host.client(StashRpc));
 
@@ -51,7 +48,7 @@ interface Stashes {
 }
 
 /** Opens the stashes picker; its rows follow the list as stashes drop. */
-const openStashes = (chat: ChatScreen["Service"], stashes: Stashes, run: Run) =>
+const openStashes = (chat: ChatScreen["Service"], stashes: Stashes, run: EntryRun) =>
   Effect.gen(function* () {
     const dialogs = yield* Dialogs;
     yield* stashes.reload;
@@ -90,17 +87,7 @@ const openStashes = (chat: ChatScreen["Service"], stashes: Stashes, run: Run) =>
 
 const make = Effect.gen(function* () {
   const chat = yield* ChatScreen;
-  const fork = yield* FiberSet.makeRuntime<Needs>();
-
-  const run: Run = (effect) => {
-    fork(
-      Effect.tapCauseIf(
-        effect,
-        (cause) => !Cause.hasInterruptsOnly(cause),
-        (cause) => Effect.logError("Stash failed.", cause),
-      ),
-    );
-  };
+  const run = yield* makeEntryRun("Stash failed.");
 
   const [listed, setListed] = createSignal<ReadonlyArray<Stash>>([]);
   const stashes: Stashes = { list: listed, reload: Effect.map(list, (next) => setListed(next)) };

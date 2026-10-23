@@ -196,7 +196,7 @@ yield* (yield* TurnEnd).add((turn) => inbox.send(turn.session, checkResults, "fo
 
 ## Call a model
 
-`Models` from `@shanepadgett/liminal-model/contract` makes one call outside the turn loop. `model` is a role, `main` or `small`, or a `provider/model` id.
+`Models` from `@shanepadgett/liminal-model/contract` makes one call outside the turn loop. `model` is `small`, the side-call role, or a `provider/model` id.
 
 ```ts
 const models = yield* Models;

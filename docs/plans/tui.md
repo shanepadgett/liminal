@@ -914,6 +914,136 @@ flowchart LR
 - `getActiveKeys` returns keys by layer priority, and a disabled command drops out of the keymap's reachable commands, so out of `slashCommands` and the palette.
 - A draft menu with no matching row disables its Enter and Tab, so they reach the composer: Enter sends.
 
+### 7a-2
+
+`model-choice` and `model-favorites`. Built.
+
+| System | Change |
+| --- | --- |
+| `model` (base) | Loses the `main` role: `ModelSetting.main`, `model/main` and `RoleModel` go. `Models.resolve` takes `small` or a model id. `ModelProvider.defaults.main` stays, as `model-choice`'s last fallback. Gains `model/list` (every signed-in provider's models, for the picker) and `model/details` (one model, for the model line, `shift+tab` and the sidebar) |
+| `session` (base) | `SessionLog.latest(kind)`: the newest event of a kind in any session |
+| `loop` (base) | Its contract gains `SessionModel`, a pipeline from a session's events to the model its next call runs; `Turns.request` runs it instead of `models.resolve("main")`. `loop` provides it, ending at the first signed-in provider's `defaults.main`, and requires `ModelProviders` instead of `Models` |
+| `model-choice` (new) | Wraps `SessionModel`: the latest pick, else the default, else the newest pick anywhere. Wraps `loop`'s `Send`: a `model-choice/pick` attribute on an input becomes a `model-choice/pick` event logged before it. The `model-choice.default` setting. Its `tui` entry: `/model`, `shift+tab`, the waiting pick, the model line, and a wrap of chat's send pipeline |
+| `model-favorites` (new) | The `model-favorites` setting and its RPCs. Its `tui` entry wraps the `model-choice/models` picker: a Favorites section and `ctrl+f` |
+| `chat` `tui` | Gains `ChatSend`, a pipeline every send from the screen passes through, and a `status` slot on the left of the hint row, where the gallery's `Composer.tsx` draws the model line. The sidebar's context share reads the window of the latest step's model through `model/details` |
+| `apps/cli` | Composes both plugins; print mode's `--model` sets the `model-choice/pick` attribute |
+
+```mermaid
+flowchart LR
+  picker["/model, shift+tab"] --> waiting["model-choice tui: waiting pick"]
+  waiting --> line["model line in chat's status slot"]
+  send["chat send"] --> chatSend["ChatSend pipeline"]
+  waiting -. wrap adds model-choice/pick .-> chatSend
+  chatSend --> rpc["loop/send"] --> loopSend["loop Send pipeline"]
+  loopSend -. model-choice wrap logs the pick event .-> log[(session log)]
+  turn["Turns.request"] --> sessionModel["SessionModel: latest pick, else default"]
+  sessionModel --> log
+```
+
+`SessionModel` is a pipeline `loop` provides and `model-choice` wraps. Provided by `model-choice`, it made a plugin cycle: `loop` would require it while `model-choice` requires `loop`'s `Send`, and plugins build after what they require. `model-choice` cannot be a base plugin: base code imports only `core`, and its `tui` entry needs `client` and `tui`. A host without `model-choice` runs every session on the first signed-in provider's default.
+
+- Every session logs its model on its first input, and again on each pick that changes it, so a session keeps its model when the default changes. OpenCode keeps the model on every user message (`schema/src/v1/session.ts`); Pi logs `model_change` (`session-manager.ts` `appendModelChange`).
+- A session's model: its latest `model-choice/pick` event. A new session's: the `model-choice.default` setting, else the newest `model-choice/pick` in any session (`SessionLog.latest`, as archive `defaults.ts` `newestTurn`), else the first signed-in provider's `defaults.main`.
+- The `Send` wrap never fails a send over the model: when no default resolves, it logs no pick, and the turn fails with today's "No model provider is connected" notice.
+- A pick sent with a steer is logged before it, so the running turn's next model call uses it.
+- The waiting pick belongs to the screen it was made on: the session on screen, or the landing. It shows and is sent only there. Chat sends through `ChatSend` before it shows a new session, so a pick made on the landing goes with the first send.
+- The sidebar's share uses the latest `loop/step-start` model: the model that spent those tokens, and chat never imports `model-choice`.
+- Picker rows: one section per provider, the title the model id without its provider, the detail its context window (`200k`) and `default` on the default. Favorites move to a Favorites section above, their detail led by the provider's name (archive `agent-loop/tui/models.ts`). The list loads when the TUI starts and again on each open; the picker opens at once with the rows known, selecting the shown model.
+- A pick keeps the thinking level when the new model takes it, else the model's own default. `shift+tab` steps through `ModelDetails.thinking`, from the model's default to the first level; its hint shows only for a model with two or more levels.
+- `ctrl+d` saves the selected model as the default and keeps the picker open, so the `default` tag moves. `ctrl+f` adds or removes a favorite and keeps it open.
+- The model line: `◇ model • thinking`, the waiting pick, else the screen session's model, else the default. Nothing shows while no model resolves.
+- Print mode's `--model provider/model` sets `model-choice/pick` on its input.
+
+### 7a-2 code
+
+```text
+packages/plugins/model/src/
+  contract.ts   ModelListing; ModelRpc: model/list, model/details; Role, RoleModel, model/main go
+  setting.ts    main goes
+  models.ts     resolve: small or an id
+  index.ts      the two RPCs
+packages/plugins/session/src/   SessionLog.latest; store query
+packages/plugins/loop/src/
+  contract.ts       SessionModel pipeline
+  session-model.ts  providerDefault, its end
+  turn.ts           makeRequest runs SessionModel(events)
+packages/plugins/model-choice/   new
+  src/contract.ts    ModelPick attribute, Picked event, ModelChoiceSetting, ModelChoiceRpc, MODELS_PICKER
+  src/index.ts       the SessionModel and Send wraps, the RPCs; tui entry
+  src/defaults.ts    the SessionModel wrap: the session's model and a new session's
+  src/tui/index.tsx  waiting pick, ChatSend wrap, /model, shift+tab, status fill
+  src/tui/picker.ts  rows and actions of model-choice/models
+  src/tui/state.ts   the waiting pick and what the line shows, as signals
+  src/tui/ModelLine.tsx
+packages/tui/src/bridge.ts   makeEntryRun: a tui entry's run-and-log, shared with stash
+packages/plugins/model-favorites/   new
+  src/contract.ts    FavoritesSetting, FavoritesRpc
+  src/index.ts       the RPCs; tui entry
+  src/tui/index.tsx  Pickers wrap of model-choice/models
+packages/plugins/chat/src/
+  view/index.ts      stepModel(state)
+  tui/slots.ts       status slot; ChatSend
+  tui/ChatView.tsx   sends through ChatSend before show
+  tui/Composer.tsx   status slot left of the hints
+  tui/Sidebar.tsx    model/details of stepModel
+apps/cli/src/   composition adds both; main.ts and print.ts --model
+```
+
+```ts
+// model/contract.ts
+export const ModelListing = Schema.Struct({
+  id: ModelId, name: Schema.String,
+  provider: Schema.String,                       // the provider's name: "Anthropic"
+  contextWindow: Schema.optionalKey(Schema.Int),
+  thinking: Schema.Array(Schema.String),         // empty when it does not think
+})
+ModelRpc: "model/list" -> Array(ModelListing); "model/details" { model } -> ModelListing, ModelNotFound
+
+// session/contract.ts
+readonly latest: (kind: string) => Effect<Option<SessionEvent>, SessionStoreFailed>
+
+// loop/contract.ts
+export class SessionModel extends Pipeline.Service<
+  SessionModel, ReadonlyArray<SessionEvent>, ModelChoice,
+  ModelNotFound | SettingsInvalid | SessionStoreFailed
+>()("loop/SessionModel") {}
+
+// model-choice/contract.ts
+export const ModelPick = Attribute.make("model-choice/pick", ModelChoice)
+export const Picked = defineEvent("model-choice/pick", ModelChoice)
+export const ModelChoiceSetting = Setting.make("model-choice", Struct({ default: optionalKey(ModelChoice) }))
+export const MODELS_PICKER = "model-choice/models"
+ModelChoiceRpc:
+  "model-choice/session" { session?: SessionId } -> ModelChoice      // the session's, or a new one's
+  "model-choice/default" -> UndefinedOr(ModelChoice)                 // the saved default
+  "model-choice/set-default" { choice } -> void, SettingsWriteFailed
+
+// chat/tui/slots.ts
+export interface ChatSendRequest { readonly session: SessionId; readonly input: NewEvent; readonly mode?: SendMode }
+export class ChatSend extends Pipeline.Service<ChatSend, ChatSendRequest, void, SendError>()("chat/Send") {}
+export const status = defineSlot<{ readonly session: SessionId | undefined }>("chat/status", "append")
+
+// model-favorites/contract.ts
+export const FavoritesSetting = Setting.make("model-favorites", Struct({ models: optionalKey(Array(ModelId)) }))
+FavoritesRpc: "model-favorites/list" -> Array(ModelId); "model-favorites/toggle" { model } -> Array(ModelId)
+```
+
+```mermaid
+sequenceDiagram
+  participant UI as chat ChatView
+  participant MC as model-choice tui
+  participant L as loop Send
+  participant W as model-choice Send wrap
+  UI->>UI: session on screen, or session/open
+  UI->>MC: ChatSend wrap: waiting pick for chat.session()
+  MC->>L: loop/send, input with model-choice/pick
+  L->>W: wrap: pick, or the default on a first input
+  W->>W: log Picked when it changes the session's model; drop the attribute
+  W->>L: next
+  UI->>UI: show(session)
+  MC->>MC: clear the pick, read model-choice/session again
+```
+
 ### 7a-3 code
 
 A first pass from before the plugin splits; `session-picker` and the palette follow the 7a-1 shapes.

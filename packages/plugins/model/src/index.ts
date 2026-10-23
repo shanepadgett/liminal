@@ -1,10 +1,10 @@
-/** The model call every turn and side call goes through, the providers it routes to, and roles. */
+/** The model call every turn and side call goes through, the providers it routes to, and the list. */
 import { Effect, Layer } from "effect";
 
 import { definePlugin, Pipeline, Registry } from "@shanepadgett/liminal-core";
 import { DeclaredSettings, Settings } from "@shanepadgett/liminal-settings/contract";
 
-import { detailsOf, findModel, makeCall } from "./call.ts";
+import { makeCall } from "./call.ts";
 import {
   ModelCall,
   ModelCatalog,
@@ -13,6 +13,7 @@ import {
   ModelRpc,
   Models,
 } from "./contract.ts";
+import { describe, listAll } from "./listing.ts";
 import { make } from "./models.ts";
 import { ModelSetting } from "./setting.ts";
 
@@ -35,19 +36,14 @@ const models = Layer.effect(
 
 const rpc = ModelRpc.toLayer(
   Effect.gen(function* () {
-    const roles = yield* Models;
+    const known = yield* Models;
     const providers = yield* ModelProviders;
     const catalog = yield* ModelCatalog;
 
-    const main = Effect.gen(function* () {
-      const { model } = yield* roles.resolve("main");
-      const found = yield* findModel(providers, model);
-      const details = (yield* detailsOf(catalog, found.provider)).get(found.model);
-
-      return { model, contextWindow: details?.contextWindow };
+    return ModelRpc.of({
+      "model/list": () => listAll(providers, known),
+      "model/details": ({ model }) => describe(providers, catalog, model),
     });
-
-    return ModelRpc.of({ "model/main": () => main });
   }),
 );
 

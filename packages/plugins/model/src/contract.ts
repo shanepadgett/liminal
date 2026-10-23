@@ -89,9 +89,6 @@ export const ModelChoice = Schema.Struct({
 
 export type ModelChoice = typeof ModelChoice.Type;
 
-/** `main` runs turns; `small` runs side calls. */
-export type Role = "main" | "small";
-
 /** Dollars per million tokens; the cache prices are set only for a model that caches. */
 export interface ModelPrice {
   readonly input: number;
@@ -209,7 +206,10 @@ export interface ModelProvider {
   /** The `provider` in `provider/model`. */
   readonly id: string;
   readonly name: string;
-  /** Used when the `model` setting leaves a role unset and this is the first signed-in provider. */
+  /**
+   * Used when this is the first signed-in provider: `main` for a session no one has picked a model
+   * for, `small` for side calls when the `model` setting leaves it unset.
+   */
   readonly defaults: { readonly main: ModelChoice; readonly small: ModelChoice };
   /** The catalog id its models' details are under, such as `openai`; missing lists none. */
   readonly catalogId?: string | undefined;
@@ -242,7 +242,7 @@ export class ModelCall extends Pipeline.Service<
 >()("model/ModelCall") {}
 
 export interface GenerateOptions {
-  /** `main`, `small` or a model id; missing is the prefix's model, or `small`. */
+  /** `small` or a model id; missing is the prefix's model, or `small`. */
   readonly model?: string | undefined;
   /** The request to start from, such as `Turns.request(id)`, so the call shares its cache. */
   readonly prefix?: ModelRequest | undefined;
@@ -357,21 +357,29 @@ export const Reply = {
   message: (reply: Reply): Message => ({ role: "assistant", parts: reply.map(({ part }) => part) }),
 };
 
-/** The model a role runs, as a screen shows it. */
-export const RoleModel = Schema.Struct({
-  model: ModelId,
+/** A model as a screen shows it. */
+export const ModelListing = Schema.Struct({
+  id: ModelId,
+  name: Schema.String,
+  /** Its provider's name, such as `Anthropic`. */
+  provider: Schema.String,
   /** Missing when the catalog does not list the model or cannot be read. */
   contextWindow: Schema.optional(Schema.Int),
+  /** The thinking levels it takes; empty when it does not think or the catalog does not say. */
+  thinking: Schema.Array(Schema.String),
 });
 
-export type RoleModel = typeof RoleModel.Type;
+export type ModelListing = typeof ModelListing.Type;
 
 /** What screens call. */
 export class ModelRpc extends RpcGroup.make(
-  /** The model the `main` role runs. */
-  Rpc.make("model/main", {
-    success: RoleModel,
-    error: Schema.Union([ModelNotFound, SettingsInvalid]),
+  /** The models of every signed-in provider. */
+  Rpc.make("model/list", { success: Schema.Array(ModelListing) }),
+  /** One model, signed in or not. */
+  Rpc.make("model/details", {
+    payload: { model: ModelId },
+    success: ModelListing,
+    error: ModelNotFound,
   }),
 ) {}
 
@@ -379,8 +387,8 @@ export class Models extends Context.Service<
   Models,
   {
     /**
-     * The model `main`, `small` or a model id names; a role comes from the `model` setting, else
-     * the first signed-in provider's default.
+     * The model `small` or a model id names; `small` comes from the `model` setting, else the first
+     * signed-in provider's default.
      */
     readonly resolve: (
       model: string,

@@ -171,10 +171,10 @@ interface ModelProvider {
 ModelProviders: Registry<ModelProvider>
 ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>   // retries inside; converts to Effect AI's types
 Reply.add(reply, delta) / Reply.message(reply)          // deltas into the assistant Message
-Models.resolve("main" | "small" | ModelId): Effect<ModelChoice>
+Models.resolve("small" | ModelId): Effect<ModelChoice>
 Models.list: Effect<ModelInfo[]>   // signed-in providers only; a provider whose list fails is logged and left out
 Models.generate(options: {
-  model?: "main" | "small" | ModelId        // missing is the prefix's model, or small
+  model?: "small" | ModelId                 // missing is the prefix's model, or small
   prompt: Part[]
   prefix?: ModelRequest                      // start from this request, such as Turns.request(id)
 }): Effect<Message>
@@ -234,6 +234,7 @@ interface Inbox {
   state(id): Stream<LoopState>               // whether a turn runs and the queued inputs: now, then each change
 }
 Send: Pipeline<{ session, input, mode }, void>
+SessionModel: Pipeline<SessionEvent[], ModelChoice>   // the model a session's next call runs; ends at the first signed-in provider's main default
 Commands: Registry<Command>                  // slash commands, run on the agent side as soon as they are sent
 BeforeCall: Registry<Hook>                    // records logged before each model call after both syncs, such as reminders
 Turns.request(id): Effect<ModelRequest>      // system prompt + tool definitions + History, as the next model call sends them

@@ -3,7 +3,7 @@
  * session's view as a store. Everything runs in the TUI's scope, and a component's work stops with
  * the component.
  */
-import { Cause, Effect, Fiber, Stream, SubscriptionRef } from "effect";
+import { Cause, Effect, Fiber, FiberSet, Stream, SubscriptionRef } from "effect";
 import { type Accessor, createContext, createSignal, onCleanup, useContext } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 
@@ -47,6 +47,23 @@ const useForkOwned = () => {
     onCleanup(() => fork(Fiber.interrupt(fiber)));
   };
 };
+
+/** Runs an effect and forgets it; a failure is logged. */
+export type EntryRun = <A, E>(effect: Effect.Effect<A, E, Services>) => void;
+
+/**
+ * For a `tui` entry's commands and callbacks: runs effects in the entry's scope and logs a failure
+ * with `message`.
+ */
+export const makeEntryRun = Effect.fn("makeEntryRun")(function* (message: string) {
+  const fork = yield* FiberSet.makeRuntime<Services>();
+
+  const run: EntryRun = (effect) => {
+    fork(logged(effect, message));
+  };
+
+  return run;
+});
 
 /** Runs effects from event handlers; a failure is logged. */
 export const useRun = (): (<A, E>(effect: Effect.Effect<A, E, Services>) => void) => {

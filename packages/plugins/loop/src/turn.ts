@@ -4,7 +4,7 @@ import { Response } from "effect/ai";
 
 import type { Attributes } from "@shanepadgett/liminal-core";
 import type { History } from "@shanepadgett/liminal-history/contract";
-import type { ModelCall, ModelRequest, Models } from "@shanepadgett/liminal-model/contract";
+import type { ModelCall, ModelRequest } from "@shanepadgett/liminal-model/contract";
 import {
   MessageEvent,
   Notice,
@@ -15,7 +15,14 @@ import type { SystemPrompt } from "@shanepadgett/liminal-system-prompt/contract"
 import type { ToolList } from "@shanepadgett/liminal-tool-definitions/contract";
 import type { ToolCall, Tools } from "@shanepadgett/liminal-tools/contract";
 
-import { type BeforeCall, StepEnded, StepStarted, type Turn, type TurnEnd } from "./contract.ts";
+import {
+  type BeforeCall,
+  type SessionModel,
+  StepEnded,
+  StepStarted,
+  type Turn,
+  type TurnEnd,
+} from "./contract.ts";
 import { cancelUnanswered } from "./recovery.ts";
 import { streamReply } from "./reply.ts";
 import type { Outcome, Sessions } from "./sessions.ts";
@@ -26,7 +33,7 @@ export interface TurnServices {
   readonly systemPrompt: SystemPrompt["Service"];
   readonly toolList: ToolList["Service"];
   readonly history: History["Service"];
-  readonly models: Models["Service"];
+  readonly sessionModel: SessionModel["Service"];
   readonly modelCall: ModelCall["Service"];
   readonly tools: Tools["Service"];
   readonly toolCall: ToolCall["Service"];
@@ -37,9 +44,9 @@ export interface TurnServices {
 /** The session's next model request, read from its log. */
 export const makeRequest = (services: TurnServices) =>
   Effect.fn("Turns.request")(function* (session: SessionId) {
-    const { log, models, systemPrompt, toolList, history } = services;
+    const { log, sessionModel, systemPrompt, toolList, history } = services;
     const events = yield* log.read(session);
-    const { model, thinking } = yield* models.resolve("main");
+    const { model, thinking } = yield* sessionModel.run(events);
 
     return {
       model,

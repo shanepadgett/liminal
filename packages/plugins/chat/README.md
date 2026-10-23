@@ -19,11 +19,13 @@ The chat screen: a landing until the first send opens a session, then the sessio
 | `ItemRenderer` | A registry of `{ kind, component }`: how saved events of `kind` show in the transcript. Add to it from a `tui` entry |
 | `sidebar` | The column beside the transcript once a session starts; every fill shows, in order. Props: `session`, `state` |
 | `composer` | Where the user writes; the last fill wins. Props: `running`, `send(text, mode?)`, `cancel()` |
+| `status` | The left of the hint row under the draft, such as the model line; every fill shows, in order. Props: `session`, undefined on the landing |
+| `ChatSend` | The pipeline every send from the screen runs through, with `session`, `input` and `mode`, before the screen shows the session. A wrap still sees the screen it was sent from, so it can add what was chosen there |
 | `ChatScreen` | The screen as commands reach it: `session()`, `show(session)`, `startNew()` (back to the landing; nothing is saved until the next send), `draft` with `text()`, `insert(text)` and `clearIf(text)`, and `registerDraftCommands(commands, keys)`: commands that work only while the draft has focus |
 | `DraftTriggers` | A registry of menus a character opens in the draft. See below |
 | `replaceToken(draft, token, text)` | Puts `text` in place of a trigger's token |
 
-Chat fills `sidebar` with the Session section (folder, git branch, context share) and `composer` with its own composer.
+Chat fills `sidebar` with the Session section (folder, git branch, and the share of the context window the latest step's model used, read with `model/details`) and `composer` with its own composer.
 
 ### Draft triggers
 
@@ -43,4 +45,4 @@ Keys:
 
 The line under the draft shows a hint for each key that would do something now, while the draft has focus: Enter appears once the draft has text, Esc only while a turn runs. Hints that do not fit drop from the end. `buildTranscript` leaves out the parts plugins added to a message on send, by `loop`'s `loop/added` attribute.
 
-The `tui` entry requires `Slots`, `Renderer` and `Keymap`, and calls `session/*`, `loop/*`, `directories/workspace` and `model/main`.
+The `tui` entry requires `Host`, `Slots`, `Renderer` and `Keymap`, and calls `session/*`, `loop/*`, `directories/workspace` and `model/details`.

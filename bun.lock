@@ -37,6 +37,8 @@
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-model-anthropic": "workspace:*",
         "@shanepadgett/liminal-model-catalog": "workspace:*",
+        "@shanepadgett/liminal-model-choice": "workspace:*",
+        "@shanepadgett/liminal-model-favorites": "workspace:*",
         "@shanepadgett/liminal-model-openai": "workspace:*",
         "@shanepadgett/liminal-model-opencode-go": "workspace:*",
         "@shanepadgett/liminal-model-openrouter": "workspace:*",
@@ -151,6 +153,7 @@
         "@shanepadgett/liminal-history": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-settings": "workspace:*",
         "@shanepadgett/liminal-system-prompt": "workspace:*",
         "@shanepadgett/liminal-tool-definitions": "workspace:*",
         "@shanepadgett/liminal-tools": "workspace:*",
@@ -185,6 +188,40 @@
         "@shanepadgett/liminal-directories": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
         "effect": "*",
+      },
+    },
+    "packages/plugins/model-choice": {
+      "name": "@shanepadgett/liminal-model-choice",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "@shanepadgett/liminal-chat": "workspace:*",
+        "@shanepadgett/liminal-client": "workspace:*",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-loop": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-settings": "workspace:*",
+        "@shanepadgett/liminal-tui": "workspace:*",
+        "effect": "*",
+        "solid-js": "1.9.12",
+      },
+    },
+    "packages/plugins/model-favorites": {
+      "name": "@shanepadgett/liminal-model-favorites",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "@shanepadgett/liminal-client": "workspace:*",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-model-choice": "workspace:*",
+        "@shanepadgett/liminal-settings": "workspace:*",
+        "@shanepadgett/liminal-tui": "workspace:*",
+        "effect": "*",
+        "solid-js": "1.9.12",
       },
     },
     "packages/plugins/model-openai": {
@@ -646,6 +683,10 @@
     "@shanepadgett/liminal-model-anthropic": ["@shanepadgett/liminal-model-anthropic@workspace:packages/plugins/model-anthropic"],
 
     "@shanepadgett/liminal-model-catalog": ["@shanepadgett/liminal-model-catalog@workspace:packages/plugins/model-catalog"],
+
+    "@shanepadgett/liminal-model-choice": ["@shanepadgett/liminal-model-choice@workspace:packages/plugins/model-choice"],
+
+    "@shanepadgett/liminal-model-favorites": ["@shanepadgett/liminal-model-favorites@workspace:packages/plugins/model-favorites"],
 
     "@shanepadgett/liminal-model-openai": ["@shanepadgett/liminal-model-openai@workspace:packages/plugins/model-openai"],
 

@@ -44,6 +44,8 @@ The picker filters its rows with `fuzzysort` as the user types, and groups them 
 | `useWatch(stream, initial)` | The stream's latest value, stopped with the component |
 | `useSessionView(session)` | A session's events, deltas and `running` as a Solid store, and `loadOlder` |
 
+Outside components, a `tui` entry's commands run effects with `makeEntryRun(message)`: it gives an `EntryRun` that forks into the entry's scope and logs a failure with `message`.
+
 ## Kit
 
 `kit` holds the shared components: `Chip`, `ChoiceRow`, `Confirm`, `Dialog`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Rule`, `Section`, `Spinner`. They read colors by role name from `@shanepadgett/liminal-client`.

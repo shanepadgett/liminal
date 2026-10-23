@@ -5,7 +5,10 @@
 import { Console, Duration, Effect, Option, Schema, Stream } from "effect";
 
 import { Host } from "@shanepadgett/liminal-client";
+import { Attribute } from "@shanepadgett/liminal-core";
 import { LoopRpc, TurnEnded } from "@shanepadgett/liminal-loop/contract";
+import { ModelPick } from "@shanepadgett/liminal-model-choice/contract";
+import type { ModelId } from "@shanepadgett/liminal-model/contract";
 import {
   LiveItem,
   MessageEvent,
@@ -64,12 +67,33 @@ const followJson = (output: TurnOutput, item: LiveItem) =>
     Effect.andThen(ending(output, item)),
   );
 
-export const print = Effect.fn("print")(function* (prompt: string, json: boolean) {
+/** The user's message, carrying `model` as the pick when there is one. */
+const messageOf = Effect.fn("Print.messageOf")(function* (
+  prompt: string,
+  model: Option.Option<ModelId>,
+) {
+  const message = yield* MessageEvent.make({
+    role: "user",
+    parts: [{ type: "text", text: prompt }],
+  });
+
+  if (Option.isNone(model)) return message;
+
+  const attributes = yield* Attribute.set(message.attributes, ModelPick, { model: model.value });
+
+  return { ...message, attributes };
+});
+
+export const print = Effect.fn("print")(function* (
+  prompt: string,
+  json: boolean,
+  model: Option.Option<ModelId>,
+) {
   const host = yield* Host;
   const sessions = yield* host.client(SessionRpc);
   const loop = yield* host.client(LoopRpc);
   const session = yield* sessions["session/open"]();
-  const input = yield* MessageEvent.make({ role: "user", parts: [{ type: "text", text: prompt }] });
+  const input = yield* messageOf(prompt, model);
 
   const live = (id: SessionId) =>
     sessions["session/live"]({ session: id }).pipe(Stream.takeUntil(isTurnEnd));

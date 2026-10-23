@@ -12,8 +12,8 @@ Anthropic's Claude models as the `anthropic` provider in `ModelProviders`.
 
 ```jsonc
 {
-  "model": {
-    "main": { "model": "anthropic/claude-opus-5-5", "thinking": "high" },
+  "model-choice": {
+    "default": { "model": "anthropic/claude-opus-5-5", "thinking": "high" },
   },
 }
 ```

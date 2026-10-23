@@ -14,6 +14,8 @@ import loop from "@shanepadgett/liminal-loop";
 import model from "@shanepadgett/liminal-model";
 import modelAnthropic from "@shanepadgett/liminal-model-anthropic";
 import modelCatalog from "@shanepadgett/liminal-model-catalog";
+import modelChoice from "@shanepadgett/liminal-model-choice";
+import modelFavorites from "@shanepadgett/liminal-model-favorites";
 import modelOpenai from "@shanepadgett/liminal-model-openai";
 import modelOpencodeGo from "@shanepadgett/liminal-model-opencode-go";
 import modelOpenrouter from "@shanepadgett/liminal-model-openrouter";
@@ -63,6 +65,8 @@ export const plugins = [
   persona,
   toolDefinitions,
   loop,
+  modelChoice,
+  modelFavorites,
   tags,
   theme,
   chat,

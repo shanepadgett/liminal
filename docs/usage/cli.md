@@ -16,12 +16,13 @@ With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; th
 | Shift+Enter | New line |
 | Tab | While a turn runs, send as a follow-up |
 | Esc | Close the open sidebar; otherwise, while a turn runs, stop it |
+| Shift+Tab | The next thinking level of the model on the model line, when it has more than one |
 | Ctrl+S | Stash the draft: save it for this folder and clear the composer |
 | Ctrl+C | Clear the draft; with no draft, quit |
 | Ctrl+B | Open or close the sidebar, below 110 columns |
 | Ctrl+N | New session: back to the start screen; nothing is saved until you send |
 
-The line under the draft shows only the keys that would do something now. The draft's keys stop while a dialog is open.
+The line under the draft shows the model line, `◇ model • thinking`, and only the keys that would do something now. The draft's keys stop while a dialog is open.
 
 ### Commands with `/`
 
@@ -30,7 +31,21 @@ Type `/` as the first character of the draft to list commands. Keep typing to fi
 | Command | Does |
 | --- | --- |
 | `/new` | New session, as Ctrl+N |
+| `/model` | Pick a model. See below |
 | `/pop` | List this folder's stashes. Enter puts one back after the draft and removes it from the list; Ctrl+D asks, then removes it |
+
+### Pick a model
+
+`/model` lists the models of the providers you are signed in to, a section per provider, with each model's context window. Favorites sit on top. Keep typing to filter.
+
+| Key | Does |
+| --- | --- |
+| Enter | Pick the model, at the model line's thinking level when it has it |
+| Ctrl+D | Save the model as the default new sessions start on |
+| Ctrl+F | Add the model to Favorites, or take it out |
+| Esc | Close the list |
+
+A pick shows on the model line and goes with your next send from that screen; nothing is saved until then. Each session keeps the model it last ran. See [Choose models](#choose-models).
 
 ### Tag files with `@`
 
@@ -96,7 +111,7 @@ git diff | liminal -p "Review this change"
 - `-p` starts a new session, sends the prompt and prints the final reply on stdout.
 - Piped input goes after the prompt.
 - Notices, such as why a turn stopped, go to stderr.
-- Without a model in settings, it uses the default models of the first provider you are signed in to. With none, it stops with `No model provider is connected. Run liminal connect.`
+- `--model provider/model` runs that model, such as `--model anthropic/claude-opus-5-5`. Without it, the session runs the model chosen as in [Choose models](#choose-models). With no provider signed in, it stops with `No model provider is connected. Run liminal connect.`
 - `--json` writes, instead of the reply, one JSON line per saved event and streamed delta, from your prompt to the turn's end.
 - Ctrl-C cancels the turn, then exits.
 
@@ -115,14 +130,17 @@ Set models in `~/.liminal/settings.json`, or in `.liminal/settings.json` in the 
 
 ```jsonc
 {
+  "model-choice": {
+    "default": { "model": "anthropic/claude-sonnet-5-5", "thinking": "high" },
+  },
   "model": {
-    "main": { "model": "anthropic/claude-sonnet-5-5", "thinking": "high" },
     "small": { "model": "anthropic/claude-haiku-5-5" },
   },
 }
 ```
 
-- `main` answers your prompts; `small` runs side calls.
+- Each session keeps the model it last ran. A new session runs `model-choice.default`, else the model you picked last in any session, else the default of the first provider you are signed in to. In the TUI, `/model` picks one and Ctrl+D in its picker saves the default.
+- `small` runs side calls.
 - A model is named `provider/model`. `thinking` is optional.
 - `attempts` sets how often a failing call is tried, the first try included. The default is 5.
 - `classifier` names the model plugins use to classify, such as `openai/gpt-6-luna`. Unset, it is the first classifier a connected provider offers.

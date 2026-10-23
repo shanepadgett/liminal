@@ -1,10 +1,10 @@
 /**
  * Where the user writes. No box: a gutter of marks runs down the left of the draft, the first a
- * bold chevron and the rest fading from light accent to dark. Below are the hints of the keys that
- * act now, while the draft has focus. `enter` sends and `shift+enter` adds a line; while a turn
- * runs, `enter` steers it, `tab` queues a follow-up and `esc` stops it. `ctrl+c` clears the draft,
- * and with none passes on, so it quits. A draft trigger, such as `@`, opens its menu above the
- * draft; the menu's keys come first.
+ * bold chevron and the rest fading from light accent to dark. Below are the `status` slot's fills,
+ * such as the model line, and on the right the hints of the keys that act now, while the draft has
+ * focus. `enter` sends and `shift+enter` adds a line; while a turn runs, `enter` steers it, `tab`
+ * queues a follow-up and `esc` stops it. `ctrl+c` clears the draft, and with none passes on, so it
+ * quits. A draft trigger, such as `@`, opens its menu above the draft; the menu's keys come first.
  */
 
 import { type BoxRenderable, TextAttributes, type TextareaRenderable } from "@opentui/core";
@@ -17,6 +17,7 @@ import {
   type Command,
   keymapCommand,
   kit,
+  SlotView,
   useColor,
   useMix,
   useSyntax,
@@ -25,7 +26,7 @@ import {
 import { useDraftMenu } from "./draft-menu.ts";
 import { DraftMenu } from "./DraftMenu.tsx";
 import type { ChatScreen } from "./screen.ts";
-import type { ComposerProps } from "./slots.ts";
+import { type ComposerProps, status } from "./slots.ts";
 import type { DraftTriggers } from "./triggers.ts";
 
 const DRAFT_ROWS = 3;
@@ -154,8 +155,8 @@ function HintRow(props: { readonly hints: ReadonlyArray<kit.Hint> }) {
         row = made;
       }}
       flexDirection="row"
+      flexGrow={1}
       justifyContent="flex-end"
-      marginTop={1}
       onSizeChange={() => {
         setColumns(row?.width);
       }}
@@ -214,7 +215,10 @@ export function Composer(
           onCursorChange={menu.refresh}
         />
       </box>
-      <HintRow hints={hints()} />
+      <box flexDirection="row" marginTop={1}>
+        <SlotView slot={status} session={props.screen.session()} />
+        <HintRow hints={hints()} />
+      </box>
     </box>
   );
 }

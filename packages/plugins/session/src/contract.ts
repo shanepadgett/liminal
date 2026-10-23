@@ -132,6 +132,10 @@ export class SessionLog extends Context.Service<
       after?: Seq,
     ) => Stream.Stream<LiveItem, SessionNotFound | SessionStoreFailed>;
     readonly publish: (session: SessionId, delta: Delta) => Effect.Effect<void>;
+    /** The newest saved event of `kind` in any session. */
+    readonly latest: (
+      kind: string,
+    ) => Effect.Effect<Option.Option<SessionEvent>, SessionStoreFailed>;
   }
 >()("session/SessionLog") {}
 

@@ -1,6 +1,15 @@
 /** Liminal's terminal UI: the runtime plugins' `tui` entries draw in, and the UI kit they draw with. */
 export { Renderer } from "./base.ts";
-export { type Fork, type Services, useRun, useSessionView, useWatch } from "./bridge.ts";
+
+export {
+  type EntryRun,
+  type Fork,
+  makeEntryRun,
+  type Services,
+  useRun,
+  useSessionView,
+  useWatch,
+} from "./bridge.ts";
 
 export {
   activeHints,

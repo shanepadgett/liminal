@@ -18,8 +18,8 @@ OpenAI's models in `ModelProviders`, one provider for each way of signing in, ea
 
 ```jsonc
 {
-  "model": {
-    "main": { "model": "codex/gpt-6.1-sol", "thinking": "high" },
+  "model-choice": {
+    "default": { "model": "codex/gpt-6.1-sol", "thinking": "high" },
   },
 }
 ```

@@ -13,8 +13,8 @@ OpenCode Go's models as the `opencode-go` provider in `ModelProviders`.
 
 ```jsonc
 {
-  "model": {
-    "main": { "model": "opencode-go/deepseek-v4.1-flash", "thinking": "high" },
+  "model-choice": {
+    "default": { "model": "opencode-go/deepseek-v4.1-flash", "thinking": "high" },
   },
 }
 ```

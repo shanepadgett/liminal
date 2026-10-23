@@ -38,17 +38,23 @@ import { Header } from "./Header.tsx";
 import { Landing } from "./Landing.tsx";
 import { Layout, useSidebarPlace } from "./Layout.tsx";
 import type { ChatScreen as Screen } from "./screen.ts";
-import { composer, type ItemRenderer, sidebar } from "./slots.ts";
+import {
+  type ChatSend,
+  type ChatSendRequest,
+  composer,
+  type ItemRenderer,
+  sidebar,
+} from "./slots.ts";
 import { Prompt, type Renderers, Turn } from "./Turn.tsx";
 
-/** Sends `text` to `session`: a new turn, or with `mode` a steer or follow-up of the running one. */
-const sendTo = (session: SessionId, text: string, mode: SendMode | undefined) =>
-  Effect.gen(function* () {
-    const loop = yield* (yield* Host).client(LoopRpc);
-    const input = yield* MessageEvent.make({ role: "user", parts: [{ type: "text", text }] });
+/** The end of `ChatSend`: a new turn, or with `mode` a steer or follow-up of the running one. */
+export const sendToLoop = Effect.map(Host, (host) =>
+  Effect.fn("ChatSend.loop")(function* ({ session, input, mode }: ChatSendRequest) {
+    const loop = yield* host.client(LoopRpc);
 
     yield* loop["loop/send"]({ session, input, mode });
-  }).pipe(Effect.scoped);
+  }, Effect.scoped),
+);
 
 const openSession = Effect.gen(function* () {
   const sessions = yield* (yield* Host).client(SessionRpc);
@@ -183,9 +189,32 @@ const useScreenKeys = (
   }));
 };
 
+/**
+ * The first send opens the session; quitting before it saves nothing. The session shows once the
+ * send is through, so `ChatSend` wraps still see the screen it was sent from.
+ */
+const sendText = Effect.fn("ChatView.send")(function* (
+  screen: Screen["Service"],
+  chatSend: ChatSend["Service"],
+  text: string,
+  mode: SendMode | undefined,
+) {
+  const session = screen.session() ?? (yield* openSession);
+  const input = yield* MessageEvent.make({ role: "user", parts: [{ type: "text", text }] });
+
+  yield* chatSend.run({ session, input, mode }).pipe(
+    Effect.ensuring(
+      Effect.sync(() => {
+        screen.show(session);
+      }),
+    ),
+  );
+});
+
 export function ChatView(props: {
   readonly views: ItemRenderer["Service"];
   readonly screen: Screen["Service"];
+  readonly chatSend: ChatSend["Service"];
   readonly quit: () => void;
 }) {
   const run = useRun();
@@ -205,15 +234,8 @@ export function ChatView(props: {
     );
   });
 
-  // The first send opens the session; quitting before it saves nothing.
   const send = (text: string, mode?: SendMode) => {
-    run(
-      Effect.gen(function* () {
-        const session = props.screen.session() ?? (yield* openSession);
-        props.screen.show(session);
-        yield* sendTo(session, text, mode);
-      }),
-    );
+    run(sendText(props.screen, props.chatSend, text, mode));
   };
 
   const session = props.screen.session;

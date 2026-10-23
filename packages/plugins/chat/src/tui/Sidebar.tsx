@@ -4,14 +4,14 @@
  */
 
 import { Effect, Option, Stream } from "effect";
-import { Show } from "solid-js";
+import { type Accessor, createEffect, createSignal, on, Show } from "solid-js";
 
 import { Host } from "@shanepadgett/liminal-client";
 import { DirectoriesRpc, type Workspace } from "@shanepadgett/liminal-directories/contract";
-import { ModelRpc, type RoleModel } from "@shanepadgett/liminal-model/contract";
-import { kit, useColor, useWatch } from "@shanepadgett/liminal-tui";
+import { type ModelId, ModelRpc } from "@shanepadgett/liminal-model/contract";
+import { kit, useColor, useRun, useWatch } from "@shanepadgett/liminal-tui";
 
-import { contextUsed } from "../view/index.ts";
+import { contextUsed, stepModel } from "../view/index.ts";
 import type { SidebarProps } from "./slots.ts";
 
 /** Share of the context window past which the percentage turns to the warning color. */
@@ -24,26 +24,52 @@ const workspace = Effect.gen(function* () {
   return yield* client["directories/workspace"]();
 }).pipe(Effect.scoped, Effect.asSome, Stream.fromEffect);
 
-/** The main model, or nothing while no provider is connected; no share shows without it. */
-const mainModel = Effect.gen(function* () {
-  const client = yield* (yield* Host).client(ModelRpc);
+/** The model's context window; none when its provider is gone or the catalog does not say. */
+const windowOf = (model: ModelId) =>
+  Effect.gen(function* () {
+    const client = yield* (yield* Host).client(ModelRpc);
+    const listing = yield* client["model/details"]({ model });
 
-  return yield* client["model/main"]();
-}).pipe(Effect.scoped, Effect.option, Stream.fromEffect);
+    return listing.contextWindow;
+  }).pipe(
+    Effect.scoped,
+    Effect.orElseSucceed(() => {}),
+  );
 
-const shareOf = (used: number | undefined, model: Option.Option<RoleModel>) => {
-  const window = Option.getOrUndefined(model)?.contextWindow;
+/** The context window of `model`, asked again each time it changes. */
+const useWindow = (model: Accessor<ModelId | undefined>) => {
+  const run = useRun();
+  const [known, setKnown] = createSignal<{ readonly model: ModelId; readonly size?: number }>();
 
-  return used === undefined || window === undefined || window === 0
+  createEffect(
+    on(model, (id) => {
+      if (id === undefined) return;
+
+      run(
+        Effect.map(windowOf(id), (size) =>
+          setKnown(size === undefined ? { model: id } : { model: id, size }),
+        ),
+      );
+    }),
+  );
+
+  return () => {
+    const now = known();
+
+    return now !== undefined && now.model === model() ? now.size : undefined;
+  };
+};
+
+const shareOf = (used: number | undefined, window: number | undefined) =>
+  used === undefined || window === undefined || window === 0
     ? undefined
     : Math.min(1, used / window);
-};
 
 export function SessionSection(props: SidebarProps) {
   const color = useColor();
   const place = useWatch(workspace, Option.none<Workspace>());
-  const model = useWatch(mainModel, Option.none<RoleModel>());
-  const share = () => shareOf(contextUsed(props.state), model());
+  const window = useWindow(() => stepModel(props.state));
+  const share = () => shareOf(contextUsed(props.state), window());
 
   const note = () => {
     const now = share();

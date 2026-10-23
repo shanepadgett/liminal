@@ -7,13 +7,14 @@ Runs turns: an input starts one, the model is called, the tools it asks for run,
 - `Inbox.state(session)`: whether a turn (or a fold) runs in the session now, then each change. Only `loop` knows this; the log can show a turn open that a crash left behind.
 - `Send`: the pipeline every input goes through; wrap it to attach attributes or turn inputs away.
 - `Added`: the `loop/added` attribute on a user message, how many of its last parts plugins added on send, so screens show only what the user wrote. A wrap that appends parts adds its count to the one set; `addedOf(attributes)` reads it.
+- `SessionModel`: the pipeline that says which model a session's next call runs, from its events. It ends at the first signed-in provider's `main` default, else fails with `ModelNotFound`; `model-choice` wraps it.
 - `Turns.request(session)`: the session's next model request, read from its log.
 - `Turns.fold(session)`: waits for the running turn, then logs the system prompt and tool list again.
 - `BeforeCall`: hooks that run before each model call, after the system prompt and tool list sync.
 - `TurnEnd`: hooks that run when the model answers without tool calls.
 - `LoopRpc`: `loop/send`, `loop/cancel` and `loop/state` for screens.
 
-Requires `SessionLog`, `SystemPrompt`, `ToolList`, `History`, `Models`, `ModelCall`, `Tools` and `ToolCall`.
+Requires `SessionLog`, `SystemPrompt`, `ToolList`, `History`, `ModelProviders`, `ModelCall`, `Tools` and `ToolCall`.
 
 ## What it logs
 
@@ -46,4 +47,4 @@ A `BeforeCall` hook logs its own records, such as a note the model should read b
 
 ## Replace it
 
-Leave out `loop` and provide `Inbox`, `Send`, `Turns`, `BeforeCall` and `TurnEnd` from your own plugin.
+Leave out `loop` and provide `Inbox`, `Send`, `SessionModel`, `Turns`, `BeforeCall` and `TurnEnd` from your own plugin.

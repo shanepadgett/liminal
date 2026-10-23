@@ -3,7 +3,7 @@ import { Context, Effect, Fiber, Layer, Option } from "effect";
 
 import { type Attributes, definePlugin, Pipeline, Registry } from "@shanepadgett/liminal-core";
 import { History } from "@shanepadgett/liminal-history/contract";
-import { ModelCall, Models } from "@shanepadgett/liminal-model/contract";
+import { ModelCall, ModelProviders } from "@shanepadgett/liminal-model/contract";
 import { type SessionId, SessionLog } from "@shanepadgett/liminal-session/contract";
 import { SystemPrompt } from "@shanepadgett/liminal-system-prompt/contract";
 import { ToolList } from "@shanepadgett/liminal-tool-definitions/contract";
@@ -16,19 +16,23 @@ import {
   LoopRpc,
   Send,
   type SendRequest,
+  SessionModel,
   TurnEnd,
   Turns,
 } from "./contract.ts";
+import { providerDefault } from "./session-model.ts";
 import { makeSessions } from "./sessions.ts";
 import { makeRequest, makeRunTurn, type TurnServices } from "./turn.ts";
 
 const services = Effect.gen(function* () {
+  const sessionModel = yield* Pipeline.make(providerDefault(yield* ModelProviders));
+
   const turns: TurnServices = {
     log: yield* SessionLog,
     systemPrompt: yield* SystemPrompt,
     toolList: yield* ToolList,
     history: yield* History,
-    models: yield* Models,
+    sessionModel,
     modelCall: yield* ModelCall,
     tools: yield* Tools,
     toolCall: yield* ToolCall,
@@ -79,12 +83,17 @@ const make = Effect.gen(function* () {
       state: sessions.state,
     }),
     turns: Turns.of({ request: makeRequest(turnServices), fold }),
+    sessionModel: turnServices.sessionModel,
   };
 });
 
 const loop = Layer.effectContext(
-  Effect.map(make, ({ send, inbox, turns }) =>
-    Context.make(Send, send).pipe(Context.add(Inbox, inbox), Context.add(Turns, turns)),
+  Effect.map(make, ({ send, inbox, turns, sessionModel }) =>
+    Context.make(Send, send).pipe(
+      Context.add(Inbox, inbox),
+      Context.add(Turns, turns),
+      Context.add(SessionModel, sessionModel),
+    ),
   ),
 );
 
@@ -105,7 +114,16 @@ const registries = Layer.mergeAll(
 
 export default definePlugin({
   name: "loop",
-  provides: [Inbox, Send, Turns, BeforeCall, TurnEnd],
-  requires: [SessionLog, SystemPrompt, ToolList, History, Models, ModelCall, Tools, ToolCall],
+  provides: [Inbox, Send, Turns, SessionModel, BeforeCall, TurnEnd],
+  requires: [
+    SessionLog,
+    SystemPrompt,
+    ToolList,
+    History,
+    ModelProviders,
+    ModelCall,
+    Tools,
+    ToolCall,
+  ],
   layer: Layer.provideMerge(rpc, Layer.provideMerge(loop, registries)),
 });
