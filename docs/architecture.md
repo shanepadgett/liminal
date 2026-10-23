@@ -429,7 +429,9 @@ How `session` does these over `SqlClient` is open.
 | TUI | `tags` | `@` tags: `TagSources`, the workspace's files and folders, their text added on send, the `@` draft trigger | Add, Wrap | `files`, `inbox` (tags) |
 | TUI | `stash` | Drafts set aside with `ctrl+s`, brought back with `/pop` | Add | `inbox` (stash) |
 | TUI | `slash` | The `/` draft trigger over commands with a slash name | Add | `sdk` (commands) |
-| TUI | `palette`, `theme`, `attention` | Command palette, theme, sounds | Add (slots) | same names |
+| TUI | `palette` | `ctrl+p`: a picker of the commands that have a category | Add | `palette` |
+| TUI | `session-picker` | `ctrl+o`, `/sessions`: this folder's saved sessions | Add | `session-store` (list) |
+| TUI | `theme`, `attention` | Theme and `/theme`, sounds | Add (slots) | same names |
 
 ## Example: the work order agent
 

@@ -55,7 +55,15 @@ const fill = Effect.gen(function* () {
   };
 
   yield* chat.registerDraftCommands(
-    [{ name: "chat.new", title: "New session", slash: { name: "new" }, run: chat.startNew }],
+    [
+      {
+        name: "chat.new",
+        title: "New session",
+        category: "Session",
+        slash: { name: "new" },
+        run: chat.startNew,
+      },
+    ],
     [{ key: "ctrl+n", cmd: "chat.new" }],
   );
 

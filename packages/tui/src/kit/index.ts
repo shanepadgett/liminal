@@ -22,5 +22,6 @@ export { MatchedText } from "./MatchedText.tsx";
 export { Overlay } from "./Overlay.tsx";
 export { Picker, type PickerAction, type PickerProps, type PickerRow } from "./Picker.tsx";
 export { Rule } from "./Rule.tsx";
+export { SecretInput } from "./SecretInput.tsx";
 export { Section } from "./Section.tsx";
 export { Spinner } from "./Spinner.tsx";

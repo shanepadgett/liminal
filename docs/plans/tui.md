@@ -665,13 +665,14 @@ export class ChatRpc extends RpcGroup.make(
 
 ## Step 7: commands, pickers, saved sessions, queue
 
-7a is four commits, 7b one:
+7a is five commits, 7b one:
 
 1. 7a-1: the four shared extension points, and moving stashes, `@` and `/` into `stash`, `tags` and `slash`.
 2. 7a-hints: hints follow the UI's state.
 3. 7a-2: `model-choice` and `model-favorites`.
 4. 7a-3: the palette, `/theme`, `/connect`, `session-picker` and print mode's `--session`.
-5. 7b: queued inputs in `loop/state` and pulling one back.
+5. 7a-4: one hint line, `ctrl+g` to show them all, no hints for keys every user expects.
+6. 7b: queued inputs in `loop/state` and pulling one back.
 
 - TUI commands are OpenTUI keymap commands with extra fields: `title`, `category`, `slash: { name, aliases? }`. The palette and the `/` menu read `keymap.getCommandEntries()`, which gives the commands reachable now and their keys (OpenCode `tui/src/context/keymap.tsx` and `component/prompt/autocomplete.tsx`, archive `sdk/src/tui/commands.ts`).
 - `loop`'s `Commands`, slash commands that run on the agent side, waits for milestone 5, where `/commit` and `/compact` first need it. Every step 7 command is a TUI action.
@@ -1046,25 +1047,24 @@ sequenceDiagram
 
 ### 7a-3 code
 
-A first pass from before the plugin splits; `session-picker` and the palette follow the 7a-1 shapes.
-
 ```text
 packages/tui/src/kit/SecretInput.tsx   typed and pasted text drawn as dots, read with useKeyboard and usePaste
 packages/plugins/palette/            new, tui entry only
-  src/tui/index.tsx   ctrl+p: openPicker over listCommands(keymap) with a category; enter runs the command
+  src/tui/index.tsx   ctrl+p: openPicker over listCommands(keymap); enter runs the command
 packages/plugins/theme/src/tui/
   index.tsx           palette signal gains its setter; registers /theme
-  ThemePicker.tsx     preview on move, theme/set on enter, restore on close
+  picker.ts           preview on move, theme/set on enter, restore on close
 packages/plugins/accounts/src/
   sign-in.ts          openUrl opens the browser, then sends OpenUrl
-  tui/index.tsx       registers /connect
-  tui/Connect.tsx     vendor Picker, login Picker, SignIn dialog
+  tui/index.tsx       registers /connect: vendor picker, login picker
+  tui/SignIn.tsx      the sign-in dialog
 packages/plugins/session/src/
   contract.ts         SessionSummary, SessionLog.list, session/list
-  migrations.ts       sessions.folder
+  migrations.ts       sessions.folder, edited in place
   store.ts            open stores the workspace folder; list query
 packages/plugins/session-picker/     new, tui entry only
   src/tui/index.tsx   ctrl+o, /sessions: openPicker over session/list; a pick runs ChatScreen.show
+  src/tui/when.ts     the section and detail of a session's last activity
 apps/cli/src/connect.ts   loses openBrowser; OpenUrl only prints the link
 apps/cli/src/print.ts     --session <id>
 ```
@@ -1073,22 +1073,49 @@ apps/cli/src/print.ts     --session <id>
 // session/contract.ts
 export const SessionSummary = Schema.Struct({
   id: SessionId,
-  title: Schema.String,            // first line of the first user message
+  title: Schema.String,            // first line of the first user message's first text part
   updatedAt: Schema.DateTimeUtc,   // the latest event
 })
 SessionLog.list: Effect.Effect<ReadonlyArray<SessionSummary>, SessionStoreFailed>  // this folder's, latest first, 100
 Rpc.make("session/list", { success: Schema.Array(SessionSummary), error: SessionStoreFailed })
 ```
 
-- The palette reads the commands when it opens, while the composer still has focus. A pick closes the palette first, so `/pop` finds the composer focused (OpenCode `ui/dialog.tsx` `refocus`).
-- Theme picker: rows from `PALETTES`, the saved one first. `onMove` sets the palette signal; enter runs `theme/set` and closes; `onClose` puts the saved palette back.
-- `/connect`: `accounts/methods`; a vendor Picker (detail `connected`), then a Picker of each login's ways (title the login, detail the way); a list of one is skipped, as `liminal connect` does. The SignIn dialog runs `accounts/sign-in` in a fiber the dialog owns, so esc stops it, and draws the latest step: `OpenUrl` shows the link, `ShowCode` the code and link, `c` copies either with `renderer.copyToClipboardOSC52`; `Ask` an input, or `SecretInput` when secret, whose enter sends `accounts/answer`; `Waiting` and `Told` their text; `Done` closes it. A failure shows its message in the danger color (gallery `ConnectKey`, `ConnectBrowser`).
-- Sessions picker: rows from `session/list` in sections Today, Yesterday and Earlier; detail `2h ago` today, `18:20` yesterday, `Oct 14` before (gallery `Sessions.states.tsx`). Sessions with no user message stay out of the list.
+| Command | Registered with | Category | Key |
+| --- | --- | --- | --- |
+| Commands (palette) | `registerCommands`, on while no dialog shows | none | `ctrl+p` |
+| `/sessions` | `ChatScreen.registerDraftCommands` | Session | `ctrl+o` |
+| `/new` | `ChatScreen.registerDraftCommands` | Session | `ctrl+n` |
+| `/model`, thinking | as built in 7a-2 | Model | `shift+tab` for thinking |
+| `/connect` | `registerCommands` | Model | none |
+| Stash draft, `/pop` | as built in 7a-1 | Draft | `ctrl+s` |
+| `/theme` | `registerCommands` | Liminal | none |
+| Show and hide sidebar, Quit | chat's screen keys | Liminal | `ctrl+b`, `ctrl+c` |
+
+- The palette lists the commands reachable now that have a category; a command without one, such as Send or a picker's keys, is a key only. Rows sit under their category, in the order the keymap gives them; the detail is the command's keys, else its `/name` (OpenCode `command-palette.tsx` lists the commands marked `palette`, grouped by `group`; here the category is both; gallery `Commands.states.tsx`).
+- The palette reads the commands when it opens, while the composer still has focus. The picker closes before its `onSelect` runs, so focus is back on the composer when `keymap.runCommand` runs the pick.
+- `ctrl+p` is app-wide but off while a dialog shows, so it never opens over another picker. `ctrl+o` is a draft command like `ctrl+n`.
+- Theme picker (`theme/palettes`): rows from `PALETTES`, by name, the one on screen selected. `onMove` sets the palette signal; enter runs `theme/set` and keeps the shown palette; `onClose` puts the saved palette back (OpenCode `dialog-theme-list.tsx`).
+- `/connect`: `accounts/methods`; a vendor picker (`accounts/vendors`, detail `connected` when any of its logins is), then one picker of each login and way (`accounts/logins`, the ways as rows under a section per login). A list of one is skipped, as `liminal connect` does.
+- The sign-in dialog, titled `Connect <vendor>`, follows `accounts/sign-in` with `useWatch`, so closing it stops the sign-in. It keeps what the steps said so far: the link and code from `OpenUrl` and `ShowCode`, the latest `Waiting` or `Told` text, and the open `Ask` as an input, `SecretInput` when secret. Enter sends `accounts/answer`; a later step clears the input. `Done` closes the dialog; a failure shows its message in the danger color and esc closes (gallery `ConnectKey`, `ConnectBrowser`).
+- `ctrl+y` copies the code, else the link, with `renderer.copyToClipboardOSC52`. Not `c` as in OpenCode: the browser sign-in asks for the pasted address right after the link, and `c` would type into that input.
 - `accounts` opens the browser itself before it sends `OpenUrl`, on the machine whose local server catches the redirect (archive `logins/server/browser.ts`); a failed open sends `Told` with "Could not open the browser; open the link above." Frontends only show the link.
-- `session` stores the workspace folder from `Directories` on each `open`, and `list` shows only that folder's sessions (archive `session-store` `listSessions(workspace)`, Pi per working folder, Crush per project).
-- Print mode `--session <id>`: sends to that session instead of opening one; an id the log does not have fails with its `SessionNotFound` message and exit code 1.
-- `session/list` query: `sessions` left joined to `session_events` for the latest `at`, and a subquery for the first `session/message` whose `json_extract(data, '$.role')` is `user`; ordered by the latest activity (Pi `session-manager.ts` sorts by `modified`).
+- Sessions picker (`session-picker/sessions`): rows from `session/list` in sections Today, Yesterday and Earlier by local date; detail `now` or `5m ago` or `2h ago` today, `18:20` yesterday, `Oct 14` before (gallery `Sessions.states.tsx`). The session on screen is selected. Sessions with no user message stay out of the list.
+- `session` stores the workspace folder from `Directories` on each `open`, and `list` shows only that folder's sessions (archive `session-store` `listSessions(workspace)`, Pi per working folder, Crush per project). `session` gains `Directories` in `requires`.
+- `session/list` query: `sessions` joined to `session_events` for the latest `at`, and a subquery for the data of the first `session/message` whose `json_extract(data, '$.role')` is `user`, decoded in TypeScript for its title; ordered by the latest activity (Pi `session-manager.ts` sorts by `modified`).
+- Print mode `--session <id>`: reads `session/page` for the session's last seq, which also fails with `SessionNotFound` for an unknown id (its message on stderr, exit code 1), sends there, and follows `session/live` after that seq so an earlier turn's end does not stop it.
 - Docs: `docs/usage/cli.md` keys and commands; READMEs of `palette`, `theme`, `accounts`, `session`, `session-picker`, `packages/tui`; `architecture.md` gains `palette` and `session-picker` rows; `docs/plugins/tui.md` and `status.md` check off what 7a-3 builds.
+
+### 7a-4
+
+A hint line shows only keys a user would not guess, on one line. When they do not fit, the important ones stay and `ctrl+g` shows the rest.
+
+- No hints for keys that act as every user expects: up, down, enter and esc in pickers, the draft menus, `Confirm` and the sign-in dialog. The keys still work. Chat keeps `enter send`. Tab in the draft menus, picker actions such as `ctrl+d` and `ctrl+f`, and `ctrl+y` keep theirs. A dialog with no hints left has no hint line (OpenCode `ui/dialog-select.tsx` shows only a dialog's actions).
+- A hint is `important` or not. Collapsed, a line places important hints first, then the rest, each group in keymap order, and only whole hints. When any are left off, the line ends with `ctrl+g more`.
+- `ctrl+g` toggles one expanded state for the app. Expanded, a line that overflows grows to a grid of every hint, with `ctrl+g less` in the last cell; a line that fits looks the same either way. The grid fills top to bottom, then left to right; each column aligns its keys, then its labels, and as many columns as fit are drawn (Crush `model/ui.go` `FullHelp`, bubbles `help.FullHelpView`; Crush groups columns by meaning, here they follow hint order).
+- The line adds `ctrl+g more` or `ctrl+g less` itself, only when it overflows, so the hint shows only where pressing it changes something. A dialog whose hints fit never shows it because the composer behind it overflows.
+- `Hints` measures its own width; no caller passes `columns`.
+- A picker action's label is a string or a function of the selected row: `model-favorites` shows `ctrl+f favorite` or `ctrl+f unfavorite` (OpenCode `component/dialog-model.tsx`).
+- `esc stop` while a turn runs is important; which other hints are is settled in the code plan.
 
 ## Events in the references
 

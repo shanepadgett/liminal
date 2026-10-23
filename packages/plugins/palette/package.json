@@ -1,0 +1,20 @@
+{
+  "name": "@shanepadgett/liminal-palette",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tui": "./src/tui/index.tsx"
+  },
+  "peerDependencies": {
+    "@shanepadgett/liminal-client": "workspace:*",
+    "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-tui": "workspace:*",
+    "effect": "*"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/index.ts"
+    ]
+  }
+}

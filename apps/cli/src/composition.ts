@@ -19,8 +19,10 @@ import modelFavorites from "@shanepadgett/liminal-model-favorites";
 import modelOpenai from "@shanepadgett/liminal-model-openai";
 import modelOpencodeGo from "@shanepadgett/liminal-model-opencode-go";
 import modelOpenrouter from "@shanepadgett/liminal-model-openrouter";
+import palette from "@shanepadgett/liminal-palette";
 import persona from "@shanepadgett/liminal-persona";
 import session from "@shanepadgett/liminal-session";
+import sessionPicker from "@shanepadgett/liminal-session-picker";
 import settings from "@shanepadgett/liminal-settings";
 import slash from "@shanepadgett/liminal-slash";
 import sqlite from "@shanepadgett/liminal-sqlite";
@@ -72,6 +74,8 @@ export const plugins = [
   chat,
   stash,
   slash,
+  palette,
+  sessionPicker,
 ] as const;
 
 /** The client host, with the composition built behind it. */

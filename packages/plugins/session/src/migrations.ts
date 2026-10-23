@@ -9,6 +9,7 @@ const createTables = Effect.gen(function* () {
     CREATE TABLE sessions (
       id TEXT PRIMARY KEY,
       created_at BIGINT NOT NULL,
+      folder TEXT NOT NULL,
       attributes TEXT NOT NULL
     )
   `;

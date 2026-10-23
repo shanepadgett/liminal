@@ -3,6 +3,7 @@
  * to its open question comes back through `accounts/answer`.
  */
 import { type Cause, Crypto, Deferred, Effect, Queue, Redacted, Ref, Schema, Stream } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import { authorizeInBrowser, type BrowserSteps } from "./browser.ts";
 import { KeyCommands } from "./command.ts";
@@ -50,12 +51,40 @@ const asker =
       );
     });
 
-const flowOf = (pending: Pending, steps: Steps, method: string, crypto: Crypto.Crypto) => {
+type Spawner = ChildProcessSpawner.ChildProcessSpawner["Service"];
+
+/** Opens `url` in the default browser on this machine, where the sign-in's local server listens. */
+const openBrowser = (spawner: Spawner, url: string) =>
+  spawner
+    .exitCode(ChildProcess.make(process.platform === "darwin" ? "open" : "xdg-open", [url]))
+    .pipe(
+      Effect.map((code) => code === 0),
+      Effect.orElseSucceed(() => false),
+    );
+
+/** What a sign-in run needs from outside it. */
+interface FlowServices {
+  readonly crypto: Crypto.Crypto;
+  readonly spawner: Spawner;
+}
+
+const flowOf = (pending: Pending, steps: Steps, method: string, services: FlowServices) => {
   const ask = asker(pending, steps, method);
   const send = (step: LoginStep) => Effect.asVoid(Queue.offer(steps, step));
 
+  /** Opens the browser, then sends the link, so a frontend can show it either way. */
+  const openUrl = (url: string) =>
+    Effect.flatMap(openBrowser(services.spawner, url), (opened) =>
+      Effect.andThen(
+        send(OpenUrl.make({ url })),
+        opened
+          ? Effect.void
+          : send(Told.make({ text: "Could not open the browser; open the link above." })),
+      ),
+    );
+
   const browserSteps: BrowserSteps = {
-    openUrl: (url) => send(OpenUrl.make({ url })),
+    openUrl,
     ask: (question) => Effect.map(ask(question, false), Redacted.value),
     tell: (text) => send(Told.make({ text })),
   };
@@ -68,7 +97,7 @@ const flowOf = (pending: Pending, steps: Steps, method: string, crypto: Crypto.C
     askSecret: (question) => ask(question, true),
     waiting: (text) => send(Waiting.make({ text })),
     authorizeInBrowser: (authorization) =>
-      browser(authorization).pipe(Effect.provideService(Crypto.Crypto, crypto)),
+      browser(authorization).pipe(Effect.provideService(Crypto.Crypto, services.crypto)),
   });
 };
 
@@ -76,7 +105,11 @@ export const makeSignIn = Effect.gen(function* () {
   const commands = yield* KeyCommands;
   const methods = yield* LoginMethods;
   const credentials = yield* Credentials;
-  const crypto = yield* Crypto.Crypto;
+
+  const services: FlowServices = {
+    crypto: yield* Crypto.Crypto,
+    spawner: yield* ChildProcessSpawner.ChildProcessSpawner,
+  };
 
   const pending: Pending = yield* Ref.make<
     ReadonlyMap<string, Deferred.Deferred<Redacted.Redacted>>
@@ -113,7 +146,7 @@ export const makeSignIn = Effect.gen(function* () {
     Stream.callback<LoginStep, LoginFailed>((steps) =>
       find(id, way).pipe(
         Effect.flatMap(save),
-        Effect.provideService(LoginFlow, flowOf(pending, steps, id, crypto)),
+        Effect.provideService(LoginFlow, flowOf(pending, steps, id, services)),
         Effect.andThen(Queue.offer(steps, Done.make({}))),
         Effect.andThen(Queue.end(steps)),
         Effect.catch((error) => Queue.fail(steps, error)),

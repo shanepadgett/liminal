@@ -7,8 +7,15 @@ Saved credentials and the logins that create them.
 - `apiKeyMethod(provider, vendor)` is a login with two ways: the key, or a command that prints it. Sign-in runs a command once before saving it.
 - `authorizeInBrowser` signs in with PKCE. The browser comes back to a local server, or the user pastes the address it ends on. When the port is taken, only the pasted address works. It gives the code, the verifier, and the `client_id` the reply names, which a login that registers a client on first sign-in needs.
 - `AccountsRpc`: `accounts/methods` (with whether each login's provider is connected), `accounts/sign-in` of a login and way (a stream of steps for the screen), `accounts/answer` (what the user types for an `Ask` step) and `accounts/logout` of a provider. Logout runs the `logOut` of each of the provider's logins, removes the credential even when one fails, then fails with `LogoutFailed`. `liminal connect` asks for the vendor, the login and the way, skipping a choice of one; `liminal logout` asks for a connected provider.
+- A sign-in that sends `OpenUrl` first opens the browser itself, on the machine whose local server catches the redirect; when that fails it also sends `Told` saying to open the link. Frontends only show the link.
 
 Requires `SqlClient`, `Crypto` and `ChildProcessSpawner`.
+
+## TUI
+
+The `tui` entry adds `/connect` (category Model): a vendor picker (`accounts/vendors`), then a picker of the ways to sign in, under their logins (`accounts/logins`), skipping a list of one. The pick opens a sign-in dialog that follows `accounts/sign-in` while it is open, so closing it stops the sign-in. It shows the link and code, the latest message, and the open question as an input, drawn as dots when secret. Enter answers, `ctrl+y` copies the code, else the link, and esc closes. `Done` closes it; a failure stays on screen.
+
+The entry requires `Host`, `Keymap`, `Dialogs` and `Pickers`.
 
 ## Add a login
 

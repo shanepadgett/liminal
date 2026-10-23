@@ -4,14 +4,17 @@ import * as Arr from "effect/Array";
 import type { SqlClient } from "effect/sql";
 
 import { Attributes } from "@shanepadgett/liminal-core";
+import { Message } from "@shanepadgett/liminal-model/contract";
 
 import {
+  MessageEvent,
   type NewEvent,
   type Seq,
   type SessionEvent,
   SessionId,
   SessionNotFound,
   SessionStoreFailed,
+  type SessionSummary,
 } from "./contract.ts";
 
 type Sql = SqlClient.SqlClient;
@@ -52,12 +55,13 @@ const requireSession = (sql: Sql, session: SessionId) =>
 
 export const create = Effect.fn("SessionStore.create")(function* (
   sql: Sql,
+  folder: string,
   attributes: Attributes,
 ) {
   const id = SessionId.make(crypto.randomUUID());
   const now = yield* DateTime.now;
   const encoded = yield* Effect.mapError(Schema.encodeEffect(AttributesText)(attributes), failed);
-  const row = { id, created_at: now.epochMilliseconds, attributes: encoded };
+  const row = { id, created_at: now.epochMilliseconds, folder, attributes: encoded };
 
   yield* Effect.mapError(sql`INSERT INTO sessions ${sql.insert(row)}`, failed);
 
@@ -155,4 +159,52 @@ export const before = Effect.fn("SessionStore.before")(function* (
   const rows = yield* Effect.mapError(query, failed);
 
   return (yield* decodeRows(rows)).toReversed();
+});
+
+/** A session as the list query gives it: its latest event's time and its first user message. */
+const SummaryRow = Schema.Struct({
+  id: SessionId,
+  updated_at: Schema.DateTimeUtcFromMillis,
+  first_message: Schema.fromJsonString(Message),
+});
+
+/** The first line of the message's first text, trimmed. */
+const titleOf = (message: Message) => {
+  const text = message.parts.find((part) => part.type === "text")?.text ?? "";
+
+  return text.trim().split("\n")[0] ?? "";
+};
+
+const toSummary = (row: typeof SummaryRow.Type): SessionSummary => ({
+  id: row.id,
+  title: titleOf(row.first_message),
+  updatedAt: row.updated_at,
+});
+
+/** The latest `limit` sessions in `folder` that have a user message, latest first. */
+export const list = Effect.fn("SessionStore.list")(function* (
+  sql: Sql,
+  folder: string,
+  limit: number,
+) {
+  const rows = yield* Effect.mapError(
+    sql`
+      SELECT s.id AS id, MAX(e.at) AS updated_at, (
+        SELECT u.data FROM session_events u
+        WHERE u.session_id = s.id AND u.kind = ${MessageEvent.kind}
+          AND json_extract(u.data, '$.role') = 'user'
+        ORDER BY u.seq LIMIT 1
+      ) AS first_message
+      FROM sessions s JOIN session_events e ON e.session_id = s.id
+      WHERE s.folder = ${folder}
+      GROUP BY s.id
+      HAVING first_message IS NOT NULL
+      ORDER BY updated_at DESC LIMIT ${limit}
+    `,
+    failed,
+  );
+
+  return yield* Effect.forEach(rows, (row) =>
+    Effect.map(Effect.mapError(Schema.decodeUnknownEffect(SummaryRow)(row), failed), toSummary),
+  );
 });

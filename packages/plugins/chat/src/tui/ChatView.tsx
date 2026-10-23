@@ -155,6 +155,7 @@ const sidebarCommands = (
   {
     name: "chat.sidebar.show",
     title: "Show sidebar",
+    category: "Liminal",
     hint: { label: "sidebar" },
     enabled: () => hasDrawer() && !isOpen(),
     run: () => {
@@ -164,6 +165,7 @@ const sidebarCommands = (
   {
     name: "chat.sidebar.hide",
     title: "Hide sidebar",
+    category: "Liminal",
     enabled: () => hasDrawer() && isOpen(),
     run: () => {
       setOpen(false);
@@ -178,7 +180,7 @@ const useScreenKeys = (
   drawerKeys: ReadonlyArray<Command>,
 ) => {
   useBindings(() => ({
-    commands: [{ name: "chat.quit", title: "Quit", run: quit }],
+    commands: [{ name: "chat.quit", title: "Quit", category: "Liminal", run: quit }],
     bindings: [{ key: "ctrl+c", cmd: "chat.quit" }],
   }));
 

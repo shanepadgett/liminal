@@ -1,0 +1,22 @@
+{
+  "name": "@shanepadgett/liminal-session-picker",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tui": "./src/tui/index.tsx"
+  },
+  "peerDependencies": {
+    "@shanepadgett/liminal-chat": "workspace:*",
+    "@shanepadgett/liminal-client": "workspace:*",
+    "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-session": "workspace:*",
+    "@shanepadgett/liminal-tui": "workspace:*",
+    "effect": "*"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/index.ts"
+    ]
+  }
+}

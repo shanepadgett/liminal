@@ -4,6 +4,7 @@ import type { NonEmptyReadonlyArray } from "effect/Array";
 import { SqlClient } from "effect/sql";
 
 import { type Attributes, definePlugin } from "@shanepadgett/liminal-core";
+import { Directories } from "@shanepadgett/liminal-directories/contract";
 
 import {
   type Delta,
@@ -21,8 +22,12 @@ import * as Store from "./store.ts";
 /** How many events a page holds. */
 const pageSize = 100;
 
+/** How many sessions a list holds. */
+const listSize = 100;
+
 const make = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
+  const { workspace } = yield* Directories;
   yield* migrate;
   const watched = yield* makeWatched;
   const watch = (session: SessionId) => RcMap.get(watched, session);
@@ -77,7 +82,8 @@ const make = Effect.gen(function* () {
     );
 
   return SessionLog.of({
-    open: (attributes: Attributes = {}) => Store.create(sql, attributes),
+    open: (attributes: Attributes = {}) => Store.create(sql, workspace, attributes),
+    list: Store.list(sql, workspace, listSize),
     append,
     read: (session, after = 0) => Store.after(sql, session, after),
     page: (session, before) => Store.before(sql, session, before, pageSize),
@@ -91,6 +97,7 @@ const rpc = SessionRpc.toLayer(
   Effect.map(SessionLog, (log) =>
     SessionRpc.of({
       "session/open": () => log.open(),
+      "session/list": () => log.list,
       "session/page": ({ session, before }) => log.page(session, before),
       "session/live": ({ session, after }) => log.live(session, after),
     }),
@@ -100,6 +107,6 @@ const rpc = SessionRpc.toLayer(
 export default definePlugin({
   name: "session",
   provides: [SessionLog],
-  requires: [SqlClient.SqlClient],
+  requires: [SqlClient.SqlClient, Directories],
   layer: Layer.provideMerge(rpc, Layer.effect(SessionLog, make)),
 });

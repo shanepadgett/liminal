@@ -24,6 +24,7 @@ export {
   registerCommands,
   type Slash,
   slashCommands,
+  useHints,
 } from "./commands.ts";
 
 export { Colors, type Mix, type RoleColor, useColor, useMix, useSyntax } from "./colors.ts";

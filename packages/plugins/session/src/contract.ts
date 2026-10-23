@@ -41,6 +41,17 @@ export type Delta = typeof Delta.Type;
 export const LiveItem = Schema.Union([SessionEvent, Delta]);
 export type LiveItem = typeof LiveItem.Type;
 
+/** A saved session as a list shows it. */
+export const SessionSummary = Schema.Struct({
+  id: SessionId,
+  /** The first line of the first user message. */
+  title: Schema.String,
+  /** When its latest event was saved. */
+  updatedAt: Schema.DateTimeUtc,
+});
+
+export type SessionSummary = typeof SessionSummary.Type;
+
 export class SessionNotFound extends Schema.TaggedError<
   SessionNotFound,
   { readonly brand: unique symbol }
@@ -107,7 +118,10 @@ export const Notice = defineEvent(
 export class SessionLog extends Context.Service<
   SessionLog,
   {
+    /** A new session in the workspace folder. */
     readonly open: (attributes?: Attributes) => Effect.Effect<SessionId, SessionStoreFailed>;
+    /** The workspace folder's latest 100 sessions that have a user message, latest first. */
+    readonly list: Effect.Effect<ReadonlyArray<SessionSummary>, SessionStoreFailed>;
     /** Saves the events in order, all or none, numbering them inside the write. */
     readonly append: (
       session: SessionId,
@@ -142,6 +156,8 @@ export class SessionLog extends Context.Service<
 /** What screens call. */
 export class SessionRpc extends RpcGroup.make(
   Rpc.make("session/open", { success: SessionId, error: SessionStoreFailed }),
+  /** The workspace folder's latest 100 sessions that have a user message, latest first. */
+  Rpc.make("session/list", { success: Schema.Array(SessionSummary), error: SessionStoreFailed }),
   /** The latest 100 events, or the 100 before `before`, oldest first. */
   Rpc.make("session/page", {
     payload: { session: SessionId, before: Schema.optional(Seq) },

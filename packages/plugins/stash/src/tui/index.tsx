@@ -115,6 +115,7 @@ const make = Effect.gen(function* () {
       {
         name: "stash.save",
         title: "Stash draft",
+        category: "Draft",
         hint: { label: "stash" },
         enabled: () => chat.draft.text() !== "",
         run: stash,
@@ -127,6 +128,7 @@ const make = Effect.gen(function* () {
     {
       name: "stash.pop",
       title: "Stashed drafts",
+      category: "Draft",
       slash: { name: "pop" },
       enabled: () => listed().length > 0,
       run: () => {

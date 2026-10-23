@@ -48,7 +48,7 @@ export interface PickerProps {
   readonly empty: string;
   readonly rows: Accessor<ReadonlyArray<PickerRow>>;
   /** The id of the row selected when it opens; the first row without it. */
-  readonly initial?: string;
+  readonly initial?: string | undefined;
   readonly actions: ReadonlyArray<PickerAction>;
   readonly onSelect: (row: PickerRow) => void;
   /** The selection moved to `row`. */
@@ -58,19 +58,26 @@ export interface PickerProps {
 }
 
 type Item =
-  | { readonly kind: "section"; readonly title: string }
+  | { readonly kind: "section"; readonly title: string; readonly isSpaced: boolean }
   | { readonly kind: "row"; readonly row: PickerRow; readonly matches: readonly number[] };
 
 const LIST_ROWS = 12;
 
-/** A section title goes before the first row of each section. */
+/**
+ * A section title goes before the first row of each section, after a blank line unless it opens the
+ * list.
+ */
 const sectioned = (rows: ReadonlyArray<PickerRow>): readonly Item[] =>
   rows.flatMap((row, index): Item[] => {
     const item: Item = { kind: "row", row, matches: [] };
     const isFirst = row.section !== undefined && row.section !== rows[index - 1]?.section;
 
-    return isFirst ? [{ kind: "section", title: row.section }, item] : [item];
+    return isFirst ? [{ kind: "section", title: row.section, isSpaced: index > 0 }, item] : [item];
   });
+
+/** The lines the items take, blank lines included. */
+const linesOf = (items: readonly Item[]) =>
+  items.length + items.filter((item) => item.kind === "section" && item.isSpaced).length;
 
 const itemsOf = (rows: ReadonlyArray<PickerRow>, query: string): readonly Item[] =>
   query === ""
@@ -88,7 +95,7 @@ function ItemView(props: { readonly item: Item; readonly selected: string | unde
     <Switch>
       <Match when={props.item.kind === "section" ? props.item : undefined}>
         {(section) => (
-          <text fg={color("text.heading")} paddingLeft={1}>
+          <text fg={color("text.heading")} paddingLeft={1} marginTop={section().isSpaced ? 1 : 0}>
             {section().title}
           </text>
         )}
@@ -281,7 +288,7 @@ export function Picker(props: PickerProps & { readonly close: () => void }) {
           ref={(made) => {
             list = made;
           }}
-          height={Math.min(state.items().length, LIST_ROWS)}
+          height={Math.min(linesOf(state.items()), LIST_ROWS)}
           scrollbarOptions={{ visible: false }}
         >
           <For each={state.items()}>

@@ -32,7 +32,7 @@ A hint shows only for a key that would run now. `activeHints(keymap)` reads them
 
 `openPicker(spec)` opens the kit's `Picker` in a dialog. A `PickerSpec` is the picker's props plus a `name`, such as `stash/stashes`. Every spec passes through the `Pickers` pipeline before it opens, so a plugin can wrap a picker by its name to change its rows or add keys.
 
-The picker filters its rows with `fuzzysort` as the user types, and groups them by `section`. Up and Down move, Enter calls `onSelect` and closes, Esc closes. Each action is a key with a label in the hints; it closes the picker unless `keepsOpen` is set. Enter and the actions work, and show their hints, only while a row is selected, and Up and Down only with more than one row. The picker's keys work while its input has focus. `onMove` runs as the selection moves and `onClose` when it closes.
+The picker filters its rows with `fuzzysort` as the user types, and groups them by `section`. Up and Down move, Enter calls `onSelect` and closes, Esc closes. Each action is a key with a label in the hints; it closes the picker unless `keepsOpen` is set. Enter and the actions work, and show their hints, only while a row is selected, and Up and Down only with more than one row. The picker's keys work while its input has focus. `onMove` runs as the selection moves and `onClose` when it closes. `initial` names the row selected when it opens.
 
 ## Hooks
 
@@ -48,6 +48,6 @@ Outside components, a `tui` entry's commands run effects with `makeEntryRun(mess
 
 ## Kit
 
-`kit` holds the shared components: `Chip`, `ChoiceRow`, `Confirm`, `Dialog`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Rule`, `Section`, `Spinner`. They read colors by role name from `@shanepadgett/liminal-client`.
+`kit` holds the shared components: `Chip`, `ChoiceRow`, `Confirm`, `Dialog`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Rule`, `SecretInput`, `Section`, `Spinner`. `SecretInput` takes typed and pasted text and draws it as dots. They read colors by role name from `@shanepadgett/liminal-client`.
 
 Run it with Bun's `@opentui/solid/preload`, which compiles `.tsx`.

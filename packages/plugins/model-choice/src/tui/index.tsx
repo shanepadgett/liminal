@@ -119,6 +119,7 @@ const make = Effect.gen(function* () {
     {
       name: "model-choice.pick",
       title: "Switch model",
+      category: "Model",
       slash: { name: "model" },
       run: () => {
         run(openModels);
@@ -131,6 +132,7 @@ const make = Effect.gen(function* () {
       {
         name: "model-choice.thinking",
         title: "Next thinking level",
+        category: "Model",
         hint: { label: "thinking" },
         enabled: () => levelsOf(state).length > 0,
         run: () => {

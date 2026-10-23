@@ -45,9 +45,9 @@ Work: [plugins/tui.md](plugins/tui.md)
 - [x] `chat`: `@` file tags (`tags`)
 - [x] `chat`: save stashes with `ctrl+s`
 - [x] Commands, pickers and draft triggers in `packages/tui` and `chat`; `stash` with `/pop`, `slash`, `ctrl+n` and `/new`
-- [ ] `palette`, with the stash list
+- [x] `palette`, with the stash list
 - [x] Model picker and print mode `--model`
-- [ ] `/connect` in the TUI
+- [x] `/connect` in the TUI
 - [ ] Daily chat in the TUI with saved sessions
 
 ### 3. Coding agent

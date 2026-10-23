@@ -42,8 +42,10 @@
         "@shanepadgett/liminal-model-openai": "workspace:*",
         "@shanepadgett/liminal-model-opencode-go": "workspace:*",
         "@shanepadgett/liminal-model-openrouter": "workspace:*",
+        "@shanepadgett/liminal-palette": "workspace:*",
         "@shanepadgett/liminal-persona": "workspace:*",
         "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-session-picker": "workspace:*",
         "@shanepadgett/liminal-settings": "workspace:*",
         "@shanepadgett/liminal-slash": "workspace:*",
         "@shanepadgett/liminal-sqlite": "workspace:*",
@@ -102,8 +104,14 @@
       "name": "@shanepadgett/liminal-accounts",
       "version": "0.1.0",
       "peerDependencies": {
+        "@opentui/core": "0.6.6",
+        "@opentui/keymap": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "@shanepadgett/liminal-client": "workspace:*",
         "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-tui": "workspace:*",
         "effect": "*",
+        "solid-js": "1.9.12",
       },
     },
     "packages/plugins/chat": {
@@ -263,6 +271,16 @@
         "effect": "*",
       },
     },
+    "packages/plugins/palette": {
+      "name": "@shanepadgett/liminal-palette",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-client": "workspace:*",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-tui": "workspace:*",
+        "effect": "*",
+      },
+    },
     "packages/plugins/persona": {
       "name": "@shanepadgett/liminal-persona",
       "version": "0.1.0",
@@ -277,7 +295,20 @@
       "version": "0.1.0",
       "peerDependencies": {
         "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/session-picker": {
+      "name": "@shanepadgett/liminal-session-picker",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-chat": "workspace:*",
+        "@shanepadgett/liminal-client": "workspace:*",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-tui": "workspace:*",
         "effect": "*",
       },
     },
@@ -696,11 +727,15 @@
 
     "@shanepadgett/liminal-model-wire": ["@shanepadgett/liminal-model-wire@workspace:packages/model-wire"],
 
+    "@shanepadgett/liminal-palette": ["@shanepadgett/liminal-palette@workspace:packages/plugins/palette"],
+
     "@shanepadgett/liminal-persona": ["@shanepadgett/liminal-persona@workspace:packages/plugins/persona"],
 
     "@shanepadgett/liminal-planned": ["@shanepadgett/liminal-planned@workspace:tools/planned"],
 
     "@shanepadgett/liminal-session": ["@shanepadgett/liminal-session@workspace:packages/plugins/session"],
+
+    "@shanepadgett/liminal-session-picker": ["@shanepadgett/liminal-session-picker@workspace:packages/plugins/session-picker"],
 
     "@shanepadgett/liminal-settings": ["@shanepadgett/liminal-settings@workspace:packages/plugins/settings"],
 

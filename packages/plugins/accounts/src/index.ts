@@ -55,4 +55,5 @@ export default definePlugin({
   provides: [Credentials, LoginMethods],
   requires: [SqlClient.SqlClient, Crypto.Crypto, ChildProcessSpawner.ChildProcessSpawner],
   layer: Layer.provideMerge(rpc, services).pipe(Layer.provide(keyCommandsLayer)),
+  entries: { tui: () => import("./tui/index.tsx") },
 });

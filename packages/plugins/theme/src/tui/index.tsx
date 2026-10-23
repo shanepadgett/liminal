@@ -1,14 +1,27 @@
-/** The theme's `tui` entry: the saved palette's colors, as `Colors`. */
+/**
+ * The theme's `tui` entry: the saved palette's colors, as `Colors`, and `/theme`, which previews
+ * each palette as the selection moves and saves the one picked.
+ */
 import type { SyntaxStyle } from "@opentui/core";
 import { Effect, Layer } from "effect";
 import { createSignal } from "solid-js";
 
 import { Host } from "@shanepadgett/liminal-client";
 import { definePlugin } from "@shanepadgett/liminal-core";
-import { Colors, Renderer, type RoleColor } from "@shanepadgett/liminal-tui";
+import {
+  Colors,
+  Dialogs,
+  Keymap,
+  makeEntryRun,
+  Pickers,
+  registerCommands,
+  Renderer,
+  type RoleColor,
+} from "@shanepadgett/liminal-tui";
 
 import { ThemeRpc } from "../contract.ts";
 import { DEFAULT_PALETTE_ID, mixHex, paletteOf, roleColors } from "../view/index.ts";
+import { openPalettes } from "./picker.ts";
 import { syntaxStyle } from "./syntax.ts";
 
 /** The saved palette's id; a failure leaves the default palette on screen. */
@@ -25,7 +38,8 @@ const savedPalette = Effect.gen(function* () {
 
 const make = Effect.gen(function* () {
   const renderer = yield* Renderer;
-  const [palette] = createSignal(paletteOf(yield* savedPalette));
+  const run = yield* makeEntryRun("The theme failed.");
+  const [palette, setPalette] = createSignal(paletteOf(yield* savedPalette));
   // One of each per palette, kept until the TUI closes, so switching back does not rebuild them.
   const colors = new Map<string, RoleColor>();
   const styles = new Map<string, SyntaxStyle>();
@@ -52,12 +66,24 @@ const make = Effect.gen(function* () {
     }),
   );
 
+  yield* registerCommands([
+    {
+      name: "theme.pick",
+      title: "Switch theme",
+      category: "Liminal",
+      slash: { name: "theme" },
+      run: () => {
+        run(openPalettes(palette, setPalette, run));
+      },
+    },
+  ]);
+
   return Colors.of({ color, syntax, mix: mixHex });
 });
 
 export default definePlugin({
   name: "theme-tui",
   provides: [Colors],
-  requires: [Host, Renderer],
+  requires: [Host, Renderer, Keymap, Dialogs, Pickers],
   layer: Layer.effect(Colors, make),
 });

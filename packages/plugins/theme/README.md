@@ -24,7 +24,9 @@ Liminal's colors, shared by every frontend. Components name colors by role (`Rol
 
 The `tui` entry provides `Colors` from `@shanepadgett/liminal-tui`: the saved palette's role colors, its syntax style for code, markdown and diffs, and `mixHex`. When `theme/get` fails, it logs a warning and uses the default palette.
 
-Requires `Settings` and `DeclaredSettings`; the `tui` entry requires `Host` and `Renderer`.
+`/theme` (category Liminal) opens the `theme/palettes` picker. Moving through it shows each palette; Enter saves the one shown with `theme/set`; closing it otherwise puts the saved palette back.
+
+Requires `Settings` and `DeclaredSettings`; the `tui` entry requires `Host`, `Renderer`, `Keymap`, `Dialogs` and `Pickers`.
 
 ## Settings
 
