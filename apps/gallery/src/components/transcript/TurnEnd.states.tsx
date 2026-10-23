@@ -21,6 +21,7 @@ export const turnEndStates: readonly [State, ...State[]] = [
       <box>
         <TurnEnd ending="finished" model={MODEL} time="38s" />
         <TurnEnd ending="stopped" model={MODEL} time="14s" />
+        <TurnEnd ending="interrupted" model={MODEL} />
       </box>
     ),
   },

@@ -50,6 +50,6 @@ Outside components, a `tui` entry's commands run effects with `makeEntryRun(mess
 
 ## Kit
 
-`kit` holds the shared components: `Chip`, `ChoiceRow`, `Confirm`, `Dialog`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Rule`, `SecretInput`, `Section`, `Spinner`. `SecretInput` takes typed and pasted text and draws it as dots. They read colors by role name from `@shanepadgett/liminal-client`.
+`kit` holds the shared components: `Chip`, `ChoiceRow`, `Confirm`, `Dialog`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Rule`, `SecretInput`, `Section`, `Spinner`. `SecretInput` takes typed and pasted text and draws it as dots. `useInkHead` paces streaming text so `Inked` writes it out evenly, however it arrives. They read colors by role name from `@shanepadgett/liminal-client`.
 
 Run it with Bun's `@opentui/solid/preload`, which compiles `.tsx`.

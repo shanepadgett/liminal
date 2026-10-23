@@ -6,7 +6,7 @@ The chat screen: a landing until the first send opens a session, then the sessio
 
 `./view` has no frontend framework, so any frontend can use it:
 
-- `buildTranscript(state, kinds)`: a session view's events and deltas as turns of items: later inputs, replies, tool rows, notices, a stop, and events of the `kinds` other plugins draw. Reasoning never shows. A tool call and its result share one row.
+- `buildTranscript(state, kinds)`: a session view's events and deltas as turns of items: later inputs, replies, tool rows, notices, each closed turn's end (done, stopped or interrupted, with the model and how long it ran; a failed turn ends in its error notice), and events of the `kinds` other plugins draw. Reasoning never shows. A tool call and its result share one row.
 - `contextUsed(state)`: the latest step's input tokens, for the share of the context window in use.
 - `isWriting(state)`: whether reply text is streaming now.
 - `draftTextOf(input)`: what the user wrote in an input, such as a queued message, without the parts plugins added; none for other inputs.

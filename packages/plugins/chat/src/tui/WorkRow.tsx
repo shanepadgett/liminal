@@ -67,8 +67,13 @@ export function WorkRow(props: { readonly item: ToolItem }) {
     );
 
   // A live call's newest cells warm up from the background; a saved one is settled.
+  const head = kit.useInkHead(
+    () => cells().length,
+    () => props.item.isLive,
+  );
+
   const runs = () =>
-    kit.inkRuns(cells(), props.item.isLive ? cells().length : Number.POSITIVE_INFINITY, (warmth) =>
+    kit.inkRuns(cells(), head() ?? Number.POSITIVE_INFINITY, (warmth) =>
       mix(color("surface.base"), color("text.muted"), warmth),
     );
 

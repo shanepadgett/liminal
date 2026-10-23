@@ -16,7 +16,9 @@ export { cellsOf, Gradient, gradientOf } from "./Gradient.tsx";
 export { Hatch } from "./Hatch.tsx";
 export type { Hint } from "./hint-layout.ts";
 export { Hints } from "./Hints.tsx";
-export { FRESH_CELLS, Inked, inkRuns, type Run, useStream, warmthAt } from "./Ink.tsx";
+
+export { FRESH_CELLS, Inked, inkRuns, type Run, useInkHead, useStream, warmthAt } from "./Ink.tsx";
+
 export { ListRow } from "./ListRow.tsx";
 export { Logo } from "./Logo.tsx";
 export { MatchedText } from "./MatchedText.tsx";

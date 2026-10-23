@@ -8,7 +8,7 @@ Run it from the repository with `bun apps/cli/src/main.ts`, or as `liminal` once
 liminal
 ```
 
-With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; the first send starts a new session. The reply streams into the transcript. When you scroll up, the message a reply answers stays at the top until the next message pushes it out. The sidebar shows the folder, the git branch and how much of the model's context window the session uses.
+With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; the first send starts a new session. The reply streams into the transcript, and each turn ends with a line saying whether it finished or you stopped it, the model that answered and how long it ran. When you scroll up, the message a reply answers stays at the top until the next message pushes it out. The sidebar shows the folder, the git branch and how much of the model's context window the session uses.
 
 | Key | Does |
 | --- | --- |

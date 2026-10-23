@@ -1183,7 +1183,7 @@ draft: the inputs' text, oldest first, then the draft, blank lines between
 - It stays in `chat`: the lines, the key and putting text back into the draft are one feature of the composer, and `esc` needs the same putting back.
 - A pick or tagged files already went through the send pipeline with the input. Putting the text back keeps the `@path` marks, so sending again attaches the files again; a logged `model-choice/pick` stays, as the session's model.
 - No schema change: the queue lives in memory.
-- Once taken, a steer shows in its turn where it joined. Every input sits at the left edge in the order sent, the latest at the bottom. Once an input scrolls up past the top of the transcript, a copy stays there until the next input pushes it out; the transcript checks row positions before each frame, as OpenTUI has no scroll event. Replies, tools and notices sit three columns in. A stopped turn ends in a bold red "Stopped" with no glyph.
+- Once taken, a steer shows in its turn where it joined. Every input sits at the left edge in the order sent, the latest at the bottom. Once an input scrolls up past the top of the transcript, a copy stays there until the next input pushes it out; the transcript checks row positions before each frame, as OpenTUI has no scroll event. Replies, tools and notices sit three columns in.
 
 ### 7b code
 
@@ -1230,20 +1230,45 @@ Every closed turn ends in one line: a square, how it ended, then the model and h
 - A running turn has no line; it shows once `loop/turn-end` is saved.
 - A turn whose start lies before the loaded events shows no time; a turn that ended before any model call shows no model.
 - Times read `14s`, `2m 05s`, `1h 02m`.
-- Open: whether a failed turn, which already ends in its error notice, also gets a line; whether a turn a crash left unfinished (`interrupted`) gets `■ Interrupted · model` with no time, or nothing.
+- A failed turn gets no line: its error notice already ends it. A turn a crash left unfinished ends in `■ Interrupted · model` in quiet colours with no time, as its time would count the crash.
 
 ### 7c code
 
 ```text
 packages/plugins/chat/src/view/index.ts  Building gains startedAt and model; turn-start sets startedAt,
                                          step-start sets model; the "stopped" item becomes
-                                         { kind: "end", id, ending: "done" | "stopped", model?, millis? };
+                                         { kind: "end", id, ending: "done" | "stopped" | "interrupted",
+                                         model, ran: Duration };
                                          addEvent splits out the loop/turn and step events to stay under
                                          the complexity limit
 packages/plugins/chat/src/tui/TurnEnd.tsx  the line, copied from the gallery; elapsedOf(millis)
 packages/plugins/chat/src/tui/Turn.tsx   ItemBody draws "end" with TurnEnd; Stopped goes
 packages/plugins/chat/README.md          buildTranscript's items: a turn's end
 docs/usage/cli.md                        each turn ends with how it ended, the model and the time
+```
+
+### 7d smooth streaming
+
+Providers send text in bursts, so an ink head set to the received length jumps a burst at a time and the end of a reply snaps to full color. The gallery's sample looks smooth because `useStream` moves its head on a clock. Pi, OpenCode and Crush show text as it arrives, with no pacing.
+
+- A shown head moves on every frame toward the received length: 200 cells a second when caught up, faster the further behind (backlog over 0.5 s), so it trails by about half a second at most.
+- When the stream ends, the head writes out the rest and warms it up, then the reply settles into Markdown.
+- The fade is 24 cells, eased slow at both ends (smoothstep).
+- A reply keeps one id while it streams and once saved: the latest step's seq and the text part's place among that step's text parts. The TUI keeps one `Reply` across the save, so the ink finishes instead of snapping.
+- Tool inputs on work rows use the same head.
+
+### 7d code
+
+```text
+packages/tui/src/kit/Ink.tsx               useInkHead(length, isLive): number | undefined (undefined when
+                                           settled), on renderer.requestAnimationFrame; FRESH_CELLS 24;
+                                           warmthAt eased
+packages/plugins/chat/src/view/index.ts    Building gains step; stepWith(step, model); textId(index),
+                                           liveTextId(key), forgetLiveTexts() on retry; reply ids
+                                           `<step>:text:<n>` for saved and live
+packages/plugins/chat/src/tui/Reply.tsx    takes isLive; useInkHead drives splitAt
+packages/plugins/chat/src/tui/Turn.tsx     passes isLive
+packages/plugins/chat/src/tui/WorkRow.tsx  useInkHead for the input
 ```
 
 ## Events in the references

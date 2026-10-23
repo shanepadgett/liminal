@@ -1,6 +1,6 @@
 /**
  * The model's words, drawn as Markdown with its lists, tables and Mermaid diagrams. While they
- * stream, the paragraph being written inks in above the ones that have settled.
+ * stream, the paragraph being written inks in at a steady pace above the ones that have settled.
  */
 
 import { Match, Show, Switch } from "solid-js";
@@ -36,10 +36,15 @@ function Markdown(props: { readonly text: string; readonly isStreaming: boolean 
 
 export function Reply(props: {
   readonly text: string;
-  /** How many characters have streamed in; all of them, settled, when left out. */
-  readonly streamed?: number | undefined;
+  /** Whether it is streaming in now; a reply that never was shows settled. */
+  readonly isLive: boolean;
 }) {
-  const split = () => splitAt(props.text, props.streamed ?? Number.POSITIVE_INFINITY);
+  const head = kit.useInkHead(
+    () => props.text.length,
+    () => props.isLive,
+  );
+
+  const split = () => splitAt(props.text, head() ?? Number.POSITIVE_INFINITY);
 
   const markdown = () => {
     const current = split();
@@ -56,7 +61,7 @@ export function Reply(props: {
   return (
     <Switch>
       <Match when={markdown()}>
-        {(whole) => <Markdown text={whole().text} isStreaming={props.streamed !== undefined} />}
+        {(whole) => <Markdown text={whole().text} isStreaming={head() !== undefined} />}
       </Match>
       <Match when={inked()}>
         {(live) => (

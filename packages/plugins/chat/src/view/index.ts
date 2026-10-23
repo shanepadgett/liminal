@@ -1,10 +1,10 @@
 /**
- * A session's events as the chat screen shows them: turns of inputs, replies, tool rows and
- * notices. One closed function builds them from `session/*` and `loop/*` events; other plugins'
- * kinds pass through as `event` items for their own renderers. Framework-free, so any frontend can
- * use it.
+ * A session's events as the chat screen shows them: turns of inputs, replies, tool rows, notices
+ * and each turn's last line. One closed function builds them from `session/*` and `loop/*` events;
+ * other plugins' kinds pass through as `event` items for their own renderers. Framework-free, so
+ * any frontend can use it.
  */
-import { Option, Schema } from "effect";
+import { DateTime, type Duration, Option, Schema } from "effect";
 
 import type { SessionView } from "@shanepadgett/liminal-client";
 import {
@@ -31,6 +31,9 @@ export type ToolStatus = "running" | "done" | "failed";
 
 export type NoticeLevel = "info" | "warning" | "error";
 
+/** How a turn ended, as its last line reads; a failed turn ends in its error notice instead. */
+export type Ending = "done" | "stopped" | "interrupted";
+
 export type Item =
   /** An input sent after the one that started the turn, such as a steer. */
   | { readonly kind: "input"; readonly id: string; readonly text: string }
@@ -49,8 +52,17 @@ export type Item =
       readonly level: NoticeLevel;
       readonly text: string;
     }
-  /** The user stopped the turn. */
-  | { readonly kind: "stopped"; readonly id: string }
+  /**
+   * The turn's last line: how it ended, the model of its latest step, and how long it ran. Either
+   * is missing when it is unknown; an interrupted turn has no time, as a crash ended it.
+   */
+  | {
+      readonly kind: "end";
+      readonly id: string;
+      readonly ending: Ending;
+      readonly model: string | undefined;
+      readonly ran: Duration.Duration | undefined;
+    }
   /** Another plugin's event, drawn by the renderer it adds for its kind. */
   | { readonly kind: "event"; readonly id: string; readonly event: SessionEvent };
 
@@ -67,6 +79,11 @@ const decoded = <T>(kind: EventKind<T>, item: Delta): Option.Option<T> =>
 
 interface Building {
   readonly id: string;
+  /** When its `loop/turn-start` was saved; missing when that lies before the events loaded. */
+  readonly startedAt: DateTime.Utc | undefined;
+  /** Its latest step: the seq of that step's `loop/step-start`, and the model it runs. */
+  step: string | undefined;
+  model: string | undefined;
   input: string | undefined;
   /** By id; setting an id seen before replaces the item in place. */
   readonly items: Map<string, Item>;
@@ -90,8 +107,16 @@ export const draftTextOf = (input: NewEvent): Option.Option<string> =>
 const makeBuilder = () => {
   const turns: Building[] = [];
 
-  const start = (id: string) => {
-    const turn: Building = { id, input: undefined, items: new Map() };
+  const start = (id: string, startedAt?: DateTime.Utc) => {
+    const turn: Building = {
+      id,
+      startedAt,
+      step: undefined,
+      model: undefined,
+      input: undefined,
+      items: new Map(),
+    };
+
     turns.push(turn);
 
     return turn;
@@ -105,10 +130,38 @@ const makeBuilder = () => {
 
   const items = () => current().items;
 
+  /** The current turn's latest step is `step`, and it runs `model`. */
+  const stepWith = (step: string, model: string) => {
+    const turn = current();
+    turn.step = step;
+    turn.model = model;
+  };
+
+  /**
+   * The id of the latest step's text part at `index`, among its text parts: the same while it
+   * streams and once saved, so a frontend keeps drawing one reply.
+   */
+  const textId = (index: number) => `${current().step ?? current().id}:text:${index}`;
+
+  // The keys of the text parts streaming now, in the order they began.
+  const liveTexts: string[] = [];
+
+  /** The id of the streaming text part `key`. */
+  const liveTextId = (key: string) => {
+    if (!liveTexts.includes(key)) liveTexts.push(key);
+
+    return textId(liveTexts.indexOf(key));
+  };
+
+  /** Forgets the text parts streamed so far, as a retry voids them. */
+  const forgetLiveTexts = () => {
+    liveTexts.length = 0;
+  };
+
   const built = (): ReadonlyArray<Turn> =>
     turns.map(({ id, input, items: each }) => ({ id, input, items: [...each.values()] }));
 
-  return { start, current, put, items, built };
+  return { start, current, put, items, stepWith, textId, liveTextId, forgetLiveTexts, built };
 };
 
 type Builder = ReturnType<typeof makeBuilder>;
@@ -122,10 +175,16 @@ const addInput = (builder: Builder, event: SessionEvent, message: Message) => {
 };
 
 /** Each text part a reply, each tool call a running row. */
-const addReply = (builder: Builder, event: SessionEvent, message: Message) => {
-  for (const [index, part] of message.parts.entries()) {
-    if (part.type === "text" && part.text.trim() !== "") {
-      builder.put({ kind: "reply", id: `${event.seq}:${index}`, text: part.text, isLive: false });
+const addReply = (builder: Builder, message: Message) => {
+  let texts = 0;
+
+  for (const part of message.parts) {
+    if (part.type === "text") {
+      const id = builder.textId(texts);
+      texts += 1;
+
+      if (part.text.trim() !== "")
+        builder.put({ kind: "reply", id, text: part.text, isLive: false });
     }
 
     if (part.type === "tool-call") {
@@ -153,7 +212,7 @@ const addMessage = (builder: Builder, event: SessionEvent, message: Message) => 
   }
 
   if (message.role === "assistant") {
-    addReply(builder, event, message);
+    addReply(builder, message);
 
     return;
   }
@@ -161,24 +220,66 @@ const addMessage = (builder: Builder, event: SessionEvent, message: Message) => 
   for (const part of message.parts) if (part.type === "tool-result") addResult(builder, part);
 };
 
-/** A turn that ended leaves no row running: a call without a result stopped with it. */
-const endTurn = (builder: Builder, event: SessionEvent, outcome: string) => {
+type Outcome = (typeof TurnEnded.schema.Type)["outcome"];
+
+const ENDINGS: Readonly<Record<Outcome, Ending | undefined>> = {
+  answered: "done",
+  cancelled: "stopped",
+  interrupted: "interrupted",
+  failed: undefined,
+};
+
+/**
+ * A turn that ended leaves no row running: a call without a result stopped with it. Then its last
+ * line, unless it failed.
+ */
+const endTurn = (builder: Builder, event: SessionEvent, outcome: Outcome) => {
   for (const item of builder.items().values()) {
     if (item.kind === "tool" && item.status === "running")
       builder.put({ ...item, status: "failed" });
   }
 
-  if (outcome === "cancelled") {
-    builder.put({ kind: "stopped", id: String(event.seq) });
+  const ending = ENDINGS[outcome];
+
+  if (ending === undefined) return;
+
+  const { startedAt, model } = builder.current();
+
+  const ran =
+    ending === "interrupted" || startedAt === undefined
+      ? undefined
+      : DateTime.distance(startedAt, event.at);
+
+  builder.put({ kind: "end", id: String(event.seq), ending, model, ran });
+};
+
+/** The `loop/*` events that open a turn, name its model and close it; whether `event` is one. */
+const addTurnEvent = (builder: Builder, event: SessionEvent): boolean => {
+  if (Option.isSome(decoded(TurnStarted, event))) {
+    builder.start(String(event.seq), event.at);
+
+    return true;
   }
+
+  const step = decoded(StepStarted, event);
+
+  if (Option.isSome(step)) {
+    builder.stepWith(String(event.seq), step.value.model);
+
+    return true;
+  }
+
+  const ended = decoded(TurnEnded, event);
+
+  if (Option.isNone(ended)) return false;
+
+  endTurn(builder, event, ended.value.outcome);
+
+  return true;
 };
 
 const addEvent = (builder: Builder, event: SessionEvent, drawn: ReadonlySet<string>) => {
-  if (Option.isSome(decoded(TurnStarted, event))) {
-    builder.start(String(event.seq));
-
-    return;
-  }
+  if (addTurnEvent(builder, event)) return;
 
   const message = decoded(MessageEvent, event).pipe(
     Option.orElse(() => Option.map(decoded(Interrupted, event), (data) => data.message)),
@@ -198,14 +299,6 @@ const addEvent = (builder: Builder, event: SessionEvent, drawn: ReadonlySet<stri
     return;
   }
 
-  const ended = decoded(TurnEnded, event);
-
-  if (Option.isSome(ended)) {
-    endTurn(builder, event, ended.value.outcome);
-
-    return;
-  }
-
   if (drawn.has(event.kind)) builder.put({ kind: "event", id: String(event.seq), event });
 };
 
@@ -214,6 +307,8 @@ const retry = (builder: Builder, data: { readonly message: string; readonly atte
   for (const item of builder.items().values()) {
     if ("isLive" in item && item.isLive) builder.items().delete(item.id);
   }
+
+  builder.forgetLiveTexts();
 
   const text = `${data.message} Trying again, attempt ${data.attempt}.`;
   builder.put({ kind: "notice", id: "retry", level: "warning", text });
@@ -235,7 +330,7 @@ const addReplyDelta = (builder: Builder, data: typeof ReplyDelta.schema.Type) =>
 
   if (data.type === "reasoning") return;
 
-  const id = `live:${data.key}`;
+  const id = builder.liveTextId(data.key);
   const live = builder.items().get(id);
   const before = live?.kind === "reply" ? live.text : "";
 

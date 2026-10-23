@@ -1,15 +1,13 @@
 /**
  * One turn: what the user sent, on its own raised band, then everything the reply did, indented.
  * Inputs that join the turn later, such as steers, sit at the left edge as the first does, and each
- * input sticks to the top of the transcript once scrolled past. A stop reads in bold red. Tool rows
- * stack without space between them; every other item has a blank line above it.
+ * input sticks to the top of the transcript once scrolled past. A closed turn ends in a line that
+ * says how it ended. Tool rows stack without space between them; every other item has a blank line
+ * above it.
  */
 
-import { TextAttributes } from "@opentui/core";
 import { Dynamic } from "@opentui/solid";
 import { For, Match, Show, Switch } from "solid-js";
-
-import { useColor } from "@shanepadgett/liminal-tui";
 
 import type { Item, Turn as TurnData } from "../view/index.ts";
 import { Notice } from "./Notice.tsx";
@@ -17,6 +15,7 @@ import { Prompt } from "./Prompt.tsx";
 import { Reply } from "./Reply.tsx";
 import type { ItemView } from "./slots.ts";
 import { StickyRow } from "./sticky.tsx";
+import { TurnEnd } from "./TurnEnd.tsx";
 import { WorkRow } from "./WorkRow.tsx";
 
 /** Each event kind another plugin draws, and its component. */
@@ -31,17 +30,6 @@ const isKind = <K extends Item["kind"]>(item: Item, kind: K): item is ItemOf<K> 
 const asKind = <K extends Item["kind"]>(item: Item, kind: K): ItemOf<K> | undefined =>
   isKind(item, kind) ? item : undefined;
 
-/** The user stopped the turn. */
-function Stopped() {
-  const color = useColor();
-
-  return (
-    <text flexShrink={0} fg={color("feedback.danger")} attributes={TextAttributes.BOLD}>
-      Stopped
-    </text>
-  );
-}
-
 function ItemBody(props: { readonly item: Item; readonly renderers: Renderers }) {
   return (
     <Switch>
@@ -53,16 +41,14 @@ function ItemBody(props: { readonly item: Item; readonly renderers: Renderers })
         )}
       </Match>
       <Match when={asKind(props.item, "reply")}>
-        {(reply) => (
-          <Reply text={reply().text} streamed={reply().isLive ? reply().text.length : undefined} />
-        )}
+        {(reply) => <Reply text={reply().text} isLive={reply().isLive} />}
       </Match>
       <Match when={asKind(props.item, "tool")}>{(tool) => <WorkRow item={tool()} />}</Match>
       <Match when={asKind(props.item, "notice")}>
         {(notice) => <Notice level={notice().level} text={notice().text} />}
       </Match>
-      <Match when={asKind(props.item, "stopped")}>
-        <Stopped />
+      <Match when={asKind(props.item, "end")}>
+        {(end) => <TurnEnd ending={end().ending} model={end().model} ran={end().ran} />}
       </Match>
       <Match when={asKind(props.item, "event")}>
         {(event) => (
