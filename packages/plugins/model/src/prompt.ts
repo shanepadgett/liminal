@@ -1,7 +1,7 @@
 /** Liminal's messages and tools as Effect AI's prompt and toolkit, and its parts back as deltas. */
 import { type Prompt, Response, Tool, Toolkit } from "effect/ai";
 
-import type { Message, ModelRequest, Part, ToolDefinition } from "./contract.ts";
+import type { Image, Message, ModelRequest, Part, ToolDefinition, ToolResult } from "./contract.ts";
 
 const userParts = (parts: ReadonlyArray<Part>) =>
   parts.flatMap((part): ReadonlyArray<Prompt.UserMessagePartEncoded> => {
@@ -28,7 +28,26 @@ const assistantParts = (parts: ReadonlyArray<Part>) =>
     return [];
   });
 
-const toolParts = (parts: ReadonlyArray<Part>) =>
+const imagesOf = (result: ToolResult) =>
+  result.content.flatMap((part) => (part.type === "image" ? [part] : []));
+
+/**
+ * A result's text parts as one string, as every wire takes a result; its images are named, as they
+ * follow the run of results or are left out.
+ */
+const resultText = (result: ToolResult, images: boolean) => {
+  const texts = result.content.flatMap((part) => (part.type === "text" ? [part.text] : []));
+  const count = imagesOf(result).length;
+  if (count === 0) return texts.join("\n");
+
+  const note = images
+    ? `[${count} image(s) attached after the tool results]`
+    : `[${count} image(s) left out: this model does not take images]`;
+
+  return [...texts, note].join("\n");
+};
+
+const toolParts = (parts: ReadonlyArray<Part>, images: boolean) =>
   parts.flatMap((part): ReadonlyArray<Prompt.ToolMessagePartEncoded> =>
     part.type === "tool-result"
       ? [
@@ -37,23 +56,61 @@ const toolParts = (parts: ReadonlyArray<Part>) =>
             id: part.callId,
             name: part.name,
             isFailure: part.isFailure,
-            result: part.result,
+            result: resultText(part, images),
           },
         ]
       : [],
   );
 
-const messageOf = ({ role, parts }: Message): Prompt.MessageEncoded => {
+const messageOf = ({ role, parts }: Message, images: boolean): Prompt.MessageEncoded => {
   if (role === "user") return { role, content: userParts(parts) };
   if (role === "assistant") return { role, content: assistantParts(parts) };
 
-  return { role, content: toolParts(parts) };
+  return { role, content: toolParts(parts, images) };
 };
 
-/** The system prompt, then each message. */
-export const promptOf = (request: ModelRequest): ReadonlyArray<Prompt.MessageEncoded> => [
+/** The images of the run of tool messages that ends at `end`. */
+const runImages = (messages: ReadonlyArray<Message>, end: number): ReadonlyArray<Image> => {
+  const start = messages.findLastIndex((message, index) => index < end && message.role !== "tool");
+
+  return messages
+    .slice(start + 1, end + 1)
+    .flatMap(({ parts }) =>
+      parts.flatMap((part) => (part.type === "tool-result" ? imagesOf(part) : [])),
+    );
+};
+
+/**
+ * The images of a run of tool results as one user message after the run: the wires take a result
+ * only as a string, and Chat Completions takes no user message between tool messages.
+ */
+const imagesAfter = (
+  messages: ReadonlyArray<Message>,
+  index: number,
+): ReadonlyArray<Prompt.MessageEncoded> => {
+  if (messages[index]?.role !== "tool" || messages[index + 1]?.role === "tool") return [];
+
+  const images = runImages(messages, index);
+  if (images.length === 0) return [];
+
+  const label: Part = { type: "text", text: "Images from the tool results above:" };
+
+  return [{ role: "user", content: userParts([label, ...images]) }];
+};
+
+/**
+ * The system prompt, then each message; tool results' images follow their run, or are left out when
+ * the model takes none.
+ */
+export const promptOf = (
+  request: ModelRequest,
+  images: boolean,
+): ReadonlyArray<Prompt.MessageEncoded> => [
   ...(request.system === "" ? [] : [{ role: "system" as const, content: request.system }]),
-  ...request.messages.map(messageOf),
+  ...request.messages.flatMap((message, index) => [
+    messageOf(message, images),
+    ...(images ? imagesAfter(request.messages, index) : []),
+  ]),
 ];
 
 /** The tools as Effect AI tools with JSON Schema params; nothing runs them here. */

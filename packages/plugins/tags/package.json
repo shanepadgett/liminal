@@ -19,6 +19,7 @@
     "@shanepadgett/liminal-loop": "workspace:*",
     "@shanepadgett/liminal-model": "workspace:*",
     "@shanepadgett/liminal-session": "workspace:*",
+    "@shanepadgett/liminal-tools-files": "workspace:*",
     "@shanepadgett/liminal-tui": "workspace:*",
     "effect": "*"
   },

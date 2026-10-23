@@ -7,14 +7,12 @@ import { Effect, FileSystem, Option, Path, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import { Directories } from "@shanepadgett/liminal-directories/contract";
+import { entriesOf, isBinary, pageOf } from "@shanepadgett/liminal-tools-files/contract";
 
-import { type TagRow, type TagSource, windowOf } from "./contract.ts";
+import type { TagRow, TagSource } from "./contract.ts";
 
 /** How many entries a folder tag lists. */
 const MAX_ENTRIES = 200;
-
-/** Git calls a file binary when its first 8 KB hold a NUL byte. */
-const BINARY_PROBE_BYTES = 8000;
 
 const GIT_FILES = ["ls-files", "--cached", "--others", "--exclude-standard", "-z"];
 
@@ -32,8 +30,6 @@ const foldersOf = (files: ReadonlyArray<string>) => {
 
   return [...folders];
 };
-
-const isBinary = (bytes: Uint8Array) => bytes.subarray(0, BINARY_PROBE_BYTES).includes(0);
 
 export const workspaceSource = Effect.gen(function* () {
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
@@ -62,20 +58,10 @@ export const workspaceSource = Effect.gen(function* () {
     ...listed.map((tag) => ({ kind: "file" as const, tag })),
   ]);
 
-  /** The entry's name, with `/` after a folder's. */
-  const entryOf = (folder: string, entry: string) =>
-    Effect.map(Effect.option(files.stat(path.join(folder, entry))), (info) =>
-      Option.exists(info, ({ type }) => type === "Directory") ? `${entry}/` : entry,
-    );
-
   const folderText = (target: string, name: string) =>
     Effect.gen(function* () {
-      const entries = (yield* files.readDirectory(target)).toSorted();
-
-      const shown = yield* Effect.forEach(entries.slice(0, MAX_ENTRIES), (entry) =>
-        entryOf(target, entry),
-      );
-
+      const entries = yield* entriesOf(files, path, target);
+      const shown = entries.slice(0, MAX_ENTRIES);
       const more = entries.length - shown.length;
       const lines = more > 0 ? [...shown, `[and ${more} more]`] : shown;
 
@@ -87,7 +73,9 @@ export const workspaceSource = Effect.gen(function* () {
       const bytes = yield* files.readFile(target);
       if (isBinary(bytes)) return `<file name="${name}">binary file, not shown</file>`;
 
-      return `<file name="${name}">\n${windowOf(new TextDecoder().decode(bytes))}\n</file>`;
+      const page = Option.getOrElse(pageOf(new TextDecoder().decode(bytes)), () => "");
+
+      return `<file name="${name}">\n${page}\n</file>`;
     }).pipe(Effect.orElseSucceed(() => `<file name="${name}">could not be read</file>`));
 
   const attach = (tag: string) =>

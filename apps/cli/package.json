@@ -38,7 +38,9 @@
     "@shanepadgett/liminal-tags": "workspace:*",
     "@shanepadgett/liminal-theme": "workspace:*",
     "@shanepadgett/liminal-tool-definitions": "workspace:*",
+    "@shanepadgett/liminal-tool-output": "workspace:*",
     "@shanepadgett/liminal-tools": "workspace:*",
+    "@shanepadgett/liminal-tools-files": "workspace:*",
     "@shanepadgett/liminal-tui": "workspace:*",
     "effect": "4.0.5"
   }

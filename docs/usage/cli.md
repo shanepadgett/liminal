@@ -77,7 +77,7 @@ Type `@` at the start of the draft or after a space to list the workspace's file
 
 A tag is one unit: the cursor steps over it, and Backspace removes it whole. Write a path with spaces as `@"my file.txt"`.
 
-When you send, each tagged file's text goes with the message: the first 2000 lines or 50 KB, with a note when more is left out. A folder sends the names one level down, up to 200. A binary file or one that cannot be read sends a short note instead. The transcript shows only what you wrote. Print mode reads tags the same way:
+When you send, each tagged file's text goes with the message as the model's `read` tool shows it: numbered lines, the first 2000 lines or 50 KB, with a note when more is left out. A folder sends the names one level down, up to 200. A binary file or one that cannot be read sends a short note instead. The transcript shows only what you wrote. Print mode reads tags the same way:
 
 ```sh
 liminal -p "Summarize @README.md"
@@ -193,3 +193,9 @@ Liminal reads `AGENTS.md` files only when you turn them on:
 It then reads `~/.agents/AGENTS.md`, `~/.liminal/AGENTS.md`, and each `AGENTS.md` from the repository root down to the folder you run Liminal in.
 
 Changes to these files reach the model before its next call.
+
+## What the model can do
+
+The model reads files and folders with its `read` tool, by a path relative to the folder you run Liminal in or an absolute one. It reads text in pages of up to 2,000 lines, and sees PNG, JPEG, GIF and WebP images when the model takes images.
+
+When a tool's output is over 2,000 lines or 50 KB, the model gets the first and last parts, and the whole output is saved in `~/.liminal/tool-output/`, readable only by you. Saved output is removed after 7 days.

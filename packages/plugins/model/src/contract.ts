@@ -49,7 +49,8 @@ export const ToolResult = Schema.Struct({
   type: Schema.Literal("tool-result"),
   callId: Schema.String,
   name: Schema.String,
-  result: Schema.Json,
+  /** What the model reads; a failure is one text part. */
+  content: Schema.Array(Schema.Union([Text, Image])),
   isFailure: Schema.Boolean,
   /** Deferred tools this result loads, by name. */
   loads: Schema.optionalKey(Schema.Array(Schema.String)),

@@ -55,25 +55,3 @@ export const tagsIn = (text: string): ReadonlyArray<string> => {
 
   return [...new Set(tags.filter((tag) => tag !== ""))];
 };
-
-const MAX_LINES = 2000;
-
-const MAX_BYTES = 50 * 1024;
-
-/** The start of `content`: at most 2000 lines and 50 KB, with a note when it cuts any. */
-export const windowOf = (content: string): string => {
-  const lines = content.split("\n");
-  const encoder = new TextEncoder();
-  const kept: string[] = [];
-  let bytes = 0;
-
-  for (const line of lines.slice(0, MAX_LINES)) {
-    bytes += encoder.encode(line).length + 1;
-    if (bytes > MAX_BYTES) break;
-    kept.push(line);
-  }
-
-  if (kept.length === lines.length) return content;
-
-  return [...kept, `[first ${kept.length} of ${lines.length} lines shown]`].join("\n");
-};

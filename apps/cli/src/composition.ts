@@ -33,7 +33,9 @@ import systemPrompt from "@shanepadgett/liminal-system-prompt";
 import tags from "@shanepadgett/liminal-tags";
 import theme from "@shanepadgett/liminal-theme";
 import toolDefinitions from "@shanepadgett/liminal-tool-definitions";
+import toolOutput from "@shanepadgett/liminal-tool-output";
 import tools from "@shanepadgett/liminal-tools";
+import toolsFiles from "@shanepadgett/liminal-tools-files";
 
 /** Bun's files, paths, crypto, HTTP and child processes for the plugins that ask for them. */
 const runtime = definePlugin({
@@ -64,6 +66,8 @@ export const plugins = [
   modelOpenrouter,
   modelOpencodeGo,
   tools,
+  toolsFiles,
+  toolOutput,
   history,
   systemPrompt,
   persona,

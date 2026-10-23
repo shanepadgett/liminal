@@ -56,7 +56,9 @@
         "@shanepadgett/liminal-tags": "workspace:*",
         "@shanepadgett/liminal-theme": "workspace:*",
         "@shanepadgett/liminal-tool-definitions": "workspace:*",
+        "@shanepadgett/liminal-tool-output": "workspace:*",
         "@shanepadgett/liminal-tools": "workspace:*",
+        "@shanepadgett/liminal-tools-files": "workspace:*",
         "@shanepadgett/liminal-tui": "workspace:*",
         "effect": "4.0.5",
       },
@@ -414,6 +416,7 @@
         "@shanepadgett/liminal-loop": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-tools-files": "workspace:*",
         "@shanepadgett/liminal-tui": "workspace:*",
         "effect": "*",
       },
@@ -443,6 +446,18 @@
         "effect": "*",
       },
     },
+    "packages/plugins/tool-output": {
+      "name": "@shanepadgett/liminal-tool-output",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-tools": "workspace:*",
+        "effect": "*",
+      },
+    },
     "packages/plugins/tools": {
       "name": "@shanepadgett/liminal-tools",
       "version": "0.1.0",
@@ -450,6 +465,16 @@
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-session": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/tools-files": {
+      "name": "@shanepadgett/liminal-tools-files",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-tools": "workspace:*",
         "effect": "*",
       },
     },
@@ -781,7 +806,11 @@
 
     "@shanepadgett/liminal-tool-definitions": ["@shanepadgett/liminal-tool-definitions@workspace:packages/plugins/tool-definitions"],
 
+    "@shanepadgett/liminal-tool-output": ["@shanepadgett/liminal-tool-output@workspace:packages/plugins/tool-output"],
+
     "@shanepadgett/liminal-tools": ["@shanepadgett/liminal-tools@workspace:packages/plugins/tools"],
+
+    "@shanepadgett/liminal-tools-files": ["@shanepadgett/liminal-tools-files@workspace:packages/plugins/tools-files"],
 
     "@shanepadgett/liminal-tui": ["@shanepadgett/liminal-tui@workspace:packages/tui"],
 

@@ -19,7 +19,7 @@ export const standIn = (call: ToolCall, reason: string): ToolResult => ({
   type: "tool-result",
   callId: call.id,
   name: call.name,
-  result: reason,
+  content: [{ type: "text", text: reason }],
   isFailure: true,
 });
 

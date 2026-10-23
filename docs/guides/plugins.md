@@ -148,11 +148,14 @@ const add = defineTool({
   name: "add",
   description: "Adds two numbers.",
   input: Schema.Struct({ a: Schema.Finite, b: Schema.Finite }),
-  run: ({ a, b }) => Effect.succeed({ result: a + b }),
+  run: ({ a, b }) => Effect.succeed({ content: [{ type: "text", text: String(a + b) }] }),
 });
 
 yield* (yield* Tools).add(add);
 ```
+
+- A result's `content` holds text and image parts. The model reads the text as the result; images reach models that take them.
+- With `tool-output` composed, text over 2,000 lines or 50 KB is cut to its first and last halves, and the whole text is saved to a file the model can `read`. Page long output yourself, as `read` does, to keep it whole.
 
 - Fail with `ToolFailed` for a failure the model should read; a crash also reaches the model as a failed result.
 - Every call goes through the `ToolCall` pipeline; wrap it to see or change each call.

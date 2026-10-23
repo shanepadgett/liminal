@@ -67,7 +67,7 @@ const attempt = (
       }),
       (language) => {
         const options = {
-          prompt: promptOf(request),
+          prompt: promptOf(request, details?.images !== false),
           toolkit: toolkitOf(request.tools),
           toolChoice: request.toolChoice ?? "auto",
           disableToolCallResolution: true,
