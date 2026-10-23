@@ -12,11 +12,11 @@ What we are building, in order. Each milestone groups the work that ships togeth
 
 ## Current focus
 
-Milestone 3. The stack is settled in [architecture.md](architecture.md#stack).
+Milestone 3, step 7: `tools-web`. The stack is settled in [architecture.md](architecture.md#stack).
 
 ## Next
 
-1. Plan milestone 3 from [plugins/coding.md](plugins/coding.md) in rounds, in `plans/coding.md`. The gallery's approval and question designs are in [plans/_archive/gallery.md](plans/_archive/gallery.md) and `apps/gallery`. Earlier plans: [plans/_archive/base.md](plans/_archive/base.md) for milestone 1, [plans/_archive/tui.md](plans/_archive/tui.md) for milestone 2.
+1. Plan `tools-web` part 2, hosted web search, in [plans/coding-web.md](plans/coding-web.md). Milestone 3's overview and step plans: [plans/coding.md](plans/coding.md). Earlier plans: [plans/_archive/base.md](plans/_archive/base.md) for milestone 1, [plans/_archive/tui.md](plans/_archive/tui.md) for milestone 2, [plans/_archive/gallery.md](plans/_archive/gallery.md) for the gallery's designs.
 2. Built: `packages/core` (`definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`), `directories`, `settings`, `sqlite`, `session`, `model` with classifiers over Effect AI's `Decision`, `model-wire` with Anthropic Messages, OpenAI Responses, Chat Completions and OpenAI Decisions, `accounts` with API keys, command credentials, OAuth tokens, logins grouped by vendor, the sign-in RPC and logout, `model-anthropic` with its API key and Claude subscription logins and `ANTHROPIC_API_KEY` as fallback, `model-openai` with `openai` (API key, `OPENAI_API_KEY` as fallback, GPT-6 Luna as classifier), `chatgpt` (Sign in with ChatGPT) and `codex` (Codex login), `model-openrouter` (API key, `OPENROUTER_API_KEY` as fallback, Jev as classifier), `model-opencode-go` (API key, `OPENCODE_API_KEY` as fallback, each model on the wire the catalog names), `model-catalog` providing `model`'s `ModelCatalog` from models.dev, `tools`, `history`, `system-prompt`, `persona`, `tool-definitions`, `loop`, `packages/client` with the in-memory `Host`, and `apps/cli` with `liminal -p`, which reads piped stdin, writes JSON lines with `--json` and sets exit codes, `liminal connect` and `liminal logout`. A host composes a plugin of its own that provides Effect's runtime services, such as `Path`, `FileSystem` and `HttpClient`. Milestone 2 added the session view in `packages/client`, `packages/tui` with its UI kit, `theme`, `chat`, `tags`, `stash`, `slash`, `palette`, `session-picker`, `model-choice`, `model-favorites`, and `/connect` in the `accounts` `tui` entry.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
@@ -55,14 +55,14 @@ Work: [plugins/coding.md](plugins/coding.md)
 - [x] `read`, `tool-output`; tool results hold text and image parts
 - [x] `tools-shell`; `ToolContext.progress`
 - [x] `tools-processes`
-- [ ] `tools-web`
+- [x] `tools-web`: `websearch` with Exa, `webfetch`; `ToolContext.model`
+- [ ] Hosted web search: `web-search-anthropic`, `web-search-openai`
 - [x] `tools-read`, `tools-edit`, `tools-write`; diffs in chat
 - [x] `instructions`, `environment`
 - [x] Recreate `.liminal/`; move `docs/instructions/` to `.liminal/instructions/` with `read-when` front matter
 - [x] `questions`
 - [x] `approvals`; `Tool.access`; `generateObject` with tools
 - [ ] Liminal works on its own repository
-- [ ] Settle the database schema: after this, a schema change adds a migration, and the one-migration rule in `.liminal/instructions/code.md` is removed
 
 ### 4. Cost and naming
 
@@ -108,6 +108,7 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 
 ## Later
 
+- Settle the database schema once Liminal is a stable agent. Until then saved sessions are test data: each database keeps one migration and a schema change resets `~/.liminal/liminal.db`. After that, a schema change adds a migration, and the one-migration rule in `.liminal/instructions/code.md` is removed.
 - Instruction files that run shell commands and put the output in the text when the prompt is built, so a file can carry live project facts.
 - MCP servers as a source of tools, connecting and disconnecting mid-session.
 - Image resizing and PDFs in `read`.
@@ -121,6 +122,7 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 - Telling the model when a `tools-processes` process exits on its own, without a `process_output` call, as OpenCode notifies on a background command's exit.
 - A cap on how many `tools-processes` processes run at once.
 - A live diff in the `edit` row while the call's params stream, as DeepSeek draws one from the params.
+- An Exa API key through `accounts` for `websearch`, past Exa's free limit.
 - A read-before-edit check, as Crush has: `edit` and `write` refuse a file the model has not read, or one changed since it read it.
 - Which input attributes `loop` copies onto a turn's events: it copies them all, so a message-only attribute such as `loop/added` also lands on the reply and step events. Revisit with `actors`.
 

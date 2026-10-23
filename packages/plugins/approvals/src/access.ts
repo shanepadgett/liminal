@@ -43,7 +43,7 @@ export const makeRequestAccess = (deps: Judge, questions: Questions["Service"]) 
   const { folders, workspace, log } = deps;
 
   const run = Effect.fn("Approvals.requestAccess")(function* (input: Input, context: ToolContext) {
-    const { session, callId, attributes } = context;
+    const { session, callId, attributes, model } = context;
     const path = yield* folders.resolve(workspace, input.path);
     const access = input.write ? "write" : "read";
     const folder = { path, access } as const;
@@ -63,7 +63,9 @@ export const makeRequestAccess = (deps: Judge, questions: Questions["Service"]) 
     const call = { id: callId, tool: requestAccessName, params: { path, write: input.write } };
     const state = stateOf(events, call, { workspace, folders: yield* folders.list(session) });
 
-    const judgement = yield* judge(deps, { session, callId, attributes, events, state }, (found) =>
+    const reviewed = { session, callId, attributes, model, events, state };
+
+    const judgement = yield* judge(deps, reviewed, (found) =>
       accessQuestion
         .ask(
           { session, callId },

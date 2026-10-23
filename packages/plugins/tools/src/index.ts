@@ -27,6 +27,7 @@ const contextOf = (log: SessionLog["Service"], request: ToolCallRequest): ToolCo
   session: request.session,
   callId: request.call.id,
   attributes: request.attributes,
+  model: request.model,
   progress: (data) =>
     Effect.flatMap(ToolProgress.make({ callId: request.call.id, data }), (delta) =>
       log.publish(request.session, delta),

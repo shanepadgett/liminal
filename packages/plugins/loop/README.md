@@ -1,6 +1,6 @@
 # @shanepadgett/liminal-loop
 
-Runs turns: an input starts one, the model is called, the tools it asks for run, and the model is called again until it answers without tool calls.
+Runs turns: an input starts one, the model is called, the tools it asks for run, and the model is called again until it answers without tool calls. Each call goes through `ToolCall` with the model of the step that asked for it.
 
 - `Inbox.send(session, input, mode?)`: logs the input and starts a turn when the session is idle. During a turn the input waits in memory: a `steer` (the default) joins before the next model call, a `follow-up` waits until the turn would end.
 - `Inbox.cancel(session)`: stops the running turn and returns the inputs that were waiting.

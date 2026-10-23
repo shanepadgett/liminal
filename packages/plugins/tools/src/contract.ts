@@ -5,6 +5,7 @@ import { Tool as AiTool } from "effect/ai";
 import { type Attributes, Pipeline, Registry } from "@shanepadgett/liminal-core";
 import type {
   Image,
+  ModelId,
   Text,
   ToolCall as ToolCallPart,
   ToolResult,
@@ -17,6 +18,8 @@ export interface ToolContext {
   readonly callId: string;
   /** The attributes of the latest input the turn consumed, such as who sent it. */
   readonly attributes: Attributes;
+  /** The model the step that asked for this call runs, as `provider/model`. */
+  readonly model: ModelId;
   /**
    * Shows the call's progress while it runs. Not saved; a frontend draws only the latest, so `data`
    * holds the whole progress so far, not what changed.
@@ -84,6 +87,8 @@ export interface ToolCallRequest {
   readonly session: SessionId;
   readonly call: ToolCallPart;
   readonly attributes: Attributes;
+  /** The model the step that asked for this call runs. */
+  readonly model: ModelId;
 }
 
 /** Every tool call; a failure, unknown tool or crash comes back as a failed result. */

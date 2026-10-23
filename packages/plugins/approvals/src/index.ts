@@ -58,12 +58,14 @@ const layer = Layer.effectDiscard(
 
     /** Runs the classifier, reviewer and user on a call that runs things. */
     const judgeRun = Effect.fn("Approvals.judgeRun")(function* (request: ToolCallRequest) {
-      const { session, call, attributes } = request;
+      const { session, call, attributes, model } = request;
       const events = yield* deps.log.read(session);
       const where = { workspace, folders: yield* folders.list(session) };
       const state = stateOf(events, { id: call.id, tool: call.name, params: call.params }, where);
 
-      return yield* judge(deps, { session, callId: call.id, attributes, events, state }, (review) =>
+      const reviewed = { session, callId: call.id, attributes, model, events, state };
+
+      return yield* judge(deps, reviewed, (review) =>
         callQuestion
           .ask({ session, callId: call.id }, { tool: call.name, review })
           .pipe(Effect.provideService(Questions, questions)),

@@ -64,6 +64,7 @@
         "@shanepadgett/liminal-tools-processes": "workspace:*",
         "@shanepadgett/liminal-tools-read": "workspace:*",
         "@shanepadgett/liminal-tools-shell": "workspace:*",
+        "@shanepadgett/liminal-tools-web": "workspace:*",
         "@shanepadgett/liminal-tools-write": "workspace:*",
         "@shanepadgett/liminal-tui": "workspace:*",
         "effect": "4.0.5",
@@ -577,6 +578,20 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/tools-web": {
+      "name": "@shanepadgett/liminal-tools-web",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@opentui/solid": "0.6.6",
+        "@shanepadgett/liminal-chat": "workspace:*",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-tools": "workspace:*",
+        "@shanepadgett/liminal-tui": "workspace:*",
+        "effect": "*",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/tools-write": {
       "name": "@shanepadgett/liminal-tools-write",
       "version": "0.1.0",
@@ -935,6 +950,8 @@
     "@shanepadgett/liminal-tools-read": ["@shanepadgett/liminal-tools-read@workspace:packages/plugins/tools-read"],
 
     "@shanepadgett/liminal-tools-shell": ["@shanepadgett/liminal-tools-shell@workspace:packages/plugins/tools-shell"],
+
+    "@shanepadgett/liminal-tools-web": ["@shanepadgett/liminal-tools-web@workspace:packages/plugins/tools-web"],
 
     "@shanepadgett/liminal-tools-write": ["@shanepadgett/liminal-tools-write@workspace:packages/plugins/tools-write"],
 

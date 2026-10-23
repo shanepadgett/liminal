@@ -210,12 +210,12 @@ interface Tool { name; description; deferred?; sequential?; input: JsonSchema; a
 type Access = { kind: "read" | "write"; paths: string[] } | { kind: "run" }   // what a call touches; no access, or params that fail to decode, is run
 runAccess; noAccess                            // { kind: "run" }; { kind: "read", paths: [] } for a tool that touches nothing
 defineTool({ name; description; input: Schema<I>; access?(input: I): Access; run(input: I, ctx) }): Tool   // checks params before run
-type ToolContext = { session; callId; attributes; progress(data: Json): Effect<void> }   // attributes of the latest input the turn consumed
+type ToolContext = { session; callId; attributes; model: ModelId; progress(data: Json): Effect<void> }   // attributes of the latest input the turn consumed; model the step that asked runs
 ToolProgress: delta { callId; data }           // what progress publishes; holds the whole progress so far, frontends draw the latest
 type ToolOutput = { content: (Text | Image)[] }
 // a deferred tool is left out of a session's tools until a plugin offers it through ToolList.offer
 Tools: Registry<Tool>                          // of two with one name, the last added is used
-ToolCall: Pipeline<{ session; call: ToolCall; attributes }, ToolResult>   // failures, unknown tools and crashes become failed results
+ToolCall: Pipeline<{ session; call: ToolCall; attributes; model: ModelId }, ToolResult>   // failures, unknown tools and crashes become failed results; loop passes the step's model
 
 // tool-definitions: what the model is told about each tool
 ToolDefinitions: Pipeline<Tool, ToolDefinition>   // name, description, input shape; wrap to change a description
@@ -430,7 +430,7 @@ How `session` does these over `SqlClient` is open.
 | Tools | `tools-write` | `write`: whole files, a diff row in chat | Add | `tools-edit` |
 | Tools | `tools-shell` | `shell`, command runner, shell safety | Add | `tools-shell`, `command-runner`, `shell-safety` |
 | Tools | `tools-processes` | `process_start`, `process_output`, `process_input`, `process_stop` in a pseudo-terminal | Add | `processes` |
-| Tools | `tools-web` | `websearch`, `webfetch` | Add | `tools-web` |
+| Tools | `tools-web` | `websearch`, `webfetch`, `WebSearchers`: hosted searches by provider | Add | `tools-web` |
 | Tools | `tools-execute` | Code mode | Add | `tools-execute` |
 | Tools | `tools-search` | Deferred tools | Add, Wrap | `tools-search` |
 | Tools | `tool-output` | Output limits | Wrap | `tool-output` |
@@ -460,6 +460,12 @@ How `session` does these over `SqlClient` is open.
 - The classifier is `Models.classify` with a 3 s limit; it allows the calls it scores safe. The reviewer is `Models.generateObject` on `small` with `session_search` and a `read` checked against the allowed folders. It sees the call, the user's latest message and the turn's earlier calls, never the agent's text or tool results. It allows the call or writes the user a summary, effects and risk.
 - The user's ask is a `questions` kind: approve, or reject with a note. Every judged call logs `approvals/decided`.
 - The `Unattended` attribute marks inputs no one is there to answer, as print mode's are. Without `yolo` a call the reviewer would send to the user is denied; with it every call runs unchecked.
+
+### Web tools
+
+- `websearch` asks the hosted search in `WebSearchers` whose `provider` is the provider of `ToolContext.model`; with none, or when it fails, it asks Exa's free MCP search, which `tools-web` holds itself. `WebSearcher = { provider; name; search(query): Effect<WebAnswer, SearchFailed> }`, `WebAnswer = { text; sources: { url; title }[] }`.
+- `webfetch` reads one http(s) page of a text type up to 5 MB; HTML becomes light Markdown through Bun's `HTMLRewriter`. It has no `access`, so approvals judges it as `run`.
+- Each result starts with a line marking the content as untrusted web data. The tools save `tools-web/searched` and `tools-web/fetched` for their rows.
 
 ## Example: the work order agent
 

@@ -2,7 +2,7 @@
 
 Work for [status.md](../status.md) milestone 3.
 
-## `tools-web`
+## Hosted web search
 
-- Adds `websearch`, `webfetch`.
-- Previous code: `tools-web`.
+- `web-search-anthropic`, `web-search-openai`: each adds its provider's hosted search to `tools-web`'s `WebSearchers`.
+- Previous code: `archive/packages/sdk/src/ai/search.ts`.

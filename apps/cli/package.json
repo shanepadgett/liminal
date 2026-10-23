@@ -46,6 +46,7 @@
     "@shanepadgett/liminal-tools-processes": "workspace:*",
     "@shanepadgett/liminal-tools-read": "workspace:*",
     "@shanepadgett/liminal-tools-shell": "workspace:*",
+    "@shanepadgett/liminal-tools-web": "workspace:*",
     "@shanepadgett/liminal-tools-write": "workspace:*",
     "@shanepadgett/liminal-tui": "workspace:*",
     "effect": "4.0.5"

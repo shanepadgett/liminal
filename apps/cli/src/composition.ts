@@ -41,6 +41,7 @@ import toolsEdit from "@shanepadgett/liminal-tools-edit";
 import toolsProcesses from "@shanepadgett/liminal-tools-processes";
 import toolsRead from "@shanepadgett/liminal-tools-read";
 import toolsShell from "@shanepadgett/liminal-tools-shell";
+import toolsWeb from "@shanepadgett/liminal-tools-web";
 import toolsWrite from "@shanepadgett/liminal-tools-write";
 
 /** Bun's files, paths, crypto, HTTP and child processes for the plugins that ask for them. */
@@ -77,6 +78,7 @@ export const plugins = [
   toolsWrite,
   toolsShell,
   toolsProcesses,
+  toolsWeb,
   toolOutput,
   history,
   systemPrompt,

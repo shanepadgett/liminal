@@ -5,7 +5,7 @@
 import { Effect, Ref } from "effect";
 
 import type { Attributes } from "@shanepadgett/liminal-core";
-import type { Models, StepTool } from "@shanepadgett/liminal-model/contract";
+import type { ModelId, Models, StepTool } from "@shanepadgett/liminal-model/contract";
 import type { SessionEvent, SessionId } from "@shanepadgett/liminal-session/contract";
 import {
   runAccess,
@@ -44,6 +44,8 @@ export interface Reviewed {
   readonly session: SessionId;
   readonly callId: string;
   readonly attributes: Attributes;
+  /** The model the step that asked for the call runs. */
+  readonly model: ModelId;
   readonly events: ReadonlyArray<SessionEvent>;
   readonly state: State;
 }
@@ -82,6 +84,7 @@ const readTool = (reviewer: Reviewer, reviewed: Reviewed, tool: Tool, opened: Re
             session: reviewed.session,
             callId: reviewed.callId,
             attributes: reviewed.attributes,
+            model: reviewed.model,
             progress: () => Effect.void,
           }),
         );

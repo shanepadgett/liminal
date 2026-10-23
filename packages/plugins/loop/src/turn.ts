@@ -118,7 +118,8 @@ const makeStep = (services: TurnServices) => {
     yield* toolList.sync(session);
     yield* runHooks(beforeCall, turn);
 
-    const reply = yield* callModel(services, turn, yield* request(session));
+    const next = yield* request(session);
+    const reply = yield* callModel(services, turn, next);
     const calls = reply.message.parts.filter((part) => part.type === "tool-call");
 
     if (calls.length === 0) {
@@ -131,7 +132,7 @@ const makeStep = (services: TurnServices) => {
 
     yield* isTruncated
       ? failTruncated(log, session, calls, attributes)
-      : runCalls(services, session, calls, attributes);
+      : runCalls(services, { session, attributes, model: next.model }, calls);
 
     return false;
   });
