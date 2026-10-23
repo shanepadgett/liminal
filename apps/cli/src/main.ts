@@ -7,6 +7,8 @@ import { BunRuntime, BunServices } from "@effect/platform-bun";
 import { Console, Effect, Option, Stdio, Stream, Terminal } from "effect";
 import { Command, Flag } from "effect/cli";
 
+import { SessionId } from "@shanepadgett/liminal-session/contract";
+
 import { host } from "./composition.ts";
 import { connect } from "./connect.ts";
 import { badUsage, ExitCode, failed, interrupted } from "./exit-code.ts";
@@ -68,8 +70,12 @@ const liminal = Command.make(
       Flag.withDescription("With -p, run this model, such as anthropic/claude-sonnet-4-5"),
       Flag.optional,
     ),
+    session: Flag.String("session").pipe(
+      Flag.withDescription("With -p, send to this saved session instead of a new one"),
+      Flag.optional,
+    ),
   },
-  Effect.fn(function* ({ print: flag, json, model }) {
+  Effect.fn(function* ({ print: flag, json, model, session }) {
     if (Option.isNone(flag)) {
       return yield* tui.pipe(
         Effect.catch((error) =>
@@ -79,10 +85,11 @@ const liminal = Command.make(
     }
 
     const prompt = yield* promptOf(flag.value);
+    const saved = Option.map(session, (id) => SessionId.make(id));
 
     // The plugins start only once the command is known, so help never opens the session store.
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- print mode's entry point.
-    return yield* Effect.scoped(print(prompt, json, model)).pipe(Effect.provide(host));
+    return yield* Effect.scoped(print(prompt, json, model, saved)).pipe(Effect.provide(host));
   }),
 ).pipe(
   Command.withDescription("An agent harness where everything is a plugin"),

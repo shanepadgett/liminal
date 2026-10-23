@@ -21,6 +21,8 @@ With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; th
 | Ctrl+C | Clear the draft; with no draft, quit |
 | Ctrl+B | Open or close the sidebar, below 110 columns |
 | Ctrl+N | New session: back to the start screen; nothing is saved until you send |
+| Ctrl+O | Open a saved session. See below |
+| Ctrl+P | The command palette: every command with its keys, by category. Enter runs one |
 
 The line under the draft shows the model line, `◇ model • thinking`, and only the keys that would do something now. The draft's keys stop while a dialog is open.
 
@@ -31,8 +33,19 @@ Type `/` as the first character of the draft to list commands. Keep typing to fi
 | Command | Does |
 | --- | --- |
 | `/new` | New session, as Ctrl+N |
+| `/sessions` | Open a saved session, as Ctrl+O |
 | `/model` | Pick a model. See below |
+| `/connect` | Connect a provider, as `liminal connect` does. See below |
+| `/theme` | Pick a palette. Moving through the list shows each; Enter saves it, Esc puts the saved one back |
 | `/pop` | List this folder's stashes. Enter puts one back after the draft and removes it from the list; Ctrl+D asks, then removes it |
+
+### Open a saved session
+
+Ctrl+O lists this folder's latest 100 sessions, newest first, under Today, Yesterday and Earlier. Each is named by the first line of its first message and shows when it was last active. Enter opens it. A session appears once you send in it.
+
+### Connect from the TUI
+
+`/connect` asks for the provider and the login, skipping a list of one, then follows the sign-in in a dialog. A browser login opens your browser and shows the link; Ctrl+Y copies the link, or the code of a device code login. Type an API key or a pasted address and press Enter. Esc closes the dialog and stops the sign-in.
 
 ### Pick a model
 
@@ -111,6 +124,7 @@ git diff | liminal -p "Review this change"
 - `-p` starts a new session, sends the prompt and prints the final reply on stdout.
 - Piped input goes after the prompt.
 - Notices, such as why a turn stopped, go to stderr.
+- `--session <id>` sends in that saved session instead of a new one. An unknown id stops with an error.
 - `--model provider/model` runs that model, such as `--model anthropic/claude-opus-5-5`. Without it, the session runs the model chosen as in [Choose models](#choose-models). With no provider signed in, it stops with `No model provider is connected. Run liminal connect.`
 - `--json` writes, instead of the reply, one JSON line per saved event and streamed delta, from your prompt to the turn's end.
 - Ctrl-C cancels the turn, then exits.
@@ -120,7 +134,7 @@ Exit codes:
 | Code | When |
 | --- | --- |
 | 0 | The turn answered |
-| 1 | The turn failed or was cancelled, or a sign-in failed |
+| 1 | The turn failed or was cancelled, a sign-in failed, or the session was not found |
 | 2 | Bad flags or arguments |
 | 130 | Ctrl-C |
 

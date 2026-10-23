@@ -1,8 +1,10 @@
 /**
- * Print mode: one prompt in a new session. Text mode writes the final reply on stdout and notices
- * on stderr; JSON mode writes each saved event and delta as a JSON line.
+ * Print mode: one prompt in a new session, or in a saved one with `--session`. Text mode writes the
+ * final reply on stdout and notices on stderr; JSON mode writes each saved event and delta of the
+ * turn as a JSON line.
  */
 import { Console, Duration, Effect, Option, Schema, Stream } from "effect";
+import type { RpcClient } from "effect/rpc";
 
 import { Host } from "@shanepadgett/liminal-client";
 import { Attribute } from "@shanepadgett/liminal-core";
@@ -13,6 +15,7 @@ import {
   LiveItem,
   MessageEvent,
   Notice,
+  type Seq,
   type SessionId,
   SessionRpc,
 } from "@shanepadgett/liminal-session/contract";
@@ -84,19 +87,39 @@ const messageOf = Effect.fn("Print.messageOf")(function* (
   return { ...message, attributes };
 });
 
+/** Following a new session from its start. */
+const firstSeq: Seq = 0;
+
+type Sessions = RpcClient.FromGroup<typeof SessionRpc>;
+
+/** A new session, or `saved` and its last seq, so following it skips its earlier turns. */
+const startIn = (sessions: Sessions, saved: Option.Option<SessionId>) =>
+  Option.match(saved, {
+    onNone: () =>
+      Effect.map(sessions["session/open"](), (session) => ({ session, after: firstSeq })),
+    onSome: (session) =>
+      sessions["session/page"]({ session }).pipe(
+        Effect.map((events) => ({ session, after: events.at(-1)?.seq ?? 0 })),
+        Effect.catchTag("SessionNotFound", (error) =>
+          Effect.andThen(Console.error(error.message), new ExitCode({ code: failed })),
+        ),
+      ),
+  });
+
 export const print = Effect.fn("print")(function* (
   prompt: string,
   json: boolean,
   model: Option.Option<ModelId>,
+  saved: Option.Option<SessionId>,
 ) {
   const host = yield* Host;
   const sessions = yield* host.client(SessionRpc);
   const loop = yield* host.client(LoopRpc);
-  const session = yield* sessions["session/open"]();
+  const { session, after } = yield* startIn(sessions, saved);
   const input = yield* messageOf(prompt, model);
 
   const live = (id: SessionId) =>
-    sessions["session/live"]({ session: id }).pipe(Stream.takeUntil(isTurnEnd));
+    sessions["session/live"]({ session: id, after }).pipe(Stream.takeUntil(isTurnEnd));
 
   /** Ctrl-C cancels the turn and waits briefly for it to log its end. */
   const cancel = loop["loop/cancel"]({ session }).pipe(
