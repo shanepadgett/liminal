@@ -505,6 +505,78 @@ Settled while building:
 - `tool-output` cuts for the model; `shell` itself keeps at most the first and last 5 MB, so a command that writes without end cannot fill memory.
 - The row's tail shows what a terminal would show of a line with carriage returns: the part after the last one.
 
+### Processes code plan
+
+Mechanisms: `tools-processes` **Adds** four tools to `Tools` and a row for `process_start` to chat's `ToolRows`. No contract changes. `@xterm/headless` moves from `tools/planned` into its `dependencies`; it is not host-supplied.
+
+Prior art for the shape: the archive's `processes` (start waits briefly and returns the output so far; reads return what is new since the last read; ids such as `p1`) and DeepSeek's `terminal-bash` (a send returns once the terminal goes quiet, bounded by a timeout).
+
+The tools:
+
+```ts
+process_start({ command, description, wait? })   // starts it; returns its id, then output as below
+process_output({ id, wait? })                     // what is new since the last read
+process_input({ id, text?, keys? })               // types text, then keys; returns what is new
+process_stop({ id })                              // stops it and everything it started; returns the last output
+
+keys: Array<"enter" | "tab" | "escape" | "backspace" | "up" | "down" | "left" | "right"
+             | "ctrl+c" | "ctrl+d">            // a "\n" in text is also Enter
+wait: seconds, 1 to 600                           // default 5 for start and input, 0 for output
+```
+
+Every result is the new output, then one line for where the process stands: `[p1 running]` or `[p1 exited with code N]`.
+
+- **When a call returns.** At once when the process has exited. Otherwise once new output has come and then 1 second passes with none, or `wait` seconds pass. A dev server that prints its address and waits returns in about a second; a long build returns at `wait` with what it printed so far.
+- **What is new.** The terminal remembers the screen it last returned and a marker at its top line. A read compares the lines from the marker on with that screen and returns from the first line that differs to the end. Output added below returns only the new lines; a menu redrawn in place returns from the first changed line. A program that switched between the normal and the full screen buffer returns its whole screen. When the marker's line has scrolled out of the 5,000 lines kept, the read returns all kept lines after `[earlier output dropped]`.
+- **Sessions.** Each session has its own processes, numbered `p1`, `p2`, …; another session's ids are unknown to it. Processes keep running between turns and stop when Liminal exits. A call naming an unknown id fails with `No process p3 in this session. Processes stop when Liminal exits.`
+- **Terminal.** 120 columns by 40 rows, `TERM=xterm-256color`, started with `bash -c` in the workspace like `shell`, with `PAGER=cat` and `GIT_PAGER=cat`.
+- **Stopping.** `SIGTERM` to the process group, `SIGKILL` after 3 seconds, as `shell` does. The PTY makes the child lead its own process group, so its pid names the group: checked by hand on Bun 1.4.3, where `process.kill(-pid)` stopped `bash` and two background `sleep`s it started, and `exited` gave 143 for `SIGTERM`.
+
+Modules:
+
+```ts
+// src/pty.ts: the one place that calls Bun
+interface Pty {
+  readonly write: (data: string) => void;
+  readonly exited: Effect<number>;               // exit code; a signal gives 128 + n
+  readonly stop: Effect<void>;                   // SIGTERM, then SIGKILL after 3 s
+}
+const openPty: (command, { cwd, onData }) => Effect<Pty, PtyFailed, Scope>   // closing the scope stops it
+
+// src/screen.ts: @xterm/headless behind a small interface
+interface Screen {
+  readonly write: (data: Uint8Array) => Effect<void>;  // resolves once parsed
+  readonly readNew: Effect<ReadonlyArray<string>>;      // what is new, and moves the mark
+}
+
+// src/processes.ts: the session's processes
+interface Running { id; command; pty: Pty; screen: Screen; lastOutput: Ref<number>; exit: Ref<Option<number>> }
+class Processes  // module-level service inside the plugin, not in a contract
+  start(session, command): Effect<Running>
+  find(session, id): Effect<Running, ToolFailed>
+  settle(running, wait): Effect<string>          // waits as above, then readNew plus the state line
+  stop(running): Effect<string>
+```
+
+Call path: `process_start` → `Processes.start` opens a PTY in a scope forked from the plugin's scope, so Liminal's exit closes them all. The PTY's data goes to `screen.write` and stamps `lastOutput`. `settle` then waits, and the tool returns its text. `process_stop` closes that process's scope and returns the final read.
+
+The row: `process_start`'s row shows its description, as `shell`'s does, through a `tui` entry. The other three use chat's plain row, which shows their params, such as `p1 ctrl+c`.
+
+Files: `packages/plugins/tools-processes/{package.json, README.md}`, `src/{index.ts, contract.ts, tools.ts, processes.ts, pty.ts, screen.ts}`, `src/tui/index.tsx`. `contract.ts` holds the tool names and `process_start`'s params for the row.
+
+Under Later in `docs/status.md`: telling the model when a process exits on its own, without a read; a cap on how many processes run at once.
+
+Settled while building:
+
+- `wait` runs from 0 to 600, so `process_output`'s default of 0 can also be written. `process_input` takes `wait` too.
+- "New output" means output not yet read, so what a process prints between starting and the call's wait counts.
+- `Screen.write` takes Bun's output as it comes, without an effect; a read first waits for the terminal to parse everything written before it.
+- The mark sits at the top of the screen after each read: lines above it have scrolled away and cannot change.
+- Leaving the full-screen buffer returns the normal screen, not everything since the old mark.
+- After the command exits, output may keep coming until the PTY closes, for 1 second at most.
+- `process_stop` signals the process group even when the command has exited, so children it left behind stop too, and removes the id. A process that exits on its own keeps its id until stopped, so its last output can still be read.
+- `tools-processes` runs commands as `shell` does, so it joins the CLI composition with approvals.
+
 ## Step 5: approvals
 
 Today every call runs: `ToolCall` (the pipeline every tool call takes) hands it straight to the tool. Step 3 gives the pieces approvals needs. `Questions.ask` waits on the user inside a call, its cover shows waiting asks one at a time, oldest first, so calls in one reply ask in turn, and `Models.generateObject` runs one-off calls on the `small` model.

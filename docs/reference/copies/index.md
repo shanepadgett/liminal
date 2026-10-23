@@ -206,7 +206,7 @@ Bash parser with no dependencies: parse gives a ParsedScript of statements, pipe
 xterm.js without a renderer: a terminal emulator in plain JavaScript that takes a program's output and keeps the screen and scrollback buffer to read back as text. For tools-processes, which shows the model what a process's terminal shows.
 
 - Docs: `docs/reference/copies/@xterm/headless/6.0.0/` (1 file: README.md)
-- API (types): `tools/planned/node_modules/@xterm/headless/typings/xterm-headless.d.ts`
+- API (types): `packages/plugins/tools-processes/node_modules/@xterm/headless/typings/xterm-headless.d.ts`
 
 ## diff 9.0.0
 

@@ -1,0 +1,28 @@
+{
+  "name": "@shanepadgett/liminal-tools-processes",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contract": "./src/contract.ts",
+    "./tui": "./src/tui/index.tsx"
+  },
+  "dependencies": {
+    "@xterm/headless": "6.0.0"
+  },
+  "peerDependencies": {
+    "@opentui/solid": "0.6.6",
+    "@shanepadgett/liminal-chat": "workspace:*",
+    "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-directories": "workspace:*",
+    "@shanepadgett/liminal-session": "workspace:*",
+    "@shanepadgett/liminal-tools": "workspace:*",
+    "effect": "*",
+    "solid-js": "1.9.12"
+  },
+  "liminal": {
+    "plugins": [
+      "./src/index.ts"
+    ]
+  }
+}

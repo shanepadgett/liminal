@@ -59,6 +59,7 @@ Versions are pinned in `package.json`; [reference/copies/index.md](reference/cop
 | `diff` | `tools-files` edit patches |
 | `partial-json` | `tools-files` `tui` entry, only if Effect AI gives no partial tool arguments |
 | `unbash` | `tools-shell` safety rules |
+| `@xterm/headless` | `tools-processes` (each process's screen) |
 | `@opencode/codemode` | `tools-execute` |
 | `jsonc-parser` | Settings files with comments |
 | `beautiful-mermaid` | Mermaid diagrams in TUI markdown |
@@ -421,7 +422,8 @@ How `session` does these over `SqlClient` is open.
 | Providers | `accounts` | Credentials, login methods, `liminal connect` and `/connect` | Add | `logins`, `credential-store` |
 | Storage | `sqlite`, `postgres` | The database: Effect's `SqlClient`; plugins that keep state own their tables | Replace | `session-store`, `credential-store` |
 | Tools | `tools-files` | `read`, `edit`, `write` | Add | `files`, `tools-read`, `tools-edit` |
-| Tools | `tools-shell` | `shell`, command runner, shell safety, background processes | Add | `tools-shell`, `command-runner`, `shell-safety`, `processes` |
+| Tools | `tools-shell` | `shell`, command runner, shell safety | Add | `tools-shell`, `command-runner`, `shell-safety` |
+| Tools | `tools-processes` | `process_start`, `process_output`, `process_input`, `process_stop` in a pseudo-terminal | Add | `processes` |
 | Tools | `tools-web` | `websearch`, `webfetch` | Add | `tools-web` |
 | Tools | `tools-execute` | Code mode | Add | `tools-execute` |
 | Tools | `tools-search` | Deferred tools | Add, Wrap | `tools-search` |

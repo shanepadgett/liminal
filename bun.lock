@@ -499,6 +499,23 @@
         "effect": "*",
       },
     },
+    "packages/plugins/tools-processes": {
+      "name": "@shanepadgett/liminal-tools-processes",
+      "version": "0.1.0",
+      "dependencies": {
+        "@xterm/headless": "6.0.0",
+      },
+      "peerDependencies": {
+        "@opentui/solid": "0.6.6",
+        "@shanepadgett/liminal-chat": "workspace:*",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-tools": "workspace:*",
+        "effect": "*",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/tools-shell": {
       "name": "@shanepadgett/liminal-tools-shell",
       "version": "0.1.0",
@@ -538,7 +555,6 @@
       "peerDependencies": {
         "@effect/sql-pg": "4.0.5",
         "@opencode/codemode": "2.1.2",
-        "@xterm/headless": "6.0.0",
         "diff": "9.0.0",
         "electrobun": "2.0.4",
         "partial-json": "0.1.7",
@@ -851,6 +867,8 @@
     "@shanepadgett/liminal-tools": ["@shanepadgett/liminal-tools@workspace:packages/plugins/tools"],
 
     "@shanepadgett/liminal-tools-files": ["@shanepadgett/liminal-tools-files@workspace:packages/plugins/tools-files"],
+
+    "@shanepadgett/liminal-tools-processes": ["@shanepadgett/liminal-tools-processes@workspace:packages/plugins/tools-processes"],
 
     "@shanepadgett/liminal-tools-shell": ["@shanepadgett/liminal-tools-shell@workspace:packages/plugins/tools-shell"],
 

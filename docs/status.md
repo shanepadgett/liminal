@@ -54,7 +54,8 @@ Work: [plugins/coding.md](plugins/coding.md)
 
 - [x] `read` in `tools-files`, `tool-output`; tool results hold text and image parts
 - [x] `tools-shell`; `ToolContext.progress`. Joins the CLI composition with `approvals`
-- [ ] `tools-processes`, `tools-web`
+- [x] `tools-processes`. Joins the CLI composition with `approvals`
+- [ ] `tools-web`
 - [ ] Split `tools-files` into `tools-read`, `tools-edit`, `tools-write`; build `edit` and `write`
 - [x] `instructions`, `environment`
 - [x] Recreate `.liminal/`; move `docs/instructions/` to `.liminal/instructions/` with `read-when` front matter
@@ -117,6 +118,8 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 - Image generation built in: when a signed-in provider offers an image model, a simple way to make an image with it.
 - A place to read the TUI's logs, such as a file under `~/.liminal/` or OpenTUI's console overlay. Inside the TUI, OpenTUI captures console output, so logged errors such as a slot fill that fails to draw stay hidden.
 - Older history in the transcript: the chat screen shows a session's latest 100 events and never calls the session view's `loadOlder`.
+- Telling the model when a `tools-processes` process exits on its own, without a `process_output` call, as OpenCode notifies on a background command's exit.
+- A cap on how many `tools-processes` processes run at once.
 - Which input attributes `loop` copies onto a turn's events: it copies them all, so a message-only attribute such as `loop/added` also lands on the reply and step events. Revisit with `actors`.
 
 ## Open

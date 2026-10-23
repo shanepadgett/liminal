@@ -15,13 +15,8 @@ Work for [status.md](../status.md) milestone 3.
 `shell` is built. What is left comes with approvals:
 
 - Shell safety rules on `unbash` give `shell`'s `access`.
-- `tools-shell` joins the CLI composition.
+- `tools-shell` and `tools-processes` join the CLI composition.
 - Previous code: `shell-safety`.
-
-## `tools-processes`
-
-- Adds `process_start`, `process_output`, `process_input`, `process_stop` for commands that keep going, on a pseudo-terminal the agent can type into. Processes stop when Liminal exits.
-- Previous code: `processes`.
 
 ## `tools-web`
 
