@@ -111,11 +111,21 @@ export const defaultThinking = (levels: ReadonlyArray<string>) =>
   thinkingOrder.slice(thinkingOrder.indexOf("medium")).find((level) => levels.includes(level));
 
 /** Dollars per million tokens; the cache prices are set only for a model that caches. */
-export interface ModelPrice {
+export interface TokenPrices {
   readonly input: number;
   readonly output: number;
   readonly cacheRead?: number | undefined;
   readonly cacheWrite?: number | undefined;
+}
+
+/** The prices for a request whose input passes `above` tokens. */
+export interface PriceTier extends TokenPrices {
+  readonly above: number;
+}
+
+/** A model's prices, and the higher ones for long requests, smallest `above` first. */
+export interface ModelPrice extends TokenPrices {
+  readonly tiers: ReadonlyArray<PriceTier>;
 }
 
 /** What a model can take and do, from `ModelCatalog`. */
@@ -133,6 +143,8 @@ export interface ModelDetails {
 export interface ModelInfo {
   readonly id: ModelId;
   readonly name: string;
+  /** The window the provider serves the model with, when it reports one; it wins over the catalog's. */
+  readonly contextWindow?: number | undefined;
   /** Missing for a model the catalog does not list yet. */
   readonly details?: ModelDetails | undefined;
 }

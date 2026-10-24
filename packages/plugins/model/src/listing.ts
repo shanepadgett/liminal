@@ -1,5 +1,5 @@
 /** `model/list` and `model/details`: models as screens show them. */
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 
 import type { Registry } from "@shanepadgett/liminal-core";
 
@@ -61,12 +61,15 @@ export const lookUp = Effect.fn("Models.lookUp")(function* (
   return { provider, name: listed?.name ?? model, details: listed?.details };
 });
 
-/** One model as screens show it, signed in or not. */
-export const describe = (
+/** One model as screens show it, signed in or not, with the details `models` gives it. */
+export const describe = Effect.fn("Models.describe")(function* (
   providers: Registry<ModelProvider>,
   catalog: ModelCatalog["Service"],
+  models: Models["Service"],
   id: ModelId,
-) =>
-  Effect.map(lookUp(providers, catalog, id), ({ provider, name, details }) =>
-    listingOf(provider, { id, name }, details),
-  );
+) {
+  const { provider, name } = yield* lookUp(providers, catalog, id);
+  const details = yield* models.details(id);
+
+  return listingOf(provider, { id, name }, Option.getOrUndefined(details));
+});

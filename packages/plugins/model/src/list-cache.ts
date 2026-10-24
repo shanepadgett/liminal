@@ -20,7 +20,13 @@ import type { Registry } from "@shanepadgett/liminal-core";
 import { Directories } from "@shanepadgett/liminal-directories/contract";
 
 import { detailsOf } from "./call.ts";
-import { type ModelCatalog, ModelId, type ModelInfo, type ModelProvider } from "./contract.ts";
+import {
+  type ModelCatalog,
+  type ModelDetails,
+  ModelId,
+  type ModelInfo,
+  type ModelProvider,
+} from "./contract.ts";
 
 /** How old a provider's list may get before a background refresh. */
 const maxAge = Duration.days(1);
@@ -28,7 +34,9 @@ const maxAge = Duration.days(1);
 const ProviderList = Schema.Struct({
   /** Milliseconds since the Unix epoch of the last fetch. */
   fetchedAt: Schema.Int,
-  models: Schema.Array(Schema.Struct({ id: ModelId, name: Schema.String })),
+  models: Schema.Array(
+    Schema.Struct({ id: ModelId, name: Schema.String, contextWindow: Schema.optional(Schema.Int) }),
+  ),
 });
 
 type ProviderList = typeof ProviderList.Type;
@@ -88,7 +96,7 @@ const fetchList = Effect.fn("Models.fetchList")(function* (store: Store, provide
 
   const list: ProviderList = {
     fetchedAt: yield* Clock.currentTimeMillis,
-    models: models.map(({ id, name }) => ({ id, name })),
+    models: models.map(({ id, name, contextWindow }) => ({ id, name, contextWindow })),
   };
 
   yield* keep(store, provider.id, list);
@@ -137,6 +145,20 @@ const listed = Effect.fn("Models.listed")(function* (store: Store, provider: Mod
   return cached.models;
 });
 
+/** `details` with the window the provider serves, when it reports one. */
+export const withWindow = (details: ModelDetails | undefined, contextWindow?: number) =>
+  details === undefined || contextWindow === undefined ? details : { ...details, contextWindow };
+
+/** The window the provider last listed `id` with; undefined when it reports none. */
+export const listedWindow = (lists: Store, id: ModelId) =>
+  Effect.map(
+    Ref.get(lists.cache),
+    ({ providers }) =>
+      Object.values(providers)
+        .flatMap((list) => list.models)
+        .find((model) => model.id === id)?.contextWindow,
+  );
+
 /** `provider`'s models with their details from the catalog; none, logged, when its list fails. */
 const listOf = (store: Store, catalog: ModelCatalog["Service"], provider: ModelProvider) =>
   Effect.gen(function* () {
@@ -146,10 +168,11 @@ const listOf = (store: Store, catalog: ModelCatalog["Service"], provider: ModelP
     const details = yield* detailsOf(catalog, provider);
     const prefix = `${provider.id}/`;
 
-    return models.map(({ id, name }): ModelInfo => ({
+    return models.map(({ id, name, contextWindow }): ModelInfo => ({
       id,
       name,
-      details: details.get(id.slice(prefix.length)),
+      contextWindow,
+      details: withWindow(details.get(id.slice(prefix.length)), contextWindow),
     }));
   }).pipe(
     Effect.catch((error) =>

@@ -165,7 +165,7 @@ interface ModelProvider {
   id; name; defaults: { main; small }        // the first signed-in provider's, when the model setting leaves a role unset
   catalogId?                                // whose models.dev entries hold its models' details, such as openai
   signedIn: Effect<boolean>                 // a saved login or a key in the environment
-  models: Effect<ModelInfo[]>               // ModelInfo = { id; name; details?: ModelDetails }
+  models: Effect<ModelInfo[]>               // ModelInfo = { id; name; contextWindow?; details?: ModelDetails }; a provider's window wins over the catalog's
   nativeToolChanges?(model): boolean        // whether the model takes tool changes mid-conversation
   languageModel(model, { thinking?, cacheKey?, details?, toolChanges? }): Effect<LanguageModel>   // an Effect AI language model; a provider that routes its cache by key sends cacheKey; toolChanges = { declared; changes }, set only for a native model with changes
   classifiers?: Effect<ModelInfo[]>         // only those the current login can call
@@ -176,7 +176,7 @@ ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>   // retries inside; conve
 Reply.add(reply, delta) / Reply.message(reply)          // deltas into the assistant Message
 Models.resolve("small" | ModelId): Effect<ModelChoice>
 Models.list: Effect<ModelInfo[]>   // signed-in providers only, cached in ~/.liminal/models.json; a provider whose list fails is logged and left out
-Models.details(model): Effect<Option<ModelDetails>, ModelNotFound>   // from the catalog, signed in or not
+Models.details(model): Effect<Option<ModelDetails>, ModelNotFound>   // from the catalog, signed in or not, with the window the provider last listed
 Models.generate(options: {
   model?: "small" | ModelId                 // missing is the prefix's model, or small
   prompt: Part[]
@@ -186,7 +186,7 @@ Models.generate(options: {
 Models.generateObject<T>(options: { ...; schema: Codec<T, JsonObject>; tools?: StepTool[]; maxSteps? }): Effect<T>   // structured output
 type StepTool = { definition: ToolDefinition; run(params: Json): Effect<string> }   // runs directly, unlogged
 Models.classify(definition: Decision.Definition, { model?: ModelId; input; images? }): Effect<DecideResponse, AiError | ModelNotFound>
-type ModelDetails = { contextWindow; outputLimit; thinking: string[]; images; toolCalls; structuredOutput; price?: { input; output; cacheRead?; cacheWrite? } }
+type ModelDetails = { contextWindow; outputLimit; thinking: string[]; images; toolCalls; structuredOutput; price?: { input; output; cacheRead?; cacheWrite?; tiers: { above; input; output; cacheRead?; cacheWrite? }[] } }
 defaultThinking(levels): string | undefined   // medium, else the next level up; ModelCall applies it to a request without a level
 
 ModelCatalog.models(catalogId): Effect<CatalogModel[], CatalogUnavailable>   // CatalogModel = { id; name; kind: chat | embedding | image | realtime; details; wire?: messages | responses | chat }; model-catalog provides it from models.dev, cached in ~/.liminal/catalog.json

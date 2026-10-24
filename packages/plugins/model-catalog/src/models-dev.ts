@@ -4,7 +4,13 @@
  */
 import { Option, Schema } from "effect";
 
-import type { CatalogModel, ModelDetails, Wire } from "@shanepadgett/liminal-model/contract";
+import type {
+  CatalogModel,
+  ModelDetails,
+  ModelPrice,
+  TokenPrices,
+  Wire,
+} from "@shanepadgett/liminal-model/contract";
 
 /** One provider: the AI SDK package its models use unless one names its own, and its entries. */
 const ModelsDevProvider = Schema.Struct({
@@ -31,6 +37,13 @@ const ReasoningOption = Schema.Struct({
   values: Schema.optionalKey(Schema.Array(Schema.String)),
 });
 
+const Prices = Schema.Struct({
+  input: Schema.Finite,
+  output: Schema.Finite,
+  cache_read: Schema.optionalKey(Schema.Finite),
+  cache_write: Schema.optionalKey(Schema.Finite),
+});
+
 const Entry = Schema.Struct({
   name: Schema.String,
   /** Missing or null is a chat model; an entry of another type does not decode. */
@@ -47,15 +60,38 @@ const Entry = Schema.Struct({
   provider: Schema.optionalKey(Schema.Struct({ npm: Schema.optionalKey(Schema.String) })),
   cost: Schema.optionalKey(
     Schema.Struct({
-      input: Schema.Finite,
-      output: Schema.Finite,
-      cache_read: Schema.optionalKey(Schema.Finite),
-      cache_write: Schema.optionalKey(Schema.Finite),
+      ...Prices.fields,
+      /** Higher prices once a request's input passes `tier.size` tokens. */
+      tiers: Schema.optionalKey(
+        Schema.Array(
+          Schema.Struct({
+            ...Prices.fields,
+            /** Only `context` tiers are priced; a tier of another type is left out. */
+            tier: Schema.Struct({ type: Schema.String, size: Schema.Int }),
+          }),
+        ),
+      ),
     }),
   ),
 });
 
 type Entry = typeof Entry.Type;
+
+const pricesOf = (prices: typeof Prices.Type): TokenPrices => ({
+  input: prices.input,
+  output: prices.output,
+  cacheRead: prices.cache_read,
+  cacheWrite: prices.cache_write,
+});
+
+const priceOf = (cost: NonNullable<Entry["cost"]>): ModelPrice => ({
+  ...pricesOf(cost),
+  tiers: (cost.tiers ?? [])
+    .flatMap((tier) =>
+      tier.tier.type === "context" ? [{ ...pricesOf(tier), above: tier.tier.size }] : [],
+    )
+    .toSorted((a, b) => a.above - b.above),
+});
 
 const decodeEntry = Schema.decodeUnknownOption(Entry);
 
@@ -82,15 +118,7 @@ const detailsOf = (entry: Entry): ModelDetails => ({
   images: entry.modalities?.input.includes("image") ?? false,
   toolCalls: entry.tool_call,
   structuredOutput: entry.structured_output ?? false,
-  price:
-    entry.cost === undefined
-      ? undefined
-      : {
-          input: entry.cost.input,
-          output: entry.cost.output,
-          cacheRead: entry.cost.cache_read,
-          cacheWrite: entry.cost.cache_write,
-        },
+  price: entry.cost === undefined ? undefined : priceOf(entry.cost),
 });
 
 /** The provider's models; entries that do not decode are skipped. */

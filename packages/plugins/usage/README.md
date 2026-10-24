@@ -8,7 +8,7 @@ What each session's turn steps used and cost.
 
 - `usage/session`: the session's usage now, then again after each step starts or ends. `context` is the latest finished step's input tokens, `contextWindow` its model's window, `cacheHit` the share of that input read from the cache, `cost` the US dollars of every finished step whose model has a price (missing when steps finished and none has), and `unpriced` the steps whose model has none. Before the first step finishes, all are zero and the window is missing.
 
-A step's model comes from its `loop/step-start`, its tokens from a finished `loop/step-end`, and its prices from `Models.details`, so a provider that is signed out still prices its old steps. Fresh input is the input total less cache reads and writes; a model without cache prices charges them at its input price. A plan-billed provider is priced at its catalog's API rates. Model calls outside the turn loop, such as approval reviews, are not counted.
+A step's model comes from its `loop/step-start`, its tokens from a finished `loop/step-end`, and its prices from `Models.details`, so a provider that is signed out still prices its old steps. Fresh input is the input total less cache reads and writes. A step whose input passes a price tier's size is priced at that tier; a model without cache prices charges them at its input price. A plan-billed provider is priced at its catalog's API rates. Model calls outside the turn loop, such as approval reviews, are not counted.
 
 Requires `SessionLog` and `Models`.
 

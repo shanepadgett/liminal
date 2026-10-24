@@ -15,7 +15,7 @@ import {
   ModelRpc,
   Models,
 } from "./contract.ts";
-import { listModels, openLists } from "./list-cache.ts";
+import { listedWindow, listModels, openLists, withWindow } from "./list-cache.ts";
 import { describe, listAll, lookUp } from "./listing.ts";
 import { make } from "./models.ts";
 import { ModelSetting } from "./setting.ts";
@@ -35,11 +35,14 @@ const models = Layer.effect(
   Effect.gen(function* () {
     const providers = yield* ModelProviders;
     const catalog = yield* ModelCatalog;
-    const list = listModels(yield* openLists, providers, catalog);
+    const lists = yield* openLists;
+    const list = listModels(lists, providers, catalog);
 
     const details = (model: ModelId) =>
-      Effect.map(lookUp(providers, catalog, model), (found) =>
-        Option.fromUndefinedOr(found.details),
+      Effect.zipWith(
+        lookUp(providers, catalog, model),
+        listedWindow(lists, model),
+        (found, window) => Option.fromUndefinedOr(withWindow(found.details, window)),
       );
 
     return make(providers, yield* Settings, yield* ModelCall, { list, details });
@@ -54,7 +57,7 @@ const rpc = ModelRpc.toLayer(
 
     return ModelRpc.of({
       "model/list": () => listAll(providers, known),
-      "model/details": ({ model }) => describe(providers, catalog, model),
+      "model/details": ({ model }) => describe(providers, catalog, known, model),
     });
   }),
 );

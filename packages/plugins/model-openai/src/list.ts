@@ -35,6 +35,8 @@ const PlanModels = Schema.Struct({
     Schema.Struct({
       slug: Schema.String,
       display_name: Schema.optionalKey(Schema.String),
+      /** The window the plan serves by default, smaller than the model's full window. */
+      context_window: Schema.optionalKey(Schema.Int),
       /** `hide` marks models kept for the Codex CLI's own use, such as reviews. */
       visibility: Schema.String,
     }),
@@ -54,8 +56,9 @@ export const planModels = Effect.fn("planModels")(function* (
   return models.filter((model) => model.visibility === "list");
 });
 
-/** A plan model as a model id under `provider` and its name. */
+/** A plan model as a model id under `provider`, its name and the window the plan serves. */
 export const planModelInfo = (provider: string, model: PlanModel) => ({
   id: `${provider}/${model.slug}`,
   name: model.display_name ?? model.slug,
+  contextWindow: model.context_window,
 });

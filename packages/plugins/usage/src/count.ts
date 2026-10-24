@@ -32,13 +32,21 @@ export const tokensOf = (usage: Response.Usage): Tokens => {
 
 const PER_MILLION = 1_000_000;
 
-/** What `tokens` cost in US dollars at `price`; a cache price the model lacks is its input price. */
-export const costOf = (price: ModelPrice, tokens: Tokens): number =>
-  (tokens.fresh * price.input
-    + tokens.cacheRead * (price.cacheRead ?? price.input)
-    + tokens.cacheWrite * (price.cacheWrite ?? price.input)
-    + tokens.output * price.output)
-  / PER_MILLION;
+/**
+ * What `tokens` cost in US dollars at `price`, at the highest tier its input passes; a cache price
+ * the model lacks is its input price.
+ */
+export const costOf = (price: ModelPrice, tokens: Tokens): number => {
+  const rates = price.tiers.findLast((tier) => tokens.input > tier.above) ?? price;
+
+  return (
+    (tokens.fresh * rates.input
+      + tokens.cacheRead * (rates.cacheRead ?? rates.input)
+      + tokens.cacheWrite * (rates.cacheWrite ?? rates.input)
+      + tokens.output * rates.output)
+    / PER_MILLION
+  );
+};
 
 /** A session's steps so far. */
 export interface Tally {
