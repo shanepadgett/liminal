@@ -108,6 +108,7 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 
 - Post a notification for messages that belong to no session, such as a failed model list or catalog refresh, which is only logged now.
 - A checks step in `/commit` once the `checks` plugin exists.
+- Bring the gallery and the product in line where they were not compared: the `@` tag menu as the slash menu with other rows, the rows of the Models, Sessions and Commands dialogs, the Connect dialog, and the Theme and Stash pickers, which are plain pickers now.
 - Settle the database schema once Liminal is a stable agent. Until then saved sessions are test data: each database keeps one migration and a schema change resets `~/.liminal/liminal.db`. After that, a schema change adds a migration, and the one-migration rule in `.liminal/instructions/code.md` is removed.
 - Instruction files that run shell commands and put the output in the text when the prompt is built, so a file can carry live project facts.
 - MCP servers as a source of tools, connecting and disconnecting mid-session.
