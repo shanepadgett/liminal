@@ -102,12 +102,15 @@ export const registerOpenAi = Effect.gen(function* () {
     id: "openai",
     name: "OpenAI",
     catalogId: "openai",
-    defaults: { main: { model: "openai/gpt-6.1-sol" }, small: { model: "openai/gpt-6-luna" } },
+    defaults: {
+      main: { model: "openai/gpt-6.1-sol" },
+      small: { model: "openai/gpt-6-luna", thinking: "high" },
+    },
     signedIn: login.signedIn,
     models,
     nativeToolChanges: apiToolChanges,
     languageModel,
-    // The Decisions API takes only API keys, so `chatgpt` and `codex` offer no classifier.
+    // The Decisions API takes only API keys, so `codex` offers no classifier.
     classifiers: Effect.succeed([{ id: "openai/gpt-6-luna", name: "GPT-6 Luna" }]),
     decisionModel,
   });

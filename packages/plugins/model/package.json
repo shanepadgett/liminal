@@ -8,6 +8,7 @@
   },
   "peerDependencies": {
     "@shanepadgett/liminal-core": "workspace:*",
+    "@shanepadgett/liminal-directories": "workspace:*",
     "@shanepadgett/liminal-settings": "workspace:*",
     "effect": "*"
   },

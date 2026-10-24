@@ -1,4 +1,4 @@
-/** OpenAI's hosted web search for sessions on OpenAI, ChatGPT and Codex models. */
+/** OpenAI's hosted web search for sessions on OpenAI and Codex models. */
 import { Effect, Layer } from "effect";
 
 import { definePlugin } from "@shanepadgett/liminal-core";
@@ -7,7 +7,7 @@ import { ModelProviders } from "@shanepadgett/liminal-model/contract";
 import { SearchFailed, WebSearchers } from "@shanepadgett/liminal-tools-web/contract";
 
 /** The providers whose sessions search with OpenAI. */
-const covered = ["openai", "chatgpt", "codex"];
+const covered = ["openai", "codex"];
 
 const register = Effect.gen(function* () {
   const { list } = yield* ModelProviders;

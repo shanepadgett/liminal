@@ -76,6 +76,7 @@ export const subscriptionMethod = (client: HttpClient.HttpClient): LoginMethod =
     provider: "anthropic",
     vendor: "Anthropic",
     title: "Claude subscription (Pro or Max)",
+    credential: "oauth",
     ways: [{ id: "browser", title: "In the browser", run }],
   };
 };

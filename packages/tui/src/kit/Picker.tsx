@@ -2,7 +2,8 @@
  * A dialog that filters a list as the user types. With no query the rows sit under their section
  * titles; with one, `fuzzysort` orders them by match and marks the matched letters. It keeps its
  * own query and selection: up and down move, enter picks, esc closes, and each action's key runs it
- * on the selected row.
+ * on the selected row. A pick or action that confirms asks in the footer first; typing drops the
+ * question.
  */
 
 import { type InputRenderable, type ScrollBoxRenderable, TextAttributes } from "@opentui/core";
@@ -23,6 +24,7 @@ import {
 
 import { useColor } from "../colors.ts";
 import { type Command, keymapCommand, useHints } from "../commands.ts";
+import { useConfirm } from "./Confirm.tsx";
 import { Dialog } from "./Dialog.tsx";
 import { ListRow } from "./ListRow.tsx";
 
@@ -31,6 +33,11 @@ export interface PickerRow {
   readonly title: string;
   readonly detail?: string;
   readonly section?: string;
+}
+
+/** Asks in the footer before running: the question for the row, and what enter does, as `drop`. */
+export interface PickerConfirm {
+  readonly question: (row: PickerRow) => string;
 }
 
 /** A key beyond up, down, enter and esc, such as `ctrl+d` to delete the selected row. */
@@ -44,6 +51,9 @@ export interface PickerAction {
   readonly run: (row: PickerRow) => void;
   /** Leaves the picker open after it runs; without it, the picker closes. */
   readonly keepsOpen?: boolean;
+  /** Whether it acts on `row`; its key and hint work only where it does. Every row without it. */
+  readonly when?: (row: PickerRow) => boolean;
+  readonly confirm?: PickerConfirm | undefined;
 }
 
 export interface PickerProps {
@@ -52,10 +62,14 @@ export interface PickerProps {
   /** Shown when there are no rows at all. */
   readonly empty: string;
   readonly rows: Accessor<ReadonlyArray<PickerRow>>;
+  /** The note on the right of a section title, such as `connected`; none when it answers nothing. */
+  readonly sectionDetail?: ((section: string) => string | undefined) | undefined;
   /** The id of the row selected when it opens; the first row without it. */
   readonly initial?: string | undefined;
   readonly actions: ReadonlyArray<PickerAction>;
   readonly onSelect: (row: PickerRow) => void;
+  /** Asks before a pick runs. */
+  readonly confirmSelect?: PickerConfirm | undefined;
   /** The selection moved to `row`. */
   readonly onMove?: (row: PickerRow) => void;
   /** Closed with esc, without a pick. */
@@ -93,16 +107,24 @@ const itemsOf = (rows: ReadonlyArray<PickerRow>, query: string): readonly Item[]
 
 const rowId = (id: string) => `picker-row-${id}`;
 
-function ItemView(props: { readonly item: Item; readonly selected: string | undefined }) {
+function ItemView(props: {
+  readonly item: Item;
+  readonly selected: string | undefined;
+  readonly sectionDetail: PickerProps["sectionDetail"];
+}) {
   const color = useColor();
 
   return (
     <Switch>
       <Match when={props.item.kind === "section" ? props.item : undefined}>
         {(section) => (
-          <text fg={color("text.heading")} paddingLeft={1} marginTop={section().isSpaced ? 1 : 0}>
-            {section().title}
-          </text>
+          <box flexDirection="row" paddingX={1} marginTop={section().isSpaced ? 1 : 0}>
+            <text fg={color("text.heading")}>{section().title}</text>
+            <box flexGrow={1} />
+            <text flexShrink={0} fg={color("text.faint")}>
+              {props.sectionDetail?.(section().title) ?? ""}
+            </text>
+          </box>
         )}
       </Match>
       <Match when={props.item.kind === "row" ? props.item : undefined}>
@@ -121,15 +143,22 @@ function ItemView(props: { readonly item: Item; readonly selected: string | unde
   );
 }
 
-/** The query, the items it shows and the selected row; a new query selects the first match. */
+/**
+ * The query, the items it shows, the selected row and the question asked about it; a new query
+ * selects the first match and drops the question.
+ */
 const usePickerState = (props: PickerProps) => {
+  const confirm = useConfirm();
   const [query, setQuery] = createSignal("");
   const [chosen, setChosen] = createSignal(props.initial);
   const items = createMemo(() => itemsOf(props.rows(), query()));
   const rows = createMemo(() => items().flatMap((item) => (item.kind === "row" ? [item.row] : [])));
   const selected = createMemo(() => rows().find((row) => row.id === chosen()) ?? rows()[0]);
 
+  /** Keys the input takes without changing it, such as `ctrl+d` on no row, keep the selection. */
   const search = (next: string) => {
+    if (next === query()) return;
+    confirm.cancel();
     setQuery(next);
     setChosen(undefined);
   };
@@ -151,7 +180,7 @@ const usePickerState = (props: PickerProps) => {
     ),
   );
 
-  return { query, items, rows, selected, search, move };
+  return { query, items, rows, selected, search, move, confirm };
 };
 
 const bindingsOf = (actions: ReadonlyArray<PickerAction>) => [
@@ -165,9 +194,9 @@ const bindingsOf = (actions: ReadonlyArray<PickerAction>) => [
 
 type PickerState = ReturnType<typeof usePickerState>;
 
-/** Up and down: they act with more than one row. */
+/** Up and down: they act with more than one row, and not while a question waits. */
 const moveCommands = (state: PickerState): Command[] => {
-  const canMove = () => state.rows().length > 1;
+  const canMove = () => state.rows().length > 1 && !state.confirm.isAsking();
 
   return [
     {
@@ -197,35 +226,53 @@ const labelOf = (action: PickerAction, row: PickerRow | undefined) => {
 };
 
 /**
- * Enter and each action: they act on the selected row, so only while one is. Enter has no hint;
- * every user expects it.
+ * Enter and each action: they act on the selected row, so only while one is and no question waits.
+ * Enter has no hint; every user expects it.
  */
 const rowCommands = (props: PickerProps, state: PickerState, close: () => void): Command[] => {
-  const hasRow = () => state.selected() !== undefined;
+  const canAct = (action: PickerAction) => {
+    const row = state.selected();
 
-  const onSelected = (action: (row: PickerRow) => void, keepsOpen = false) => {
+    return row !== undefined && !state.confirm.isAsking() && (action.when?.(row) ?? true);
+  };
+
+  /** Runs `action` on the selected row, or asks first when it confirms. */
+  const onSelected = (action: PickerAction) => {
     const row = state.selected();
     if (row === undefined) return;
-    if (!keepsOpen) close();
-    action(row);
+
+    const run = () => {
+      if (action.keepsOpen !== true) close();
+      action.run(row);
+    };
+
+    if (action.confirm === undefined) run();
+    else state.confirm.ask({ question: action.confirm.question(row), run });
+  };
+
+  const select: PickerAction = {
+    key: "return",
+    label: "",
+    run: props.onSelect,
+    confirm: props.confirmSelect,
   };
 
   return [
     {
       name: "picker.select",
       title: "Select",
-      enabled: hasRow,
+      enabled: () => canAct(select),
       run: () => {
-        onSelected(props.onSelect);
+        onSelected(select);
       },
     },
     ...props.actions.map((action, index) => ({
       name: `picker.action.${index}`,
       title: labelOf(action, state.selected()),
       hint: { label: labelOf(action, state.selected()) },
-      enabled: hasRow,
+      enabled: () => canAct(action),
       run: () => {
-        onSelected(action.run, action.keepsOpen);
+        onSelected(action);
       },
     })),
   ];
@@ -272,7 +319,7 @@ export function Picker(props: PickerProps & { readonly close: () => void }) {
   });
 
   return (
-    <Dialog title={props.title} hints={hints()}>
+    <Dialog title={props.title} hints={hints()} confirming={state.confirm.confirming()}>
       <box flexDirection="row" marginBottom={1}>
         <text flexShrink={0} fg={color("text.accent")} attributes={TextAttributes.BOLD}>
           {"> "}
@@ -304,7 +351,13 @@ export function Picker(props: PickerProps & { readonly close: () => void }) {
           scrollbarOptions={{ visible: false }}
         >
           <For each={state.items()}>
-            {(item) => <ItemView item={item} selected={state.selected()?.id} />}
+            {(item) => (
+              <ItemView
+                item={item}
+                selected={state.selected()?.id}
+                sectionDetail={props.sectionDetail}
+              />
+            )}
           </For>
         </scrollbox>
       </Show>

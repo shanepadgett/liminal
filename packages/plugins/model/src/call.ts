@@ -6,6 +6,7 @@ import type { Registry } from "@shanepadgett/liminal-core";
 import type { Settings } from "@shanepadgett/liminal-settings/contract";
 
 import {
+  defaultThinking,
   type ModelCatalog,
   type ModelDelta,
   type ModelDetails,
@@ -67,7 +68,8 @@ const attempt = (
   details: ModelDetails | undefined,
 ) => {
   const toolChanges = nativeChangesOf(provider, model, request);
-  const { thinking, cacheKey } = request;
+  const { cacheKey } = request;
+  const thinking = request.thinking ?? defaultThinking(details?.thinking ?? []);
 
   return Stream.unwrap(
     Effect.map(

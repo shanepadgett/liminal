@@ -138,7 +138,6 @@ export function Composer(props: {
       </Show>
       <box flexDirection="row" marginTop={1} gap={2}>
         <text flexGrow={1} wrapMode="none">
-          <span style={{ fg: color("text.accent") }}>◇ </span>
           <span style={{ fg: color("text.muted") }}>{props.model}</span>
           <span style={{ fg: color("text.ghost") }}> • </span>
           <span style={{ fg: color("text.faint") }}>{props.effort}</span>

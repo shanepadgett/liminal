@@ -59,15 +59,20 @@ type Entry = typeof Entry.Type;
 
 const decodeEntry = Schema.decodeUnknownOption(Entry);
 
-/** The effort levels it lists, after `off` when thinking can be turned off. */
+/**
+ * The effort levels it lists, after `off` when thinking can be turned off: by a toggle, or by the
+ * `none` effort, which is the same.
+ */
 const thinkingOf = (entry: Entry): ReadonlyArray<string> => {
   if (!entry.reasoning) return [];
 
   const options = entry.reasoning_options ?? [];
   const effort = options.find((option) => option.type === "effort")?.values ?? [];
-  const toggles = options.some((option) => option.type === "toggle");
+  const levels = effort.filter((level) => level !== "none");
 
-  return toggles ? ["off", ...effort] : effort;
+  const canTurnOff = effort.includes("none") || options.some((option) => option.type === "toggle");
+
+  return canTurnOff ? ["off", ...levels] : levels;
 };
 
 const detailsOf = (entry: Entry): ModelDetails => ({

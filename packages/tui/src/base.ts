@@ -33,9 +33,21 @@ const slotRegistry = Effect.fn("slotRegistry")(function* (renderer: CliRenderer)
   );
 });
 
-/** The default keymap, with a command's `hint` kept where hint lines read it. */
+/**
+ * Each `escape` binding answers `ctrl+c` too, so `ctrl+c` cancels wherever `esc` does. It comes
+ * second, so hints still name `esc`.
+ */
+const cancelOnCtrlC = ({ input }: { readonly input: string }) =>
+  input === "escape" ? [{ key: "escape" }, { key: "ctrl+c" }] : undefined;
+
+/**
+ * The default keymap, with `ctrl+c` as a second `esc` and a command's `hint` kept where hint lines
+ * read it.
+ */
 const keymapOf = (renderer: CliRenderer) => {
   const keymap = createDefaultOpenTuiKeymap(renderer);
+
+  keymap.appendBindingExpander(cancelOnCtrlC);
 
   keymap.registerCommandFields({
     hint: (value, ctx) => {

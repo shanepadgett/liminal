@@ -6,7 +6,7 @@ The wire code model providers share: a library, not a plugin.
 
 Anthropic's Messages API through Effect AI's Anthropic provider.
 
-- `messagesModel(options, model, { thinking, outputLimit, toolChanges })`: an Effect AI `LanguageModel` for `model`. `options` sets the key, address and client changes. Thinking `off` turns thinking off; any other level, such as `low`, `high` or `max`, is sent as the effort. `outputLimit` is sent as `max_tokens`; unset leaves Effect AI's default for the model. `toolChanges` go as `tool_addition` and `tool_removal` blocks with the inline tools beta; Effect AI knows neither, so the request body is rewritten on the way out.
+- `messagesModel(options, model, { thinking, outputLimit, toolChanges })`: an Effect AI `LanguageModel` for `model`. `options` sets the key, address and client changes. Thinking `off` turns thinking off; any other level, such as `low`, `high` or `max`, is sent as the effort. Every request carries a top-level `cache_control`, so the API caches the prompt up to its last block. `outputLimit` is sent as `max_tokens`; unset leaves Effect AI's default for the model. `toolChanges` go as `tool_addition` and `tool_removal` blocks with the inline tools beta; Effect AI knows neither, so the request body is rewritten on the way out.
 - `messagesModels(options)`: the API's models, by id and display name.
 
 Both require an `HttpClient`.

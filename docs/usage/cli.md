@@ -19,7 +19,9 @@ With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; th
 | Alt+Up | Put the queued inputs back into the draft, oldest first, before what is there; the turn goes on |
 | Shift+Tab | The next thinking level of the model on the model line, when it has more than one |
 | Ctrl+S | Stash the draft: save it for this folder and clear the composer |
-| Ctrl+C | Clear the draft; with no draft, quit |
+| Ctrl+C | Clear the draft; with no draft, what Esc does. Never quits |
+| Ctrl+Q | Quit, even under a dialog |
+| Tab | While the draft lacks focus and no dialog is open: focus the draft |
 | Ctrl+B | Open or close the sidebar, below 110 columns |
 | Ctrl+N | New session: back to the start screen; nothing is saved until you send |
 | Ctrl+O | Open a saved session. See below |
@@ -28,7 +30,7 @@ With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; th
 
 Steers and follow-ups sent while a turn runs show above the draft, `↳` for a steer and `↓` for a follow-up, until the turn takes them.
 
-The line under the draft shows the model line, `◇ model • thinking`, and only the keys that would do something now. Enter and Esc come first. When the keys do not fit, the line ends with `ctrl+g more`. Lists and dialogs leave out hints for Up, Down, Enter and Esc; those keys still work. The draft's keys stop while a dialog is open.
+The line under the draft shows the model line, `model • thinking`, and only the keys that would do something now; while the draft lacks focus, only Tab and Ctrl+Q. Enter and Esc come first. When the keys do not fit, the line ends with `ctrl+g more`. Lists and dialogs leave out hints for Up, Down, Enter and Esc; those keys still work. The draft's keys stop while a dialog is open.
 
 ### Commands with `/`
 
@@ -40,6 +42,7 @@ Type `/` as the first character of the draft to list commands. Keep typing to fi
 | `/sessions` | Open a saved session, as Ctrl+O |
 | `/model` | Pick a model. See below |
 | `/connect` | Connect a provider, as `liminal connect` does. See below |
+| `/disconnect` | Log out of a connected login, as `liminal logout` does. See below |
 | `/theme` | Pick a palette. Moving through the list shows each; Enter saves it, Esc puts the saved one back |
 | `/pop` | List this folder's stashes. Enter puts one back after the draft and removes it from the list; Ctrl+D asks, then removes it |
 | `/qna` | Have the model ask you questions before it goes on. See below |
@@ -76,7 +79,9 @@ Ctrl+O lists this folder's latest 100 sessions, newest first, under Today, Yeste
 
 ### Connect from the TUI
 
-`/connect` asks for the provider and the login, skipping a list of one, then follows the sign-in in a dialog. A browser login opens your browser and shows the link; Ctrl+Y copies the link, or the code of a device code login. Type an API key or a pasted address and press Enter. Esc closes the dialog and stops the sign-in.
+`/connect` asks for the provider and the login, skipping a list of one, and marks a provider and a login `connected` once you have signed in through it, then follows the sign-in in a dialog. A provider's subscriptions list first and its API key last. A browser login opens your browser and shows the link; Ctrl+Y copies the link, or the code of a device code login. Type an API key or a pasted address and press Enter. Esc closes the dialog and stops the sign-in.
+
+In both of `/connect`'s lists, Ctrl+D on a connected provider or login disconnects it. `/disconnect` lists only the connected logins; Enter disconnects one. Both ask first at the bottom of the dialog: Enter disconnects, Esc cancels.
 
 ### Pick a model
 
@@ -128,12 +133,11 @@ Logins:
 | --- | --- | --- |
 | Anthropic | Claude subscription (Pro or Max), or an API key | `ANTHROPIC_API_KEY` |
 | OpenAI | An API key, for `openai/` models | `OPENAI_API_KEY` |
-| OpenAI | Sign in with ChatGPT, in the browser, for `chatgpt/` models on your ChatGPT plan | none |
 | OpenAI | Codex (ChatGPT plan), in the browser or with a device code, for `codex/` models | none |
 | OpenRouter | An API key | `OPENROUTER_API_KEY` |
 | OpenCode Go | An API key | `OPENCODE_API_KEY` |
 
-A saved login wins over the environment variable. Each OpenAI login is saved apart, so all three can be connected at once.
+A saved login wins over the environment variable. Each OpenAI login is saved apart, so both can be connected at once.
 
 An API key login can save a command that prints the key instead of the key itself, such as `op read op://Private/OpenAI/key`. Liminal runs it once at sign-in to check it, then once per run when a model call first needs the key, and keeps only its output in memory.
 
@@ -143,7 +147,7 @@ An API key login can save a command that prints the key instead of the key itsel
 liminal logout
 ```
 
-Pick a connected provider. Liminal removes its saved login. Sign in with ChatGPT and Codex also end the login at OpenAI. When OpenAI does not confirm that, the login is still removed here, and the message says how to disconnect Liminal in ChatGPT settings.
+Pick a connected provider. Liminal removes its saved login. Codex also ends the login at OpenAI. When OpenAI does not confirm that, the login is still removed here, and the message says how to sign out of Codex in ChatGPT settings.
 
 ## Send one prompt
 
@@ -180,14 +184,14 @@ Set models in `~/.liminal/settings.json`, or in `.liminal/settings.json` in the 
     "default": { "model": "anthropic/claude-sonnet-5-5", "thinking": "high" },
   },
   "model": {
-    "small": { "model": "anthropic/claude-haiku-5-5" },
+    "small": { "model": "anthropic/claude-haiku-5-5", "thinking": "high" },
   },
 }
 ```
 
 - Each session keeps the model it last ran. A new session runs `model-choice.default`, else the model you picked last in any session, else the default of the first provider you are signed in to. In the TUI, `/model` picks one and Ctrl+D in its picker saves the default.
-- `small` runs side calls.
-- A model is named `provider/model`. `thinking` is optional.
+- `small` runs side calls. Unset, it is the first connected provider's small model, at `high`.
+- A model is named `provider/model`. `thinking` is optional; without it a model thinks at `medium`, else the next level up it takes, else its provider's default. The model line shows the level that runs. `off` turns thinking off when the model allows it.
 - `attempts` sets how often a failing call is tried, the first try included. The default is 5.
 - `classifier` names the model plugins use to classify, such as `openai/gpt-6-luna`. Unset, it is the first classifier a connected provider offers.
 
@@ -230,7 +234,7 @@ It changes files with `edit`, which replaces exact text, several places in one c
 
 It runs commands with `shell`, one `bash -c` per call in that folder, stopped after 2 minutes unless it asks for longer. Commands that keep running, such as dev servers and watchers, run with `process_start` in a terminal of their own; the model reads their output, types into them and stops them. They stop when Liminal exits.
 
-It searches the web with `websearch`. On an Anthropic, OpenAI, ChatGPT or Codex model the search runs on that provider's own web search, with its small model and your login; Anthropic bills its searches. Other providers, or a hosted search that fails, use Exa's free search, which needs no key and has a rate limit. It reads one web page with `webfetch`: text pages up to 5 MB, HTML as Markdown. A fetch is checked like a command, since an address can carry data out. In the transcript a search row shows how many sources it found; click it to see them.
+It searches the web with `websearch`. On an Anthropic, OpenAI or Codex model the search runs on that provider's own web search, with its small model and your login; Anthropic bills its searches. Other providers, or a hosted search that fails, use Exa's free search, which needs no key and has a rate limit. It reads one web page with `webfetch`: text pages up to 5 MB, HTML as Markdown. A fetch is checked like a command, since an address can carry data out. In the transcript a search row shows how many sources it found; click it to see them.
 
 When a tool's output is over 2,000 lines or 50 KB, the model gets the first and last parts, and the whole output is saved in `liminal-tool-output` in the system temp folder, readable only by you. Saved output is removed after 7 days.
 

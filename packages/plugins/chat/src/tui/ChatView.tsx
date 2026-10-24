@@ -1,9 +1,9 @@
 /**
  * The chat screen: the landing until the first send opens a session, then the session's transcript,
  * built from its view. Which one shows comes from the `ChatScreen` service, so other plugins'
- * commands can change it. `ctrl+c` quits when the composer's `ctrl+c` has no draft to clear;
- * `ctrl+b` opens and closes the sidebar drawer on a small screen, and its hint shows while the
- * drawer is closed.
+ * commands can change it. `tab` puts focus on the draft while no dialog is open, `ctrl+q` quits,
+ * and the composer shows both hints even while its draft lacks focus; `ctrl+b` opens and closes the
+ * sidebar drawer on a small screen, and its hint shows while the drawer is closed.
  */
 
 import type { BoxRenderable } from "@opentui/core";
@@ -28,6 +28,7 @@ import { LoopRpc, type SendMode } from "@shanepadgett/liminal-loop/contract";
 import { MessageEvent, type SessionId, SessionRpc } from "@shanepadgett/liminal-session/contract";
 import {
   type Command,
+  type Dialogs,
   keymapCommand,
   kit,
   SlotView,
@@ -239,16 +240,35 @@ const sidebarCommands = (
   },
 ];
 
-/** `ctrl+c` quits anywhere; the sidebar keys act while focus is on the screen. */
-const useScreenKeys = (
+/** `tab` puts focus on the draft while no dialog is open; `ctrl+q` quits, even under a dialog. */
+const screenCommands = (
+  screen: Screen["Service"],
+  dialogs: Dialogs["Service"],
   quit: () => void,
+): ReadonlyArray<Command> => [
+  {
+    name: "chat.focus-draft",
+    title: "Focus the draft",
+    category: "Liminal",
+    hint: { label: "focus" },
+    enabled: () => dialogs.top() === undefined && screen.canFocusDraft(),
+    run: screen.focusDraft,
+  },
+  { name: "chat.quit", title: "Quit", category: "Liminal", hint: { label: "quit" }, run: quit },
+];
+
+const SCREEN_KEYS = [
+  { key: "tab", cmd: "chat.focus-draft" },
+  { key: "ctrl+q", cmd: "chat.quit" },
+];
+
+/** The screen's keys act anywhere; the sidebar keys act while focus is on the screen. */
+const useScreenKeys = (
+  screenKeys: ReadonlyArray<Command>,
   root: () => BoxRenderable | undefined,
   drawerKeys: ReadonlyArray<Command>,
 ) => {
-  useBindings(() => ({
-    commands: [{ name: "chat.quit", title: "Quit", category: "Liminal", run: quit }],
-    bindings: [{ key: "ctrl+c", cmd: "chat.quit" }],
-  }));
+  useBindings(() => ({ commands: screenKeys.map(keymapCommand), bindings: SCREEN_KEYS }));
 
   useBindings(() => ({
     target: root,
@@ -323,6 +343,7 @@ export function ChatView(props: {
   readonly moods: Moods["Service"];
   readonly screen: Screen["Service"];
   readonly chatSend: ChatSend["Service"];
+  readonly dialogs: Dialogs["Service"];
   readonly quit: () => void;
 }) {
   const run = useRun();
@@ -332,7 +353,11 @@ export function ChatView(props: {
   const hasDrawer = () => props.screen.session() !== undefined && place().kind === "drawer";
   let root: BoxRenderable | undefined;
 
-  useScreenKeys(props.quit, () => root, sidebarCommands(hasDrawer, isSidebarOpen, setSidebarOpen));
+  useScreenKeys(
+    screenCommands(props.screen, props.dialogs, props.quit),
+    () => root,
+    sidebarCommands(hasDrawer, isSidebarOpen, setSidebarOpen),
+  );
 
   const send = (text: string, mode?: SendMode) => {
     run(sendText(props.screen, props.chatSend, text, mode));

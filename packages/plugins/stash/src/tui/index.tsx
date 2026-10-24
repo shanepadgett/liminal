@@ -12,7 +12,7 @@ import { definePlugin } from "@shanepadgett/liminal-core";
 import {
   Dialogs,
   type EntryRun,
-  kit,
+  type kit,
   Keymap,
   makeEntryRun,
   openPicker,
@@ -50,24 +50,10 @@ interface Stashes {
 /** Opens the stashes picker; its rows follow the list as stashes drop. */
 const openStashes = (chat: ChatScreen["Service"], stashes: Stashes, run: EntryRun) =>
   Effect.gen(function* () {
-    const dialogs = yield* Dialogs;
     yield* stashes.reload;
     const textOf = (id: string) => stashes.list().find((stash) => String(stash.id) === id)?.text;
 
     const dropThen = (id: string) => Effect.andThen(drop(Number(id)), stashes.reload);
-
-    const confirmDrop = (row: kit.PickerRow) => {
-      dialogs.open((close) => (
-        <kit.Confirm
-          title="Drop stash"
-          question={`Drop "${row.title}"?`}
-          onConfirm={() => {
-            run(dropThen(row.id));
-          }}
-          close={close}
-        />
-      ));
-    };
 
     yield* openPicker({
       name: "stash/stashes",
@@ -75,7 +61,17 @@ const openStashes = (chat: ChatScreen["Service"], stashes: Stashes, run: EntryRu
       placeholder: "Search stashes",
       empty: "No stashes in this folder",
       rows: () => stashes.list().map(rowOf),
-      actions: [{ key: "ctrl+d", label: "drop", keepsOpen: true, run: confirmDrop }],
+      actions: [
+        {
+          key: "ctrl+d",
+          label: "drop",
+          keepsOpen: true,
+          confirm: { question: (row) => `Drop "${row.title}"?` },
+          run: (row) => {
+            run(dropThen(row.id));
+          },
+        },
+      ],
       onSelect: (row) => {
         const text = textOf(row.id);
         if (text === undefined) return;

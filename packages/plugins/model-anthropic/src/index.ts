@@ -106,7 +106,7 @@ const register = Effect.gen(function* () {
     catalogId: "anthropic",
     defaults: {
       main: { model: "anthropic/claude-sonnet-5-5" },
-      small: { model: "anthropic/claude-haiku-5-5" },
+      small: { model: "anthropic/claude-haiku-5-5", thinking: "high" },
     },
     signedIn: login.signedIn,
     models,

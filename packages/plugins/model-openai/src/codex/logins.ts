@@ -159,6 +159,7 @@ export const codexLogin = (client: HttpClient.HttpClient): LoginMethod => ({
   provider: "codex",
   vendor: "OpenAI",
   title: "Codex (ChatGPT plan)",
+  credential: "oauth",
   ways: [browserWay(client), deviceWay(client)],
   logOut: revoking("codex", client, revokeRequest),
 });

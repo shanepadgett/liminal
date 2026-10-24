@@ -175,7 +175,7 @@ ModelProviders: Registry<ModelProvider>
 ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>   // retries inside; converts to Effect AI's types
 Reply.add(reply, delta) / Reply.message(reply)          // deltas into the assistant Message
 Models.resolve("small" | ModelId): Effect<ModelChoice>
-Models.list: Effect<ModelInfo[]>   // signed-in providers only; a provider whose list fails is logged and left out
+Models.list: Effect<ModelInfo[]>   // signed-in providers only, cached in ~/.liminal/models.json; a provider whose list fails is logged and left out
 Models.generate(options: {
   model?: "small" | ModelId                 // missing is the prefix's model, or small
   prompt: Part[]
@@ -186,6 +186,7 @@ Models.generateObject<T>(options: { ...; schema: Codec<T, JsonObject>; tools?: S
 type StepTool = { definition: ToolDefinition; run(params: Json): Effect<string> }   // runs directly, unlogged
 Models.classify(definition: Decision.Definition, { model?: ModelId; input; images? }): Effect<DecideResponse, AiError | ModelNotFound>
 type ModelDetails = { contextWindow; outputLimit; thinking: string[]; images; toolCalls; structuredOutput; price?: { input; output; cacheRead?; cacheWrite? } }
+defaultThinking(levels): string | undefined   // medium, else the next level up; ModelCall applies it to a request without a level
 
 ModelCatalog.models(catalogId): Effect<CatalogModel[], CatalogUnavailable>   // CatalogModel = { id; name; kind: chat | embedding | image | realtime; details; wire?: messages | responses | chat }; model-catalog provides it from models.dev, cached in ~/.liminal/catalog.json
 
@@ -281,7 +282,7 @@ log steers → sync system prompt and tool list → BeforeCall hooks → Turns.r
 
 ### One-off model calls and structured output
 
-- `Models.generate` and `Models.generateObject` make a single model call outside the turn loop, through the `ModelCall` pipeline, so usage and cache hints apply.
+- `Models.generate` and `Models.generateObject` make a single model call outside the turn loop, through the `ModelCall` pipeline, so its wire's cache mark applies.
 - `model` retries a call whose `AiError` is retryable, turns and one-off calls alike. Viewers see "retrying in 4s (2/5)"; a reply that fails partway is cleared and restarts. Out of attempts, the turn ends with a notice and the input stays.
 - `generateObject` decodes the reply through its schema. Its request carries the schema as `output`, and `ModelCall` asks Effect AI's `LanguageModel.generateObject`, which picks native JSON output or a forced tool call per provider.
 - With `prefix`, the request starts from another request. `Turns.request(id)` gives the session's next request: its system prompt, tool definitions and history, the same prefix as its last turn, so the call hits the provider's cache. The prompt goes at the end and the result is not appended to the session. A side question over the current chat ("by the way") is this call.
@@ -294,7 +295,7 @@ log steers → sync system prompt and tool list → BeforeCall hooks → Turns.r
 - The questions are Effect AI's `Decision` definitions: `Decision.classify`, `Decision.rate` and `Decision.probability` over an input schema. Effect AI's decision model sends them and checks every answer.
 - `Models.classify` calls the model passed in, else the `classifier` model in `model`'s setting, else the first classifier a signed-in provider lists, else fails with `ModelNotFound` saying no classifier is connected.
 - `model` finds the provider and makes one call with no retries. The caller sets the deadline with `Effect.timeout` and decides what a failure means.
-- A provider lists only the classifiers its current login can call: `model-openai` lists `gpt-6-luna` only with an API key, since the Decisions API refuses ChatGPT sign-in tokens.
+- A provider lists only the classifiers its current login can call: `model-openai` lists `gpt-6-luna` only with an API key, since the Decisions API refuses ChatGPT plan tokens.
 
 ## Sessions
 
@@ -420,10 +421,10 @@ How `session` does these over `SqlClient` is open.
 | Base | `persona` | Who the agent is, how it talks and how it works, as a section | base | `context`, `system-prompt` |
 | Base | `history` | `Converters`, `History` | base | `context` |
 | Base | `loop` | The turn, the inbox, `Send`, `Commands`, `BeforeCall`, `TurnEnd`, cancel | base | `agent-loop`, `cancel`, `inbox` |
-| Providers | `model-anthropic`, `model-openai`, `model-openrouter`, `model-opencode-go` | Model providers and their logins; `model-openai` adds `openai`, `chatgpt` and `codex` | Add | same names, `model-codex` |
+| Providers | `model-anthropic`, `model-openai`, `model-openrouter`, `model-opencode-go` | Model providers and their logins; `model-openai` adds `openai` and `codex` | Add | same names, `model-codex` |
 | Providers | `model-scripted` | Scripted replies for tests | Add | `model-scripted` |
 | Providers | `model-catalog` | Names, limits, prices from models.dev | base service | `model-catalog` |
-| Providers | `accounts` | Credentials, login methods, `liminal connect` and `/connect` | Add | `logins`, `credential-store` |
+| Providers | `accounts` | Credentials, login methods, `liminal connect`, `liminal logout`, `/connect` and `/disconnect` | Add | `logins`, `credential-store` |
 | Storage | `sqlite`, `postgres` | The database: Effect's `SqlClient`; plugins that keep state own their tables | Replace | `session-store`, `credential-store` |
 | Tools | `tools-read` | `read` | Add | `files`, `tools-read` |
 | Tools | `tools-edit` | `edit`: exact replacements, a diff row in chat | Add | `tools-edit` |
@@ -441,7 +442,7 @@ How `session` does these over `SqlClient` is open.
 | Features | `approvals` | Tool call gate: allowed folders, classifier, reviewer, user; `request_access` | Wrap, Add | `approval` |
 | Features | `questions` | `ask_question`, `/qna`, `Questions.ask`, the answer form | Add, Wrap | `questions` |
 | Features | `memory` | Checkpoints, notes, context window | Wrap | `memory` |
-| Features | `session-name`, `usage`, `cache-hints` | Naming, cost, cache marks | Add, Attach, Wrap | same names |
+| Features | `session-name`, `usage` | Naming, cost | Add, Attach | same names |
 | Features | `checks`, `commit` | Project checks, `/commit` | Wrap, Add | same names |
 | Hosting | `loader` | Plugin folders, `plugins.json`, trust, reload | host level | `trust`, `archive/packages/kernel` |
 | Hosting | `actors` | Who sent each input | Attach, Wrap | none |
@@ -465,7 +466,7 @@ How `session` does these over `SqlClient` is open.
 ### Web tools
 
 - `websearch` asks the hosted search in `WebSearchers` whose `provider` is the provider of `ToolContext.model`; with none, or when it fails, it asks Exa's free MCP search, which `tools-web` holds itself. `WebSearcher = { provider; name; search(query): Effect<WebAnswer, SearchFailed> }`, `WebAnswer = { text; sources: { url; title }[] }`.
-- `web-search-openai` adds searchers for `openai`, `chatgpt` and `codex`, `web-search-anthropic` one for `anthropic`. Each finds its provider in `ModelProviders` when it searches and runs `model-wire`'s `hostedSearch` on the provider's `defaults.small`, never the session's model: the provider's own search tool through `languageModel`, outside `ModelCall`.
+- `web-search-openai` adds searchers for `openai` and `codex`, `web-search-anthropic` one for `anthropic`. Each finds its provider in `ModelProviders` when it searches and runs `model-wire`'s `hostedSearch` on the provider's `defaults.small`, never the session's model: the provider's own search tool through `languageModel`, outside `ModelCall`.
 - `webfetch` reads one http(s) page of a text type up to 5 MB; HTML becomes light Markdown through Bun's `HTMLRewriter`. It has no `access`, so approvals judges it as `run`.
 - Each result starts with a line marking the content as untrusted web data. The tools save `tools-web/searched` and `tools-web/fetched` for their rows.
 
@@ -504,7 +505,7 @@ All packages publish to npm as ESM JavaScript with type declarations, so Node, B
 | `@shanepadgett/liminal-directories`, `-settings`, `-model`, `-session`, `-tools`, `-tool-definitions`, `-system-prompt`, `-persona`, `-history`, `-loop` | Base plugins with their contracts |
 | `@shanepadgett/liminal-agent` | `agent()`: the base plugin list, for embedding in one import |
 | `@shanepadgett/liminal-<plugin>` | Providers and features |
-| `@shanepadgett/liminal-model-wire` | The Anthropic Messages, OpenAI Responses and Chat Completions wire code providers share, and the providers' hosted web search; a library, not a plugin |
+| `@shanepadgett/liminal-model-wire` | The Anthropic Messages, OpenAI Responses and Chat Completions wire code providers share, with the Messages wire's cache mark, and the providers' hosted web search; a library, not a plugin |
 | `@shanepadgett/liminal-client` | Client and session view |
 | `@shanepadgett/liminal-tui` | TUI frontend and the UI kit for `tui` entries |
 

@@ -100,6 +100,16 @@ export const ModelChoice = Schema.Struct({
 
 export type ModelChoice = typeof ModelChoice.Type;
 
+/** Thinking levels from least to most. */
+const thinkingOrder = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
+
+/**
+ * The level a model thinks at when none is chosen: `medium`, else the next level up it takes;
+ * undefined when it takes none of them, so the provider's own default holds.
+ */
+export const defaultThinking = (levels: ReadonlyArray<string>) =>
+  thinkingOrder.slice(thinkingOrder.indexOf("medium")).find((level) => levels.includes(level));
+
 /** Dollars per million tokens; the cache prices are set only for a model that caches. */
 export interface ModelPrice {
   readonly input: number;

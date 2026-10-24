@@ -12,12 +12,12 @@ What we are building, in order. Each milestone groups the work that ships togeth
 
 ## Current focus
 
-Milestone 3, step 7: `tools-web`. The stack is settled in [architecture.md](architecture.md#stack).
+Milestone 4: cache marks, `usage`, `session-name`. The stack is settled in [architecture.md](architecture.md#stack).
 
 ## Next
 
-1. Step 7 is built; archive [plans/coding-web.md](plans/coding-web.md) once the user has checked it, then plan step 8. Milestone 3's overview and step plans: [plans/coding.md](plans/coding.md). Earlier plans: [plans/_archive/base.md](plans/_archive/base.md) for milestone 1, [plans/_archive/tui.md](plans/_archive/tui.md) for milestone 2, [plans/_archive/gallery.md](plans/_archive/gallery.md) for the gallery's designs.
-2. Built: `packages/core` (`definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`), `directories`, `settings`, `sqlite`, `session`, `model` with classifiers over Effect AI's `Decision`, `model-wire` with Anthropic Messages, OpenAI Responses, Chat Completions and OpenAI Decisions, `accounts` with API keys, command credentials, OAuth tokens, logins grouped by vendor, the sign-in RPC and logout, `model-anthropic` with its API key and Claude subscription logins and `ANTHROPIC_API_KEY` as fallback, `model-openai` with `openai` (API key, `OPENAI_API_KEY` as fallback, GPT-6 Luna as classifier), `chatgpt` (Sign in with ChatGPT) and `codex` (Codex login), `model-openrouter` (API key, `OPENROUTER_API_KEY` as fallback, Jev as classifier), `model-opencode-go` (API key, `OPENCODE_API_KEY` as fallback, each model on the wire the catalog names), `model-catalog` providing `model`'s `ModelCatalog` from models.dev, `tools`, `history`, `system-prompt`, `persona`, `tool-definitions`, `loop`, `packages/client` with the in-memory `Host`, and `apps/cli` with `liminal -p`, which reads piped stdin, writes JSON lines with `--json` and sets exit codes, `liminal connect` and `liminal logout`. A host composes a plugin of its own that provides Effect's runtime services, such as `Path`, `FileSystem` and `HttpClient`. Milestone 2 added the session view in `packages/client`, `packages/tui` with its UI kit, `theme`, `chat`, `tags`, `stash`, `slash`, `palette`, `session-picker`, `model-choice`, `model-favorites`, and `/connect` in the `accounts` `tui` entry.
+1. Plan milestone 4 in [plans/cost-naming.md](plans/cost-naming.md). Earlier plans: [plans/_archive/base.md](plans/_archive/base.md) for milestone 1, [plans/_archive/tui.md](plans/_archive/tui.md) for milestone 2, [plans/_archive/coding.md](plans/_archive/coding.md) for milestone 3, [plans/_archive/gallery.md](plans/_archive/gallery.md) for the gallery's designs.
+2. Built: `packages/core` (`definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`), `directories`, `settings`, `sqlite`, `session`, `model` with classifiers over Effect AI's `Decision`, `model-wire` with Anthropic Messages, OpenAI Responses, Chat Completions and OpenAI Decisions, `accounts` with API keys, command credentials, OAuth tokens, logins grouped by vendor, the sign-in RPC and logout, `model-anthropic` with its API key and Claude subscription logins and `ANTHROPIC_API_KEY` as fallback, `model-openai` with `openai` (API key, `OPENAI_API_KEY` as fallback, GPT-6 Luna as classifier), and `codex` (Codex login), `model-openrouter` (API key, `OPENROUTER_API_KEY` as fallback, Jev as classifier), `model-opencode-go` (API key, `OPENCODE_API_KEY` as fallback, each model on the wire the catalog names), `model-catalog` providing `model`'s `ModelCatalog` from models.dev, `tools`, `history`, `system-prompt`, `persona`, `tool-definitions`, `loop`, `packages/client` with the in-memory `Host`, and `apps/cli` with `liminal -p`, which reads piped stdin, writes JSON lines with `--json` and sets exit codes, `liminal connect` and `liminal logout`. A host composes a plugin of its own that provides Effect's runtime services, such as `Path`, `FileSystem` and `HttpClient`. Milestone 2 added the session view in `packages/client`, `packages/tui` with its UI kit, `theme`, `chat`, `tags`, `stash`, `slash`, `palette`, `session-picker`, `model-choice`, `model-favorites`, and `/connect` in the `accounts` `tui` entry. Milestone 3 added `tools-read`, `tools-edit`, `tools-write`, `tools-shell`, `tools-processes`, `tools-web`, `web-search-anthropic`, `web-search-openai`, `tool-output`, `instructions`, `environment`, `questions` and `approvals`.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
 
@@ -50,8 +50,6 @@ Planned dependencies are pinned in `tools/planned/package.json` so their docs ar
 
 ### 3. Coding agent
 
-Work: [plugins/coding.md](plugins/coding.md)
-
 - [x] `read`, `tool-output`; tool results hold text and image parts
 - [x] `tools-shell`; `ToolContext.progress`
 - [x] `tools-processes`
@@ -62,13 +60,14 @@ Work: [plugins/coding.md](plugins/coding.md)
 - [x] Recreate `.liminal/`; move `docs/instructions/` to `.liminal/instructions/` with `read-when` front matter
 - [x] `questions`
 - [x] `approvals`; `Tool.access`; `generateObject` with tools
-- [ ] Liminal works on its own repository
 
 ### 4. Cost and naming
 
 Work: [plugins/providers.md](plugins/providers.md)
 
-- [ ] `usage`, `cache-hints`, `session-name`
+- [x] Cache marks for Claude: the Messages wire and OpenRouter
+- [ ] `usage`
+- [ ] `session-name`
 
 ### 5. Long sessions and project features
 
@@ -114,7 +113,6 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 - Image resizing and PDFs in `read`.
 - Change notes as system-role messages where the model accepts them mid-conversation, as DeepSeek does; Effect AI's Anthropic provider has a per-model flag for it. Needs a `system` role in `Message`.
 - A turn that ends in structured output: the final answer, after any tool use, must decode through a schema the prompt gives, as OpenCode's `format` option does. `Models.generateObject` covers one-off calls.
-- Sign in with ChatGPT limits `chatgpt` does not handle: the API refuses uncompressed request bodies over about 1 MiB, which OpenCode compresses with zstd, and `model` retries errors such as `subscription_sharing_usage_limit_exceeded` that retrying cannot fix.
 - A session event when the model changes mid-session, as Pi and OpenCode log, so the transcript shows where it switched.
 - Image generation built in: when a signed-in provider offers an image model, a simple way to make an image with it.
 - A place to read the TUI's logs, such as a file under `~/.liminal/` or OpenTUI's console overlay. Inside the TUI, OpenTUI captures console output, so logged errors such as a slot fill that fails to draw stay hidden.
@@ -124,6 +122,8 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 - A live diff in the `edit` row while the call's params stream, as DeepSeek draws one from the params.
 - An Exa API key through `accounts` for `websearch`, past Exa's free limit.
 - A read-before-edit check, as Crush has: `edit` and `write` refuse a file the model has not read, or one changed since it read it.
+- Usage of model calls outside the turn loop, such as approval reviews, hosted search and session naming: `usage` counts only turn steps, since those calls log nothing and do not say which session they belong to.
+- Today's cost across every session in the sidebar, as the previous `usage` showed.
 - Which input attributes `loop` copies onto a turn's events: it copies them all, so a message-only attribute such as `loop/added` also lands on the reply and step events. Revisit with `actors`.
 
 ## Open

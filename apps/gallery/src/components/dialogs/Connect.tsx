@@ -11,9 +11,6 @@ import { Dialog } from "./Dialog.tsx";
 
 const BACK = { keys: "esc", label: "back" };
 
-/** A pasted key shows as dots, up to this many. */
-const KEY_DOTS = 40;
-
 export function ConnectKey(props: {
   readonly provider: string;
   readonly where: string;
@@ -30,7 +27,7 @@ export function ConnectKey(props: {
           {"> "}
         </text>
         <text fg={color(props.apiKey === "" ? "text.ghost" : "text.base")}>
-          {props.apiKey === "" ? "API key" : "•".repeat(Math.min(props.apiKey.length, KEY_DOTS))}
+          {props.apiKey === "" ? "API key" : props.apiKey}
         </text>
       </box>
       <Show when={props.error}>

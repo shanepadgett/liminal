@@ -130,11 +130,6 @@
       "c54c0c14876455d43a25af0f9cd41a4b14e21854"
     ]
   },
-  "jose": {
-    "version": "6.2.13",
-    "fingerprint": "4fbc6d87335d1039",
-    "commits": []
-  },
   "jsonc-parser": {
     "version": "3.3.1",
     "fingerprint": "d566046717b8e018",

@@ -45,10 +45,12 @@ Keys:
 | Shift+Enter | New line |
 | Tab | While a turn runs, send as a follow-up |
 | Esc | Close the open sidebar; otherwise, while a turn runs, stop it |
-| Ctrl+C | Clear the draft; with no draft, quit |
+| Ctrl+C | Clear the draft; with no draft, what Esc does. Never quits |
+| Ctrl+Q | Quit, even under a dialog |
+| Tab | While the draft lacks focus and no dialog is open: focus the draft |
 | Ctrl+B | Open or close the sidebar, below 110 columns |
 | Ctrl+N, `/new` | New session: back to the landing screen |
 
-The line under the draft shows a hint for each key that would do something now, while the draft has focus: Enter appears once the draft has text, Esc only while a turn runs. Enter and Esc come first; when the rest do not fit, the line ends with `ctrl+g more`. `buildTranscript` leaves out the parts plugins added to a message on send, by `loop`'s `loop/added` attribute.
+The line under the draft shows a hint for each key that would do something now, while the draft has focus; without it, only Tab and Ctrl+Q. Enter appears once the draft has text, Esc only while a turn runs. Enter and Esc come first; when the rest do not fit, the line ends with `ctrl+g more`. `buildTranscript` leaves out the parts plugins added to a message on send, by `loop`'s `loop/added` attribute.
 
 The `tui` entry requires `Host`, `Slots`, `Renderer` and `Keymap`, and calls `session/*`, `loop/*`, `directories/workspace` and `model/details`.

@@ -26,7 +26,7 @@ const codexModels = new Set([
   "gpt-6.1-sol",
 ]);
 
-/** For the `openai` and `chatgpt` providers. */
+/** For the `openai` provider. */
 export const apiToolChanges = (model: string) => apiModels.has(model);
 
 /** For the `codex` provider. */

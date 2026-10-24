@@ -46,14 +46,23 @@ const reasoningOf = Effect.fn("OpenRouter.reasoningOf")(function* (thinking: str
   );
 });
 
-/** The config for one request: its thinking level and the session OpenRouter routes it by. */
-const configOf = Effect.fn("OpenRouter.configOf")(function* ({
-  thinking,
-  cacheKey,
-}: LanguageModelOptions) {
+/**
+ * The config for one request: its thinking level, the session OpenRouter routes it by, and for
+ * Claude a top-level cache mark, since Claude caches only when asked and other models cache on
+ * their own.
+ */
+const configOf = Effect.fn("OpenRouter.configOf")(function* (
+  model: string,
+  { thinking, cacheKey }: LanguageModelOptions,
+) {
   // Our tool schemas are not written for strict mode, which refuses some JSON Schema keywords.
   const strict = { strictJsonSchema: false };
-  const base = cacheKey === undefined ? strict : { ...strict, session_id: cacheKey };
+
+  const cached = model.startsWith("anthropic/")
+    ? { ...strict, cache_control: { type: "ephemeral" as const } }
+    : strict;
+
+  const base = cacheKey === undefined ? cached : { ...cached, session_id: cacheKey };
 
   return thinking === undefined ? base : { ...base, reasoning: yield* reasoningOf(thinking) };
 });
@@ -96,7 +105,7 @@ const register = Effect.gen(function* () {
     model: string,
     options: LanguageModelOptions,
   ) {
-    const config = yield* configOf(options);
+    const config = yield* configOf(model, options);
 
     return yield* OpenRouterLanguageModel.make({ model, config }).pipe(
       Effect.provideService(OpenRouterClient.OpenRouterClient, yield* client),
@@ -115,7 +124,7 @@ const register = Effect.gen(function* () {
     catalogId: "openrouter",
     defaults: {
       main: { model: "openrouter/deepseek/deepseek-v4.1-flash-1017" },
-      small: { model: "openrouter/deepseek/deepseek-v4.1-flash-1017" },
+      small: { model: "openrouter/deepseek/deepseek-v4.1-flash-1017", thinking: "high" },
     },
     signedIn: login.signedIn,
     models,

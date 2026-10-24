@@ -32,7 +32,7 @@ export const revoking =
         (cause) =>
           new LogoutFailed({
             provider,
-            message: `The login is removed here, but OpenAI did not confirm the sign-out (${cause.message}). To end it at OpenAI, disconnect Liminal in ChatGPT settings at chatgpt.com/settings.`,
+            message: `The login is removed here, but OpenAI did not confirm the sign-out (${cause.message}). To end it at OpenAI, sign out of Codex in ChatGPT settings at chatgpt.com/settings.`,
           }),
       ),
     );

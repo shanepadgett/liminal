@@ -7,7 +7,7 @@ export const COMMANDS: readonly PickerRow[] = [
   { id: "model", title: "Switch model", detail: "ctrl+m", section: "Model" },
   { id: "connect", title: "Connect a provider", detail: "/connect", section: "Model" },
   { id: "palette", title: "Change palette", section: "Liminal" },
-  { id: "quit", title: "Quit", detail: "ctrl+c", section: "Liminal" },
+  { id: "quit", title: "Quit", detail: "ctrl+q", section: "Liminal" },
 ];
 
 const commands = (query: string, selected: string) => () => (

@@ -20,8 +20,8 @@ export const MODELS: readonly PickerRow[] = [
     detail: "200k",
     section: "Anthropic",
   },
-  { id: "chatgpt/gpt-5", title: "gpt-5", detail: "400k", section: "ChatGPT" },
-  { id: "chatgpt/gpt-5-codex", title: "gpt-5-codex", detail: "400k", section: "ChatGPT" },
+  { id: "codex/gpt-5", title: "gpt-5", detail: "400k", section: "Codex" },
+  { id: "codex/gpt-5-codex", title: "gpt-5-codex", detail: "400k", section: "Codex" },
   {
     id: "openrouter/qwen3-coder",
     title: "qwen/qwen3-coder",
@@ -45,5 +45,5 @@ const models = (query: string, selected: string) => () => (
 
 export const modelsStates: readonly [State, ...State[]] = [
   { name: "Open", fill: "center", view: models("", "anthropic/claude-sonnet-4.5") },
-  { name: "Filtered", fill: "center", view: models("gpt", "chatgpt/gpt-5") },
+  { name: "Filtered", fill: "center", view: models("gpt", "codex/gpt-5") },
 ];

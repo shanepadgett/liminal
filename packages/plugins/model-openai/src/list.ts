@@ -1,4 +1,4 @@
-/** Fetching model lists, and the list a ChatGPT plan gets from the Codex backend or the API. */
+/** Fetching model lists, and the list a ChatGPT plan gets from the Codex backend. */
 import { Effect, Schema } from "effect";
 import { AiError } from "effect/ai";
 import { type HttpClient, type HttpClientRequest, HttpClientResponse } from "effect/http";
@@ -37,8 +37,6 @@ const PlanModels = Schema.Struct({
       display_name: Schema.optionalKey(Schema.String),
       /** `hide` marks models kept for the Codex CLI's own use, such as reviews. */
       visibility: Schema.String,
-      /** False for models the API refuses, though the Codex backend may take them. */
-      supported_in_api: Schema.optionalKey(Schema.Boolean),
     }),
   ),
 });

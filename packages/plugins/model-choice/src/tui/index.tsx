@@ -1,7 +1,8 @@
 /**
  * Model choice's `tui` entry. `/model` opens the models picker; the pick waits on the screen it was
  * made on and goes with that screen's next send. `shift+tab` steps the line's thinking level while
- * the model takes more than one. The model line fills chat's `status` slot.
+ * the model takes more than one. The model line fills chat's `status` slot; while no provider is
+ * connected, it says to run `/connect`.
  */
 import { Effect, Layer } from "effect";
 import { createEffect, createRoot, on } from "solid-js";
@@ -43,15 +44,30 @@ const stepThinking = (state: ModelState) => {
   state.pick(choiceOf(line.model, levels[(at + 1) % levels.length]));
 };
 
-/** Reloads what the line shows each time the screen changes, until the scope closes. */
+/**
+ * Reloads what the line shows each time the screen changes, and the line and models once the last
+ * dialog closes, since a provider connects or disconnects in one; until the scope closes.
+ */
 const followScreen = (chat: ChatScreen["Service"], state: ModelState, run: EntryRun) =>
   Effect.acquireRelease(
-    Effect.sync(() =>
+    Effect.map(Dialogs, (dialogs) =>
       createRoot((dispose) => {
         createEffect(
           on(chat.session, (session) => {
             run(state.reloadShown(session));
           }),
+        );
+
+        createEffect(
+          on(
+            () => dialogs.top() === undefined,
+            (isClear) => {
+              if (!isClear) return;
+              run(state.reloadShown(chat.session()));
+              run(state.reloadList);
+            },
+            { defer: true },
+          ),
         );
 
         return dispose;

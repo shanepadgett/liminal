@@ -5,14 +5,13 @@ import { AiError } from "effect/ai";
 import type { Registry } from "@shanepadgett/liminal-core";
 import type { Settings } from "@shanepadgett/liminal-settings/contract";
 
-import { detailsOf } from "./call.ts";
 import { makeClassify } from "./classify.ts";
 import {
   type GenerateObjectOptions,
   type GenerateOptions,
   type ModelCall,
-  type ModelCatalog,
   type ModelChoice,
+  type ModelInfo,
   ModelNotFound,
   type ModelProvider,
   type ModelRequest,
@@ -47,29 +46,6 @@ const requestOf = (
   };
 };
 
-/**
- * `provider`'s models with their details from the catalog; none when it is signed out, and none,
- * logged, when its list fails.
- */
-const listOf = (catalog: ModelCatalog["Service"], provider: ModelProvider) =>
-  Effect.gen(function* () {
-    if (!(yield* provider.signedIn)) return [];
-
-    const listed = yield* provider.models;
-    const details = yield* detailsOf(catalog, provider);
-    const prefix = `${provider.id}/`;
-
-    return listed.map(({ id, name }) => ({
-      id,
-      name,
-      details: details.get(id.slice(prefix.length)),
-    }));
-  }).pipe(
-    Effect.catch((error) =>
-      Effect.as(Effect.logWarning(`Listing ${provider.name} models failed`, error), []),
-    ),
-  );
-
 const decodeOutput = <T>(schema: Schema.Codec<T, Schema.JsonObject>, text: string) =>
   Schema.decodeEffect(Schema.fromJsonString(schema))(text).pipe(
     Effect.mapError((error) =>
@@ -85,7 +61,7 @@ export const make = (
   providers: Registry<ModelProvider>,
   settings: Settings["Service"],
   call: ModelCall["Service"],
-  catalog: ModelCatalog["Service"],
+  list: Effect.Effect<ReadonlyArray<ModelInfo>>,
 ) => {
   const resolve = Effect.fn("Models.resolve")(function* (model: string) {
     if (model !== "small") return { model } satisfies ModelChoice;
@@ -134,12 +110,7 @@ export const make = (
 
   return Models.of({
     resolve,
-    list: Effect.flatMap(providers.list, (all) =>
-      Effect.map(
-        Effect.forEach(all, (provider) => listOf(catalog, provider), { concurrency: "unbounded" }),
-        (lists) => lists.flat(),
-      ),
-    ),
+    list,
     generate: (options) => Effect.map(reply(options), Reply.message),
     generateObject,
     classify: makeClassify(providers, settings),

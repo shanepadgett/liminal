@@ -45,7 +45,10 @@ export const registerCodex = Effect.gen(function* () {
     name: "Codex",
     // The plan offers OpenAI's models, which the catalog lists under `openai`.
     catalogId: "openai",
-    defaults: { main: { model: "codex/gpt-6.1-sol" }, small: { model: "codex/gpt-6-luna" } },
+    defaults: {
+      main: { model: "codex/gpt-6.1-sol" },
+      small: { model: "codex/gpt-6-luna", thinking: "high" },
+    },
     signedIn: credentialSaved(credentials, "codex"),
     models: Effect.flatMap(tokens, (signed) => codexModels(http, signed)),
     nativeToolChanges: codexToolChanges,

@@ -2,11 +2,11 @@
  * Where the user writes. No box: a gutter of marks runs down the left of the draft, the first a
  * bold chevron and the rest fading from light accent to dark. Below are the `status` slot's fills,
  * such as the model line, and on the right the hints of the keys that act now, while the draft has
- * focus. `enter` sends and `shift+enter` adds a line; while a turn runs, `enter` steers it, `tab`
- * queues a follow-up and `esc` stops it. Queued inputs show above the draft until the turn takes
- * them; `alt+up` puts them back into the draft, as `esc` does. `ctrl+c` clears the draft, and with
- * none passes on, so it quits. A draft trigger, such as `@`, opens its menu above the draft; the
- * menu's keys come first.
+ * focus; without it, only the screen's `tab` and `ctrl+q`. `enter` sends and `shift+enter` adds a
+ * line; while a turn runs, `enter` steers it, `tab` queues a follow-up and `esc` stops it. Queued
+ * inputs show above the draft until the turn takes them; `alt+up` puts them back into the draft, as
+ * `esc` does. `ctrl+c` clears the draft, and with none does what `esc` does. A draft trigger, such
+ * as `@`, opens its menu above the draft; the menu's keys come first.
  */
 
 import { TextAttributes, type TextareaRenderable } from "@opentui/core";
@@ -29,7 +29,7 @@ import {
 import { draftTextOf } from "../view/index.ts";
 import { useDraftMenu } from "./draft-menu.ts";
 import { DraftMenu } from "./DraftMenu.tsx";
-import type { ChatScreen } from "./screen.ts";
+import { type ChatScreen, SCREEN_HINTS } from "./screen.ts";
 import { type ComposerProps, status } from "./slots.ts";
 import type { DraftTriggers } from "./triggers.ts";
 
@@ -187,9 +187,10 @@ const COMPOSER_KEYS = [
   { key: "kpenter", cmd: "chat.steer" },
   { key: "shift+return", cmd: "chat.newline" },
   { key: "tab", cmd: "chat.follow-up" },
+  // Before `escape`, which answers `ctrl+c` too: the draft clears before the turn stops.
+  { key: "ctrl+c", cmd: "chat.clear" },
   { key: "escape", cmd: "chat.stop" },
   { key: "alt+up", cmd: "chat.pull-back" },
-  { key: "ctrl+c", cmd: "chat.clear" },
 ];
 
 export function Composer(
@@ -203,8 +204,10 @@ export function Composer(
   let draft: TextareaRenderable | undefined;
   const menu = useDraftMenu(() => draft, props.triggers);
 
-  // Only while the draft has focus; behind a dialog the dialog shows its own keys.
-  const hints = useKeymapSelector((keymap) => (draft?.focused === true ? activeHints(keymap) : []));
+  // Without focus on the draft, such as behind a dialog, only the screen's own keys.
+  const hints = useKeymapSelector((keymap) =>
+    draft?.focused === true ? activeHints(keymap) : activeHints(keymap, SCREEN_HINTS),
+  );
 
   useBindings(() => ({
     target: () => draft,

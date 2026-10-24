@@ -1,5 +1,15 @@
 /** Saved credentials, the login methods providers add, and the sign-in that screens show. */
-import { type Array, Clock, Config, Context, Effect, Option, Redacted, Schema } from "effect";
+import {
+  type Array,
+  Clock,
+  Config,
+  Context,
+  Effect,
+  Option,
+  Predicate,
+  Redacted,
+  Schema,
+} from "effect";
 import { type HttpClient, type HttpClientRequest, HttpClientResponse } from "effect/http";
 import { Rpc, RpcGroup } from "effect/rpc";
 
@@ -27,6 +37,12 @@ export type Command = typeof Command.Type;
 
 export const Credential = Schema.Union([ApiKey, OAuth, Command]);
 export type Credential = typeof Credential.Type;
+
+/** What a login saves: an API key, or a command that prints one, else OAuth tokens. */
+export type CredentialKind = "key" | "oauth";
+
+export const kindOf = (credential: Credential): CredentialKind =>
+  Predicate.isTagged(credential, "OAuth") ? "oauth" : "key";
 
 export class CredentialsFailed extends Schema.TaggedError<
   CredentialsFailed,
@@ -126,6 +142,8 @@ export interface LoginMethod {
   /** The company menus group logins under, such as `OpenAI`. */
   readonly vendor: string;
   readonly title: string;
+  /** What every way through it saves; the login is connected while that kind is saved. */
+  readonly credential: CredentialKind;
   readonly ways: Array.NonEmptyReadonlyArray<LoginWay>;
   /**
    * Ends the login on the provider's side before the credential is removed, such as revoking a
@@ -169,6 +187,7 @@ export const apiKeyMethod = (provider: string, vendor: string): LoginMethod => {
     provider,
     vendor,
     title: "API key",
+    credential: "key",
     ways: [
       { id: "key", title: "API key", run: key },
       { id: "command", title: "Command that prints the key", run: command },
@@ -176,17 +195,23 @@ export const apiKeyMethod = (provider: string, vendor: string): LoginMethod => {
   };
 };
 
+/** The kind saved under `provider`, if any; a failing store is logged and counts as none. */
+export const savedKind = (
+  credentials: Credentials["Service"],
+  provider: string,
+): Effect.Effect<Option.Option<CredentialKind>> =>
+  credentials.get(provider).pipe(
+    Effect.map(Option.map(kindOf)),
+    Effect.catchTag("CredentialsFailed", (error) =>
+      Effect.as(Effect.logWarning(error.message), Option.none()),
+    ),
+  );
+
 /** Whether a credential is saved under `provider`; a failing store is logged and counts as no. */
 export const credentialSaved = (
   credentials: Credentials["Service"],
   provider: string,
-): Effect.Effect<boolean> =>
-  credentials.get(provider).pipe(
-    Effect.map(Option.isSome),
-    Effect.catchTag("CredentialsFailed", (error) =>
-      Effect.as(Effect.logWarning(error.message), false),
-    ),
-  );
+): Effect.Effect<boolean> => Effect.map(savedKind(credentials, provider), Option.isSome);
 
 /** How a provider with an API key login reads it. */
 export interface ApiKeyLogin {
@@ -301,7 +326,7 @@ export const LoginMethodInfo = Schema.Struct({
   vendor: Schema.String,
   title: Schema.String,
   ways: Schema.Array(LoginWayInfo),
-  /** Whether a credential is saved under the method's provider. */
+  /** Whether the kind of credential the method saves is saved under its provider. */
   connected: Schema.Boolean,
 });
 

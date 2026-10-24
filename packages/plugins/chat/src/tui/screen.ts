@@ -38,12 +38,19 @@ export class ChatScreen extends Context.Service<
       commands: ReadonlyArray<Command>,
       keys: ReadonlyArray<CommandKey>,
     ) => Effect.Effect<void, never, Scope.Scope>;
+    /** Whether a composer shows and its draft lacks focus, so `focusDraft` would move it. */
+    readonly canFocusDraft: () => boolean;
+    /** Puts focus on the composer's draft, when one shows. */
+    readonly focusDraft: () => void;
     /** The composer in the slot hands over its textarea; the last attach wins. */
     readonly attach: (draft: TextareaRenderable) => void;
     /** The composer calls it after each edit, so `draft.text` follows. */
     readonly edited: () => void;
   }
 >()("chat/Screen") {}
+
+/** The screen's own commands, whose hints the composer shows even while its draft lacks focus. */
+export const SCREEN_HINTS: ReadonlySet<string> = new Set(["chat.focus-draft", "chat.quit"]);
 
 const makeDraft = (
   textarea: Accessor<TextareaRenderable | undefined>,
@@ -146,6 +153,15 @@ export const makeChatScreen = Effect.gen(function* () {
     },
     draft: makeDraft(textarea, text),
     registerDraftCommands,
+    canFocusDraft: () => {
+      const draft = textarea();
+
+      return draft !== undefined && !draft.isDestroyed && !draft.focused;
+    },
+    focusDraft: () => {
+      const draft = textarea();
+      if (draft !== undefined && !draft.isDestroyed) draft.focus();
+    },
     attach: (draft) => {
       setTextarea(() => draft);
       layers.moveTo(draft);

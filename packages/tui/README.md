@@ -12,7 +12,7 @@ Liminal's terminal UI, on OpenTUI and Solid. `run(plugins)` loads each plugin's 
 
 ## Slots
 
-`Slots.fill(slot, component)` draws a component in a slot until the caller's scope closes. `defineSlot(name, mode)` makes a slot; `<SlotView slot={...}>` draws it. The root draws `screen`, where the last fill wins; `ctrl+c` quits until a screen takes it over. A fill's component returns one element that stays: when the element it returns changes, the slot draws the component again from fresh state. A fill that throws while it draws is logged as an error, and its slot draws as if it were not there.
+`Slots.fill(slot, component)` draws a component in a slot until the caller's scope closes. `defineSlot(name, mode)` makes a slot; `<SlotView slot={...}>` draws it. The root draws `screen`, where the last fill wins; `ctrl+q` quits until a screen takes it over. Every `escape` binding answers `ctrl+c` too, so `ctrl+c` cancels wherever `esc` does, and with nothing to cancel does nothing; it never quits. A fill's component returns one element that stays: when the element it returns changes, the slot draws the component again from fresh state. A fill that throws while it draws is logged as an error, and its slot draws as if it were not there.
 
 ## Dialogs
 
@@ -32,7 +32,7 @@ A hint shows only for a key that would run now. `activeHints(keymap)` reads them
 
 ## Pickers
 
-`openPicker(spec)` opens the kit's `Picker` in a dialog. A `PickerSpec` is the picker's props plus a `name`, such as `stash/stashes`. Every spec passes through the `Pickers` pipeline before it opens, so a plugin can wrap a picker by its name to change its rows or add keys.
+`openPicker(spec)` opens the kit's `Picker` in a dialog. A `PickerSpec` is the picker's props plus a `name`, such as `stash/stashes`. Rows with a `section` sit under its title; `sectionDetail` puts a note on the right of a title. An action's `when` limits its key and hint to the rows it acts on. A destructive action or pick asks first with `confirm` or `confirmSelect`: the question and `enter yes esc no` take the hints' row in the footer, and typing drops the question. A dialog's footer row stays when no key applies, so it keeps its height. Every spec passes through the `Pickers` pipeline before it opens, so a plugin can wrap a picker by its name to change its rows or add keys.
 
 The picker filters its rows with `fuzzysort` as the user types, and groups them by `section`. Up and Down move, Enter calls `onSelect` and closes, Esc closes; none of the four shows a hint. Each action is a key with a label in the hints; a label can be a function of the selected row, such as `favorite` or `unfavorite`; it closes the picker unless `keepsOpen` is set. Enter and the actions work, and show their hints, only while a row is selected, and Up and Down only with more than one row. The picker's keys work while its input has focus. `onMove` runs as the selection moves and `onClose` when it closes. `initial` names the row selected when it opens.
 
@@ -50,6 +50,6 @@ Outside components, a `tui` entry's commands run effects with `makeEntryRun(mess
 
 ## Kit
 
-`kit` holds the shared components: `Chip`, `ChoiceRow`, `Confirm`, `Dialog`, `Diff`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Porter`, `Rule`, `SecretInput`, `Section`. `SecretInput` takes typed and pasted text and draws it as dots. `Diff` draws a unified patch with line numbers and the file's syntax colors, and `changesOf(patch)` counts the lines it adds and removes. `Porter` is the little face that murmurs words while a turn works; give him `words` and `poses` (`{ face, weight, hold }`, each face seven cells) in place of his own, and a single word holds still. `useInkHead` paces streaming text so `Inked` writes it out evenly, however it arrives. They read colors by role name from `@shanepadgett/liminal-client`.
+`kit` holds the shared components: `Chip`, `ChoiceRow`, `Dialog`, `Diff`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Porter`, `Rule`, `Section`. `Overlay` sets a dialog in the middle of the screen. Any dialog asks before a destructive action the same way: `useConfirm()` keeps the question and binds enter and esc above the dialog's keys, and `Dialog`'s `confirming` draws it in the footer. `Diff` draws a unified patch with line numbers and the file's syntax colors, and `changesOf(patch)` counts the lines it adds and removes. `Porter` is the little face that murmurs words while a turn works; give him `words` and `poses` (`{ face, weight, hold }`, each face seven cells) in place of his own, and a single word holds still. `useInkHead` paces streaming text so `Inked` writes it out evenly, however it arrives. They read colors by role name from `@shanepadgett/liminal-client`.
 
 Run it with Bun's `@opentui/solid/preload`, which compiles `.tsx`.

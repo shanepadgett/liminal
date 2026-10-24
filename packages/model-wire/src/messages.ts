@@ -12,18 +12,22 @@ export type MessagesOptions = AnthropicClient.Options;
 type Config = NonNullable<Parameters<typeof AnthropicLanguageModel.make>[0]["config"]>;
 
 /**
+ * Settings every call shares. Our tool schemas are not written for strict mode, which refuses some
+ * JSON Schema keywords. A top-level cache mark has the API cache the prompt up to its last block,
+ * so each step reads the steps before it from the cache.
+ */
+const shared: Config = { strictJsonSchema: false, cache_control: { type: "ephemeral" } };
+
+/**
  * `off` turns thinking off; any other level is an effort the model thinks up to. Effect AI types
  * effort as low, medium or high only, but the API also takes `max` and sends the value unchecked.
  */
 const thinkingConfigOf = (thinking: string | undefined): Config => {
-  // Our tool schemas are not written for strict mode, which refuses some JSON Schema keywords.
-  const strictJsonSchema = false;
-
-  if (thinking === undefined) return { strictJsonSchema };
-  if (thinking === "off") return { strictJsonSchema, thinking: { type: "disabled" } };
+  if (thinking === undefined) return shared;
+  if (thinking === "off") return { ...shared, thinking: { type: "disabled" } };
 
   return {
-    strictJsonSchema,
+    ...shared,
     thinking: { type: "adaptive" },
     // eslint-disable-next-line typescript/no-unsafe-type-assertion -- the API checks the level and an unknown one fails the call with its message; Effect AI's type leaves out `max`.
     output_config: { effort: thinking as "high" },

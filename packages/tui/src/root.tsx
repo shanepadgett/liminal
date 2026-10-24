@@ -19,13 +19,13 @@ import { HintsExpandedProvider } from "./kit/Hints.tsx";
 import { Pickers } from "./pickers.tsx";
 import { RegistryProvider, screen, Slots, SlotView } from "./slots.tsx";
 
-/** What shows while no plugin fills the screen; `ctrl+c` quits, as the screen would let it. */
+/** What shows while no plugin fills the screen; `ctrl+q` quits, as the screen would let it. */
 function Empty(props: { readonly quit: () => void }) {
   const color = useColor();
 
   useBindings(() => ({
     commands: [{ name: "app.quit", title: "Quit", run: props.quit }],
-    bindings: [{ key: "ctrl+c", cmd: "app.quit" }],
+    bindings: [{ key: "ctrl+q", cmd: "app.quit" }],
   }));
 
   return <text fg={color("text.faint")}>No plugin fills the screen.</text>;

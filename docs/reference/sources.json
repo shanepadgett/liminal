@@ -275,13 +275,6 @@
       "api": []
     },
     {
-      "package": "jose",
-      "versionSource": "lock",
-      "summary": "JSON Web Tokens and keys: jwtVerify with createRemoteJWKSet checks an ID token's signature against an issuer's published keys. For Sign in with ChatGPT.",
-      "docs": [{ "origin": { "kind": "installed" }, "files": ["README.md"] }],
-      "api": [{ "kind": "types", "path": "dist/types/index.d.ts" }]
-    },
-    {
       "package": "jsonc-parser",
       "versionSource": "lock",
       "summary": "Parses JSON with comments and edits it in place: parse, modify and applyEdits keep comments and formatting. For settings files.",

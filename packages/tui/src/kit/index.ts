@@ -10,7 +10,7 @@ export {
   RING_COLUMNS,
 } from "./ChoiceRow.tsx";
 
-export { Confirm } from "./Confirm.tsx";
+export { type Confirming, useConfirm } from "./Confirm.tsx";
 export { Dialog } from "./Dialog.tsx";
 export { changesOf, Diff } from "./Diff.tsx";
 export { cellsOf, Gradient, gradientOf } from "./Gradient.tsx";
@@ -24,8 +24,15 @@ export { ListRow } from "./ListRow.tsx";
 export { Logo } from "./Logo.tsx";
 export { MatchedText } from "./MatchedText.tsx";
 export { Overlay } from "./Overlay.tsx";
-export { Picker, type PickerAction, type PickerProps, type PickerRow } from "./Picker.tsx";
+
+export {
+  Picker,
+  type PickerAction,
+  type PickerConfirm,
+  type PickerProps,
+  type PickerRow,
+} from "./Picker.tsx";
+
 export { Rule } from "./Rule.tsx";
-export { SecretInput } from "./SecretInput.tsx";
 export { type Pose, Porter } from "./Porter.tsx";
 export { Section } from "./Section.tsx";

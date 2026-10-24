@@ -1,4 +1,4 @@
-/** A dimmed layer over the whole screen: a dialog near its top, or a drawer on its right. */
+/** A dimmed layer over the whole screen: a dialog in its middle, or a drawer on its right. */
 
 import { RGBA } from "@opentui/core";
 import type { JSX } from "@opentui/solid";
@@ -35,7 +35,7 @@ export function Overlay(props: {
       height="100%"
       backgroundColor={scrim()}
       alignItems={isDialog() ? "center" : "flex-end"}
-      paddingTop={isDialog() ? 3 : 0}
+      justifyContent={isDialog() ? "center" : "flex-start"}
       zIndex={10}
     >
       {props.children}

@@ -170,13 +170,6 @@ Desktop shell: Bun main process, system webviews, typed RPC, menus, tray, update
 - Docs: `docs/reference/copies/electrobun/2.0.4/` (138 files: docs/, README.md, package/)
 - From: https://github.com/blackboardsh/electrobun.git, tag v2.0.4, commit c54c0c148764
 
-## jose 6.2.13
-
-JSON Web Tokens and keys: jwtVerify with createRemoteJWKSet checks an ID token's signature against an issuer's published keys. For Sign in with ChatGPT.
-
-- Docs: `docs/reference/copies/jose/6.2.13/` (1 file: README.md)
-- API (types): `packages/plugins/model-openai/node_modules/jose/dist/types/index.d.ts`
-
 ## jsonc-parser 3.3.1
 
 Parses JSON with comments and edits it in place: parse, modify and applyEdits keep comments and formatting. For settings files.

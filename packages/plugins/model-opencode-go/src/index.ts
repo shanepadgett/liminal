@@ -129,7 +129,7 @@ const register = Effect.gen(function* () {
     catalogId: "opencode-go",
     defaults: {
       main: { model: "opencode-go/deepseek-v4.1-flash" },
-      small: { model: "opencode-go/deepseek-v4.1-flash" },
+      small: { model: "opencode-go/deepseek-v4.1-flash", thinking: "high" },
     },
     signedIn: login.signedIn,
     models,

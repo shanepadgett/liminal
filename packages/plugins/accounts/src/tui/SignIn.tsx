@@ -5,7 +5,7 @@
  */
 import { TextAttributes } from "@opentui/core";
 import { useBindings } from "@opentui/keymap/solid";
-import { type JSX, useRenderer } from "@opentui/solid";
+import { useRenderer } from "@opentui/solid";
 import { Data, Effect, Match, Predicate, Redacted, Stream } from "effect";
 import { createSignal, Show } from "solid-js";
 
@@ -28,9 +28,9 @@ export interface SignInTarget {
   readonly way: string;
 }
 
+/** Answers show as typed, keys too, as OpenCode and Crush show them. */
 interface Question {
   readonly question: string;
-  readonly secret: boolean;
 }
 
 /** What the steps said so far. */
@@ -60,7 +60,7 @@ const next = (shown: Shown, event: Event): Shown =>
   Match.valueTags(event, {
     OpenUrl: ({ url }): Shown => ({ ...shown, url, code: undefined, ask: undefined }),
     ShowCode: ({ code, url }): Shown => ({ ...shown, url, code, ask: undefined }),
-    Ask: ({ question, secret }): Shown => ({ ...shown, ask: { question, secret } }),
+    Ask: ({ question }): Shown => ({ ...shown, ask: { question } }),
     Waiting: ({ text }): Shown => ({ ...shown, message: text, ask: undefined }),
     Told: ({ text }): Shown => ({ ...shown, message: text, ask: undefined }),
     Done: (): Shown => shown,
@@ -143,27 +143,22 @@ function Link(props: { readonly url: string; readonly code: string | undefined }
 function Asking(props: { readonly ask: Question; readonly onInput: (text: string) => void }) {
   const color = useColor();
 
-  const entry = (): JSX.Element =>
-    props.ask.secret ? (
-      <kit.SecretInput placeholder={props.ask.question} onInput={props.onInput} />
-    ) : (
-      <box flexDirection="row">
-        <text flexShrink={0} fg={color("text.accent")} attributes={TextAttributes.BOLD}>
-          {"> "}
-        </text>
-        <input
-          focused
-          flexGrow={1}
-          placeholder={props.ask.question}
-          placeholderColor={color("text.ghost")}
-          textColor={color("text.base")}
-          backgroundColor={color("surface.overlay")}
-          onInput={props.onInput}
-        />
-      </box>
-    );
-
-  return <box marginBottom={1}>{entry()}</box>;
+  return (
+    <box flexDirection="row" marginBottom={1}>
+      <text flexShrink={0} fg={color("text.accent")} attributes={TextAttributes.BOLD}>
+        {"> "}
+      </text>
+      <input
+        focused
+        flexGrow={1}
+        placeholder={props.ask.question}
+        placeholderColor={color("text.ghost")}
+        textColor={color("text.base")}
+        backgroundColor={color("surface.overlay")}
+        onInput={props.onInput}
+      />
+    </box>
+  );
 }
 
 export function SignIn(props: { readonly target: SignInTarget; readonly close: () => void }) {

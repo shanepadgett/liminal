@@ -4,7 +4,6 @@ import { Picker, PICKER_HINTS, type PickerRow } from "./Picker.tsx";
 
 const PROVIDERS: readonly PickerRow[] = [
   { id: "anthropic", title: "Anthropic", detail: "signed in" },
-  { id: "chatgpt", title: "ChatGPT", detail: "Plus or Pro" },
   { id: "codex", title: "Codex" },
   { id: "openai", title: "OpenAI", detail: "API key" },
   { id: "openrouter", title: "OpenRouter", detail: "API key" },
@@ -65,7 +64,7 @@ export const connectStates: readonly [State, ...State[]] = [
     fill: "center",
     view: () => (
       <ConnectBrowser
-        provider="ChatGPT"
+        provider="Codex"
         url="https://auth.openai.com/codex/device"
         code="K7QF-2MXP"
       />

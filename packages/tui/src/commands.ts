@@ -141,10 +141,19 @@ const keyNameAliases = { return: "enter", escape: "esc" };
  * A hint for each key that runs a command now and whose command has one: important hints first,
  * then the rest, each in the keymap's order: higher-priority layers first. A command on several
  * keys, such as `return` and `kpenter`, shows only by its first key, and not at all while another
- * command holds that key.
+ * command holds that key. With `only`, just the hints of the commands it names.
  */
-export const activeHints = (keymap: OpenTuiKeymap<Renderable, KeyEvent>): ReadonlyArray<Hint> => {
-  const active = keymap.getActiveKeys({ includeMetadata: true });
+export const activeHints = (
+  keymap: OpenTuiKeymap<Renderable, KeyEvent>,
+  only?: ReadonlySet<string>,
+): ReadonlyArray<Hint> => {
+  const all = keymap.getActiveKeys({ includeMetadata: true });
+
+  const active =
+    only === undefined
+      ? all
+      : all.filter((key) => Predicate.isString(key.command) && only.has(key.command));
+
   const commands = active.flatMap((key) => (Predicate.isString(key.command) ? [key.command] : []));
   const bindings = keymap.getCommandBindings({ visibility: "reachable", commands });
 
@@ -177,7 +186,8 @@ export const activeHints = (keymap: OpenTuiKeymap<Renderable, KeyEvent>): Readon
 };
 
 /** The hints of the keys that act now; follows the keymap as focus and commands change. */
-export const useHints = (): Accessor<ReadonlyArray<Hint>> => useKeymapSelector(activeHints);
+export const useHints = (): Accessor<ReadonlyArray<Hint>> =>
+  useKeymapSelector((keymap) => activeHints(keymap));
 
 /** Whether focus sits on `root` or inside it. */
 const isWithin = (focused: Renderable | null, root: Renderable | undefined): boolean => {

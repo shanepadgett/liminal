@@ -1,35 +1,46 @@
-/** A question in a dialog: enter confirms, esc cancels. */
+/**
+ * Asking before a destructive action, in the dialog's footer: the question shows where the key
+ * hints were, enter answers yes and esc cancels. A dialog keeps the state with `useConfirm` and
+ * passes it to `Dialog` as `confirming`.
+ */
 
 import { useBindings } from "@opentui/keymap/solid";
+import { createSignal } from "solid-js";
 
-import { useColor } from "../colors.ts";
-import { keymapCommand, useHints } from "../commands.ts";
-import { Dialog } from "./Dialog.tsx";
+import { keymapCommand } from "../commands.ts";
 
-export function Confirm(props: {
-  readonly title: string;
+/** What is asked, and the action enter runs. */
+export interface Confirming {
   readonly question: string;
-  readonly onConfirm: () => void;
-  readonly close: () => void;
-}) {
-  const color = useColor();
-  const hints = useHints();
+  readonly run: () => void;
+}
 
-  // Above the dialog stack's own `escape`. Nothing has focus under a dialog with no input, so
-  // these keys need no target.
+/**
+ * The question asked now, if any. While one is, enter runs its action and esc drops it; both sit
+ * above the dialog's own keys.
+ */
+export const useConfirm = () => {
+  const [confirming, setConfirming] = createSignal<Confirming>();
+  const isAsking = () => confirming() !== undefined;
+
+  const cancel = () => {
+    setConfirming(undefined);
+  };
+
   useBindings(() => ({
-    priority: 1,
+    priority: 2,
     commands: [
       {
         name: "confirm.yes",
         title: "Confirm",
-        hint: { label: "confirm" },
+        enabled: isAsking,
         run: () => {
-          props.close();
-          props.onConfirm();
+          const asked = confirming();
+          cancel();
+          asked?.run();
         },
       },
-      { name: "confirm.no", title: "Cancel", hint: { label: "cancel" }, run: props.close },
+      { name: "confirm.no", title: "Cancel", enabled: isAsking, run: cancel },
     ].map(keymapCommand),
     bindings: [
       { key: "return", cmd: "confirm.yes" },
@@ -38,9 +49,5 @@ export function Confirm(props: {
     ],
   }));
 
-  return (
-    <Dialog title={props.title} hints={hints()}>
-      <text fg={color("text.base")}>{props.question}</text>
-    </Dialog>
-  );
-}
+  return { confirming, isAsking, ask: setConfirming, cancel };
+};
