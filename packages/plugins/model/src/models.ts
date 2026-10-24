@@ -11,6 +11,7 @@ import {
   type GenerateOptions,
   type ModelCall,
   type ModelChoice,
+  type ModelId,
   ModelNotFound,
   type ModelProvider,
   type ModelRequest,
@@ -62,13 +63,17 @@ export const make = (
   call: ModelCall["Service"],
   lookups: Pick<Models["Service"], "list" | "details">,
 ) => {
-  const resolve = Effect.fn("Models.resolve")(function* (model: string) {
+  const resolve = Effect.fn("Models.resolve")(function* (model: string, main?: ModelId) {
     if (model !== "small") return { model } satisfies ModelChoice;
 
     const chosen = (yield* settings.get(ModelSetting)).small;
     if (chosen !== undefined) return chosen;
 
-    const signedIn = yield* Effect.findFirst(yield* providers.list, (each) => each.signedIn);
+    const listed = yield* providers.list;
+    const own = listed.find((each) => main?.startsWith(`${each.id}/`) === true);
+    if (own !== undefined && (yield* own.signedIn)) return own.defaults.small;
+
+    const signedIn = yield* Effect.findFirst(listed, (each) => each.signedIn);
     if (Option.isSome(signedIn)) return signedIn.value.defaults.small;
 
     return yield* new ModelNotFound({
@@ -77,14 +82,14 @@ export const make = (
     });
   });
 
-  const choiceOf = ({ model, prefix }: GenerateOptions) =>
+  const choiceOf = ({ model, main, prefix }: GenerateOptions) =>
     model === undefined && prefix !== undefined
       ? Effect.succeed<ModelChoice>(
           prefix.thinking === undefined
             ? { model: prefix.model }
             : { model: prefix.model, thinking: prefix.thinking },
         )
-      : resolve(model ?? "small");
+      : resolve(model ?? "small", main);
 
   const reply = (options: GenerateOptions, output?: StructuredOutput) =>
     Effect.flatMap(choiceOf(options), (choice) =>

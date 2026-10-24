@@ -9,6 +9,7 @@ OpenAI's models in `ModelProviders`, one provider for each way of signing in, ea
 
 - A call without a login fails with an `AiError` that says to run `liminal connect`. OAuth tokens refresh when they near expiry.
 - Logging out of `codex` revokes the refresh token at OpenAI.
+- The Codex backend answers only streamed requests, so `codex` streams structured output too and keeps the response the stream ends on.
 - `openai` lists the models the API offers that the catalog lists as chat models. `codex` lists the models the plan offers, each with the context window the plan serves, such as 272K, smaller than the model's full window.
 - `openai` offers `gpt-6-luna` as a classifier for `Models.classify`. The Decisions API takes only API keys, so `codex` offers none.
 - Nothing is stored on OpenAI's side. Each call carries the whole conversation, and the session id goes along as the cache key.

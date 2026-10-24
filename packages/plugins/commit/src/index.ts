@@ -7,7 +7,7 @@ import { ChildProcessSpawner } from "effect/process";
 
 import { definePlugin } from "@shanepadgett/liminal-core";
 import { Directories } from "@shanepadgett/liminal-directories/contract";
-import { Models } from "@shanepadgett/liminal-model/contract";
+import { type ModelId, Models } from "@shanepadgett/liminal-model/contract";
 import { DeclaredSettings, Settings } from "@shanepadgett/liminal-settings/contract";
 
 import {
@@ -74,17 +74,19 @@ const make = Effect.gen(function* () {
     ),
   );
 
-  const planner = models.resolve("small").pipe(
-    Effect.map(({ model }) => model),
-    Effect.mapError((error) => new CommitError({ message: error.message })),
-  );
+  const plannerFor = (main: ModelId | undefined) =>
+    models.resolve("small", main).pipe(
+      Effect.map(({ model }) => model),
+      Effect.mapError((error) => new CommitError({ message: error.message })),
+    );
 
-  const start = Effect.fn("commit.start")(function* () {
+  const start = Effect.fn("commit.start")(function* (main: ModelId | undefined) {
     const root = yield* git.rootOf(workspace);
     const files = yield* git.changedFiles(root);
     if (files.length === 0) return yield* new CommitError({ message: "Nothing to commit." });
 
-    const found: CommitStart = { root, files, push: yield* pushSetting, planner: yield* planner };
+    const planner = yield* plannerFor(main);
+    const found: CommitStart = { root, files, push: yield* pushSetting, main, planner };
 
     return found;
   });
@@ -97,11 +99,11 @@ const make = Effect.gen(function* () {
       instruction: instruction.trim(),
     };
 
-    return yield* planCommits(models, evidence);
+    return yield* planCommits(models, begun.main, evidence);
   });
 
   return CommitRpc.of({
-    "commit/start": () => start(),
+    "commit/start": ({ main }) => start(main),
     "commit/plan": ({ start: begun, instruction }) => plan(begun, instruction),
     "commit/apply": ({ root, commits }) => applyCommits(git, root, commits),
     "commit/push-target": ({ root }) => git.pushTarget(root),

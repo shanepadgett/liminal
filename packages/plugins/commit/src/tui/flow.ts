@@ -6,6 +6,7 @@ import { Data, Deferred, Effect, Predicate, Schema, Stream } from "effect";
 import type { RpcClient, RpcClientError, RpcGroup } from "effect/rpc";
 import { type Accessor, createSignal } from "solid-js";
 
+import type { ModelId } from "@shanepadgett/liminal-model/contract";
 import type { Notification, NotificationKind } from "@shanepadgett/liminal-tui";
 
 import {
@@ -112,13 +113,23 @@ const pushed = Effect.fn("commit.pushed")(function* (
 });
 
 /** Every step; it always fails with the notification that ends it. */
-const commitAll = Effect.fn("commit.all")(function* (steps: Steps, instruction: string) {
-  const start = yield* steps.client["commit/start"]().pipe(failed("warning", "Nothing committed"));
+/** What `/commit` ran with: the text after it, and the model selected on screen. */
+export interface CommitRequest {
+  readonly instruction: string;
+  readonly main: ModelId | undefined;
+}
+
+const commitAll = Effect.fn("commit.all")(function* (steps: Steps, request: CommitRequest) {
+  const start = yield* steps.client["commit/start"]({ main: request.main }).pipe(
+    failed("warning", "Nothing committed"),
+  );
+
   steps.show(CommitStep.Planning({ files: start.files.length, model: start.planner }));
 
-  const commits = yield* steps.client["commit/plan"]({ start, instruction }).pipe(
-    failed("error", "Could not plan commits"),
-  );
+  const commits = yield* steps.client["commit/plan"]({
+    start,
+    instruction: request.instruction,
+  }).pipe(failed("error", "Could not plan commits"));
 
   steps.show(CommitStep.Review({ commits }));
   if (!(yield* steps.ask)) return yield* end("info", "Commit cancelled");
@@ -136,7 +147,7 @@ export interface CommitFlow {
 }
 
 /** A flow for one `/commit`, and the Effect that runs it against the server. */
-export const makeFlow = (instruction: string, finish: (notification: Notification) => void) => {
+export const makeFlow = (request: CommitRequest, finish: (notification: Notification) => void) => {
   const [step, setStep] = createSignal<CommitStep>();
   const [reply, setReply] = createSignal<(yes: boolean) => void>();
   const stop = Deferred.makeUnsafe<void>();
@@ -180,7 +191,7 @@ export const makeFlow = (instruction: string, finish: (notification: Notificatio
 
   const run = (client: Client) =>
     Effect.raceFirst(
-      commitAll({ client, show: (next) => setStep(next), ask }, instruction),
+      commitAll({ client, show: (next) => setStep(next), ask }, request),
       stopped,
     ).pipe(
       Effect.catch((ended) =>

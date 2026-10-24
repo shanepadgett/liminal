@@ -1,6 +1,6 @@
 /** OpenAI's Responses API through Effect AI, for every provider that speaks it. */
 import { OpenAiClient, OpenAiLanguageModel, OpenAiSchema } from "@effect/ai-openai";
-import { Effect, Schema } from "effect";
+import { Effect, Option, Schema, Stream } from "effect";
 import { AiError } from "effect/ai";
 
 import { responsesToolChanges } from "./responses-tools.ts";
@@ -35,11 +35,51 @@ const reasoningOf = Effect.fn("reasoningOf")(function* (thinking: string) {
   return { effort, summary: "auto" } satisfies Reasoning;
 });
 
+type StreamEvent = OpenAiSchema.ResponseStreamEvent;
+
+/** The event a response stream ends on, carrying the whole response. */
+type FinalEvent = Extract<
+  StreamEvent,
+  { readonly type: "response.completed" | "response.incomplete" | "response.failed" }
+>;
+
+const isFinal = (event: StreamEvent): event is FinalEvent =>
+  event.type === "response.completed"
+  || event.type === "response.incomplete"
+  || event.type === "response.failed";
+
+const noResponse = AiError.make({
+  module: "Responses",
+  method: "createResponse",
+  reason: new AiError.InvalidOutputError({
+    description: "The response stream ended without a response.",
+  }),
+});
+
+/**
+ * The client with `createResponse` made over the stream, for a backend that refuses unstreamed
+ * requests: the response is the one the stream's last event carries.
+ */
+const streamedResponses = (client: OpenAiClient.Service): OpenAiClient.Service => ({
+  ...client,
+  createResponse: (request) =>
+    Effect.gen(function* () {
+      const [http, events] = yield* client.createResponseStream(request);
+      const last = Option.filter(yield* Stream.runLast(events), isFinal);
+
+      if (Option.isNone(last)) return yield* noResponse;
+
+      return [last.value.response, http] as const;
+    }),
+});
+
 /** A model's thinking level and cache key, and its tool changes when it takes them natively. */
 export interface ResponsesModelOptions {
   readonly thinking?: string | undefined;
   readonly cacheKey?: string | undefined;
   readonly toolChanges?: ToolChanges | undefined;
+  /** The backend refuses unstreamed requests, as Codex does. */
+  readonly streamOnly?: true | undefined;
 }
 
 /**
@@ -49,11 +89,13 @@ export interface ResponsesModelOptions {
 export const responsesModel = Effect.fn("responsesModel")(function* (
   options: ResponsesOptions,
   model: string,
-  { thinking, cacheKey, toolChanges }: ResponsesModelOptions,
+  { thinking, cacheKey, toolChanges, streamOnly }: ResponsesModelOptions,
 ) {
-  const client = yield* OpenAiClient.make(
+  const made = yield* OpenAiClient.make(
     withToolChanges(options, toolChanges, responsesToolChanges),
   );
+
+  const client = streamOnly === true ? streamedResponses(made) : made;
 
   // Our tool schemas are not written for strict mode, which refuses some JSON Schema keywords.
   const base: Config = { store: false, strictJsonSchema: false };

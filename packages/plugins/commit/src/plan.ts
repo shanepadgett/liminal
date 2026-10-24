@@ -4,7 +4,7 @@
  */
 import { Effect, Schema } from "effect";
 
-import type { Models } from "@shanepadgett/liminal-model/contract";
+import type { ModelId, Models } from "@shanepadgett/liminal-model/contract";
 
 import { type ChangedFile, CommitError, type PlannedCommit } from "./contract.ts";
 
@@ -165,13 +165,18 @@ const feedbackOf = (answer: PlanAnswer, problem: string) =>
   `\n\nYour last plan was wrong: ${problem}\nYour last plan:\n${JSON.stringify(answer)}\nAnswer again with a corrected plan.`;
 
 /** The plan, asked again with the last answer shown when it breaks a rule. */
-export const planCommits = (models: Models["Service"], evidence: PlanEvidence) => {
+export const planCommits = (
+  models: Models["Service"],
+  main: ModelId | undefined,
+  evidence: PlanEvidence,
+) => {
   const text = evidenceText(evidence);
 
   const ask = (feedback: string) =>
     models
       .generateObject({
         model: "small",
+        main,
         system: SYSTEM,
         prompt: [{ type: "text", text: text + feedback }],
         schema: PlanAnswer,

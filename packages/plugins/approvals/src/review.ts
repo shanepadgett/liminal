@@ -106,6 +106,7 @@ export const review = Effect.fn("Approvals.review")(function* (
   const outcome = yield* reviewer.models
     .generateObject({
       model: "small",
+      main: reviewed.model,
       system: PROMPT,
       prompt: [{ type: "text", text: JSON.stringify(reviewed.state, undefined, 2) }],
       schema: Verdict,

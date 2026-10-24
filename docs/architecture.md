@@ -162,7 +162,7 @@ type ModelId = string                         // provider/model
 type ModelRequest = { model; thinking?; system; tools: ToolDefinition[]; messages: Message[]; toolChoice?; output?: { name; schema }; cacheKey? }   // same key, same provider cache; a turn's is its session id
 type ModelDelta = Response.AnyPart | Retrying  // Effect AI's reply parts, plus a retry that clears the reply so far
 interface ModelProvider {
-  id; name; defaults: { main; small }        // the first signed-in provider's, when the model setting leaves a role unset
+  id; name; defaults: { main; small }        // when the model setting leaves a role unset: main from the first signed-in provider, small from main's provider, else the first signed-in
   catalogId?                                // whose models.dev entries hold its models' details, such as openai
   signedIn: Effect<boolean>                 // a saved login or a key in the environment
   models: Effect<ModelInfo[]>               // ModelInfo = { id; name; contextWindow?; details?: ModelDetails }; a provider's window wins over the catalog's
@@ -174,11 +174,12 @@ interface ModelProvider {
 ModelProviders: Registry<ModelProvider>
 ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>   // retries inside; converts to Effect AI's types
 Reply.add(reply, delta) / Reply.message(reply)          // deltas into the assistant Message
-Models.resolve("small" | ModelId): Effect<ModelChoice>
+Models.resolve("small" | ModelId, main?: ModelId): Effect<ModelChoice>   // small follows main's provider
 Models.list: Effect<ModelInfo[]>   // signed-in providers only, cached in ~/.liminal/models.json; a provider whose list fails is logged and left out
 Models.details(model): Effect<Option<ModelDetails>, ModelNotFound>   // from the catalog, signed in or not, with the window the provider last listed
 Models.generate(options: {
   model?: "small" | ModelId                 // missing is the prefix's model, or small
+  main?: ModelId                            // the model the user works with; small is its provider's
   prompt: Part[]
   system?: string                            // in place of the prefix's system prompt
   prefix?: ModelRequest                      // start from this request, such as Turns.request(id)
@@ -366,12 +367,12 @@ export const ToolRows: Registry<ToolRowView>
 type ToolRowView =
   | Shown { tool: string; component: (props: { item: ToolItem; state }) => JSX.Element }   // in place of a tool's plain row
   | Hidden { tool: string }                                                                // never shows, from the first streamed delta
-export const ComposerCovers: Registry<{ active(props): boolean; component(props): JSX.Element }>   // the first active cover takes the composer's place
+export const ComposerCovers: Registry<{ active(props): boolean; component(props): JSX.Element }>   // the first active cover takes the composer's place; props.session is { id, state }, undefined on the landing screen
 export const Moods: Registry<{ active(props): boolean; words(props): string[]; poses?: Pose[]; header?: "scanning" | "still" }>   // how the screen looks while a turn works: Porter's words and faces, the header's scan; the first active mood wins
 
 // questions tui entry
 ToolRows.add(ToolRowView.Shown({ tool: "ask_question", component: AskRow }))   // AskRow draws <WorkRow item details={answers} />; a click opens the details
-ComposerCovers.add({ active: (props) => openAsks(props.state).length > 0, component: AskCover })
+ComposerCovers.add({ active: (props) => props.session !== undefined && openAsks(props.session.state).length > 0, component: AskCover })
 Moods.add({ active: (props) => openAsks(props.state).length > 0, words: () => ["patiently waiting"], poses, header: "still" })
 
 // session-name tui entry: a tool the model uses under the hood

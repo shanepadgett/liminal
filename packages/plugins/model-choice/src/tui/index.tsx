@@ -2,7 +2,7 @@
  * Model choice's `tui` entry. `/model` opens the models picker; the pick waits on the screen it was
  * made on and goes with that screen's next send. `shift+tab` steps the line's thinking level while
  * the model takes more than one. The model line fills chat's `status` slot; while no provider is
- * connected, it says to run `/connect`.
+ * connected, it says to run `/connect`. `ModelSelection` tells other plugins what the line shows.
  */
 import { Effect, Layer } from "effect";
 import { createEffect, createRoot, on } from "solid-js";
@@ -25,6 +25,7 @@ import {
 import { ModelPick } from "../contract.ts";
 import { ModelLine } from "./ModelLine.tsx";
 import { choiceFor, modelsPicker } from "./picker.ts";
+import { ModelSelection } from "./selection.ts";
 import { choiceOf, makeState, type ModelState } from "./state.ts";
 
 /** The thinking levels of the line's model, when it takes more than one. */
@@ -161,11 +162,15 @@ const make = Effect.gen(function* () {
   );
 
   yield* slots.fill(status, () => <ModelLine state={state} />);
+
+  return ModelSelection.of({ selected: state.line });
 });
+
+export { ModelSelection } from "./selection.ts";
 
 export default definePlugin({
   name: "model-choice-tui",
-  provides: [],
+  provides: [ModelSelection],
   requires: [Host, Keymap, Dialogs, Pickers, Notifications, ChatScreen, ChatSend, Slots],
-  layer: Layer.effectDiscard(make),
+  layer: Layer.effect(ModelSelection, make),
 });

@@ -127,7 +127,7 @@ class CommitRpc extends RpcGroup.make(
 | `src/git.ts` | Repository root, changed files, capped diffs, recent subjects, latest commit time, commit by paths, push target, push. Runs `git` through Effect's `ChildProcess`, as `tools-shell` does. |
 | `src/plan.ts` | The evidence prompt and `Models.generateObject` with `small`; checks the plan and retries with the problem, up to 3 tries. |
 | `src/index.ts` | The RPC handlers and the `commit` settings section (`push`, `ask` by default). |
-| `src/tui/index.tsx` | The `/commit` command (`blocked: turnBlocked(chat, "commit")`), a `ComposerCover` active while the session has a flow, and the endings as notifications. |
+| `src/tui/index.tsx` | The `/commit` command (`blocked: turnBlocked(chat, "commit")`), one flow at a time for the workspace, a `ComposerCover` active while it runs on the landing screen and in every session, and the endings as notifications. |
 | `src/tui/flow.ts` | The archive's flow without checks: start, plan, review, apply, push. Esc stops planning; committing and pushing finish. |
 | `src/tui/Commit.tsx` | The gallery's design, copied. |
 

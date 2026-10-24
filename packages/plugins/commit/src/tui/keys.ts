@@ -1,7 +1,7 @@
 /**
  * The keys of `/commit`'s ask. The plan scrolls with up and down when it holds more commits than
- * show at once; enter commits and esc cancels. The push question chooses with up and down, enter
- * answers and esc says no. While planning, esc stops; committing and pushing take no keys.
+ * show at once; enter commits and esc cancels. The push question's `kit.Choices` takes up, down and
+ * enter, and esc says no. While planning, esc stops; committing and pushing take no keys.
  */
 import type { Accessor, Setter } from "solid-js";
 
@@ -12,29 +12,20 @@ import { type CommitFlow, CommitStep } from "./flow.ts";
 /** Commits in view at once; up and down scroll the rest. */
 export const SHOWN_COMMITS = 4;
 
-/** The second push choice, Yes. */
-const YES = 1;
-
 export const KEYS = [
   { key: "up", cmd: "commit.scroll-up" },
   { key: "down", cmd: "commit.scroll-down" },
-  { key: "up", cmd: "commit.choose-up" },
-  { key: "down", cmd: "commit.choose-down" },
-  ...["return", "kpenter"].flatMap((key) => [
-    { key, cmd: "commit.commit" },
-    { key, cmd: "commit.answer" },
-  ]),
+  { key: "return", cmd: "commit.commit" },
+  { key: "kpenter", cmd: "commit.commit" },
   { key: "escape", cmd: "commit.stop" },
   { key: "escape", cmd: "commit.cancel" },
   { key: "escape", cmd: "commit.no" },
 ];
 
-/** Where the plan's view starts and which push choice is under the cursor. */
+/** Where the plan's view starts. */
 export interface Cursor {
   readonly top: Accessor<number>;
   readonly setTop: Setter<number>;
-  readonly choice: Accessor<number>;
-  readonly setChoice: Setter<number>;
 }
 
 const isStep = (flow: CommitFlow, tag: CommitStep["_tag"]) => () => {
@@ -72,46 +63,15 @@ const scrollCommands = (flow: CommitFlow, cursor: Cursor): Command[] => [
   },
 ];
 
-const chooseCommands = (flow: CommitFlow, cursor: Cursor): Command[] => [
-  {
-    name: "commit.choose-up",
-    title: "Previous choice",
-    hint: { label: "choose", keys: "↑↓" },
-    enabled: isStep(flow, "Push"),
-    run: () => {
-      cursor.setChoice(0);
-    },
+const commitCommand = (flow: CommitFlow): Command => ({
+  name: "commit.commit",
+  title: "Commit",
+  hint: { label: "commit" },
+  enabled: isStep(flow, "Review"),
+  run: () => {
+    flow.answer(true);
   },
-  {
-    name: "commit.choose-down",
-    title: "Next choice",
-    enabled: isStep(flow, "Push"),
-    run: () => {
-      cursor.setChoice(YES);
-    },
-  },
-];
-
-const answerCommands = (flow: CommitFlow, cursor: Cursor): Command[] => [
-  {
-    name: "commit.commit",
-    title: "Commit",
-    hint: { label: "commit" },
-    enabled: isStep(flow, "Review"),
-    run: () => {
-      flow.answer(true);
-    },
-  },
-  {
-    name: "commit.answer",
-    title: "Answer",
-    hint: { label: "answer" },
-    enabled: isStep(flow, "Push"),
-    run: () => {
-      flow.answer(cursor.choice() === YES);
-    },
-  },
-];
+});
 
 const escapeCommands = (flow: CommitFlow): Command[] =>
   [
@@ -128,7 +88,6 @@ const escapeCommands = (flow: CommitFlow): Command[] =>
 
 export const commandsOf = (flow: CommitFlow, cursor: Cursor): Command[] => [
   ...scrollCommands(flow, cursor),
-  ...chooseCommands(flow, cursor),
-  ...answerCommands(flow, cursor),
+  commitCommand(flow),
   ...escapeCommands(flow),
 ];

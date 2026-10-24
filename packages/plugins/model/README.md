@@ -32,7 +32,7 @@ Requires `Settings`, `DeclaredSettings`, `ModelCatalog`, `Directories`, `FileSys
 }
 ```
 
-`small` runs side calls; unset, it is the small model of the first provider that is signed in, which every built-in provider sets at `high`. Which model runs a turn is `loop`'s `SessionModel`.
+`small` runs side calls; unset, it is the small model of the provider of the model the user works with, which a call passes as `main`, else of the first provider that is signed in. Every built-in provider sets its small model at `high`. Which model runs a turn is `loop`'s `SessionModel`.
 
 ## Add a provider
 

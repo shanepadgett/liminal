@@ -2,9 +2,9 @@
  * `/commit`'s ask, in the draft's place. While the small model plans, Porter says so. The plan
  * lists each commit's subject with its files under it, for enter to commit or esc to cancel. While
  * git commits, each subject gets a mark: done with its hash, the current one in accent, the rest
- * waiting. Then the push question offers No first.
+ * waiting. Then the push question offers No first, as the kit's `Choices`.
  */
-import type { BoxRenderable } from "@opentui/core";
+import type { BoxRenderable, Renderable } from "@opentui/core";
 import { useBindings } from "@opentui/keymap/solid";
 import { createSignal, For, Match, onMount, Show, Switch } from "solid-js";
 
@@ -19,9 +19,13 @@ import { commandsOf, KEYS, SHOWN_COMMITS } from "./keys.ts";
 /** Files under each commit; the rest are counted. */
 const SHOWN_FILES = 3;
 
-const PUSH_CHOICES = ["No, keep them local", "Yes, push"];
+const PUSH_CHOICES: ReadonlyArray<kit.Choice> = [
+  { label: "No, keep them local", hint: "keep local" },
+  { label: "Yes, push", hint: "push" },
+];
 
-const PUSH_COLUMNS = kit.labelColumnsOf(PUSH_CHOICES);
+/** The second push choice, Yes. */
+const YES = 1;
 
 /** The letter git's short status gives each kind of change. */
 const LETTERS: Record<ChangedFile["status"], string> = {
@@ -179,21 +183,32 @@ function Committing(props: {
   );
 }
 
-function PushChoices(props: { readonly choice: number }) {
+/** The push question; enter answers with the choice under the cursor. */
+function PushChoices(props: {
+  readonly flow: CommitFlow;
+  readonly target: () => Renderable | undefined;
+}) {
+  const [under, setUnder] = createSignal(0);
+
   return (
-    <For each={PUSH_CHOICES}>
-      {(label, index) => (
-        <kit.ChoiceRow
-          label={label}
-          labelColumns={PUSH_COLUMNS}
-          isUnder={index() === props.choice}
-        />
-      )}
-    </For>
+    <kit.Choices
+      choices={PUSH_CHOICES}
+      under={under()}
+      target={props.target}
+      onMove={setUnder}
+      onPick={(index) => {
+        props.flow.answer(index === YES);
+      }}
+    />
   );
 }
 
-function Body(props: { readonly step: CommitStep; readonly top: number; readonly choice: number }) {
+function Body(props: {
+  readonly flow: CommitFlow;
+  readonly step: CommitStep;
+  readonly top: number;
+  readonly target: () => Renderable | undefined;
+}) {
   return (
     <Switch>
       <Match when={CommitStep.$is("Planning")(props.step) && props.step}>
@@ -206,7 +221,7 @@ function Body(props: { readonly step: CommitStep; readonly top: number; readonly
         {(step) => <Committing commits={step().commits} hashes={step().hashes} />}
       </Match>
       <Match when={CommitStep.$is("Push")(props.step)}>
-        <PushChoices choice={props.choice} />
+        <PushChoices flow={props.flow} target={props.target} />
       </Match>
       <Match when={CommitStep.$is("Pushing")(props.step) && props.step}>
         {(step) => (
@@ -219,12 +234,11 @@ function Body(props: { readonly step: CommitStep; readonly top: number; readonly
 
 export function Commit(props: { readonly flow: CommitFlow }) {
   const [top, setTop] = createSignal(0);
-  const [choice, setChoice] = createSignal(0);
   let root: BoxRenderable | undefined;
 
   useBindings(() => ({
     target: () => root,
-    commands: commandsOf(props.flow, { top, setTop, choice, setChoice }).map(keymapCommand),
+    commands: commandsOf(props.flow, { top, setTop }).map(keymapCommand),
     bindings: KEYS,
   }));
 
@@ -247,7 +261,7 @@ export function Commit(props: { readonly flow: CommitFlow }) {
       <Show when={props.flow.step()}>
         {(step) => (
           <Ask mark="◇" markRole="text.accent" title={titleOf(step())} aside={asideOf(step())}>
-            <Body step={step()} top={top()} choice={choice()} />
+            <Body flow={props.flow} step={step()} top={top()} target={() => root} />
           </Ask>
         )}
       </Show>

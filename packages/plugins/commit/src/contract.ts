@@ -6,6 +6,7 @@
 import { Effect, Schema } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
+import { ModelId } from "@shanepadgett/liminal-model/contract";
 import { Setting } from "@shanepadgett/liminal-settings/contract";
 
 /** How git sees a changed file. */
@@ -47,6 +48,8 @@ export const CommitStart = Schema.Struct({
   root: Schema.String,
   files: Schema.Array(ChangedFile),
   push: PushSetting,
+  /** The model the user has selected; the planner is its provider's small model. */
+  main: Schema.optional(ModelId),
   /** The model that plans, as its id. */
   planner: Schema.String,
 });
@@ -94,8 +97,12 @@ export class CommitFailed extends Schema.TaggedError<
 const root = { root: Schema.String };
 
 export class CommitRpc extends RpcGroup.make(
-  /** The repository holding the workspace, its changed files and the push setting. */
-  Rpc.make("commit/start", { success: CommitStart, error: CommitError }),
+  /** The repository holding the workspace, its changed files, the push setting and the planner. */
+  Rpc.make("commit/start", {
+    payload: { main: Schema.optional(ModelId) },
+    success: CommitStart,
+    error: CommitError,
+  }),
   /** The small model groups the files into commits; `instruction` is the text after `/commit`. */
   Rpc.make("commit/plan", {
     payload: { start: CommitStart, instruction: Schema.String },

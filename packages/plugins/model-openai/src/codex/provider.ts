@@ -36,7 +36,12 @@ export const registerCodex = Effect.gen(function* () {
     const transformClient = HttpClient.mapRequest(signedAs(yield* tokens, cacheKey));
 
     return yield* withHttp(
-      responsesModel({ apiUrl, transformClient }, model, { thinking, cacheKey, toolChanges }),
+      responsesModel(
+        { apiUrl, transformClient },
+        model,
+        // The Codex backend answers only streamed requests, even for structured output.
+        { thinking, cacheKey, toolChanges, streamOnly: true },
+      ),
     );
   });
 

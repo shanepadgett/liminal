@@ -254,8 +254,9 @@ export interface ModelProvider {
   readonly id: string;
   readonly name: string;
   /**
-   * Used when this is the first signed-in provider: `main` for a session no one has picked a model
-   * for, `small` for side calls when the `model` setting leaves it unset.
+   * `main` for a session no one has picked a model for, while this is the first signed-in provider;
+   * `small` for side calls beside one of its models, or as the first signed-in provider, when the
+   * `model` setting leaves it unset.
    */
   readonly defaults: { readonly main: ModelChoice; readonly small: ModelChoice };
   /** The catalog id its models' details are under, such as `openai`; missing lists none. */
@@ -296,6 +297,8 @@ export class ModelCall extends Pipeline.Service<
 export interface GenerateOptions {
   /** `small` or a model id; missing is the prefix's model, or `small`. */
   readonly model?: string | undefined;
+  /** The model the user works with; `small` is then its provider's small model. */
+  readonly main?: ModelId | undefined;
   /** The request to start from, such as `Turns.request(id)`, so the call shares its cache. */
   readonly prefix?: ModelRequest | undefined;
   /** The system prompt; missing is the prefix's, or none. */
@@ -459,11 +462,12 @@ export class Models extends Context.Service<
   Models,
   {
     /**
-     * The model `small` or a model id names; `small` comes from the `model` setting, else the first
-     * signed-in provider's default.
+     * The model `small` or a model id names; `small` comes from the `model` setting, else the small
+     * model of `main`'s provider while it is signed in, else the first signed-in provider's.
      */
     readonly resolve: (
       model: string,
+      main?: ModelId,
     ) => Effect.Effect<ModelChoice, ModelNotFound | SettingsInvalid>;
     /** The models of every signed-in provider; a provider whose list fails is logged and left out. */
     readonly list: Effect.Effect<ReadonlyArray<ModelInfo>>;
