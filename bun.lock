@@ -72,6 +72,7 @@
         "@shanepadgett/liminal-tools-write": "workspace:*",
         "@shanepadgett/liminal-tui": "workspace:*",
         "@shanepadgett/liminal-usage": "workspace:*",
+        "@shanepadgett/liminal-vocabulary": "workspace:*",
         "@shanepadgett/liminal-web-search-anthropic": "workspace:*",
         "@shanepadgett/liminal-web-search-openai": "workspace:*",
         "effect": "4.0.5",
@@ -712,6 +713,17 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/vocabulary": {
+      "name": "@shanepadgett/liminal-vocabulary",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-system-prompt": "workspace:*",
+        "@shanepadgett/liminal-tools": "workspace:*",
+        "effect": "*",
+      },
+    },
     "packages/plugins/web-search-anthropic": {
       "name": "@shanepadgett/liminal-web-search-anthropic",
       "version": "0.1.0",
@@ -1090,6 +1102,8 @@
     "@shanepadgett/liminal-tui": ["@shanepadgett/liminal-tui@workspace:packages/tui"],
 
     "@shanepadgett/liminal-usage": ["@shanepadgett/liminal-usage@workspace:packages/plugins/usage"],
+
+    "@shanepadgett/liminal-vocabulary": ["@shanepadgett/liminal-vocabulary@workspace:packages/plugins/vocabulary"],
 
     "@shanepadgett/liminal-web-search-anthropic": ["@shanepadgett/liminal-web-search-anthropic@workspace:packages/plugins/web-search-anthropic"],
 

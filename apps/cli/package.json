@@ -54,6 +54,7 @@
     "@shanepadgett/liminal-tools-write": "workspace:*",
     "@shanepadgett/liminal-tui": "workspace:*",
     "@shanepadgett/liminal-usage": "workspace:*",
+    "@shanepadgett/liminal-vocabulary": "workspace:*",
     "@shanepadgett/liminal-web-search-anthropic": "workspace:*",
     "@shanepadgett/liminal-web-search-openai": "workspace:*",
     "effect": "4.0.5"

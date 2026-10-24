@@ -454,7 +454,8 @@ How `session` does these over `SqlClient` is open.
 | Context | `instructions` | `.liminal/instructions/` files; `AGENTS.md` files once turned on | Add | `agents-files`, `instruction-files` |
 | Context | `environment` | Workspace, Git, platform, date and the workspace root's entries | Add | `environment` |
 | Context | `skills` | Skill folders: the list in the system prompt, `$` skills added on send, read access to the folders, the `$` draft trigger | Add, Wrap | `skills` |
-| Context | `references`, `vocabulary` | Reference repos, project terms | Add | same names |
+| Context | `references` | Reference repos | Add | `references` |
+| Context | `vocabulary` | Project terms: `.liminal/vocabulary.json`, the list in the system prompt, the `vocabulary` tool | Add | `vocabulary` |
 | Features | `approvals` | Tool call gate: allowed folders, classifier, reviewer, user; `request_access` | Wrap, Add | `approval` |
 | Features | `questions` | `ask_question`, `/qna`, `Questions.ask`, the answer form | Add, Wrap | `questions` |
 | Features | `memory` | Checkpoints, notes, context window | Wrap | `memory` |

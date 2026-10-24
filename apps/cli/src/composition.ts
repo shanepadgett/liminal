@@ -48,6 +48,7 @@ import toolsShell from "@shanepadgett/liminal-tools-shell";
 import toolsWeb from "@shanepadgett/liminal-tools-web";
 import toolsWrite from "@shanepadgett/liminal-tools-write";
 import usage from "@shanepadgett/liminal-usage";
+import vocabulary from "@shanepadgett/liminal-vocabulary";
 import webSearchAnthropic from "@shanepadgett/liminal-web-search-anthropic";
 import webSearchOpenai from "@shanepadgett/liminal-web-search-openai";
 
@@ -107,6 +108,7 @@ export const plugins = [
   questions,
   approvals,
   skills,
+  vocabulary,
   commit,
   stash,
   slash,
