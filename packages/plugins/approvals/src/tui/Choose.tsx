@@ -1,14 +1,15 @@
 /**
  * The frame both approval asks share: a title, the ask's body, then Approve and Reject as rows the
- * cursor moves through. On Reject a note opens under it for telling the model why. Up and down
- * choose, enter sends, esc on Approve moves to Reject and on Reject cancels the turn.
+ * cursor moves through, as the kit's `Choices`. On Reject a note opens under it for telling the
+ * model why. Up and down choose, enter sends, esc on Approve moves to Reject and on Reject cancels
+ * the turn.
  */
 
 import type { BoxRenderable } from "@opentui/core";
 import { useBindings } from "@opentui/keymap/solid";
 import type { JSX } from "@opentui/solid";
 import { Schema } from "effect";
-import { createEffect, createSignal, For } from "solid-js";
+import { createEffect, createSignal } from "solid-js";
 
 import { Ask, type AskProps, moreAside, Note } from "@shanepadgett/liminal-questions/tui";
 import { type Command, keymapCommand, kit, useHintsWithin } from "@shanepadgett/liminal-tui";
@@ -18,9 +19,10 @@ import { Answer } from "../contract.ts";
 /** Where the cursor is: on Approve, or on Reject with the note written so far. */
 type Cursor = { readonly kind: "approve" } | { readonly kind: "reject"; readonly note: string };
 
-const CHOICES = ["Approve", "Reject"] as const;
-
-const COLUMNS = kit.labelColumnsOf(CHOICES);
+const CHOICES: ReadonlyArray<kit.Choice> = [
+  { label: "Approve", hint: "approve" },
+  { label: "Reject", hint: "reject" },
+];
 
 const APPROVE: Cursor = { kind: "approve" };
 
@@ -37,57 +39,19 @@ const answerOf = (cursor: Cursor): Answer => {
 };
 
 const KEYS = [
-  { key: "up", cmd: "approvals.up" },
-  { key: "down", cmd: "approvals.down" },
-  ...["return", "kpenter"].flatMap((key) => [
-    { key, cmd: "approvals.approve" },
-    { key, cmd: "approvals.reject" },
-  ]),
   { key: "escape", cmd: "approvals.to-reject" },
   { key: "escape", cmd: "approvals.cancel" },
 ];
 
-const commandsOf = (
+/** Esc: on Approve it moves to Reject, on Reject it cancels the turn. */
+const escapeCommands = (
   cursor: () => Cursor,
   setCursor: (cursor: Cursor) => void,
   props: AskProps,
 ): Command[] => {
   const isApprove = () => cursor().kind === "approve";
 
-  const send = () => {
-    props.answer(encodeAnswer(answerOf(cursor())));
-  };
-
   return [
-    {
-      name: "approvals.up",
-      title: "Previous choice",
-      hint: { label: "choose", keys: "↑↓" },
-      run: () => {
-        setCursor(APPROVE);
-      },
-    },
-    {
-      name: "approvals.down",
-      title: "Next choice",
-      run: () => {
-        if (isApprove()) setCursor(REJECT);
-      },
-    },
-    {
-      name: "approvals.approve",
-      title: "Approve",
-      hint: { label: "approve" },
-      enabled: isApprove,
-      run: send,
-    },
-    {
-      name: "approvals.reject",
-      title: "Reject",
-      hint: { label: "reject" },
-      enabled: () => !isApprove(),
-      run: send,
-    },
     {
       name: "approvals.to-reject",
       title: "Reject",
@@ -122,7 +86,7 @@ export function Choose(
 
   useBindings(() => ({
     target: () => root,
-    commands: commandsOf(cursor, setCursor, props).map(keymapCommand),
+    commands: escapeCommands(cursor, setCursor, props).map(keymapCommand),
     bindings: KEYS,
   }));
 
@@ -146,15 +110,17 @@ export function Choose(
       <Ask mark="△" markRole="feedback.warning" title={props.title} aside={moreAside(props.more)}>
         {props.children}
         <box marginTop={1}>
-          <For each={CHOICES}>
-            {(choice) => (
-              <kit.ChoiceRow
-                label={choice}
-                labelColumns={COLUMNS}
-                isUnder={(choice === "Approve") === (cursor().kind === "approve")}
-              />
-            )}
-          </For>
+          <kit.Choices
+            choices={CHOICES}
+            under={cursor().kind === "approve" ? 0 : 1}
+            target={() => root}
+            onMove={(index) => {
+              setCursor(index === 0 ? APPROVE : REJECT);
+            }}
+            onPick={() => {
+              props.answer(encodeAnswer(answerOf(cursor())));
+            }}
+          />
           <Note
             note={note()}
             isWriting={note() !== undefined}

@@ -1,6 +1,8 @@
 import type { State } from "../../entries.ts";
-import { Composer } from "./Composer.tsx";
+import { atBottom } from "./Composer.states.tsx";
 import { type Notification, Notifications } from "./Notifications.tsx";
+import { SLASH_COMMANDS } from "./SlashMenu.states.tsx";
+import { SlashMenu } from "./SlashMenu.tsx";
 
 export const CONNECTED: Notification = {
   id: "connected",
@@ -43,20 +45,12 @@ const TURN_RUNNING: Notification = {
 };
 
 /** The notifications in place, above the composer. */
-const above =
-  (notifications: readonly Notification[], draft = "", isWorking = false) =>
-  () => (
-    <box width="100%" height="100%" justifyContent="flex-end" paddingBottom={1}>
-      <Composer
-        draft={draft}
-        model="claude-sonnet-4.5"
-        effort="high"
-        queued={[]}
-        isWorking={isWorking}
-        widgets={<Notifications notifications={notifications} />}
-      />
-    </box>
-  );
+const above = (notifications: readonly Notification[], draft = "", isWorking = false) =>
+  atBottom({
+    draft,
+    isWorking,
+    notifications: () => <Notifications notifications={notifications} />,
+  });
 
 export const notificationsStates: readonly [State, ...State[]] = [
   { name: "One", fill: "screen", view: above([CONNECTED]) },
@@ -66,5 +60,14 @@ export const notificationsStates: readonly [State, ...State[]] = [
     name: "Command during a turn",
     fill: "screen",
     view: above([TURN_RUNNING], "/commit keep the docs separate", true),
+  },
+  {
+    name: "Over the slash menu",
+    fill: "screen",
+    view: atBottom({
+      draft: "/co",
+      notifications: () => <Notifications notifications={[CONNECTED]} />,
+      menu: () => <SlashMenu commands={SLASH_COMMANDS} typed="co" under={0} />,
+    }),
   },
 ];

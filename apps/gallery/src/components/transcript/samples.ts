@@ -1,7 +1,5 @@
 /** Sample turns the transcript states and the chat screen share. */
 
-import type { WorkRow } from "./WorkRows.tsx";
-
 /** A short-term memory as the model writes it: a few words, in its own voice. */
 export const SHORT_TERM_MEMORY = "Traced the double retry to recovery.ts and turn.ts";
 
@@ -47,38 +45,3 @@ export const ANSWER = [
   "   - `recovery.test.ts`",
   "   - `turn.test.ts`",
 ].join("\n");
-
-/** A script the model ran: long enough that its row cuts it in the middle. */
-export const SCRIPT = [
-  "for plugin in packages/plugins/*/; do",
-  '  bun test "$plugin" --bail --timeout 20000 || echo "failed: $plugin"',
-  "done",
-].join("\n");
-
-export const READING: readonly WorkRow[] = [
-  {
-    tool: "read",
-    input: "packages/plugins/loop/src/recovery.ts",
-    status: "done",
-    note: "84 lines",
-  },
-  { tool: "grep", input: "retry", status: "done", note: "6 matches" },
-  { tool: "read", input: "packages/plugins/loop/src/turn.ts", status: "running" },
-];
-
-/** The same reads, finished. */
-export const READ: readonly WorkRow[] = [
-  ...READING.slice(0, -1),
-  { tool: "read", input: "packages/plugins/loop/src/turn.ts", status: "done", note: "61 lines" },
-];
-
-export const EDITING: readonly WorkRow[] = [
-  { tool: "edit", input: "packages/plugins/loop/src/turn.ts", status: "done", note: "+1 -1" },
-  {
-    tool: "shell",
-    input:
-      "bun test packages/plugins/loop --bail --timeout 20000 --reporter=junit --reporter-outfile=.cache/loop.xml",
-    status: "failed",
-    note: "exit 1",
-  },
-];

@@ -7,9 +7,9 @@ export const noticeStates: readonly [State, ...State[]] = [
     fill: "page",
     view: () => (
       <box>
-        <Notice kind="info" text="Switched to claude-opus-4.1." />
-        <Notice kind="warning" text="The provider is overloaded (529). Retrying in 4s." />
-        <Notice kind="error" text="The turn stopped: the request was cancelled." />
+        <Notice level="info" text="Switched to claude-opus-4.1." />
+        <Notice level="warning" text="The provider is overloaded. Trying again, attempt 2." />
+        <Notice level="error" text="The turn stopped: the provider is still overloaded." />
       </box>
     ),
   },

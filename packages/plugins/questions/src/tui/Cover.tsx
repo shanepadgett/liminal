@@ -7,7 +7,7 @@ import { Dynamic } from "@opentui/solid";
 import { Effect, type Schema } from "effect";
 import { createMemo, createSignal, onMount, Show } from "solid-js";
 
-import type { CoverProps } from "@shanepadgett/liminal-chat/tui";
+import type { CoverProps, CoverSession } from "@shanepadgett/liminal-chat/tui";
 import { Host } from "@shanepadgett/liminal-client";
 import { useRun } from "@shanepadgett/liminal-tui";
 
@@ -15,7 +15,7 @@ import { QuestionsRpc } from "../contract.ts";
 import { type AskedData, type AskView, type AskViews, openAsks } from "./asks.ts";
 
 const sendAnswer = Effect.fn("questions.answer")(function* (
-  session: CoverProps["session"],
+  session: CoverSession["id"],
   id: string,
   answer: Schema.Json,
 ) {
@@ -29,10 +29,14 @@ interface Shown {
   readonly view: AskView["component"];
 }
 
-export function AskCover(props: CoverProps & { readonly views: AskViews["Service"] }) {
+export function AskCover(props: {
+  readonly session: CoverSession;
+  readonly cancel: CoverProps["cancel"];
+  readonly views: AskViews["Service"];
+}) {
   const run = useRun();
   const [views, setViews] = createSignal<ReadonlyMap<string, AskView["component"]>>(new Map());
-  const asks = () => openAsks(props.state);
+  const asks = () => openAsks(props.session.state);
 
   onMount(() => {
     run(
@@ -59,10 +63,10 @@ export function AskCover(props: CoverProps & { readonly views: AskViews["Service
         <Dynamic
           component={view}
           ask={ask}
-          session={props.session}
+          session={props.session.id}
           more={asks().length - 1}
           answer={(answer: Schema.Json) => {
-            run(sendAnswer(props.session, ask.id, answer));
+            run(sendAnswer(props.session.id, ask.id, answer));
           }}
           cancel={props.cancel}
         />

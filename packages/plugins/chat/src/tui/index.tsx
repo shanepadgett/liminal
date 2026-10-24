@@ -43,6 +43,7 @@ export {
   ComposerCovers,
   type ComposerProps,
   type CoverProps,
+  type CoverSession,
   ItemRenderer,
   type ItemView,
   type Mood,

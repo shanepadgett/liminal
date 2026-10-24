@@ -1,91 +1,103 @@
 /**
- * The chat screen's side column: where the session runs, how full its context is and what feeds it,
- * the repositories attached as references and the language servers running. The title is in the
- * header and the model by the composer, so neither is repeated here. It fills the width the chat
- * screen gives it.
+ * The chat screen's side column: where the session runs, then usage's section with the share of the
+ * model's context window the latest step used, that step's tokens, the share read from the cache
+ * and what the session's steps cost. The title is in the header and the model by the composer, so
+ * neither is repeated here. It fills the width the chat screen gives it.
  */
 
-import { For, Show } from "solid-js";
+import { Show } from "solid-js";
 
 import { Section } from "../../primitives/Section.tsx";
 import { useColor } from "../../theme/theme.tsx";
-import { MEMORY_STARS } from "../transcript/Memory.tsx";
 
-/** Share of the context window past which the percentage turns to the warning color. */
+/** Share of the context window past which the note turns to the warning color. */
 const NEAR_LIMIT = 0.8;
 
-export interface SidebarContext {
-  readonly used: number;
-  readonly limit: number;
-  readonly shortTermMemories: number;
-  readonly longTermMemories: number;
-  readonly checkpoints: number;
+const THOUSAND = 1000;
+const MILLION = 1_000_000;
+
+export interface SidebarUsage {
+  /** The tokens the latest step sent. */
+  readonly context: number;
+  /** The model's context window; left out when no one knows it. */
+  readonly contextWindow?: number;
+  /** The share of the latest step's input read from the cache, from 0 to 1. */
+  readonly cacheHit: number;
+  /** What the session's priced steps cost; left out when the model has no price. */
+  readonly cost?: number;
+  /** The steps whose model has no price. */
+  readonly unpriced: number;
 }
 
-/** A count read as a phrase, such as "3 checkpoints", with an optional mark after it. */
-function Count(props: {
-  readonly count: number;
-  readonly one: string;
-  readonly many: string;
-  readonly mark?: string;
-}) {
+/** `840`, `84K` or `1.2M`. */
+const tokensText = (count: number) => {
+  if (count < THOUSAND) return String(count);
+  if (count < MILLION) return `${Math.round(count / THOUSAND)}K`;
+
+  return `${(count / MILLION).toFixed(1)}M`;
+};
+
+/** `12.4%`. */
+const percent = (share: number) => `${(share * 100).toFixed(1)}%`;
+
+/** The share of the window in use; zero before the first step, none when the window is unknown. */
+const shareOf = (usage: SidebarUsage) => {
+  const window = usage.contextWindow;
+  if (usage.context === 0) return 0;
+
+  return window === undefined || window === 0 ? undefined : Math.min(1, usage.context / window);
+};
+
+/** A value and the faint words after it. */
+function Row(props: { readonly value: string; readonly label: string }) {
   const color = useColor();
 
   return (
     <text wrapMode="none">
-      <span style={{ fg: color("text.muted") }}>{String(props.count)}</span>
-      <span style={{ fg: color("text.faint") }}>
-        {` ${props.count === 1 ? props.one : props.many}`}
-      </span>
-      <span style={{ fg: color("text.accent") }}>
-        {props.mark === undefined ? "" : ` ${props.mark}`}
-      </span>
+      <span style={{ fg: color("text.muted") }}>{props.value}</span>
+      <span style={{ fg: color("text.faint") }}>{` ${props.label}`}</span>
     </text>
   );
 }
 
-function ContextSection(props: { readonly context: SidebarContext }) {
-  const share = () => Math.min(1, props.context.used / props.context.limit);
+function Cost(props: { readonly usage: SidebarUsage }) {
+  const unpriced = () => props.usage.unpriced;
 
   return (
-    <Section
-      title="Context"
-      note={`${Math.round(share() * 100)}%`}
-      noteRole={share() > NEAR_LIMIT ? "feedback.warning" : "text.muted"}
-    >
-      <Count
-        count={props.context.shortTermMemories}
-        one="short-term memory"
-        many="short-term memories"
-        mark={MEMORY_STARS["short-term"]}
-      />
-      <Count
-        count={props.context.longTermMemories}
-        one="long-term memory"
-        many="long-term memories"
-        mark={MEMORY_STARS["long-term"]}
-      />
-      <Count count={props.context.checkpoints} one="checkpoint" many="checkpoints" />
-    </Section>
+    <>
+      <Show
+        when={props.usage.cost !== undefined}
+        fallback={<Row value="no" label="price for this model" />}
+      >
+        <Row value={`$${(props.usage.cost ?? 0).toFixed(2)}`} label="spent" />
+      </Show>
+      <Show when={props.usage.cost !== undefined && unpriced() > 0}>
+        <Row
+          value={String(unpriced())}
+          label={unpriced() === 1 ? "step unpriced" : "steps unpriced"}
+        />
+      </Show>
+    </>
   );
 }
 
-/** A section listing names, left out when there are none. */
-function Names(props: { readonly title: string; readonly names: readonly string[] }) {
-  const color = useColor();
+function UsageSection(props: { readonly usage: SidebarUsage }) {
+  const share = () => shareOf(props.usage);
+  const window = () => props.usage.contextWindow;
 
   return (
-    <Show when={props.names.length > 0}>
-      <Section title={props.title}>
-        <For each={props.names}>
-          {(name) => (
-            <text wrapMode="none" fg={color("text.muted")}>
-              {name}
-            </text>
-          )}
-        </For>
-      </Section>
-    </Show>
+    <Section
+      title="Usage"
+      note={share() === undefined ? undefined : percent(share() ?? 0)}
+      noteRole={(share() ?? 0) > NEAR_LIMIT ? "feedback.warning" : "text.muted"}
+    >
+      <Row
+        value={tokensText(props.usage.context)}
+        label={window() === undefined ? "tokens" : `of ${tokensText(window() ?? 0)} tokens`}
+      />
+      <Row value={percent(props.usage.cacheHit)} label="from cache" />
+      <Cost usage={props.usage} />
+    </Section>
   );
 }
 
@@ -93,11 +105,7 @@ export function Sidebar(props: {
   readonly folder: string;
   /** Left out when the folder is not a Git repository. */
   readonly branch?: string;
-  readonly context: SidebarContext;
-  /** Names of the Git repositories attached as references. */
-  readonly references: readonly string[];
-  /** Language servers running for this session. */
-  readonly servers: readonly string[];
+  readonly usage: SidebarUsage;
 }) {
   const color = useColor();
 
@@ -115,9 +123,7 @@ export function Sidebar(props: {
           )}
         </Show>
       </Section>
-      <ContextSection context={props.context} />
-      <Names title="References" names={props.references} />
-      <Names title="LSP" names={props.servers} />
+      <UsageSection usage={props.usage} />
     </box>
   );
 }

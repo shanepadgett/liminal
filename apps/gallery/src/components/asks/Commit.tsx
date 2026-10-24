@@ -1,16 +1,16 @@
 /**
- * `/commit`'s ask, in the draft's place once the turn has ended. While the small model plans, one
- * spinner line says so. The plan lists each commit's subject with its files under it, for enter to
- * commit or esc to cancel. While git commits, each subject gets a mark: done with its hash, the
- * current one in accent, the rest waiting. Then the push question offers No first. Every ending is
- * one toast.
+ * `/commit`'s ask, in the draft's place once the turn has ended. While the small model plans,
+ * Porter says so. The plan lists each commit's subject with its files under it, for enter to commit
+ * or esc to cancel. While git commits, each subject gets a mark: done with its hash, the current
+ * one in accent, the rest waiting. Then the push question offers No first, as `Choices`. Every
+ * ending is one notification.
  */
 
 import { For, Match, Show, Switch } from "solid-js";
 
-import { ChoiceRow, labelColumnsOf } from "../../primitives/ChoiceRow.tsx";
+import { type Choice, Choices, choicesHintsOf } from "../../primitives/Choices.tsx";
 import type { Hint } from "../../primitives/Hints.tsx";
-import { Spinner } from "../../primitives/Spinner.tsx";
+import { Porter } from "../../primitives/Porter.tsx";
 import type { RoleName } from "../../theme/roles.ts";
 import { useColor } from "../../theme/theme.tsx";
 import { Ask } from "./Ask.tsx";
@@ -57,9 +57,10 @@ export const SHOWN_COMMITS = 4;
 /** Files under each commit; the rest are counted. */
 const SHOWN_FILES = 3;
 
-const PUSH_CHOICES = ["No, keep them local", "Yes, push"];
-
-const PUSH_COLUMNS = labelColumnsOf(PUSH_CHOICES);
+const PUSH_CHOICES: readonly Choice[] = [
+  { label: "No, keep them local", hint: "keep local" },
+  { label: "Yes, push", hint: "push" },
+];
 
 const STATUS_ROLES: Record<FileStatus, RoleName> = {
   A: "feedback.success",
@@ -210,22 +211,12 @@ function Committing(props: {
   );
 }
 
-function PushChoices(props: { readonly choice: number }) {
-  return (
-    <For each={PUSH_CHOICES}>
-      {(label, index) => (
-        <ChoiceRow label={label} labelColumns={PUSH_COLUMNS} isUnder={index() === props.choice} />
-      )}
-    </For>
-  );
-}
-
 export function Commit(props: { readonly step: CommitStep }) {
   return (
     <Ask mark="◇" markRole="text.accent" title={titleOf(props.step)} aside={asideOf(props.step)}>
       <Switch>
         <Match when={props.step.kind === "planning" && props.step}>
-          {(step) => <Spinner label={`planning commits with ${step().model}`} />}
+          {(step) => <Porter words={[`planning commits with ${step().model}`]} />}
         </Match>
         <Match when={props.step.kind === "review" && props.step}>
           {(step) => <Plan commits={step().commits} top={step().top} />}
@@ -234,11 +225,11 @@ export function Commit(props: { readonly step: CommitStep }) {
           {(step) => <Committing commits={step().commits} hashes={step().hashes} />}
         </Match>
         <Match when={props.step.kind === "push" && props.step}>
-          {(step) => <PushChoices choice={step().choice} />}
+          {(step) => <Choices choices={PUSH_CHOICES} under={step().choice} />}
         </Match>
         <Match when={props.step.kind === "pushing" && props.step}>
           {(step) => (
-            <Spinner label={`pushing ${plural(step().count, "commit")} to ${step().target}`} />
+            <Porter words={[`pushing ${plural(step().count, "commit")} to ${step().target}`]} />
           )}
         </Match>
       </Switch>
@@ -251,11 +242,7 @@ export const commitHintsOf = (step: CommitStep): readonly Hint[] => {
   if (step.kind === "planning") return [{ keys: "esc", label: "stop" }];
 
   if (step.kind === "push") {
-    return [
-      { keys: "↑↓", label: "choose" },
-      { keys: "enter", label: "answer" },
-      { keys: "esc", label: "no" },
-    ];
+    return [...choicesHintsOf(PUSH_CHOICES, step.choice), { keys: "esc", label: "no" }];
   }
 
   if (step.kind !== "review") return [];

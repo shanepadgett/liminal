@@ -12,6 +12,13 @@ import type { RoleName } from "../../theme/roles.ts";
 import { useColor } from "../../theme/theme.tsx";
 import { Gutter } from "../chat/Composer.tsx";
 
+/** The note on the title line for `more` asks waiting after this one. */
+export const moreAside = (more: number): string | undefined => {
+  if (more === 0) return undefined;
+
+  return more === 1 ? "1 more waiting" : `${more} more waiting`;
+};
+
 export function Ask(props: {
   /** One glyph before the title saying what kind of ask it is. */
   readonly mark: string;

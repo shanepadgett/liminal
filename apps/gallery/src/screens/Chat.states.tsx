@@ -12,26 +12,19 @@ import { Notifications } from "../components/chat/Notifications.tsx";
 import { SAMPLE_SIDEBAR } from "../components/chat/Sidebar.states.tsx";
 import { Sidebar } from "../components/chat/Sidebar.tsx";
 import { SLASH_COMMANDS } from "../components/chat/SlashMenu.states.tsx";
-import { SLASH_HINTS, SlashMenu } from "../components/chat/SlashMenu.tsx";
+import { SlashMenu } from "../components/chat/SlashMenu.tsx";
 import { MODELS } from "../components/dialogs/Models.states.tsx";
 import { Picker, PICKER_HINTS } from "../components/dialogs/Picker.tsx";
-import { Checkpoint } from "../components/transcript/Checkpoint.tsx";
-import { Memory } from "../components/transcript/Memory.tsx";
 import { Notice } from "../components/transcript/Notice.tsx";
+import { Prompt } from "../components/transcript/Prompt.tsx";
 import { Reply } from "../components/transcript/Reply.tsx";
-import {
-  ANSWER,
-  EDITING,
-  QUESTION,
-  READ,
-  READING,
-  SHORT_TERM_MEMORY,
-} from "../components/transcript/samples.ts";
-import { Prompt, Turn } from "../components/transcript/Turn.tsx";
+import { ANSWER, QUESTION } from "../components/transcript/samples.ts";
+import { Turn } from "../components/transcript/Turn.tsx";
+import { EDITING, READ, READING } from "../components/transcript/work-samples.tsx";
 import { WorkRows } from "../components/transcript/WorkRows.tsx";
 import type { State } from "../entries.ts";
 import type { Hint } from "../primitives/Hints.tsx";
-import { Spinner } from "../primitives/Spinner.tsx";
+import { Porter } from "../primitives/Porter.tsx";
 import { Chat } from "./Chat.tsx";
 
 const TITLE = "Why the loop retries twice";
@@ -48,14 +41,11 @@ function Answered() {
     <>
       <Turn input={QUESTION}>
         <WorkRows rows={READ} />
-        <Memory kind="short-term" text={SHORT_TERM_MEMORY} />
         <Reply text={ANSWER} />
       </Turn>
-      <Checkpoint filesRead={6} />
       <Turn>
         <WorkRows rows={EDITING} />
-        <Memory kind="long-term" text="Retries belong in recovery.ts, which reads retry-after" />
-        <Notice kind="info" text="Switched to claude-opus-4.1." />
+        <Notice level="warning" text="The provider is overloaded. Trying again, attempt 2." />
       </Turn>
     </>
   );
@@ -65,7 +55,7 @@ function Working() {
   return (
     <Turn>
       <WorkRows rows={READING} />
-      <Spinner />
+      <Porter />
     </Turn>
   );
 }
@@ -94,10 +84,10 @@ interface ChatSample {
   readonly isWorking?: boolean;
   readonly queued?: readonly Queued[];
   readonly dialog?: () => JSX.Element;
-  readonly widgets?: () => JSX.Element;
+  readonly notifications?: () => JSX.Element;
   readonly draft?: string;
   /** The commands matching the draft's `/`. */
-  readonly suggestions?: () => JSX.Element;
+  readonly menu?: () => JSX.Element;
   readonly ask?: () => JSX.Element;
   readonly hints?: readonly Hint[];
 }
@@ -106,11 +96,11 @@ const composerOf = (sample: ChatSample) => (
   <Composer
     draft={sample.draft ?? ""}
     model="claude-sonnet-4.5"
-    effort="high"
+    thinking="high"
     queued={sample.queued ?? []}
     isWorking={sample.isWorking ?? false}
-    widgets={sample.widgets?.()}
-    suggestions={sample.suggestions?.()}
+    notifications={sample.notifications?.()}
+    menu={sample.menu?.()}
     ask={sample.ask?.()}
     hints={sample.hints}
   />
@@ -155,11 +145,7 @@ const modelPicker = () => (
 );
 
 export const chatStates: readonly [State, ...State[]] = [
-  {
-    name: "New session",
-    fill: "screen",
-    view: chat({ transcript: () => <Landing version="v0.1.0" /> }),
-  },
+  { name: "New session", fill: "screen", view: chat({ transcript: () => <Landing /> }) },
   {
     name: "Conversation",
     fill: "screen",
@@ -206,7 +192,7 @@ export const chatStates: readonly [State, ...State[]] = [
       transcript: Working,
       isWorking: true,
       queued: WAITING,
-      widgets: () => <Notifications notifications={[USAGE, CONNECTED]} />,
+      notifications: () => <Notifications notifications={[USAGE, CONNECTED]} />,
     }),
   },
   {
@@ -217,12 +203,11 @@ export const chatStates: readonly [State, ...State[]] = [
       pinned: FOLLOW_UP,
       transcript: Answered,
       draft: "/",
-      suggestions: () => <SlashMenu commands={SLASH_COMMANDS} typed="" under={0} />,
-      hints: SLASH_HINTS,
+      menu: () => <SlashMenu commands={SLASH_COMMANDS} typed="" under={0} />,
     }),
   },
   {
-    name: "Slash menu with widgets",
+    name: "Slash menu with notifications",
     fill: "screen",
     view: chat({
       title: TITLE,
@@ -230,10 +215,9 @@ export const chatStates: readonly [State, ...State[]] = [
       transcript: Working,
       isWorking: true,
       queued: WAITING,
-      widgets: () => <Notifications notifications={[USAGE, CONNECTED]} />,
+      notifications: () => <Notifications notifications={[USAGE, CONNECTED]} />,
       draft: "/co",
-      suggestions: () => <SlashMenu commands={SLASH_COMMANDS} typed="co" under={0} />,
-      hints: SLASH_HINTS,
+      menu: () => <SlashMenu commands={SLASH_COMMANDS} typed="co" under={0} />,
     }),
   },
   {

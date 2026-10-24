@@ -8,7 +8,7 @@ import { useColor } from "../theme/theme.tsx";
 
 export function Section(props: {
   readonly title: string;
-  readonly note?: string;
+  readonly note?: string | undefined;
   /** The note's color; faint unless the note needs attention. */
   readonly noteRole?: RoleName;
   readonly children?: JSX.Element;

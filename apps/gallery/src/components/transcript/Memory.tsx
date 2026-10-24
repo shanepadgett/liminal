@@ -10,10 +10,7 @@ import { useColor } from "../../theme/theme.tsx";
 export type MemoryKind = "short-term" | "long-term";
 
 /** The star that marks each kind of memory, here and in the sidebar. */
-export const MEMORY_STARS: Readonly<Record<MemoryKind, string>> = {
-  "short-term": "✧",
-  "long-term": "✦",
-};
+const MEMORY_STARS: Readonly<Record<MemoryKind, string>> = { "short-term": "✧", "long-term": "✦" };
 
 export function Memory(props: { readonly kind: MemoryKind; readonly text: string }) {
   const color = useColor();

@@ -26,7 +26,7 @@ Read an instruction file only when you are about to do the work it covers.
 | `.liminal/instructions/docs.md` | Writing or changing a file in `docs/` |
 | `.liminal/instructions/planning.md` | Planning work, in chat or in `docs/plans/` |
 | `.liminal/instructions/tools.md` | Changing lint rules, checks, fallow config or reference tooling |
-| `.liminal/instructions/gallery.md` | Changing `apps/gallery`, or taking a design from it into the product |
+| `.liminal/instructions/gallery.md` | Changing `apps/gallery`, changing anything the TUI shows, or taking a design from the gallery into the product |
 | `.liminal/instructions/instructions.md` | Changing `AGENTS.md` or `.liminal/instructions/` |
 
 ## Scope

@@ -6,6 +6,7 @@
  * it runs only while no turn runs.
  */
 import { Effect, Layer } from "effect";
+import { Show } from "solid-js";
 
 import {
   ChatScreen,
@@ -70,8 +71,12 @@ const make = Effect.gen(function* () {
   yield* (yield* ToolRows).add(ToolRowView.Shown({ tool: askQuestionName, component: AskRow }));
 
   yield* (yield* ComposerCovers).add({
-    active: (props) => openAsks(props.state).length > 0,
-    component: (props) => <AskCover {...props} views={views} />,
+    active: (props) => props.session !== undefined && openAsks(props.session.state).length > 0,
+    component: (props) => (
+      <Show when={props.session}>
+        {(session) => <AskCover session={session()} cancel={props.cancel} views={views} />}
+      </Show>
+    ),
   });
 
   yield* (yield* Moods).add(waiting);

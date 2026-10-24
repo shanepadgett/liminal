@@ -1,6 +1,8 @@
 /**
- * A dialog that filters a list as the user types. With no query the rows sit under their section
- * titles; with one, `fuzzysort` orders them by match and marks the matched letters.
+ * A dialog that filters a list as the user types. Rows sit under their section titles, each section
+ * after a blank line and with an optional faint detail on its right; a query keeps the rows that
+ * match, best first within each section, and marks the matched letters. A pick or action that
+ * confirms asks in the footer first.
  */
 
 import { TextAttributes } from "@opentui/core";
@@ -19,38 +21,68 @@ export interface PickerRow {
   readonly section?: string;
 }
 
+/** A row and the letters of its title the query matched. */
+interface Found {
+  readonly kind: "row";
+  readonly row: PickerRow;
+  readonly matches: readonly number[];
+}
+
 type Item =
-  | { readonly kind: "section"; readonly title: string }
-  | { readonly kind: "row"; readonly row: PickerRow; readonly matches: readonly number[] };
+  | { readonly kind: "section"; readonly title: string; readonly isSpaced: boolean }
+  | Found;
 
 const LIST_ROWS = 12;
 
-/** A section title goes before the first row of each section. */
-const sectioned = (rows: readonly PickerRow[]): readonly Item[] =>
-  rows.flatMap((row, index): Item[] => {
-    const item: Item = { kind: "row", row, matches: [] };
-    const isFirst = row.section !== undefined && row.section !== rows[index - 1]?.section;
+/**
+ * A section title goes before the first row of each section, after a blank line unless it opens the
+ * list.
+ */
+const sectioned = (found: readonly Found[]): readonly Item[] =>
+  found.flatMap((item, index): Item[] => {
+    const { section } = item.row;
+    const isFirst = section !== undefined && section !== found[index - 1]?.row.section;
 
-    return isFirst ? [{ kind: "section", title: row.section }, item] : [item];
+    return isFirst ? [{ kind: "section", title: section, isSpaced: index > 0 }, item] : [item];
   });
 
-const itemsOf = (rows: readonly PickerRow[], query: string): readonly Item[] =>
-  query === ""
-    ? sectioned(rows)
-    : fuzzysort
-        .go(query, rows, { key: "title" })
-        .map((result) => ({ kind: "row", row: result.obj, matches: result.indexes }));
+/** The lines the items take, blank lines included. */
+const linesOf = (items: readonly Item[]) =>
+  items.length + items.filter((item) => item.kind === "section" && item.isSpaced).length;
 
-function ItemView(props: { readonly item: Item; readonly selected: string }) {
+/** The rows matching `query` in their sections, which keep their order; every row for none. */
+const itemsOf = (rows: readonly PickerRow[], query: string): readonly Item[] => {
+  if (query === "") return sectioned(rows.map((row) => ({ kind: "row", row, matches: [] })));
+
+  const found = fuzzysort
+    .go(query, rows, { key: "title" })
+    .map((result): Found => ({ kind: "row", row: result.obj, matches: result.indexes }));
+
+  const sections = [...new Set(rows.map((row) => row.section))];
+
+  return sectioned(
+    sections.flatMap((section) => found.filter((each) => each.row.section === section)),
+  );
+};
+
+function ItemView(props: {
+  readonly item: Item;
+  readonly selected: string;
+  readonly sectionDetail: ((section: string) => string | undefined) | undefined;
+}) {
   const color = useColor();
 
   return (
     <Switch>
       <Match when={props.item.kind === "section" ? props.item : undefined}>
         {(section) => (
-          <text fg={color("text.heading")} paddingLeft={1}>
-            {section().title}
-          </text>
+          <box flexDirection="row" paddingX={1} marginTop={section().isSpaced ? 1 : 0}>
+            <text fg={color("text.heading")}>{section().title}</text>
+            <box flexGrow={1} />
+            <text flexShrink={0} fg={color("text.faint")}>
+              {props.sectionDetail?.(section().title) ?? ""}
+            </text>
+          </box>
         )}
       </Match>
       <Match when={props.item.kind === "row" ? props.item : undefined}>
@@ -77,12 +109,16 @@ export function Picker(props: {
   /** The id of the selected row. */
   readonly selected: string;
   readonly hints: readonly Hint[];
+  /** A faint note at the right of a section's title, such as how many rows it holds. */
+  readonly sectionDetail?: (section: string) => string | undefined;
+  /** The question a pick or action asks in the footer before it runs. */
+  readonly confirming?: string;
 }) {
   const color = useColor();
   const items = () => itemsOf(props.rows, props.query);
 
   return (
-    <Dialog title={props.title} hints={props.hints}>
+    <Dialog title={props.title} hints={props.hints} confirming={props.confirming}>
       <box flexDirection="row" marginBottom={1}>
         <text flexShrink={0} fg={color("text.accent")} attributes={TextAttributes.BOLD}>
           {"> "}
@@ -103,10 +139,14 @@ export function Picker(props: {
         }
       >
         <scrollbox
-          height={Math.min(items().length, LIST_ROWS)}
+          height={Math.min(linesOf(items()), LIST_ROWS)}
           scrollbarOptions={{ visible: false }}
         >
-          <For each={items()}>{(item) => <ItemView item={item} selected={props.selected} />}</For>
+          <For each={items()}>
+            {(item) => (
+              <ItemView item={item} selected={props.selected} sectionDetail={props.sectionDetail} />
+            )}
+          </For>
         </scrollbox>
       </Show>
     </Dialog>

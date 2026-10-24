@@ -1,6 +1,7 @@
 import type { State } from "../../entries.ts";
 import { Memory } from "./Memory.tsx";
-import { READ, SHORT_TERM_MEMORY } from "./samples.ts";
+import { SHORT_TERM_MEMORY } from "./samples.ts";
+import { READ } from "./work-samples.tsx";
 import { WorkRows } from "./WorkRows.tsx";
 
 export const memoryStates: readonly [State, ...State[]] = [

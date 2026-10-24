@@ -3,8 +3,9 @@
  * pointer is a `➜`, not the draft's chevron, so the two are not mistaken for each other. A line
  * along the top edge of its first row tops the panel, and its rows fade down into the composer's
  * background. With nothing after the `/` every command shows in order; after it, `fuzzysort` orders
- * them by match and marks the matched letters. Names sit in one column as wide as the longest name,
- * so descriptions stay put while the user types.
+ * them by match and marks the matched letters. A command that takes text shows it dimmed after its
+ * name: `[hint]` when the text is optional, `<hint>` when it is required. Names sit in one column
+ * as wide as the longest, so titles stay put while the user types.
  */
 
 import type { BorderCharacters } from "@opentui/core";
@@ -15,15 +16,24 @@ import { ChoiceRow, labelColumnsOf } from "../../primitives/ChoiceRow.tsx";
 import { mixHex } from "../../theme/oklch.ts";
 import { useColor } from "../../theme/theme.tsx";
 
+/** The text a command takes after its name. */
+export interface SlashArgument {
+  readonly kind: "optional" | "required";
+  readonly hint: string;
+}
+
 export interface SlashCommand {
   /** Without its `/`. */
   readonly name: string;
-  readonly description: string;
+  readonly title: string;
+  readonly argument?: SlashArgument;
 }
 
-interface Match {
-  readonly command: SlashCommand;
-  /** Indexes into the name as shown, `/` included. */
+interface Row {
+  readonly label: string;
+  readonly suffix?: string;
+  readonly title: string;
+  /** Indexes into the label, `/` included. */
   readonly matches: readonly number[];
 }
 
@@ -48,15 +58,27 @@ const TOP_EDGE: BorderCharacters = {
   cross: EDGE,
 };
 
-const matchesOf = (commands: readonly SlashCommand[], typed: string): readonly Match[] =>
+const suffixOf = (argument: SlashArgument) =>
+  argument.kind === "optional" ? `[${argument.hint}]` : `<${argument.hint}>`;
+
+const rowOf = (command: SlashCommand, matches: readonly number[]): Row => {
+  const row = { label: `/${command.name}`, title: command.title, matches };
+
+  return command.argument === undefined ? row : { ...row, suffix: suffixOf(command.argument) };
+};
+
+const rowsOf = (commands: readonly SlashCommand[], typed: string): readonly Row[] =>
   typed === ""
-    ? commands.map((command) => ({ command, matches: [] }))
-    : fuzzysort
-        .go(typed, commands, { key: "name" })
-        .map((result) => ({
-          command: result.obj,
-          matches: result.indexes.map((index) => index + 1),
-        }));
+    ? commands.map((command) => rowOf(command, []))
+    : fuzzysort.go(typed, commands, { key: "name" }).map((result) =>
+        rowOf(
+          result.obj,
+          result.indexes.map((index) => index + 1),
+        ),
+      );
+
+/** What a row's label column holds: the label and its dimmed suffix. */
+const labelOf = (row: Row) => (row.suffix === undefined ? row.label : `${row.label} ${row.suffix}`);
 
 export function SlashMenu(props: {
   readonly commands: readonly SlashCommand[];
@@ -66,8 +88,8 @@ export function SlashMenu(props: {
   readonly under: number;
 }) {
   const color = useColor();
-  const rows = () => matchesOf(props.commands, props.typed);
-  const columns = () => labelColumnsOf(props.commands.map((command) => `/${command.name}`));
+  const rows = () => rowsOf(props.commands, props.typed);
+  const columns = () => labelColumnsOf(rows().map(labelOf));
   const shown = () => Math.max(1, Math.min(rows().length, MENU_ROWS));
 
   /** The raised surface under the line, nearly the composer's own at the last row shown. */
@@ -95,16 +117,14 @@ export function SlashMenu(props: {
           </box>
         }
       >
-        <scrollbox
-          height={Math.min(rows().length, MENU_ROWS)}
-          scrollbarOptions={{ visible: false }}
-        >
+        <scrollbox height={shown()} scrollbarOptions={{ visible: false }}>
           <For each={rows()}>
             {(row, index) => (
               <box backgroundColor={fadeOf(index())}>
                 <ChoiceRow
-                  label={`/${row.command.name}`}
-                  detail={row.command.description}
+                  label={row.label}
+                  suffix={row.suffix}
+                  detail={row.title}
                   matches={row.matches}
                   labelColumns={columns()}
                   isUnder={index() === props.under}
@@ -118,10 +138,3 @@ export function SlashMenu(props: {
     </box>
   );
 }
-
-export const SLASH_HINTS = [
-  { keys: "↑↓", label: "choose" },
-  { keys: "tab", label: "complete" },
-  { keys: "enter", label: "run" },
-  { keys: "esc", label: "close" },
-];

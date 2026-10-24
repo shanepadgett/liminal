@@ -10,6 +10,8 @@ export {
   RING_COLUMNS,
 } from "./ChoiceRow.tsx";
 
+export { type Choice, Choices } from "./Choices.tsx";
+
 export { type Confirming, useConfirm } from "./Confirm.tsx";
 export { Dialog } from "./Dialog.tsx";
 export { changesOf, Diff } from "./Diff.tsx";

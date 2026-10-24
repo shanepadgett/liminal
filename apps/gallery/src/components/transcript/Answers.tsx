@@ -1,8 +1,8 @@
 /**
- * The user's answers to `ask_question`, under its work row. Each question stays muted with the
- * answer under it in the user's voice, or `skipped` in faint text; `(suggested)` follows an answer
- * the model suggested. The user's note on their answer hangs under it, and their additional notes
- * close the list, answered like a question.
+ * The user's answers to `ask_question`, opened under its work row with a click. Each question stays
+ * muted with the answer under it in the user's voice, or `skipped` in faint text; `(suggested)`
+ * follows an answer the model suggested. The user's note on their answer hangs under it, and their
+ * additional notes close the list, answered like a question.
  */
 
 import { Index, Show } from "solid-js";
@@ -81,7 +81,7 @@ function AnswerItem(props: { readonly answer: Answer }) {
   );
 }
 
-/** The answers, always open under the row behind a thin rule. */
+/** The answers, opened under the row behind a thin rule. */
 export function Answers(props: { readonly answers: readonly Answer[] }) {
   const color = useColor();
 

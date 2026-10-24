@@ -52,9 +52,15 @@ export interface ComposerProps {
 /** Where the user writes; the last fill wins. */
 export const composer = defineSlot<ComposerProps>("chat/composer", "replace");
 
-export interface CoverProps extends ComposerProps {
-  readonly session: SessionId;
+/** The session on screen and what it holds. */
+export interface CoverSession {
+  readonly id: SessionId;
   readonly state: SessionView.ViewState;
+}
+
+export interface CoverProps extends ComposerProps {
+  /** Undefined on the landing screen, before the first send. */
+  readonly session: CoverSession | undefined;
 }
 
 /** Something that takes the composer's place while it is active, such as a question to answer. */
@@ -63,7 +69,7 @@ export interface ComposerCover {
   readonly component: (props: CoverProps) => JSX.Element;
 }
 
-/** Read when the session screen first draws; the first active cover shows, else the composer. */
+/** Read when the chat screen first draws; the first active cover shows, else the composer. */
 export class ComposerCovers extends Registry.Service<ComposerCovers, ComposerCover>()(
   "chat/ComposerCovers",
 ) {}

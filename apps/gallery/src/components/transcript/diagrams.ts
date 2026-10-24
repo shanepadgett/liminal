@@ -4,7 +4,6 @@
  */
 
 import {
-  type BoxOptions,
   BoxRenderable,
   createMarkdownCodeBlockRenderer,
   type MarkdownCodeBlockRenderer,
@@ -35,26 +34,6 @@ const linesOf = (drawn: string) =>
     .split("\n")
     .map((line) => line.trimEnd());
 
-/**
- * A box with one blank row after it, as OpenTUI leaves after a code block, unless the reply ends
- * with it. OpenTUI leaves a custom block's spacing to its renderer and never says what comes next,
- * so the box checks its place each frame.
- */
-const spacedBox = (renderer: RenderContext, options: BoxOptions) => {
-  const block = new BoxRenderable(renderer, options);
-  const gap = { rows: 0 };
-
-  block.onLifecyclePass = () => {
-    const rows = block.parent?.getChildren().at(-1) === block ? 0 : 1;
-
-    if (rows === gap.rows) return;
-    gap.rows = rows;
-    block.marginBottom = rows;
-  };
-
-  return block;
-};
-
 /** The diagram, or its source while the diagram is wider than the block. */
 const fitted = (
   renderer: RenderContext,
@@ -72,9 +51,12 @@ const fitted = (
     height: lines.length,
   });
 
-  const block = spacedBox(renderer, {
+  // OpenTUI spaces a custom block by raising its top margin to the gap it wants; a box with no
+  // margin set reads as NaN there and gets no gap.
+  const block = new BoxRenderable(renderer, {
     width: "100%",
     flexDirection: "column",
+    marginTop: 0,
     onSizeChange() {
       const fits = this.width >= width;
       drawing.visible = fits;
@@ -86,7 +68,7 @@ const fitted = (
 
   if (source !== null) {
     source.visible = false;
-    source.marginBottom = 0;
+    source.marginTop = 0;
     block.add(source);
   }
 
@@ -106,10 +88,7 @@ const mermaidOf =
 
 type RenderNode = NonNullable<MarkdownOptions["renderNode"]>;
 
-/**
- * The `<markdown>` `renderNode` that draws mermaid fences in the muted text color. It is OpenTUI's
- * code-block renderer, which handles only fences, so the rest of the Markdown keeps its spacing.
- */
+/** Draws mermaid fences in the muted text color, and leaves every other fence to OpenTUI. */
 export const useDiagrams = () => {
   const renderer = useRenderer();
   const color = useColor();

@@ -71,38 +71,41 @@ export const isAnswered = (draft: Draft) => {
 export const ownRowOf = (question: Question) =>
   question.kind === "select" ? question.options.length : undefined;
 
-const CHOOSING: readonly Hint[] = [
-  { keys: "↑↓", label: "choose" },
-  { keys: "enter", label: "pick" },
-  { keys: "n", label: "note" },
-  { keys: "tab", label: "next" },
-  { keys: "esc", label: "cancel" },
-];
-
-const NOTING: readonly Hint[] = [
-  { keys: "enter", label: "save note" },
-  { keys: "esc", label: "drop note" },
-];
-
-const WRITING: readonly Hint[] = [
-  { keys: "enter", label: "accept" },
-  { keys: "tab", label: "next" },
-  { keys: "esc", label: "cancel" },
-];
-
-const ADDITIONAL_NOTES: readonly Hint[] = [
-  { keys: "enter", label: "send answers" },
-  { keys: "shift+tab", label: "back" },
-  { keys: "esc", label: "cancel" },
-];
-
-/** What the keys do on the tab in view. */
-export const formHintsOf = (form: Form): readonly Hint[] => {
+/** Which of the form's keys work on the tab in view. */
+const keysOn = (form: Form) => {
   const question = form.questions.at(form.tab);
+  const isNoting = form.isNoting === true;
+  const isQuestion = question !== undefined && !isNoting;
+  const isField = isQuestion && (question.kind === "input" || form.row === ownRowOf(question));
+  const hasRows = isQuestion && question.kind !== "input";
 
-  if (question === undefined) return ADDITIONAL_NOTES;
-  if (form.isNoting === true) return NOTING;
-  if (question.kind === "input" || form.row === ownRowOf(question)) return WRITING;
+  return {
+    hasRows,
+    isField,
+    isOnOption: hasRows && !isField,
+    isNoting,
+    isOnNotes: question === undefined,
+    isQuestion,
+    canGoBack: !isNoting && form.tab > 0,
+  };
+};
 
-  return CHOOSING;
+/** What the keys do on the tab in view, in the order the form's commands come. */
+export const formHintsOf = (form: Form): readonly Hint[] => {
+  const on = keysOn(form);
+
+  const hints: readonly (readonly [boolean, Hint])[] = [
+    [on.hasRows, { keys: "↑↓", label: "choose" }],
+    [on.isOnOption, { keys: "enter", label: "pick" }],
+    [on.isField, { keys: "enter", label: "accept" }],
+    [on.isOnOption, { keys: "n", label: "note" }],
+    [on.isNoting, { keys: "enter", label: "save note" }],
+    [on.isNoting, { keys: "esc", label: "drop note" }],
+    [on.isOnNotes, { keys: "enter", label: "send answers" }],
+    [on.isQuestion, { keys: "tab", label: "next" }],
+    [on.canGoBack, { keys: "shift+tab", label: "back" }],
+    [!on.isNoting, { keys: "esc", label: "cancel" }],
+  ];
+
+  return hints.flatMap(([isShown, hint]) => (isShown ? [hint] : []));
 };

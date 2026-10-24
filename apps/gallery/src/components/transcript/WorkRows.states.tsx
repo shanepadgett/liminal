@@ -1,9 +1,18 @@
 import type { State } from "../../entries.ts";
 import { useStream } from "../../primitives/Ink.tsx";
-import { EDITING, READ, READING, SCRIPT } from "./samples.ts";
+import {
+  EDIT,
+  EDITING,
+  READ,
+  READING,
+  SCRIPT,
+  SCRIPT_RUN,
+  TESTING,
+  TESTS,
+} from "./work-samples.tsx";
 import { WorkRows } from "./WorkRows.tsx";
 
-/** A script being written as a call, over and over, under the reads before it. */
+/** A command being written as a call, over and over, under the reads before it. */
 export function StreamingCall() {
   const head = useStream(SCRIPT.length);
 
@@ -19,15 +28,18 @@ export const workRowsStates: readonly [State, ...State[]] = [
   { name: "Edit and failed command", fill: "page", view: () => <WorkRows rows={EDITING} /> },
   { name: "Streaming a call", fill: "page", view: () => <StreamingCall /> },
   {
-    name: "Script opened",
+    name: "Command running",
     fill: "page",
-    view: () => (
-      <WorkRows
-        rows={[
-          ...EDITING,
-          { tool: "shell", input: SCRIPT, status: "done", note: "exit 0", isOpen: true },
-        ]}
-      />
-    ),
+    view: () => <WorkRows rows={[...READ, EDIT, TESTING]} />,
+  },
+  {
+    name: "Edit opened",
+    fill: "page",
+    view: () => <WorkRows rows={[...READ, { ...EDIT, isOpen: true }, TESTS]} />,
+  },
+  {
+    name: "Command opened",
+    fill: "page",
+    view: () => <WorkRows rows={[...EDITING, { ...SCRIPT_RUN, isOpen: true }]} />,
   },
 ];

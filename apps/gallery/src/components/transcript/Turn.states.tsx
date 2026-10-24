@@ -1,10 +1,11 @@
 import type { State } from "../../entries.ts";
-import { Spinner } from "../../primitives/Spinner.tsx";
+import { Porter } from "../../primitives/Porter.tsx";
 import { Notice } from "./Notice.tsx";
 import { StreamingAnswer } from "./Reply.states.tsx";
 import { Reply } from "./Reply.tsx";
-import { ANSWER, LONG_QUESTION, QUESTION, READ } from "./samples.ts";
+import { ANSWER, LONG_QUESTION, QUESTION } from "./samples.ts";
 import { Turn } from "./Turn.tsx";
+import { READ } from "./work-samples.tsx";
 import { WorkRows } from "./WorkRows.tsx";
 
 export const turnStates: readonly [State, ...State[]] = [
@@ -32,7 +33,7 @@ export const turnStates: readonly [State, ...State[]] = [
     fill: "page",
     view: () => (
       <Turn input={QUESTION}>
-        <Spinner />
+        <Porter />
       </Turn>
     ),
   },
@@ -51,8 +52,8 @@ export const turnStates: readonly [State, ...State[]] = [
     fill: "page",
     view: () => (
       <Turn input={QUESTION}>
-        <Notice kind="warning" text="The provider is overloaded (529). Retrying in 4s." />
-        <Notice kind="error" text="The provider is still overloaded after 3 tries." />
+        <Notice level="warning" text="The provider is overloaded. Trying again, attempt 2." />
+        <Notice level="error" text="The turn stopped: the provider is still overloaded." />
       </Turn>
     ),
   },

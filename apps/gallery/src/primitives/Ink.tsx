@@ -13,7 +13,7 @@ import { useColor } from "../theme/theme.tsx";
 import { cellsOf } from "./Gradient.tsx";
 
 /** Characters this close behind the newest one are still warming up. */
-export const FRESH_CELLS = 12;
+export const FRESH_CELLS = 24;
 
 /** How fast the gallery's sample streams write: about what a fast model sends. */
 const CELLS_PER_SECOND = 220;
@@ -45,26 +45,31 @@ export const useStream = (length: number): Accessor<number> => {
   return head;
 };
 
+/** Eases a warmth from 0 to 1, slow at both ends, so the newest cells fade in softly. */
+const eased = (warmth: number) => warmth * warmth * (3 - 2 * warmth);
+
 /** How warm the cell at `index` is with `shown` cells out: 0 not yet out, 1 settled. */
 export const warmthAt = (index: number, shown: number) =>
-  index >= shown ? 0 : Math.min(1, (shown - index) / FRESH_CELLS);
+  index >= shown ? 0 : eased(Math.min(1, (shown - index) / FRESH_CELLS));
 
 export interface Run {
   readonly text: string;
   readonly fg: string;
 }
 
-/** Cells as runs of one color each, the newest warming up from `ground` to `settled`. */
+/**
+ * Cells as runs of one color each, the newest warming up: `tint` gives the color at a warmth, from
+ * 0 for the ground to 1 for settled.
+ */
 export const inkRuns = (
   cells: readonly string[],
   shown: number,
-  ground: string,
-  settled: string,
+  tint: (warmth: number) => string,
 ): readonly Run[] => {
   const runs: Run[] = [];
 
   for (const [index, cell] of cells.entries()) {
-    const fg = mixHex(ground, settled, warmthAt(index, shown));
+    const fg = tint(warmthAt(index, shown));
     const last = runs.at(-1);
 
     if (last?.fg === fg) runs[runs.length - 1] = { text: last.text + cell, fg };
@@ -92,11 +97,8 @@ export function Inked(props: {
   const runs = () => {
     const cells = cellsOf(props.text);
 
-    return inkRuns(
-      cells.slice(0, wordEndOf(cells, props.shown)),
-      props.shown,
-      color("surface.base"),
-      color(props.role),
+    return inkRuns(cells.slice(0, wordEndOf(cells, props.shown)), props.shown, (warmth) =>
+      mixHex(color("surface.base"), color(props.role), warmth),
     );
   };
 

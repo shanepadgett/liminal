@@ -1,8 +1,10 @@
 import type { State } from "../../entries.ts";
+import { Prompt } from "./Prompt.tsx";
 import { Reply } from "./Reply.tsx";
-import { ANSWER, QUESTION, READ, READING } from "./samples.ts";
-import { Prompt, Turn } from "./Turn.tsx";
+import { ANSWER, QUESTION } from "./samples.ts";
+import { Turn } from "./Turn.tsx";
 import { TurnEnd } from "./TurnEnd.tsx";
+import { READ, READING } from "./work-samples.tsx";
 import { type WorkRow, WorkRows } from "./WorkRows.tsx";
 
 const MODEL = "claude-sonnet-4.5";
@@ -19,7 +21,7 @@ export const turnEndStates: readonly [State, ...State[]] = [
     fill: "page",
     view: () => (
       <box>
-        <TurnEnd ending="finished" model={MODEL} time="38s" />
+        <TurnEnd ending="done" model={MODEL} time="38s" />
         <TurnEnd ending="stopped" model={MODEL} time="14s" />
         <TurnEnd ending="interrupted" model={MODEL} />
       </box>
@@ -33,7 +35,7 @@ export const turnEndStates: readonly [State, ...State[]] = [
         <Turn input={QUESTION}>
           <WorkRows rows={READ} />
           <Reply text={ANSWER} />
-          <TurnEnd ending="finished" model={MODEL} time="2m 05s" />
+          <TurnEnd ending="done" model={MODEL} time="2m 05s" />
         </Turn>
         <Turn input="Where else does it retry?">
           <WorkRows rows={CUT_READS} />

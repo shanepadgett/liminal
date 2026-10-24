@@ -9,10 +9,10 @@
 import type { RoleName } from "../../theme/roles.ts";
 import { useColor } from "../../theme/theme.tsx";
 
-export type Ending = "finished" | "stopped" | "interrupted";
+export type Ending = "done" | "stopped" | "interrupted";
 
 const LOOK: Readonly<Record<Ending, { readonly word: string; readonly role: RoleName }>> = {
-  finished: { word: "Done", role: "text.accent" },
+  done: { word: "Done", role: "text.accent" },
   stopped: { word: "Stopped", role: "feedback.danger" },
   interrupted: { word: "Interrupted", role: "feedback.warning" },
 };

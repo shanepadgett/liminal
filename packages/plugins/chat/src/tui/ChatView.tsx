@@ -196,8 +196,7 @@ function SessionScreen(props: {
       composer={
         <ComposerPlace
           covers={props.covers()}
-          session={props.session}
-          state={view.state}
+          session={{ id: props.session, state: view.state }}
           running={view.state.running}
           queued={view.state.queued}
           send={props.send}
@@ -220,13 +219,17 @@ function SessionScreen(props: {
   );
 }
 
-function LandingScreen(props: { readonly send: (text: string, mode?: SendMode) => void }) {
+function LandingScreen(props: {
+  readonly covers: Accessor<ReadonlyArray<ComposerCover>>;
+  readonly send: (text: string, mode?: SendMode) => void;
+}) {
   return (
     <Layout
       transcript={<Landing />}
       composer={
-        <SlotView
-          slot={composer}
+        <ComposerPlace
+          covers={props.covers()}
+          session={undefined}
           running={false}
           queued={[]}
           send={props.send}
@@ -425,7 +428,7 @@ export function ChatView(props: {
           )}
         </Match>
         <Match when={session() === undefined}>
-          <LandingScreen send={send} />
+          <LandingScreen covers={covers} send={send} />
         </Match>
       </Switch>
     </box>

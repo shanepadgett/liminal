@@ -1,11 +1,39 @@
 /** Sample asks: tool calls waiting for approval, and a form of questions at each step. */
 
-import type { ApprovalCall } from "./Approval.tsx";
+import type { AccessRequest, ApprovalCall } from "./Approval.tsx";
 import type { Draft, Form, Question } from "./form.ts";
 
 export const SHELL_CALL: ApprovalCall = {
   tool: "shell",
-  explanation: "Deletes every installed package in the workspace, then installs them again.",
+  review: {
+    kind: "verdict",
+    verdict: {
+      summary: "Deletes every installed package in the workspace, then installs them again.",
+      effects: [
+        { kind: "deletes", target: "node_modules, packages/*/node_modules" },
+        { kind: "installs", target: "the packages in bun.lock" },
+      ],
+      risk: "Low: bun install puts back what the lockfile pins.",
+    },
+  },
+};
+
+/** A call the reviewer could not check. */
+export const UNREVIEWED_CALL: ApprovalCall = {
+  tool: "shell",
+  review: { kind: "failed", message: "the model timed out" },
+};
+
+export const READ_OUTSIDE: AccessRequest = {
+  path: "/work/effect/packages/effect/src",
+  write: false,
+  reason: "Reading how Stream.merge ends, to match it in the loop.",
+};
+
+export const WRITE_OUTSIDE: AccessRequest = {
+  path: "/work/notes/liminal.md",
+  write: true,
+  reason: "Adding today's findings to your notes file.",
 };
 
 /** The command behind `SHELL_CALL`, shown in its transcript row. */

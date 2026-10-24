@@ -1,6 +1,8 @@
 import type { Group } from "../entries.ts";
 import { chipStates } from "./Chip.states.tsx";
 import { choiceRowStates } from "./ChoiceRow.states.tsx";
+import { choicesStates } from "./Choices.states.tsx";
+import { diffStates } from "./Diff.states.tsx";
 import { gradientStates } from "./Gradient.states.tsx";
 import { hatchStates } from "./Hatch.states.tsx";
 import { hintsStates } from "./Hints.states.tsx";
@@ -8,9 +10,9 @@ import { inkStates } from "./Ink.states.tsx";
 import { listRowStates } from "./ListRow.states.tsx";
 import { logoStates } from "./Logo.states.tsx";
 import { matchedTextStates } from "./MatchedText.states.tsx";
+import { porterStates } from "./Porter.states.tsx";
 import { ruleStates } from "./Rule.states.tsx";
 import { sectionStates } from "./Section.states.tsx";
-import { spinnerStates } from "./Spinner.states.tsx";
 
 export const primitives: Group = {
   title: "Primitives",
@@ -22,6 +24,7 @@ export const primitives: Group = {
         { id: "hints", title: "Hints", states: hintsStates },
         { id: "matched-text", title: "Matched text", states: matchedTextStates },
         { id: "ink", title: "Ink", states: inkStates },
+        { id: "diff", title: "Diff", states: diffStates },
       ],
     },
     {
@@ -30,7 +33,7 @@ export const primitives: Group = {
         { id: "gradient", title: "Gradient", states: gradientStates },
         { id: "hatch", title: "Hatch", states: hatchStates },
         { id: "logo", title: "Logo", states: logoStates },
-        { id: "spinner", title: "Spinner", states: spinnerStates },
+        { id: "porter", title: "Porter", states: porterStates },
       ],
     },
     {
@@ -40,6 +43,7 @@ export const primitives: Group = {
         { id: "section", title: "Section", states: sectionStates },
         { id: "list-row", title: "List row", states: listRowStates },
         { id: "choice-row", title: "Choice row", states: choiceRowStates },
+        { id: "choices", title: "Choices", states: choicesStates },
       ],
     },
   ],

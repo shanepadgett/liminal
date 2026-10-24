@@ -2,9 +2,9 @@
  * The chat screen's layout: a column with the header on top once the session starts, then the
  * transcript and the composer. The sidebar sits beside the whole column, wider on a large screen;
  * on a small one it is a drawer over the right edge, shown only when opened, that dims the rest and
- * closes on a click outside it. The latest turn's input stays pinned above the transcript while it
- * scrolls. A dialog goes over the top and dims everything behind it. Each part comes in as its own
- * view.
+ * closes on a click outside it. An input scrolled past the top of the transcript sticks there, over
+ * the lines it started. A dialog goes over the top and dims everything behind it. Each part comes
+ * in as its own view.
  */
 
 import { RGBA } from "@opentui/core";
@@ -45,15 +45,10 @@ const useScrim = () => {
   };
 };
 
-/** The transcript under its pinned input. */
+/** The transcript, with the input stuck over its top. */
 function Transcript(props: { readonly pinned?: JSX.Element; readonly transcript: JSX.Element }) {
   return (
     <box flexGrow={1}>
-      <Show when={props.pinned}>
-        <box flexShrink={0} paddingX={2} marginBottom={1}>
-          {props.pinned}
-        </box>
-      </Show>
       <scrollbox
         flexGrow={1}
         stickyScroll
@@ -63,6 +58,11 @@ function Transcript(props: { readonly pinned?: JSX.Element; readonly transcript:
       >
         {props.transcript}
       </scrollbox>
+      <Show when={props.pinned}>
+        <box position="absolute" top={0} left={2} right={2}>
+          {props.pinned}
+        </box>
+      </Show>
     </box>
   );
 }

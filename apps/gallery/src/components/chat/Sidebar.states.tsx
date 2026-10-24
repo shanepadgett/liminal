@@ -7,15 +7,7 @@ import { Sidebar } from "./Sidebar.tsx";
 export const SAMPLE_SIDEBAR: ComponentProps<typeof Sidebar> = {
   folder: "~/dev/liminal",
   branch: "main",
-  context: {
-    used: 86_000,
-    limit: 200_000,
-    shortTermMemories: 12,
-    longTermMemories: 4,
-    checkpoints: 3,
-  },
-  references: ["effect", "opentui", "crush"],
-  servers: ["typescript", "oxlint"],
+  usage: { context: 86_000, contextWindow: 200_000, cacheHit: 0.912, cost: 0.84, unpriced: 0 },
 };
 
 const sidebar = (props: ComponentProps<typeof Sidebar>) => () => (
@@ -33,23 +25,17 @@ export const sidebarStates: readonly [State, ...State[]] = [
     fill: "screen",
     view: sidebar({
       ...SAMPLE_SIDEBAR,
-      context: { ...SAMPLE_SIDEBAR.context, used: 181_000, checkpoints: 9 },
+      usage: { ...SAMPLE_SIDEBAR.usage, context: 181_000, cost: 3.27, unpriced: 2 },
     }),
+  },
+  {
+    name: "No price or window",
+    fill: "screen",
+    view: sidebar({ ...SAMPLE_SIDEBAR, usage: { context: 42_000, cacheHit: 0.5, unpriced: 4 } }),
   },
   {
     name: "Fresh",
     fill: "screen",
-    view: sidebar({
-      folder: "~/notes",
-      context: {
-        used: 4200,
-        limit: 200_000,
-        shortTermMemories: 0,
-        longTermMemories: 4,
-        checkpoints: 0,
-      },
-      references: [],
-      servers: [],
-    }),
+    view: sidebar({ folder: "~/notes", usage: { context: 0, cacheHit: 0, cost: 0, unpriced: 0 } }),
   },
 ];
