@@ -36,6 +36,11 @@ Read an instruction file only when you are about to do the work it covers.
 - Solve the common case. No mechanism, option or special case for an edge case few users hit.
 - No tests until the test milestone.
 
+## Requests
+
+- When a request is clear, has one obvious way to work and fits the architecture, build it without planning or asking first, even when the change is not small.
+- When the paths diverge on something only the user can weigh, such as product behavior or a costly-to-undo choice, stop and ask with your recommendation. Never push a request through just to finish it.
+
 ## Subagents
 
 - Do not spawn subagents for trivial work such as file lookups, grep or reading known paths. Do it directly. Use one only for broad, multi-step research that would otherwise flood the context.

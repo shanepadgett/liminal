@@ -11,3 +11,4 @@ read-when: Changing `AGENTS.md` or `.liminal/instructions/`
 - One rule per bullet, imperative, plain words. State the rule, not its history.
 - Each rule lives in one file. Search for an existing home before adding one.
 - `AGENTS.md` holds only rules that apply to all work.
+- `.liminal/instructions/liminal.md` (`always: true`) mirrors `AGENTS.md` without its instructions table, which Liminal builds from the `read-when` lines. Change both together. It is the one file not listed in the table.
