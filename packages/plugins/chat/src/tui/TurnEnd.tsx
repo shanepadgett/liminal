@@ -1,7 +1,8 @@
 /**
- * A turn's last line: a square, how the turn ended, then the model and how long it ran in faint
- * text. A finished turn's square is the accent; a stop is red and bold; an interrupted turn is
- * quiet.
+ * A turn's last line: how the turn ended in a bold word, then the model and how long it ran in
+ * faint text, centered between two short lines. Each line covers half the space on its side, so the
+ * divider reads as a break without running edge to edge. A finished turn's word is the accent, a
+ * stop is red and an interrupted turn is the warning yellow.
  */
 
 import { Duration } from "effect";
@@ -11,20 +12,23 @@ import { useColor } from "@shanepadgett/liminal-tui";
 
 import type { Ending } from "../view/index.ts";
 
-const SQUARE = "■";
+const LOOK: Readonly<Record<Ending, { readonly word: string; readonly role: RoleName }>> = {
+  done: { word: "Done", role: "text.accent" },
+  stopped: { word: "Stopped", role: "feedback.danger" },
+  interrupted: { word: "Interrupted", role: "feedback.warning" },
+};
 
-interface Look {
-  readonly word: string;
-  readonly square: RoleName;
-  readonly text: RoleName;
-  readonly isBold: boolean;
+/** One stretch of the divider: a box whose only border is its top edge. */
+function Line() {
+  const color = useColor();
+
+  return <box flexGrow={1} height={1} border={["top"]} borderColor={color("border.subtle")} />;
 }
 
-const LOOK: Readonly<Record<Ending, Look>> = {
-  done: { word: "Done", square: "text.accent", text: "text.muted", isBold: false },
-  stopped: { word: "Stopped", square: "feedback.danger", text: "feedback.danger", isBold: true },
-  interrupted: { word: "Interrupted", square: "text.faint", text: "text.muted", isBold: false },
-};
+/** Empty space beside a line, as wide as it, so each line covers half its side. */
+function Gap() {
+  return <box flexGrow={1} height={1} />;
+}
 
 const twoDigits = (value: number) => String(value).padStart(2, "0");
 
@@ -59,10 +63,18 @@ export function TurnEnd(props: {
       .join("");
 
   return (
-    <text flexShrink={0}>
-      <span style={{ fg: color(look().square) }}>{`${SQUARE} `}</span>
-      <span style={{ fg: color(look().text), bold: look().isBold }}>{look().word}</span>
-      <span style={{ fg: color("text.faint") }}>{details()}</span>
-    </text>
+    <box flexDirection="row" flexShrink={0}>
+      <Gap />
+      <Line />
+      {/* A text at a half column is drawn a column left of where the lines end; a box rounds like them. */}
+      <box flexShrink={0}>
+        <text wrapMode="none">
+          <span style={{ fg: color(look().role), bold: true }}>{` ${look().word}`}</span>
+          <span style={{ fg: color("text.faint") }}>{`${details()} `}</span>
+        </text>
+      </box>
+      <Line />
+      <Gap />
+    </box>
   );
 }

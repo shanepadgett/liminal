@@ -43,10 +43,12 @@ const wrap = (paragraph: string, columns: number): readonly string[] => {
   return lines;
 };
 
-/** `text` word-wrapped to `columns` cells, at most `rows` lines, the last cut ending in `…`. */
-const clampedLinesOf = (text: string, columns: number, rows: number): readonly string[] => {
-  const lines = text.split("\n").flatMap((paragraph) => wrap(paragraph, columns));
+/** `text` word-wrapped to `columns` cells. */
+const linesOf = (text: string, columns: number): readonly string[] =>
+  text.split("\n").flatMap((paragraph) => wrap(paragraph, columns));
 
+/** `lines` cut to at most `rows`, the last cut ending in `…`. */
+const clamped = (lines: readonly string[], columns: number, rows: number): readonly string[] => {
   if (lines.length <= rows) return lines;
 
   const last = kit
@@ -60,27 +62,44 @@ const clampedLinesOf = (text: string, columns: number, rows: number): readonly s
 
 /**
  * What the user sent, on the raised surface behind a bar that runs the composer's gradient, so it
- * reads apart from the replies. Up to three rows; a longer input ends in an ellipsis.
+ * reads apart from the replies, with a blank row above and below the text. Up to three rows; a
+ * longer input ends in an ellipsis until a click expands it, and another click folds it again.
  */
-export function Prompt(props: { readonly input: string }) {
+export function Prompt(props: {
+  readonly input: string;
+  readonly expanded: boolean;
+  readonly onToggle: () => void;
+}) {
   const color = useColor();
   const mix = useMix();
   const [columns, setColumns] = createSignal(0);
 
   // Nothing until the band is measured, so the first frame does not wrap at the wrong width.
-  const lines = () => (columns() > 0 ? clampedLinesOf(props.input, columns(), PROMPT_ROWS) : []);
+  const all = () => (columns() > 0 ? linesOf(props.input, columns()) : []);
+  const isLong = () => all().length > PROMPT_ROWS;
 
+  const lines = () => (props.expanded ? all() : clamped(all(), columns(), PROMPT_ROWS));
+
+  // The bar also runs down the blank rows above and below the text.
   const bars = () =>
-    kit.gradientOf(mix, color("gradient.from"), color("gradient.to"), lines().length);
+    kit.gradientOf(mix, color("gradient.from"), color("gradient.to"), lines().length + 2);
 
   return (
-    <box flexDirection="row" flexShrink={0} backgroundColor={color("surface.raised")}>
+    <box
+      flexDirection="row"
+      flexShrink={0}
+      backgroundColor={color("surface.raised")}
+      onMouseUp={() => {
+        if (isLong()) props.onToggle();
+      }}
+    >
       <box width={2} flexShrink={0}>
         <For each={bars()}>{(bar) => <text fg={bar}>{BAR}</text>}</For>
       </box>
       <box
         flexGrow={1}
         marginRight={1}
+        paddingY={1}
         onSizeChange={function () {
           setColumns(this.width);
         }}

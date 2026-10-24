@@ -1,6 +1,7 @@
 /**
  * Inputs that stick to the top of the transcript. Once an input scrolls up past the top, a copy of
- * it stays there over the lines it started, until the next input comes up and pushes it out.
+ * it stays there over the lines it started, until the next input comes up and pushes it out. An
+ * input taller than a third of the transcript does not stick, so the lines under it stay in view.
  */
 
 import type { BoxRenderable, MouseEvent, ScrollBoxRenderable } from "@opentui/core";
@@ -13,6 +14,8 @@ import { Prompt } from "./Prompt.tsx";
 interface Row {
   readonly box: BoxRenderable;
   readonly text: () => string;
+  readonly expanded: () => boolean;
+  readonly toggle: () => void;
 }
 
 /** Adds a row to watch; the function it returns stops watching it. */
@@ -21,51 +24,63 @@ type AddRow = (row: Row) => () => void;
 const Rows = createContext<AddRow>();
 
 /** An input in the transcript; it sticks while it is inside `StickyScroll`. */
-export function StickyRow(props: { readonly text: string; readonly children: JSX.Element }) {
+export function StickyPrompt(props: { readonly input: string }) {
   const add = useContext(Rows);
   const [box, setBox] = createSignal<BoxRenderable>();
+  const [expanded, setExpanded] = createSignal(false);
+  const toggle = () => setExpanded(!expanded());
 
   onMount(() => {
     const mounted = box();
 
     if (add === undefined || mounted === undefined) return;
 
-    onCleanup(add({ box: mounted, text: () => props.text }));
+    onCleanup(add({ box: mounted, text: () => props.input, expanded, toggle }));
   });
 
   return (
     <box flexShrink={0} ref={setBox}>
-      {props.children}
+      <Prompt input={props.input} expanded={expanded()} onToggle={toggle} />
     </box>
   );
 }
 
 /** The input stuck at the top, and how many of its rows the next input has pushed out. */
 interface Stuck {
-  readonly text: string;
+  readonly row: Row;
   readonly rows: number;
   readonly shift: number;
 }
 
 const isSame = (before: Stuck | undefined, after: Stuck | undefined) =>
-  before?.text === after?.text && before?.rows === after?.rows && before?.shift === after?.shift;
+  before?.row === after?.row && before?.rows === after?.rows && before?.shift === after?.shift;
+
+/** Past this share of the transcript's height an input is too tall to stick. */
+const MOST_STUCK_SHARE = 1 / 3;
 
 /**
- * The last input whose top has scrolled above `top`. The next input pushes it up once it comes
- * within a blank line of it; nothing is stuck once it is pushed out whole.
+ * The last input whose top has scrolled above the top of `viewport`. The next input pushes it up
+ * once it comes within a blank line of it; nothing is stuck once it is pushed out whole, or when it
+ * is taller than a third of `viewport`.
  */
-const stuckOf = (rows: ReadonlySet<Row>, top: number): Stuck | undefined => {
+const stuckOf = (
+  rows: ReadonlySet<Row>,
+  viewport: { readonly y: number; readonly height: number },
+): Stuck | undefined => {
   const sorted = [...rows].toSorted((first, second) => first.box.y - second.box.y);
-  const index = sorted.findLastIndex((row) => row.box.y < top);
+  const index = sorted.findLastIndex((row) => row.box.y < viewport.y);
   const current = sorted[index];
 
   if (current === undefined) return undefined;
 
-  const next = sorted[index + 1];
   const height = current.box.height;
-  const shift = next === undefined ? 0 : Math.min(0, next.box.y - top - height - 1);
 
-  return shift <= -height ? undefined : { text: current.text(), rows: height, shift };
+  if (height > viewport.height * MOST_STUCK_SHARE) return undefined;
+
+  const next = sorted[index + 1];
+  const shift = next === undefined ? 0 : Math.min(0, next.box.y - viewport.y - height - 1);
+
+  return shift <= -height ? undefined : { row: current, rows: height, shift };
 };
 
 /**
@@ -79,7 +94,7 @@ const useStuck = (scrollbox: () => ScrollBoxRenderable | undefined, rows: Readon
   const look = () => {
     const now = scrollbox();
 
-    setStuck(now === undefined ? undefined : stuckOf(rows, now.viewport.y));
+    setStuck(now === undefined ? undefined : stuckOf(rows, now.viewport));
 
     return Promise.resolve();
   };
@@ -109,7 +124,11 @@ function StuckCopy(props: { readonly stuck: Stuck; readonly scroll: (event: Mous
       onMouseScroll={props.scroll}
     >
       <box position="absolute" top={props.stuck.shift} left={0} right={0}>
-        <Prompt input={props.stuck.text} />
+        <Prompt
+          input={props.stuck.row.text()}
+          expanded={props.stuck.row.expanded()}
+          onToggle={props.stuck.row.toggle}
+        />
       </box>
     </box>
   );

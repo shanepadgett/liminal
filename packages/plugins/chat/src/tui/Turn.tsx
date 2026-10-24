@@ -13,10 +13,9 @@ import type { SessionView } from "@shanepadgett/liminal-client";
 
 import type { Item, Turn as TurnData } from "../view/index.ts";
 import { Notice } from "./Notice.tsx";
-import { Prompt } from "./Prompt.tsx";
 import { Reply } from "./Reply.tsx";
 import type { ItemView, ToolRowView } from "./slots.ts";
-import { StickyRow } from "./sticky.tsx";
+import { StickyPrompt } from "./sticky.tsx";
 import { TurnEnd } from "./TurnEnd.tsx";
 import { WorkRow } from "./WorkRow.tsx";
 
@@ -44,11 +43,7 @@ function ItemBody(props: ItemProps & { readonly item: Item }) {
   return (
     <Switch>
       <Match when={asKind(props.item, "input")}>
-        {(input) => (
-          <StickyRow text={input().text}>
-            <Prompt input={input().text} />
-          </StickyRow>
-        )}
+        {(input) => <StickyPrompt input={input().text} />}
       </Match>
       <Match when={asKind(props.item, "reply")}>
         {(reply) => <Reply text={reply().text} isLive={reply().isLive} />}
@@ -88,13 +83,7 @@ export function Turn(props: ItemProps & { readonly turn: TurnData }) {
 
   return (
     <box flexShrink={0} gap={1} marginBottom={1}>
-      <Show when={props.turn.input}>
-        {(input) => (
-          <StickyRow text={input()}>
-            <Prompt input={input()} />
-          </StickyRow>
-        )}
-      </Show>
+      <Show when={props.turn.input}>{(input) => <StickyPrompt input={input()} />}</Show>
       <box>
         <For each={props.turn.items}>
           {(item, index) => (
