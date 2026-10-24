@@ -19,21 +19,11 @@ import {
   registerCommands,
 } from "@shanepadgett/liminal-tui";
 
-/** A command's keys, else its `/name`. */
-const detailOf = (command: ListedCommand) => {
-  if (command.keys !== "") return command.keys;
-
-  return command.slash === undefined ? undefined : `/${command.slash.name}`;
-};
-
-/** A command as a row under `section`. */
-const rowOf = (command: ListedCommand, section: string): kit.PickerRow => {
-  const detail = detailOf(command);
-
-  return detail === undefined
+/** A command as a row under `section`, its keys on the right when it has any. */
+const rowOf = (command: ListedCommand, section: string): kit.PickerRow =>
+  command.keys === ""
     ? { id: command.name, title: command.title, section }
-    : { id: command.name, title: command.title, detail, section };
-};
+    : { id: command.name, title: command.title, detail: command.keys, section };
 
 /** The commands with a category, each category's together in the order it first shows. */
 const rowsOf = (commands: ReadonlyArray<ListedCommand>): ReadonlyArray<kit.PickerRow> => {
