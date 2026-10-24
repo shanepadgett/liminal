@@ -13,6 +13,7 @@ import {
   Dialogs,
   Keymap,
   makeEntryRun,
+  Notifications,
   Pickers,
   registerCommands,
   Renderer,
@@ -84,6 +85,6 @@ const make = Effect.gen(function* () {
 export default definePlugin({
   name: "theme-tui",
   provides: [Colors],
-  requires: [Host, Renderer, Keymap, Dialogs, Pickers],
+  requires: [Host, Renderer, Keymap, Dialogs, Pickers, Notifications],
   layer: Layer.effect(Colors, make),
 });

@@ -3,14 +3,14 @@
  * section and its composer slot with the composer. It provides `ItemRenderer` for other plugins'
  * event kinds, `ToolRows` for tools' own rows, `ComposerCovers` for what takes the composer's
  * place, `Moods` for what Porter murmurs, `ChatScreen` for what shows and the draft,
- * `DraftTriggers` for menus the draft opens, and `ChatSend` for every send. `ctrl+n` and `/new` go
- * back to the landing screen.
+ * `DraftTriggers` for menus the draft opens, and `ChatSend` for every send. Notifications show
+ * above the composer. `ctrl+n` and `/new` go back to the landing screen.
  */
 import { Effect, Layer } from "effect";
 
 import { Host } from "@shanepadgett/liminal-client";
 import { definePlugin, Pipeline, Registry } from "@shanepadgett/liminal-core";
-import { Dialogs, Keymap, Renderer, screen, Slots } from "@shanepadgett/liminal-tui";
+import { Dialogs, Keymap, Notifications, Renderer, screen, Slots } from "@shanepadgett/liminal-tui";
 
 import { ChatView, sendToLoop } from "./ChatView.tsx";
 import { Composer } from "./Composer.tsx";
@@ -32,7 +32,7 @@ import {
 import { type DraftTrigger, DraftTriggers } from "./triggers.ts";
 
 export { Gutter } from "./Composer.tsx";
-export { ChatScreen, type Draft } from "./screen.ts";
+export { ChatScreen, type Draft, turnBlocked } from "./screen.ts";
 export { WorkRow } from "./WorkRow.tsx";
 
 export {
@@ -80,6 +80,7 @@ const fill = Effect.gen(function* () {
   const triggers = yield* DraftTriggers;
   const chatSend = yield* ChatSend;
   const dialogs = yield* Dialogs;
+  const notifications = yield* Notifications;
 
   const quit = () => {
     renderer.destroy();
@@ -112,13 +113,16 @@ const fill = Effect.gen(function* () {
   ));
 
   yield* slots.fill(sidebar, SessionSection);
-  yield* slots.fill(composer, (props) => <Composer {...props} screen={chat} triggers={triggers} />);
+
+  yield* slots.fill(composer, (props) => (
+    <Composer {...props} screen={chat} triggers={triggers} notifications={notifications} />
+  ));
 });
 
 export default definePlugin({
   name: "chat-tui",
   provides: [ItemRenderer, ToolRows, ComposerCovers, Moods, ChatScreen, DraftTriggers, ChatSend],
-  requires: [Host, Slots, Renderer, Keymap, Dialogs],
+  requires: [Host, Slots, Renderer, Keymap, Dialogs, Notifications],
   layer: Layer.effectDiscard(fill).pipe(
     Layer.provideMerge(
       Layer.mergeAll(

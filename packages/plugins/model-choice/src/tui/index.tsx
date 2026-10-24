@@ -15,6 +15,7 @@ import {
   type EntryRun,
   Keymap,
   makeEntryRun,
+  Notifications,
   openPicker,
   Pickers,
   registerCommands,
@@ -165,6 +166,6 @@ const make = Effect.gen(function* () {
 export default definePlugin({
   name: "model-choice-tui",
   provides: [],
-  requires: [Host, Keymap, Dialogs, Pickers, ChatScreen, ChatSend, Slots],
+  requires: [Host, Keymap, Dialogs, Pickers, Notifications, ChatScreen, ChatSend, Slots],
   layer: Layer.effectDiscard(make),
 });

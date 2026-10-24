@@ -13,6 +13,7 @@
     "@shanepadgett/liminal-approvals": "workspace:*",
     "@shanepadgett/liminal-chat": "workspace:*",
     "@shanepadgett/liminal-client": "workspace:*",
+    "@shanepadgett/liminal-commit": "workspace:*",
     "@shanepadgett/liminal-core": "workspace:*",
     "@shanepadgett/liminal-directories": "workspace:*",
     "@shanepadgett/liminal-environment": "workspace:*",

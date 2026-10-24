@@ -1,8 +1,10 @@
 /**
  * Commands: named keymap commands a key, a `/name` in the draft or the palette runs. Each carries
  * what lists show: a title, a category, a slash name and a hint beside its key. A command that
- * cannot act now is disabled, so it neither runs nor shows: its key passes on to the next layer.
- * The keymap decides which commands are reachable now and which keys run them.
+ * cannot act now is disabled, so it neither runs nor shows: its key passes on to the next layer. A
+ * command that shows but cannot run now is blocked: running it posts the reason as a warning. A
+ * command may take text after its slash name; one that requires text is blocked without it. The
+ * keymap decides which commands are reachable now and which keys run them.
  */
 import type { KeyEvent, Renderable } from "@opentui/core";
 import type { Layer, Keymap as OpenTuiKeymap } from "@opentui/keymap";
@@ -13,6 +15,7 @@ import { Context, Effect, Option, Predicate, Schema } from "effect";
 import type { Accessor } from "solid-js";
 
 import type { Hint } from "./kit/hint-layout.ts";
+import { type Notification, Notifications } from "./notifications.ts";
 
 /** The TUI's keymap; `root.tsx` draws with the same one. */
 export class Keymap extends Context.Service<Keymap, OpenTuiKeymap<Renderable, KeyEvent>>()(
@@ -34,6 +37,20 @@ export interface CommandHint {
   readonly important?: boolean;
 }
 
+/** The text a command takes after its slash name, such as `/commit` and how to group the commits. */
+export interface CommandArgument {
+  /** `optional` runs without text; `required` is blocked without it. */
+  readonly kind: "optional" | "required";
+  /** What the text is, a word or two such as `guidance`; the `/` menu shows it dimmed. */
+  readonly hint: string;
+}
+
+/** Why a command cannot run now, shown as a warning when it is run anyway. */
+export interface Blocked {
+  readonly title: string;
+  readonly message?: string;
+}
+
 export interface Command {
   /** The keymap name, such as `stash.save`. */
   readonly name: string;
@@ -42,10 +59,18 @@ export interface Command {
   /** The palette section it sits in. */
   readonly category?: string;
   readonly slash?: Slash;
+  /** The text it takes after its slash name; none without one. */
+  readonly argument?: CommandArgument;
   readonly hint?: CommandHint;
   /** While false the command neither runs nor shows its hint; always on without one. */
   readonly enabled?: Accessor<boolean>;
-  readonly run: () => void;
+  /**
+   * While it gives a reason, the command shows but does not run. Registered with
+   * `registerCommands`, running it then posts the reason as a warning.
+   */
+  readonly blocked?: Accessor<Blocked | undefined>;
+  /** `text` is what followed the slash name in the draft; empty from a key, a menu or the palette. */
+  readonly run: (text: string) => void;
 }
 
 /** A key that runs a command, in the keymap's key syntax such as `ctrl+s`. */
@@ -54,18 +79,56 @@ export interface CommandKey {
   readonly cmd: string;
 }
 
-/** The keymap's form of `command`; the keymap writes to what it is given, so it gets a copy. */
-export const keymapCommand = (command: Command) => ({
+type Post = (notification: Notification) => void;
+
+const UNANNOUNCED: Post = () => {};
+
+/** Why `command` cannot run with `text` now: its own reason first, then missing required text. */
+const blockedOf = (command: Command, text: string): Blocked | undefined => {
+  const blocked = command.blocked?.();
+
+  if (blocked !== undefined || command.argument?.kind !== "required" || text.trim() !== "") {
+    return blocked;
+  }
+
+  const name = command.slash === undefined ? command.title : `/${command.slash.name}`;
+
+  return { title: `${name} needs text`, message: `Write the ${command.argument.hint} after it.` };
+};
+
+/**
+ * The keymap's form of `command`, posting through `post` when it is blocked; the keymap writes to
+ * what it is given, so it gets a copy. A blocked run is rejected, so `runCommand` reports it.
+ */
+const keymapCommandPosting = (command: Command, post: Post) => ({
   name: command.name,
   title: command.title,
   category: command.category,
   slash: command.slash,
+  argument: command.argument,
   hint: command.hint,
   enabled: command.enabled === undefined ? true : reactiveMatcherFromSignal(command.enabled),
-  run: () => {
-    command.run();
+  run: (ctx: { readonly payload: unknown }) => {
+    const text = Predicate.isString(ctx.payload) ? ctx.payload : "";
+    const blocked = blockedOf(command, text);
+
+    if (blocked !== undefined) {
+      post({ kind: "warning", ...blocked });
+
+      return false;
+    }
+
+    command.run(text);
+
+    return true;
   },
 });
+
+/**
+ * The keymap's form of `command`, for `useBindings` in a component; a blocked run is rejected
+ * without a warning.
+ */
+export const keymapCommand = (command: Command) => keymapCommandPosting(command, UNANNOUNCED);
 
 /** A keymap layer of `commands` and `keys`; with `target`, active only while focus is within it. */
 export const commandLayer = (
@@ -87,9 +150,15 @@ export const registerCommands = Effect.fn("registerCommands")(function* (
   keys: ReadonlyArray<CommandKey> = [],
 ) {
   const keymap = yield* Keymap;
+  const notifications = yield* Notifications;
+
+  const layer = {
+    commands: commands.map((command) => keymapCommandPosting(command, notifications.post)),
+    bindings: keys.map(({ key, cmd }) => ({ key, cmd })),
+  };
 
   yield* Effect.acquireRelease(
-    Effect.sync(() => keymap.registerLayer(commandLayer(commands, keys))),
+    Effect.sync(() => keymap.registerLayer(layer)),
     (unregister) => Effect.sync(unregister),
   );
 });
@@ -101,6 +170,9 @@ const Listed = Schema.Struct({
   category: Schema.optional(Schema.String),
   slash: Schema.optional(
     Schema.Struct({ name: Schema.String, aliases: Schema.optional(Schema.Array(Schema.String)) }),
+  ),
+  argument: Schema.optional(
+    Schema.Struct({ kind: Schema.Literals(["optional", "required"]), hint: Schema.String }),
   ),
 });
 

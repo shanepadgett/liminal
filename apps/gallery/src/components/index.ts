@@ -1,6 +1,7 @@
 import type { Group } from "../entries.ts";
 import { approvalStates } from "./asks/Approval.states.tsx";
 import { askStates } from "./asks/Ask.states.tsx";
+import { commitStates } from "./asks/Commit.states.tsx";
 import { questionsStates } from "./asks/Questions.states.tsx";
 import { composerStates } from "./chat/Composer.states.tsx";
 import { headerStates } from "./chat/Header.states.tsx";
@@ -54,6 +55,7 @@ export const components: Group = {
         { id: "ask", title: "Ask", states: askStates },
         { id: "approval", title: "Approval", states: approvalStates },
         { id: "questions", title: "Questions", states: questionsStates },
+        { id: "commit", title: "Commit", states: commitStates },
       ],
     },
     {

@@ -15,6 +15,7 @@ import {
   kit,
   Keymap,
   makeEntryRun,
+  Notifications,
   openPicker,
   type PickerSpec,
   Pickers,
@@ -268,6 +269,6 @@ const make = Effect.gen(function* () {
 export default definePlugin({
   name: "accounts-tui",
   provides: [],
-  requires: [Host, Keymap, Dialogs, Pickers],
+  requires: [Host, Keymap, Dialogs, Pickers, Notifications],
   layer: Layer.effectDiscard(make),
 });

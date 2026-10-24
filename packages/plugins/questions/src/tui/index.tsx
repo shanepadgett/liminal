@@ -2,21 +2,20 @@
  * Questions' `tui` entry. While the running turn waits on asks, the oldest takes the composer's
  * place, drawn by its kind's view in `AskViews`; `ask_question`'s form is one. `ask_question`'s row
  * shows the user's answers under it. While an ask waits, Porter waits patiently and the header
- * holds still. `/qna`, alone or before text in the draft, asks the model to ask its open
- * questions.
+ * holds still. `/qna`, alone or before text in the draft, asks the model to ask its open questions;
+ * it runs only while no turn runs.
  */
-import { Effect, Layer, Option } from "effect";
+import { Effect, Layer } from "effect";
 
 import {
   ChatScreen,
-  ChatSend,
   ComposerCovers,
   type Mood,
   Moods,
   ToolRows,
   ToolRowView,
+  turnBlocked,
 } from "@shanepadgett/liminal-chat/tui";
-import { draftTextOf } from "@shanepadgett/liminal-chat/view";
 import { Host } from "@shanepadgett/liminal-client";
 import { definePlugin, Registry } from "@shanepadgett/liminal-core";
 import type { SessionId } from "@shanepadgett/liminal-session/contract";
@@ -25,6 +24,7 @@ import {
   Keymap,
   type kit,
   makeEntryRun,
+  Notifications,
   Pickers,
   registerCommands,
 } from "@shanepadgett/liminal-tui";
@@ -37,12 +37,6 @@ import { FormAsk } from "./FormAsk.tsx";
 
 export { Ask, Field, moreAside, Note } from "./Ask.tsx";
 export { type AskedData, type AskProps, type AskView, AskViews } from "./asks.ts";
-
-const QNA = /^\/qna(?:\s+|$)/u;
-
-/** The text after `/qna` when the draft starts with it. */
-const qnaTextOf = (text: string): Option.Option<string> =>
-  QNA.test(text) ? Option.some(text.replace(QNA, "")) : Option.none();
 
 /** Long, slow blinks and a doze: nothing to do but wait for the user. */
 const waitingPoses: ReadonlyArray<kit.Pose> = [
@@ -82,23 +76,18 @@ const make = Effect.gen(function* () {
 
   yield* (yield* Moods).add(waiting);
 
-  yield* (yield* ChatSend).wrap((request, next) =>
-    Option.match(Option.flatMap(draftTextOf(request.input), qnaTextOf), {
-      onNone: () => next(request),
-      onSome: (text) => qna(request.session, text),
-    }),
-  );
-
   yield* registerCommands([
     {
       name: "questions.qna",
       title: "Ask me your questions",
       category: "Session",
       slash: { name: "qna" },
+      argument: { kind: "optional", hint: "topic" },
       enabled: () => chat.session() !== undefined,
-      run: () => {
+      blocked: turnBlocked(chat, "qna"),
+      run: (text) => {
         const session = chat.session();
-        if (session !== undefined) run(qna(session, ""));
+        if (session !== undefined) run(qna(session, text));
       },
     },
   ]);
@@ -107,7 +96,17 @@ const make = Effect.gen(function* () {
 export default definePlugin({
   name: "questions-tui",
   provides: [AskViews],
-  requires: [Host, Dialogs, Pickers, Keymap, ChatScreen, ChatSend, ComposerCovers, ToolRows, Moods],
+  requires: [
+    Host,
+    Dialogs,
+    Pickers,
+    Keymap,
+    Notifications,
+    ChatScreen,
+    ComposerCovers,
+    ToolRows,
+    Moods,
+  ],
   layer: Layer.effectDiscard(make).pipe(
     Layer.provideMerge(Layer.effect(AskViews, Registry.make<AskView>())),
   ),

@@ -16,6 +16,7 @@ import {
   createSignal,
   For,
   Match,
+  onCleanup,
   onMount,
   Show,
   splitProps,
@@ -145,6 +146,17 @@ function Working(props: MoodProps & { readonly mood: Mood | undefined }) {
   );
 }
 
+/** Tells the screen whether a turn runs in the session showing; none runs once it goes. */
+const useRunning = (screen: Screen["Service"], running: () => boolean) => {
+  createEffect(() => {
+    screen.setRunning(running());
+  });
+
+  onCleanup(() => {
+    screen.setRunning(false);
+  });
+};
+
 function SessionScreen(props: {
   readonly session: SessionId;
   readonly renderers: Accessor<Renderers>;
@@ -152,11 +164,14 @@ function SessionScreen(props: {
   readonly moods: Accessor<ReadonlyArray<Mood>>;
   readonly isSidebarOpen: boolean;
   readonly closeSidebar: () => void;
-  readonly draft: Draft;
+  readonly screen: Screen["Service"];
   readonly send: (text: string, mode?: SendMode) => void;
 }) {
   const run = useRun();
   const view = useSessionView(props.session);
+
+  useRunning(props.screen, () => view.state.running);
+
   const turns = useTurns(view.state, props.renderers);
   const mood = () => moodOf(props.moods(), { session: props.session, state: view.state });
 
@@ -187,10 +202,10 @@ function SessionScreen(props: {
           queued={view.state.queued}
           send={props.send}
           cancel={() => {
-            run(takeBack(props.session, props.draft, "loop/cancel"));
+            run(takeBack(props.session, props.screen.draft, "loop/cancel"));
           }}
           pullBack={() => {
-            run(takeBack(props.session, props.draft, "loop/pull-back"));
+            run(takeBack(props.session, props.screen.draft, "loop/pull-back"));
           }}
         />
       }
@@ -404,7 +419,7 @@ export function ChatView(props: {
               closeSidebar={() => {
                 setSidebarOpen(false);
               }}
-              draft={props.screen.draft}
+              screen={props.screen}
               send={send}
             />
           )}

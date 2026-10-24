@@ -249,7 +249,6 @@ interface Inbox {
 }
 Send: Pipeline<{ session, input, mode }, void>
 SessionModel: Pipeline<SessionEvent[], ModelChoice>   // the model a session's next call runs; ends at the first signed-in provider's main default
-Commands: Registry<Command>                  // slash commands, run on the agent side as soon as they are sent
 BeforeCall: Registry<Hook>                    // records logged before each model call after both syncs, such as reminders
 Turns.request(id): Effect<ModelRequest>      // system prompt + tool definitions + History, as the next model call sends them
 Turns.fold(id): Effect<void>                 // SystemPrompt.fold + ToolList.fold; waits for a running turn
@@ -307,7 +306,7 @@ log steers → sync system prompt and tool list → BeforeCall hooks → Turns.r
 - Every way into a session is an input through `Inbox.send`: a user message, an answer to a question, a notification, chat history, a command.
 - An input sent during a turn is a steer or a follow-up. A steer joins before the turn's next model call. A follow-up waits until the turn would end, then continues it. Queued inputs can be pulled back until the turn takes them. An input sent to an idle session starts a turn.
 - Queued inputs live in memory. An input is logged when a turn takes it, so the log holds what the model saw, in order.
-- A command runs as soon as it is sent and never queues; the log records it. A command that changes the log, such as `/compact`, waits for the running turn to end.
+- A command runs as soon as it is sent and never queues; the log records it. A command that changes the log waits for the running turn to end.
 - One runner per session: within one process, `loop` runs one turn per session at a time.
 - Recovery is per turn. On shutdown a running turn closes itself; after a crash, an unfinished turn is closed when the session next takes an input: interrupted results and an `interrupted` turn end. It does not restart.
 
@@ -428,7 +427,7 @@ How `session` does these over `SqlClient` is open.
 | Base | `system-prompt` | `Sections`, the logged system prompt, change notes, fold | base | `context` |
 | Base | `persona` | Who the agent is, how it talks and how it works, as a section | base | `context`, `system-prompt` |
 | Base | `history` | `Converters`, `History` | base | `context` |
-| Base | `loop` | The turn, the inbox, `Send`, `Commands`, `BeforeCall`, `TurnEnd`, cancel | base | `agent-loop`, `cancel`, `inbox` |
+| Base | `loop` | The turn, the inbox, `Send`, `BeforeCall`, `TurnEnd`, cancel | base | `agent-loop`, `cancel`, `inbox` |
 | Providers | `model-anthropic`, `model-openai`, `model-openrouter`, `model-opencode-go` | Model providers and their logins; `model-openai` adds `openai` and `codex` | Add | same names, `model-codex` |
 | Providers | `model-scripted` | Scripted replies for tests | Add | `model-scripted` |
 | Providers | `model-catalog` | Names, limits, prices from models.dev | base service | `model-catalog` |

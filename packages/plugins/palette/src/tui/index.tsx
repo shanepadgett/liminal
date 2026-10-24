@@ -14,6 +14,7 @@ import {
   type ListedCommand,
   listCommands,
   makeEntryRun,
+  Notifications,
   openPicker,
   Pickers,
   registerCommands,
@@ -80,6 +81,6 @@ const make = Effect.gen(function* () {
 export default definePlugin({
   name: "palette-tui",
   provides: [],
-  requires: [Host, Keymap, Dialogs, Pickers],
+  requires: [Host, Keymap, Dialogs, Pickers, Notifications],
   layer: Layer.effectDiscard(make),
 });

@@ -4,7 +4,7 @@ Liminal's terminal UI, on OpenTUI and Solid. `run(plugins)` loads each plugin's 
 
 | Plugin | Provides | Requires |
 | --- | --- | --- |
-| `tui`, first | `Host`, `Renderer`, `Slots`, `Dialogs`, `Keymap`, `Pickers` | |
+| `tui`, first | `Host`, `Renderer`, `Slots`, `Dialogs`, `Keymap`, `Pickers`, `Notifications` | |
 | each `tui` entry | what it declares | what it declares |
 | `tui-root`, last | | `Host`, `Renderer`, `Colors`, `Slots`, `Dialogs`, `Keymap`, `Pickers` |
 
@@ -20,7 +20,7 @@ Liminal's terminal UI, on OpenTUI and Solid. `run(plugins)` loads each plugin's 
 
 ## Commands
 
-`Keymap` is the TUI's OpenTUI keymap. `registerCommands(commands, keys)` adds app-wide commands and the keys that run them until the caller's scope closes. A `Command` has a `name`, a `title`, a `run`, and optionally a `category`, a `slash` name with `aliases`, a `hint` and `enabled`. While `enabled` reads false, the command neither runs nor shows its hint, and its key passes on.
+`Keymap` is the TUI's OpenTUI keymap. `registerCommands(commands, keys)` adds app-wide commands and the keys that run them until the caller's scope closes. A `Command` has a `name`, a `title`, a `run(text)`, and optionally a `category`, a `slash` name with `aliases`, an `argument`, a `hint`, `enabled` and `blocked`. While `enabled` reads false, the command neither runs nor shows its hint, and its key passes on. `run` gets the text typed after a slash command, or an empty string. An `argument` (`kind`, `hint`) says the command takes that text: `optional` runs without it, `required` is blocked without it with `/name needs text`. While `blocked` reads a `Blocked` (`title`, `message?`), the command is listed and its key is taken, but running it posts that as a warning notification and the keymap reports it `rejected`.
 
 A `hint` is `{ label, keys?, important? }`, shown beside the command's first key; `keys` sets other key text, such as `↑↓` for up and down shown together. Important hints come first on a line, so they stay when it cannot fit them all. Keys every user expects, such as Up, Down, Enter and Esc in a list or dialog, have no hint. `keymapCommand(command)` gives the keymap's form of a command, for `useBindings` in a component; `commandLayer(commands, keys, target?)` gives a layer, active only while `target` or something inside it has focus.
 
@@ -29,6 +29,10 @@ A hint shows only for a key that would run now. `activeHints(keymap)` reads them
 `kit.Hints` draws a hint line in the width it has, never splitting a hint; `end` puts it against the right edge. When the hints do not fit, it shows the leading ones and `ctrl+g more`. `ctrl+g`, bound by the root with no target so it works under dialogs too, switches every such line to all its hints in columns, filled top to bottom, with `ctrl+g less` last. A line that fits looks the same either way. `Dialog` draws its hint line only when it has hints.
 
 `listCommands(keymap)` reads back the commands reachable now, with their keys; `slashCommands` keeps those with a slash name.
+
+## Notifications
+
+`Notifications.post({ kind, title, message? })` shows a short note above the chat composer, oldest first; `kind` is `info`, `success`, `warning` or `error`. Each stays 5 seconds, its track shortening as the time runs out. `Notifications.shown` reads the ones on screen, and `kit.NotificationList` draws them.
 
 ## Pickers
 
@@ -50,6 +54,6 @@ Outside components, a `tui` entry's commands run effects with `makeEntryRun(mess
 
 ## Kit
 
-`kit` holds the shared components: `Chip`, `ChoiceRow`, `Dialog`, `Diff`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `Overlay`, `Picker`, `Porter`, `Rule`, `Section`. `Overlay` sets a dialog in the middle of the screen. Any dialog asks before a destructive action the same way: `useConfirm()` keeps the question and binds enter and esc above the dialog's keys, and `Dialog`'s `confirming` draws it in the footer. `Diff` draws a unified patch with line numbers and the file's syntax colors, and `changesOf(patch)` counts the lines it adds and removes. `Porter` is the little face that murmurs words while a turn works; give him `words` and `poses` (`{ face, weight, hold }`, each face seven cells) in place of his own, and a single word holds still. `useInkHead` paces streaming text so `Inked` writes it out evenly, however it arrives. They read colors by role name from `@shanepadgett/liminal-client`.
+`kit` holds the shared components: `Chip`, `ChoiceRow`, `Dialog`, `Diff`, `Gradient`, `Hatch`, `Hints`, `Inked`, `ListRow`, `Logo`, `MatchedText`, `NotificationList`, `Overlay`, `Picker`, `Porter`, `Rule`, `Section`. `Overlay` sets a dialog in the middle of the screen. Any dialog asks before a destructive action the same way: `useConfirm()` keeps the question and binds enter and esc above the dialog's keys, and `Dialog`'s `confirming` draws it in the footer. `Diff` draws a unified patch with line numbers and the file's syntax colors, and `changesOf(patch)` counts the lines it adds and removes. `Porter` is the little face that murmurs words while a turn works; give him `words` and `poses` (`{ face, weight, hold }`, each face seven cells) in place of his own, and a single word holds still. `useInkHead` paces streaming text so `Inked` writes it out evenly, however it arrives. They read colors by role name from `@shanepadgett/liminal-client`.
 
 Run it with Bun's `@opentui/solid/preload`, which compiles `.tsx`.

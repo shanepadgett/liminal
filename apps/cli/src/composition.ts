@@ -8,6 +8,7 @@ import accounts from "@shanepadgett/liminal-accounts";
 import approvals from "@shanepadgett/liminal-approvals";
 import chat from "@shanepadgett/liminal-chat";
 import { inMemory } from "@shanepadgett/liminal-client";
+import commit from "@shanepadgett/liminal-commit";
 import { compose, definePlugin } from "@shanepadgett/liminal-core";
 import directories from "@shanepadgett/liminal-directories";
 import environment from "@shanepadgett/liminal-environment";
@@ -102,6 +103,7 @@ export const plugins = [
   sessionName,
   questions,
   approvals,
+  commit,
   stash,
   slash,
   palette,

@@ -35,6 +35,8 @@ function Ring(props: { readonly pick: Pick }) {
 
 interface LabelProps {
   readonly label: string;
+  /** Drawn dimmed after the label, inside its column, such as a command's `[guidance]`. */
+  readonly suffix?: string | undefined;
   readonly detail?: string | undefined;
   /** Indexes of the letters a filter matched in the label. */
   readonly matches?: readonly number[];
@@ -48,12 +50,15 @@ function Label(props: LabelProps) {
 
   return (
     <>
-      <box width={props.labelColumns} flexShrink={0}>
+      <box width={props.labelColumns} flexShrink={0} flexDirection="row">
         <MatchedText
           text={props.label}
           matches={props.matches ?? []}
           role={props.isUnder ? "text.heading" : "text.base"}
         />
+        <Show when={props.suffix}>
+          {(suffix) => <text fg={color("text.ghost")}>{` ${suffix()}`}</text>}
+        </Show>
       </box>
       <text
         flexShrink={1}

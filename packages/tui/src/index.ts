@@ -13,7 +13,9 @@ export {
 
 export {
   activeHints,
+  type Blocked,
   type Command,
+  type CommandArgument,
   type CommandHint,
   type CommandKey,
   commandLayer,
@@ -31,6 +33,14 @@ export {
 export { Colors, type Mix, type RoleColor, useColor, useMix, useSyntax } from "./colors.ts";
 export { Dialogs, type DialogView } from "./dialogs.tsx";
 export * as kit from "./kit/index.ts";
+
+export {
+  type Notification,
+  type NotificationKind,
+  Notifications,
+  type ShownNotification,
+} from "./notifications.ts";
+
 export { openPicker, type PickerSpec, Pickers } from "./pickers.tsx";
 export { EntryInvalid, run } from "./run.ts";
 export { defineSlot, screen, type SlotHandle, Slots, SlotView } from "./slots.tsx";

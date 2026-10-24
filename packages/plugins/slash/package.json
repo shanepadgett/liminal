@@ -10,6 +10,7 @@
     "fuzzysort": "4.0.2"
   },
   "peerDependencies": {
+    "@opentui/core": "0.6.6",
     "@shanepadgett/liminal-chat": "workspace:*",
     "@shanepadgett/liminal-core": "workspace:*",
     "@shanepadgett/liminal-tui": "workspace:*",

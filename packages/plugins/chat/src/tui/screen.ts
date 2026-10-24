@@ -8,7 +8,13 @@ import { Context, Effect, type Scope } from "effect";
 import { type Accessor, createSignal } from "solid-js";
 
 import type { SessionId } from "@shanepadgett/liminal-session/contract";
-import { type Command, type CommandKey, commandLayer, Keymap } from "@shanepadgett/liminal-tui";
+import {
+  type Blocked,
+  type Command,
+  type CommandKey,
+  commandLayer,
+  Keymap,
+} from "@shanepadgett/liminal-tui";
 
 export interface Draft {
   /** The draft's text as it is now, trimmed; follows each edit. */
@@ -29,6 +35,10 @@ export class ChatScreen extends Context.Service<
     readonly show: (session: SessionId) => void;
     /** Back to the landing screen; nothing is saved until the next send. */
     readonly startNew: () => void;
+    /** Whether a turn runs in the session on screen. */
+    readonly running: Accessor<boolean>;
+    /** The session screen calls it as its turn starts and ends, so `running` follows. */
+    readonly setRunning: (running: boolean) => void;
     readonly draft: Draft;
     /**
      * Adds commands and keys active only while the draft has focus, until the caller's scope
@@ -48,6 +58,19 @@ export class ChatScreen extends Context.Service<
     readonly edited: () => void;
   }
 >()("chat/Screen") {}
+
+/**
+ * The `blocked` of a command that runs only while no turn runs in the session on screen, such as
+ * one that starts a turn of its own; `name` is its slash name.
+ */
+export const turnBlocked =
+  (screen: ChatScreen["Service"], name: string) => (): Blocked | undefined =>
+    screen.running()
+      ? {
+          title: `/${name} runs once the turn ends`,
+          message: "Send it again when the turn is done.",
+        }
+      : undefined;
 
 /** The screen's own commands, whose hints the composer shows even while its draft lacks focus. */
 export const SCREEN_HINTS: ReadonlySet<string> = new Set(["chat.focus-draft", "chat.quit"]);
@@ -116,6 +139,7 @@ const makeDraftLayers = (keymap: Keymap["Service"]) => {
 export const makeChatScreen = Effect.gen(function* () {
   const keymap = yield* Keymap;
   const [session, setSession] = createSignal<SessionId>();
+  const [running, setRunning] = createSignal(false);
   const [textarea, setTextarea] = createSignal<TextareaRenderable>();
   // Read live, so keys typed in one burst see each other's edits; the signal only says it changed.
   const [edits, setEdits] = createSignal(0);
@@ -150,6 +174,10 @@ export const makeChatScreen = Effect.gen(function* () {
     show: (next) => setSession(() => next),
     startNew: () => {
       setSession(undefined);
+    },
+    running,
+    setRunning: (next) => {
+      setRunning(next);
     },
     draft: makeDraft(textarea, text),
     registerDraftCommands,

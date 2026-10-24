@@ -1,6 +1,6 @@
 # Plan: milestone 4, cost and naming
 
-Cache marks, `usage` and `session-name`. Work list: [plugins/providers.md](../plugins/providers.md).
+Cache marks, `usage` and `session-name`.
 
 ## Today
 
@@ -29,7 +29,7 @@ Cache marks, `usage` and `session-name`. Work list: [plugins/providers.md](../pl
 | 2 | `usage`, built and checked live. | Counts turn steps from `loop/step-end`. The sidebar shows context used with its share of the window, and the session's cost. A provider that reports a window serves, as `codex` does (272K, or 500K for `gpt-6.1-sol`), overrides the catalog's through `ModelInfo.contextWindow`. A step whose input passes a catalog price tier (272K for OpenAI's models) is priced at that tier. Context is the latest step's input plus output, against its model's window read again at each update. The model lists and catalog refresh in the background when a read finds them over an hour old. |
 | 3 | `session-name` | `session` defines a name event that its list shows over the first message. The main model names the session itself with a `name_session` tool, once it knows what the session is about. See [Step 3](#step-3-session-name). |
 
-Usage of calls outside the turn loop and today's cost across sessions are under Later in [status.md](../status.md).
+Usage of calls outside the turn loop and today's cost across sessions are under Later in [status.md](../../status.md).
 
 ## Step 2: `usage`
 

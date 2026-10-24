@@ -5,9 +5,10 @@
  * focus; without it, only the screen's `tab` and `ctrl+q`. `enter` sends and `shift+enter` adds a
  * line; while a turn runs, `enter` steers it, `tab` queues a follow-up and `esc` pressed twice
  * within two seconds stops it, the first press turning its hint to `again to stop`. Queued inputs
- * show above the draft until the turn takes them; `alt+up` puts them back into the draft, as `esc`
- * does. `ctrl+c` clears the draft, and with none does what `esc` does. A draft trigger, such as
- * `@`, opens its menu above the draft; the menu's keys come first.
+ * show above the draft until the turn takes them, under the notifications; `alt+up` puts them back
+ * into the draft, as `esc` does. `ctrl+c` clears the draft, and with none does what `esc` does. A
+ * draft trigger, such as `@`, opens its menu above the draft, under the notifications; the menu's
+ * keys come first.
  */
 
 import { TextAttributes, type TextareaRenderable } from "@opentui/core";
@@ -21,6 +22,7 @@ import {
   type Command,
   keymapCommand,
   kit,
+  type Notifications,
   SlotView,
   useColor,
   useMix,
@@ -238,10 +240,17 @@ const COMPOSER_KEYS = [
   { key: "alt+up", cmd: "chat.pull-back" },
 ];
 
+/** Without focus on the draft, such as behind a dialog, only the screen's own keys. */
+const useComposerHints = (draft: () => TextareaRenderable | undefined) =>
+  useKeymapSelector((keymap) =>
+    draft()?.focused === true ? activeHints(keymap) : activeHints(keymap, SCREEN_HINTS),
+  );
+
 export function Composer(
   props: ComposerProps & {
     readonly screen: ChatScreen["Service"];
     readonly triggers: DraftTriggers["Service"];
+    readonly notifications: Notifications["Service"];
   },
 ) {
   const color = useColor();
@@ -250,10 +259,7 @@ export function Composer(
   const menu = useDraftMenu(() => draft, props.triggers);
   const stop = useStopGuard(() => props.running);
 
-  // Without focus on the draft, such as behind a dialog, only the screen's own keys.
-  const hints = useKeymapSelector((keymap) =>
-    draft?.focused === true ? activeHints(keymap) : activeHints(keymap, SCREEN_HINTS),
-  );
+  const hints = useComposerHints(() => draft);
 
   useBindings(() => ({
     target: () => draft,
@@ -263,6 +269,7 @@ export function Composer(
 
   return (
     <box flexShrink={0} paddingX={2} paddingTop={1}>
+      <kit.NotificationList notifications={props.notifications.shown()} />
       <Show when={menu.rows()}>
         {(rows) => <DraftMenu rows={rows()} under={menu.under()} empty={menu.empty()} />}
       </Show>

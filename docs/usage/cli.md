@@ -34,7 +34,9 @@ The line under the draft shows the model line, `model • thinking`, and only th
 
 ### Commands with `/`
 
-Type `/` as the first character of the draft to list commands. Keep typing to filter; Up and Down move, Enter runs the command, Tab completes its name, Esc closes the list.
+Type `/` as the first character of the draft to list commands. Keep typing to filter; Up and Down move, Enter runs the command, Tab completes its name, Esc closes the list. A command that takes text shows it dimmed after its name: `[guidance]` is optional, `<text>` is required. Tab on such a command adds a space so you can type it, and you can send a command with text after it, such as `/commit docs first`. Enter on a command that requires text, with none given, leaves `/name` in the draft for you to finish.
+
+`/qna` and `/commit` run only while no turn runs. Sent during a turn, they show a warning above the composer and stay in the draft with any text you gave them, so you can send them again once the turn ends. Notes like this show above the composer for 5 seconds.
 
 | Command | Does |
 | --- | --- |
@@ -46,6 +48,13 @@ Type `/` as the first character of the draft to list commands. Keep typing to fi
 | `/theme` | Pick a palette. Moving through the list shows each; Enter saves it, Esc puts the saved one back |
 | `/pop` | List this folder's stashes. Enter puts one back after the draft and removes it from the list; Ctrl+D asks, then removes it |
 | `/qna` | Have the model ask you questions before it goes on. See below |
+| `/commit` | Commit every changed file in the repository as conventional commits. See below |
+
+### Commit your changes
+
+Type `/commit` and send it, alone or followed by how to group or word the commits. The small model reads the changed files, their diffs, and your recent commit subjects, and plans conventional commits that cover every changed file. While it plans, Esc stops it.
+
+The plan takes the composer's place: each commit's subject with its files under it. Enter commits them in order, Esc cancels, and Up and Down scroll when there are more than 4. Then it asks whether to push, with No first. Set `"commit": { "push": "always" }` or `"never"` in `settings.json` to skip the question. A note above the composer says how it ended.
 
 ### Answer the model's questions
 

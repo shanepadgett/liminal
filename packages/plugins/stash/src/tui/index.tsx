@@ -15,6 +15,7 @@ import {
   type kit,
   Keymap,
   makeEntryRun,
+  Notifications,
   openPicker,
   Pickers,
   registerCommands,
@@ -137,6 +138,6 @@ const make = Effect.gen(function* () {
 export default definePlugin({
   name: "stash-tui",
   provides: [],
-  requires: [Host, Keymap, Dialogs, Pickers, ChatScreen],
+  requires: [Host, Keymap, Dialogs, Pickers, Notifications, ChatScreen],
   layer: Layer.effectDiscard(make),
 });

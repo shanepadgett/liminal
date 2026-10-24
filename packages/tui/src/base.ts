@@ -1,6 +1,6 @@
 /**
- * The plugin under every `tui` entry: the host, the renderer, the keymap, the slots, the dialogs
- * and the pickers pipeline.
+ * The plugin under every `tui` entry: the host, the renderer, the keymap, the slots, the dialogs,
+ * the notifications and the pickers pipeline.
  */
 import type { CliRenderer } from "@opentui/core";
 import { createDefaultOpenTuiKeymap } from "@opentui/keymap/opentui";
@@ -12,6 +12,7 @@ import { definePlugin } from "@shanepadgett/liminal-core";
 
 import { Keymap } from "./commands.ts";
 import { Dialogs, makeDialogs } from "./dialogs.tsx";
+import { makeNotifications, Notifications } from "./notifications.ts";
 import { makePickers, Pickers } from "./pickers.tsx";
 import { makeSlots, Slots } from "./slots.tsx";
 
@@ -61,6 +62,7 @@ const keymapOf = (renderer: CliRenderer) => {
 const make = Effect.fn("tui.base")(function* (host: Host["Service"], renderer: CliRenderer) {
   const registry = yield* slotRegistry(renderer);
   const pickers = yield* makePickers;
+  const notifications = yield* makeNotifications;
 
   return Context.make(Host, host).pipe(
     Context.add(Renderer, renderer),
@@ -68,13 +70,14 @@ const make = Effect.fn("tui.base")(function* (host: Host["Service"], renderer: C
     Context.add(Slots, makeSlots(registry)),
     Context.add(Dialogs, makeDialogs(renderer)),
     Context.add(Pickers, pickers),
+    Context.add(Notifications, notifications),
   );
 });
 
 export const base = (host: Host["Service"], renderer: CliRenderer) =>
   definePlugin({
     name: "tui",
-    provides: [Host, Renderer, Keymap, Slots, Dialogs, Pickers],
+    provides: [Host, Renderer, Keymap, Slots, Dialogs, Pickers, Notifications],
     requires: [],
     layer: Layer.effectContext(make(host, renderer)),
   });

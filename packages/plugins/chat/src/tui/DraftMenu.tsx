@@ -36,6 +36,10 @@ const TOP_EDGE: BorderCharacters = {
 
 const rowId = (index: number) => `chat-menu-${index}`;
 
+/** What a row's label column holds: the label and its dimmed suffix. */
+const labelOf = (row: DraftRow) =>
+  row.suffix === undefined ? row.label : `${row.label} ${row.suffix}`;
+
 /** The line that tops the panel. */
 function TopEdge() {
   const color = useColor();
@@ -60,7 +64,9 @@ export function DraftMenu(props: {
 }) {
   const color = useColor();
   const mix = useMix();
-  const columns = () => kit.labelColumnsOf(props.rows.map((row) => row.label));
+
+  const columns = () => kit.labelColumnsOf(props.rows.map(labelOf));
+
   const shown = () => Math.max(1, Math.min(props.rows.length, MENU_ROWS));
   let list: ScrollBoxRenderable | undefined;
 
@@ -99,6 +105,7 @@ export function DraftMenu(props: {
               <box id={rowId(index())} backgroundColor={fadeOf(index())}>
                 <kit.ChoiceRow
                   label={row.label}
+                  suffix={row.suffix}
                   detail={row.detail}
                   matches={row.matches}
                   labelColumns={columns()}

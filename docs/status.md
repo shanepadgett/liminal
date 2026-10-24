@@ -12,12 +12,12 @@ What we are building, in order. Each milestone groups the work that ships togeth
 
 ## Current focus
 
-Milestone 4: cache marks, `usage`, `session-name`. The stack is settled in [architecture.md](architecture.md#stack).
+Milestone 5: long sessions and project features. The stack is settled in [architecture.md](architecture.md#stack).
 
 ## Next
 
-1. Plan milestone 4 in [plans/cost-naming.md](plans/cost-naming.md). Earlier plans: [plans/_archive/base.md](plans/_archive/base.md) for milestone 1, [plans/_archive/tui.md](plans/_archive/tui.md) for milestone 2, [plans/_archive/coding.md](plans/_archive/coding.md) for milestone 3, [plans/_archive/gallery.md](plans/_archive/gallery.md) for the gallery's designs.
-2. Built: `packages/core` (`definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`), `directories`, `settings`, `sqlite`, `session`, `model` with classifiers over Effect AI's `Decision`, `model-wire` with Anthropic Messages, OpenAI Responses, Chat Completions and OpenAI Decisions, `accounts` with API keys, command credentials, OAuth tokens, logins grouped by vendor, the sign-in RPC and logout, `model-anthropic` with its API key and Claude subscription logins and `ANTHROPIC_API_KEY` as fallback, `model-openai` with `openai` (API key, `OPENAI_API_KEY` as fallback, GPT-6 Luna as classifier), and `codex` (Codex login), `model-openrouter` (API key, `OPENROUTER_API_KEY` as fallback, Jev as classifier), `model-opencode-go` (API key, `OPENCODE_API_KEY` as fallback, each model on the wire the catalog names), `model-catalog` providing `model`'s `ModelCatalog` from models.dev, `tools`, `history`, `system-prompt`, `persona`, `tool-definitions`, `loop`, `packages/client` with the in-memory `Host`, and `apps/cli` with `liminal -p`, which reads piped stdin, writes JSON lines with `--json` and sets exit codes, `liminal connect` and `liminal logout`. A host composes a plugin of its own that provides Effect's runtime services, such as `Path`, `FileSystem` and `HttpClient`. Milestone 2 added the session view in `packages/client`, `packages/tui` with its UI kit, `theme`, `chat`, `tags`, `stash`, `slash`, `palette`, `session-picker`, `model-choice`, `model-favorites`, and `/connect` in the `accounts` `tui` entry. Milestone 3 added `tools-read`, `tools-edit`, `tools-write`, `tools-shell`, `tools-processes`, `tools-web`, `web-search-anthropic`, `web-search-openai`, `tool-output`, `instructions`, `environment`, `questions` and `approvals`.
+1. Plan milestone 5 from [plugins/features.md](plugins/features.md). Earlier plans: [plans/_archive/base.md](plans/_archive/base.md) for milestone 1, [plans/_archive/tui.md](plans/_archive/tui.md) for milestone 2, [plans/_archive/coding.md](plans/_archive/coding.md) for milestone 3, [plans/_archive/cost-naming.md](plans/_archive/cost-naming.md) for milestone 4, [plans/_archive/gallery.md](plans/_archive/gallery.md) for the gallery's designs.
+2. Built: `packages/core` (`definePlugin`, `compose`, `Registry`, `Pipeline`, `Attribute`), `directories`, `settings`, `sqlite`, `session`, `model` with classifiers over Effect AI's `Decision`, `model-wire` with Anthropic Messages, OpenAI Responses, Chat Completions and OpenAI Decisions, `accounts` with API keys, command credentials, OAuth tokens, logins grouped by vendor, the sign-in RPC and logout, `model-anthropic` with its API key and Claude subscription logins and `ANTHROPIC_API_KEY` as fallback, `model-openai` with `openai` (API key, `OPENAI_API_KEY` as fallback, GPT-6 Luna as classifier), and `codex` (Codex login), `model-openrouter` (API key, `OPENROUTER_API_KEY` as fallback, Jev as classifier), `model-opencode-go` (API key, `OPENCODE_API_KEY` as fallback, each model on the wire the catalog names), `model-catalog` providing `model`'s `ModelCatalog` from models.dev, `tools`, `history`, `system-prompt`, `persona`, `tool-definitions`, `loop`, `packages/client` with the in-memory `Host`, and `apps/cli` with `liminal -p`, which reads piped stdin, writes JSON lines with `--json` and sets exit codes, `liminal connect` and `liminal logout`. A host composes a plugin of its own that provides Effect's runtime services, such as `Path`, `FileSystem` and `HttpClient`. Milestone 2 added the session view in `packages/client`, `packages/tui` with its UI kit, `theme`, `chat`, `tags`, `stash`, `slash`, `palette`, `session-picker`, `model-choice`, `model-favorites`, and `/connect` in the `accounts` `tui` entry. Milestone 3 added `tools-read`, `tools-edit`, `tools-write`, `tools-shell`, `tools-processes`, `tools-web`, `web-search-anthropic`, `web-search-openai`, `tool-output`, `instructions`, `environment`, `questions` and `approvals`. Milestone 4 added cache marks on the Messages wire and for OpenRouter's Claude models, `usage`, and `session-name` with hidden tool rows in `chat`.
 
 Planned dependencies are pinned in `tools/planned/package.json` so their docs are in `reference/copies/`. When a plugin is built, move its dependencies from `tools/planned` into the plugin's package.
 
@@ -63,20 +63,19 @@ Planned dependencies are pinned in `tools/planned/package.json` so their docs ar
 
 ### 4. Cost and naming
 
-Work: [plugins/providers.md](plugins/providers.md)
-
 - [x] Cache marks for Claude: the Messages wire and OpenRouter
 - [x] `usage`
-- [ ] `session-name`
+- [x] `session-name`
 
 ### 5. Long sessions and project features
 
 Work: [plugins/features.md](plugins/features.md)
 
-- [ ] `Commands` in `loop`
+- [x] Commands that run only while no turn runs
 - [ ] `memory`
 - [ ] `skills`, `references`, `vocabulary`
-- [ ] `checks`, `commit`
+- [ ] `checks`
+- [x] `commit`
 - [ ] `tools-search`, `tools-execute`, `attention`
 
 ### 6. Bundles and the binary
@@ -107,7 +106,8 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 
 ## Later
 
-- Notifications above the composer, as the gallery's `Notifications` shows, for messages that belong to no session, such as a failed model list or catalog refresh, which is only logged now.
+- Post a notification for messages that belong to no session, such as a failed model list or catalog refresh, which is only logged now.
+- A checks step in `/commit` once the `checks` plugin exists.
 - Settle the database schema once Liminal is a stable agent. Until then saved sessions are test data: each database keeps one migration and a schema change resets `~/.liminal/liminal.db`. After that, a schema change adds a migration, and the one-migration rule in `.liminal/instructions/code.md` is removed.
 - Instruction files that run shell commands and put the output in the text when the prompt is built, so a file can carry live project facts.
 - MCP servers as a source of tools, connecting and disconnecting mid-session.

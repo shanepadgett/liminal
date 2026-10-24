@@ -2,10 +2,12 @@
 
 Work for [status.md](../status.md) milestone 5.
 
-## `Commands` in `loop`
+## Commands
 
-- `loop` gains the `Commands` registry for slash commands that run on the agent side, such as `/commit` and `/compact`. A command runs as soon as it is sent and is logged as `session/command`; one that changes the log waits for the running turn to end.
+- Slash commands that run only while no turn runs: prompt commands such as `/qna` start a turn, action commands such as `/commit` do one-off work and start none. Tried during a turn, they show a warning notification and do nothing. There is no `/compact`: `memory`'s checkpoints keep sessions inside the window.
+- UI commands such as `/connect` stay keymap commands and run at once, during a turn too.
 - The TUI's `/` menu and palette list them beside the keymap's commands.
+- Plan: [commit.md](../plans/commit.md).
 
 ## `memory`
 
@@ -36,13 +38,12 @@ ModelCall.wrap((req, next) => nearLimit(req) ? checkpoint(req).pipe(Effect.andTh
 
 ## `commit`
 
-- Adds `/commit`: groups changed files with `Models.generateObject`, then commits each group.
+- Adds `/commit`: groups changed files with `Models.generateObject`, then commits each group, then offers to push.
 - Previous code: `commit`.
 
 ```ts
-Commands.add({ name: "commit", run: (ctx) =>
-  Models.generateObject({ model: "small", prompt: diffSummary(), schema: CommitGroups })
-    .pipe(Effect.flatMap(commitEach)) })
+registerCommands([{ name: "commit.run", slash: { name: "commit" },
+  blocked: turnBlocked(chat, "commit"), run: (text) => start(session, text) }])
 ```
 
 ## `tools-search`

@@ -23,6 +23,7 @@ export { FRESH_CELLS, Inked, inkRuns, type Run, useInkHead, useStream, warmthAt 
 export { ListRow } from "./ListRow.tsx";
 export { Logo } from "./Logo.tsx";
 export { MatchedText } from "./MatchedText.tsx";
+export { NotificationList } from "./NotificationList.tsx";
 export { Overlay } from "./Overlay.tsx";
 
 export {

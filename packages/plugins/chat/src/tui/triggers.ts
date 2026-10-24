@@ -18,6 +18,8 @@ export interface DraftToken {
 export interface DraftRow {
   readonly id: string;
   readonly label: string;
+  /** Drawn dimmed after the label, such as the text a command takes. */
+  readonly suffix?: string;
   readonly detail?: string;
   /** Indexes of the letters the query matched in the label. */
   readonly matches: ReadonlyArray<number>;
