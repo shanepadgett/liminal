@@ -79,7 +79,7 @@ export const usageOf = (tally: Tally, contextWindow?: number): SessionUsage => {
   const tokens = tally.latest?.tokens;
 
   return {
-    context: tokens?.input ?? 0,
+    context: tokens === undefined ? 0 : tokens.input + tokens.output,
     contextWindow,
     cacheHit: tokens === undefined || tokens.input === 0 ? 0 : tokens.cacheRead / tokens.input,
     cost: tally.cost ?? (tally.unpriced > 0 ? undefined : 0),

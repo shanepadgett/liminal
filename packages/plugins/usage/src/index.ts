@@ -30,20 +30,12 @@ const STEP_KINDS: ReadonlySet<string> = new Set([StepStarted.kind, StepEnded.kin
 const isStepEvent = (item: LiveItem): item is SessionEvent =>
   "seq" in item && STEP_KINDS.has(item.kind);
 
-/** Each model's details, asked once per watch; none when its provider is gone or unlisted. */
-const makeDetails = (models: Models["Service"]) => {
-  const known = new Map<ModelId, Option.Option<ModelDetails>>();
-
-  return (model: ModelId) => {
-    const found = known.get(model);
-    if (found !== undefined) return Effect.succeed(found);
-
-    return models.details(model).pipe(
-      Effect.orElseSucceed(() => Option.none<ModelDetails>()),
-      Effect.tap((details) => Effect.sync(() => known.set(model, details))),
-    );
-  };
-};
+/**
+ * A model's details as they are now, asked at each read so a refreshed window or price shows; none
+ * when its provider is gone or unlisted.
+ */
+const makeDetails = (models: Models["Service"]) => (model: ModelId) =>
+  models.details(model).pipe(Effect.orElseSucceed(() => Option.none<ModelDetails>()));
 
 type Details = ReturnType<typeof makeDetails>;
 

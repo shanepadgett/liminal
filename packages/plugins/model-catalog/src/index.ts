@@ -1,6 +1,6 @@
 /**
  * `catalog.json` in the global folder: read at start, refreshed from models.dev in the background
- * when older than a day, and fetched at once for a catalog id it lacks.
+ * when a read finds it older than an hour, and fetched at once for a catalog id it lacks.
  */
 import {
   Clock,
@@ -12,6 +12,7 @@ import {
   Record,
   Ref,
   Schema,
+  type Scope,
   Semaphore,
 } from "effect";
 import { HttpClient, HttpClientResponse } from "effect/http";
@@ -25,8 +26,11 @@ import { catalogModels, ModelsDevProviders } from "./models-dev.ts";
 
 const apiUrl = "https://models.dev/api.json";
 
-/** How old the cache may get before a background refresh. */
-const maxAge = Duration.days(1);
+/**
+ * How old the cache may get before a read starts a background refresh, and how long a failed one
+ * waits.
+ */
+const maxAge = Duration.hours(1);
 
 /** Models.dev could not be fetched or read. */
 class FetchFailed extends Schema.TaggedError<FetchFailed, { readonly brand: unique symbol }>()(
@@ -42,6 +46,9 @@ interface Store {
   readonly filename: string;
   readonly cache: Ref.Ref<CatalogCache>;
   readonly lock: Semaphore.Semaphore;
+  /** Milliseconds since the Unix epoch of the last fetch or refresh attempt. */
+  readonly tried: Ref.Ref<number>;
+  readonly scope: Scope.Scope;
 }
 
 /** Models.dev's providers named in `ids`; the full list is several megabytes, so keep only these. */
@@ -64,6 +71,7 @@ const refresh = Effect.fn("ModelCatalog.refresh")(function* (
   };
 
   yield* Ref.set(store.cache, fetched);
+  yield* Ref.set(store.tried, fetched.fetchedAt);
 
   yield* store.fs.makeDirectory(store.folder, { recursive: true }).pipe(
     Effect.andThen(writeCache(store.fs, store.filename, fetched)),
@@ -86,19 +94,26 @@ const fetchMissing = (store: Store, catalogId: string) =>
     Effect.mapError((error) => new CatalogUnavailable({ catalogId, message: error.message })),
   );
 
-/** Refreshes a cache older than a day in the background; cached reads go on meanwhile. */
+/**
+ * Refreshes in the background when the last attempt is over an hour old, once at a time; cached
+ * reads go on meanwhile, and a failure keeps the old cache.
+ */
 const refreshIfStale = Effect.fn("ModelCatalog.refreshIfStale")(function* (store: Store) {
-  const { fetchedAt, providers } = yield* Ref.get(store.cache);
-  const ids = Object.keys(providers);
-  const isStale = (yield* Clock.currentTimeMillis) - fetchedAt > Duration.toMillis(maxAge);
+  const ids = Object.keys((yield* Ref.get(store.cache)).providers);
+  if (ids.length === 0) return;
 
-  if (ids.length === 0 || !isStale) return;
+  const now = yield* Clock.currentTimeMillis;
 
-  yield* Effect.forkScoped(
-    refresh(store, ids).pipe(
-      store.lock.withPermits(1),
-      Effect.catch((error) => Effect.logWarning("The model catalog refresh failed", error)),
-    ),
+  const claimed = yield* Ref.modify(store.tried, (tried) =>
+    now - tried > Duration.toMillis(maxAge) ? [true, now] : [false, tried],
+  );
+
+  if (!claimed) return;
+
+  yield* refresh(store, ids).pipe(
+    store.lock.withPermits(1),
+    Effect.catch((error) => Effect.logWarning("The model catalog refresh failed", error)),
+    Effect.forkIn(store.scope),
   );
 });
 
@@ -107,19 +122,24 @@ const make = Effect.gen(function* () {
   const folder = (yield* Directories).global;
   const filename = (yield* Path.Path).join(folder, "catalog.json");
 
+  const cached = yield* readCache(fs, filename);
+
   const store: Store = {
     fs,
     http: yield* HttpClient.HttpClient,
     folder,
     filename,
-    cache: yield* Ref.make(yield* readCache(fs, filename)),
+    cache: yield* Ref.make(cached),
     lock: yield* Semaphore.make(1),
+    tried: yield* Ref.make(cached.fetchedAt),
+    scope: yield* Effect.scope,
   };
 
   yield* refreshIfStale(store);
 
   /** Cached reads never wait for a refresh or another provider's first fetch. */
   const entries = Effect.fn("ModelCatalog.entries")(function* (catalogId: string) {
+    yield* refreshIfStale(store);
     const found = (yield* Ref.get(store.cache)).providers[catalogId];
     if (found !== undefined) return found;
 

@@ -10,9 +10,15 @@ import {
 
 /** A session's usage: its latest finished step's context, and the cost of every finished step. */
 export const SessionUsage = Schema.Struct({
-  /** The input tokens of the latest finished step; zero before the first. */
+  /**
+   * The input and output tokens of the latest finished step, which the next request carries; zero
+   * before the first.
+   */
   context: Schema.Int,
-  /** The context window of that step's model; missing when the catalog does not say. */
+  /**
+   * The context window of that step's model as it is now; missing when neither its provider nor the
+   * catalog says.
+   */
   contextWindow: Schema.optional(Schema.Int),
   /** The share of that step's input read from the cache, from 0 to 1; zero before the first. */
   cacheHit: Schema.Finite,

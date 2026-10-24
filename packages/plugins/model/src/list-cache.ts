@@ -1,13 +1,14 @@
 /**
  * `models.json` in the global folder: each signed-in provider's last model list, so the list shows
- * at once. A list older than a day refreshes in the background, a provider never listed is fetched
- * at once, and a signed-out provider's list is dropped.
+ * at once. A read that finds a list older than an hour refreshes it in the background, a provider
+ * never listed is fetched at once, and a signed-out provider's list is dropped.
  */
 import {
   Clock,
   Duration,
   Effect,
   FileSystem,
+  Option,
   Path,
   Record,
   Ref,
@@ -28,8 +29,8 @@ import {
   type ModelProvider,
 } from "./contract.ts";
 
-/** How old a provider's list may get before a background refresh. */
-const maxAge = Duration.days(1);
+/** How old a provider's list may get before a read refreshes it, and how long a failed one waits. */
+const maxAge = Duration.hours(1);
 
 const ProviderList = Schema.Struct({
   /** Milliseconds since the Unix epoch of the last fetch. */
@@ -48,14 +49,15 @@ type ListCache = typeof ListCache.Type;
 
 const ListCacheJson = Schema.fromJsonString(ListCache);
 
-/** The cache file, the lists in it, and the providers refreshing in the background. */
+/** The cache file, the lists in it, and when each provider's refresh was last tried. */
 interface Store {
   readonly fs: FileSystem.FileSystem;
   readonly folder: string;
   readonly filename: string;
   readonly cache: Ref.Ref<ListCache>;
   readonly lock: Semaphore.Semaphore;
-  readonly refreshing: Ref.Ref<ReadonlySet<string>>;
+  /** Milliseconds since the Unix epoch by provider id. */
+  readonly tried: Ref.Ref<Readonly<Record<string, number>>>;
   readonly scope: Scope.Scope;
 }
 
@@ -104,25 +106,28 @@ const fetchList = Effect.fn("Models.fetchList")(function* (store: Store, provide
   return list;
 });
 
-/** Refreshes `provider`'s list in the background, once at a time; a failure keeps the old list. */
-const refreshLater = Effect.fn("Models.refreshLater")(function* (
+/**
+ * Refreshes `provider`'s list in the background when it and the last try are over an hour old, once
+ * at a time; a failure keeps the old list.
+ */
+const refreshIfStale = Effect.fn("Models.refreshIfStale")(function* (
   store: Store,
   provider: ModelProvider,
+  fetchedAt: number,
 ) {
-  const claimed = yield* Ref.modify(store.refreshing, (ids) =>
-    ids.has(provider.id) ? [false, ids] : [true, new Set([...ids, provider.id])],
+  const now = yield* Clock.currentTimeMillis;
+  const isStale = (since: number) => now - since > Duration.toMillis(maxAge);
+
+  const claimed = yield* Ref.modify(store.tried, (tried) =>
+    isStale(Math.max(fetchedAt, tried[provider.id] ?? 0))
+      ? [true, Record.set(tried, provider.id, now)]
+      : [false, tried],
   );
 
   if (!claimed) return;
 
-  const done = Ref.update(
-    store.refreshing,
-    (ids) => new Set([...ids].filter((id) => id !== provider.id)),
-  );
-
   yield* fetchList(store, provider).pipe(
     Effect.catch((error) => Effect.logWarning(`Refreshing ${provider.name} models failed`, error)),
-    Effect.ensuring(done),
     Effect.forkIn(store.scope),
   );
 });
@@ -139,8 +144,7 @@ const listed = Effect.fn("Models.listed")(function* (store: Store, provider: Mod
 
   if (cached === undefined) return (yield* fetchList(store, provider)).models;
 
-  const isStale = (yield* Clock.currentTimeMillis) - cached.fetchedAt > Duration.toMillis(maxAge);
-  if (isStale) yield* refreshLater(store, provider);
+  yield* refreshIfStale(store, provider, cached.fetchedAt);
 
   return cached.models;
 });
@@ -149,14 +153,21 @@ const listed = Effect.fn("Models.listed")(function* (store: Store, provider: Mod
 export const withWindow = (details: ModelDetails | undefined, contextWindow?: number) =>
   details === undefined || contextWindow === undefined ? details : { ...details, contextWindow };
 
-/** The window the provider last listed `id` with; undefined when it reports none. */
-export const listedWindow = (lists: Store, id: ModelId) =>
-  Effect.map(
-    Ref.get(lists.cache),
-    ({ providers }) =>
-      Object.values(providers)
-        .flatMap((list) => list.models)
-        .find((model) => model.id === id)?.contextWindow,
+/**
+ * The window `provider` lists `id` with, read as any list read is; none when it reports none or its
+ * list fails, logged.
+ */
+export const listedWindow = (lists: Store, provider: ModelProvider, id: ModelId) =>
+  listed(lists, provider).pipe(
+    Effect.map((models) =>
+      Option.fromUndefinedOr(models.find((model) => model.id === id)?.contextWindow),
+    ),
+    Effect.catch((error) =>
+      Effect.as(
+        Effect.logWarning(`Listing ${provider.name} models failed`, error),
+        Option.none<number>(),
+      ),
+    ),
   );
 
 /** `provider`'s models with their details from the catalog; none, logged, when its list fails. */
@@ -192,7 +203,7 @@ export const openLists = Effect.gen(function* () {
     filename,
     cache: yield* Ref.make(yield* load(fs, filename)),
     lock: yield* Semaphore.make(1),
-    refreshing: yield* Ref.make<ReadonlySet<string>>(new Set()),
+    tried: yield* Ref.make<Readonly<Record<string, number>>>({}),
     scope: yield* Effect.scope,
   } satisfies Store;
 });

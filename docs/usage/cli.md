@@ -8,14 +8,14 @@ Run it from the repository with `bun apps/cli/src/main.ts`, or as `liminal` once
 liminal
 ```
 
-With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; the first send starts a new session. The reply streams into the transcript, and each turn ends with a line saying whether it finished or you stopped it, the model that answered and how long it ran. When you scroll up, the message a reply answers stays at the top until the next message pushes it out. The sidebar shows the folder and the git branch. Its Usage section, all zero until the first reply finishes, shows how much of the model's context window the latest request used, the share of that request read from the cache, and what the session has cost at the provider's API prices. Calls outside the turn, such as approval reviews, are not counted.
+With no flags, Liminal opens its terminal UI. Write a prompt and press Enter; the first send starts a new session. The reply streams into the transcript, and each turn ends with a line saying whether it finished or you stopped it, the model that answered and how long it ran. When you scroll up, the message a reply answers stays at the top until the next message pushes it out. The sidebar shows the folder and the git branch. Its Usage section, all zero until the first reply finishes, shows how much of the model's current context window the conversation fills (the latest request and its reply), the share of that request read from the cache, and what the session has cost at the provider's API prices. Calls outside the turn, such as approval reviews, are not counted.
 
 | Key | Does |
 | --- | --- |
 | Enter | Send; while a turn runs, steer it |
 | Shift+Enter | New line |
 | Tab | While a turn runs, send as a follow-up |
-| Esc | Close the open sidebar; otherwise, while a turn runs, stop it and put the queued inputs back into the draft |
+| Esc | Close the open sidebar; otherwise, while a turn runs, press twice within two seconds to stop it and put the queued inputs back into the draft. The first press turns the hint to `again to stop` |
 | Alt+Up | Put the queued inputs back into the draft, oldest first, before what is there; the turn goes on |
 | Shift+Tab | The next thinking level of the model on the model line, when it has more than one |
 | Ctrl+S | Stash the draft: save it for this folder and clear the composer |

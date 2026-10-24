@@ -38,12 +38,12 @@ const models = Layer.effect(
     const lists = yield* openLists;
     const list = listModels(lists, providers, catalog);
 
-    const details = (model: ModelId) =>
-      Effect.zipWith(
-        lookUp(providers, catalog, model),
-        listedWindow(lists, model),
-        (found, window) => Option.fromUndefinedOr(withWindow(found.details, window)),
-      );
+    const details = Effect.fn("Models.details")(function* (model: ModelId) {
+      const found = yield* lookUp(providers, catalog, model);
+      const window = yield* listedWindow(lists, found.provider, model);
+
+      return Option.fromUndefinedOr(withWindow(found.details, Option.getOrUndefined(window)));
+    });
 
     return make(providers, yield* Settings, yield* ModelCall, { list, details });
   }),

@@ -28,7 +28,8 @@ const tokensText = (count: number) => {
   return `${(count / MILLION).toFixed(1)}M`;
 };
 
-const percent = (share: number) => `${Math.round(share * 100)}%`;
+/** `12.4%`. */
+const percent = (share: number) => `${(share * 100).toFixed(1)}%`;
 
 const usageOf = (session: SessionId) =>
   Stream.unwrap(
