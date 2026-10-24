@@ -52,9 +52,11 @@ export {
   type SidebarProps,
   status,
   type StatusProps,
+  title,
+  type TitleProps,
   type ToolRowProps,
   ToolRows,
-  type ToolRowView,
+  ToolRowView,
 } from "./slots.ts";
 
 export {

@@ -198,6 +198,7 @@ type Delta = { kind: string; data: Schema.Json }   // streamed to viewers, never
 defineEvent(kind, schema): { make(data, attributes?): Effect<NewEvent>; decode(item): Effect<Option<T>> } // deltas use it too
 MessageEvent                                   // session/message: model's Message, role and parts
 Notice                                         // session/notice: level and text; the model never sees it
+SessionNamed                                   // session/name: the name lists show over the first message
 interface SessionLog {
   open(attributes?): Effect<SessionId>
   append(id, events: NewEvent[]): Effect<SessionEvent[]>  // seq is assigned inside the write
@@ -357,19 +358,25 @@ How the transcript shows events is not a slot. `chat` builds turns and items fro
 
 ```ts
 // chat/src/view/index.ts
-export const buildTranscript: (state: ViewState, drawn: ReadonlySet<string>) => ReadonlyArray<Turn>
+export const buildTranscript: (state: ViewState, drawn: ReadonlySet<string>, hidden: ReadonlySet<string>) => ReadonlyArray<Turn>   // hidden: tools whose calls never show
 
 // chat/src/tui/index.tsx
-type ChatSlots = { sidebar: { session: SessionId }; composer: { session: SessionId } }
+type ChatSlots = { sidebar: { session: SessionId }; composer: { session: SessionId }; title: { session: SessionId } }   // title: right of the header
 export const ItemRenderer: Registry<{ kind: string; component: (props: { event: SessionEvent }) => JSX.Element }>
-export const ToolRows: Registry<{ tool: string; component: (props: { item: ToolItem; state }) => JSX.Element }>   // in place of a tool's plain row
+export const ToolRows: Registry<ToolRowView>
+type ToolRowView =
+  | Shown { tool: string; component: (props: { item: ToolItem; state }) => JSX.Element }   // in place of a tool's plain row
+  | Hidden { tool: string }                                                                // never shows, from the first streamed delta
 export const ComposerCovers: Registry<{ active(props): boolean; component(props): JSX.Element }>   // the first active cover takes the composer's place
 export const Moods: Registry<{ active(props): boolean; words(props): string[]; poses?: Pose[]; header?: "scanning" | "still" }>   // how the screen looks while a turn works: Porter's words and faces, the header's scan; the first active mood wins
 
 // questions tui entry
-ToolRows.add({ tool: "ask_question", component: AskRow })   // AskRow draws <WorkRow item details={answers} />; a click opens the details
+ToolRows.add(ToolRowView.Shown({ tool: "ask_question", component: AskRow }))   // AskRow draws <WorkRow item details={answers} />; a click opens the details
 ComposerCovers.add({ active: (props) => openAsks(props.state).length > 0, component: AskCover })
 Moods.add({ active: (props) => openAsks(props.state).length > 0, words: () => ["patiently waiting"], poses, header: "still" })
+
+// session-name tui entry: a tool the model uses under the hood
+ToolRows.add(ToolRowView.Hidden({ tool: "name_session" }))
 ```
 
 - A tool call and its result share the call id, so they make one item.

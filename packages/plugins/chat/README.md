@@ -6,7 +6,7 @@ The chat screen: a landing until the first send opens a session, then the sessio
 
 `./view` has no frontend framework, so any frontend can use it:
 
-- `buildTranscript(state, kinds)`: a session view's events and deltas as turns of items: later inputs, replies, tool rows, notices, each closed turn's end (done, stopped or interrupted, with the model and how long it ran; a failed turn ends in its error notice), and events of the `kinds` other plugins draw. Reasoning never shows. A tool call and its result share one row.
+- `buildTranscript(state, kinds, hidden)`: a session view's events and deltas as turns of items: later inputs, replies, tool rows, notices, each closed turn's end (done, stopped or interrupted, with the model and how long it ran; a failed turn ends in its error notice), and events of the `kinds` other plugins draw. Reasoning never shows, nor calls to the `hidden` tools. A tool call and its result share one row.
 - `isWriting(state)`: whether reply text is streaming now.
 - `draftTextOf(input)`: what the user wrote in an input, such as a queued message, without the parts plugins added; none for other inputs.
 
@@ -17,13 +17,14 @@ The chat screen: a landing until the first send opens a session, then the sessio
 | Export | What it is |
 | --- | --- |
 | `ItemRenderer` | A registry of `{ kind, component }`: how saved events of `kind` show in the transcript. Add to it from a `tui` entry |
-| `ToolRows` | A registry of `{ tool, component }`: how calls to `tool` show in the transcript, in place of the plain row. Props: `item` (the call, its result and whether it runs), `state` |
+| `ToolRows` | A registry of `ToolRowView`: how calls to `tool` show in the transcript. `ToolRowView.Shown({ tool, component })` draws them in place of the plain row, with props `item` (the call, its result and whether it runs) and `state`. `ToolRowView.Hidden({ tool })` leaves them and their results out from the first streamed delta, for a tool the model uses under the hood |
 | `ComposerCovers` | A registry of `{ active(props), component }`: something that takes the composer's place while it is active, such as a question to answer. The first active cover shows. Props: the composer's, plus `session` and `state` |
 | `Moods` | A registry of `{ active(props), words(props), poses?, header? }`: how the screen looks while a turn runs and the mood is active. `words` and `poses` are what Porter, the face that murmurs below the transcript, says and does; `header: "still"` stops the header's scanning diagonals. The first active mood wins, else the screen's own look. Props: `session`, `state` |
 | `WorkRow` | The plain row a tool call shows as, for a `ToolRows` view that keeps its look. `note` is a short fact after the input, such as `+3 -1`. `details()` draws what a click opens under the row, each time it opens; a row with details brightens under the mouse, one without stays still |
 | `Gutter` | The composer's left bar, `rows` high, for a cover that keeps the composer's look |
 | `sidebar` | The column beside the transcript once a session starts; every fill shows, in order. Props: `session`, `state` |
 | `composer` | Where the user writes; the last fill wins. Props: `running`, `queued`, `send(text, mode?)`, `cancel()` (also puts the queued inputs back into the draft), `pullBack()` |
+| `title` | The session's title, at the right of the header after the diagonals; the last fill wins. Props: `session` |
 | `status` | The left of the hint row under the draft, such as the model line; every fill shows, in order, at its own width, and the hints take the rest. Props: `session`, undefined on the landing |
 | `ChatSend` | The pipeline every send from the screen runs through, with `session`, `input` and `mode`, before the screen shows the session. A wrap still sees the screen it was sent from, so it can add what was chosen there |
 | `ChatScreen` | The screen as commands reach it: `session()`, `show(session)`, `startNew()` (back to the landing; nothing is saved until the next send), `draft` with `text()`, `insert(text)`, `prepend(text)` and `clearIf(text)`, and `registerDraftCommands(commands, keys)`: commands that work only while the draft has focus |

@@ -26,6 +26,7 @@ import palette from "@shanepadgett/liminal-palette";
 import persona from "@shanepadgett/liminal-persona";
 import questions from "@shanepadgett/liminal-questions";
 import session from "@shanepadgett/liminal-session";
+import sessionName from "@shanepadgett/liminal-session-name";
 import sessionPicker from "@shanepadgett/liminal-session-picker";
 import settings from "@shanepadgett/liminal-settings";
 import slash from "@shanepadgett/liminal-slash";
@@ -98,6 +99,7 @@ export const plugins = [
   theme,
   chat,
   usage,
+  sessionName,
   questions,
   approvals,
   stash,

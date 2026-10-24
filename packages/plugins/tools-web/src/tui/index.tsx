@@ -1,7 +1,7 @@
 /** The web tools' `tui` entry: their transcript rows. */
 import { Effect, Layer } from "effect";
 
-import { ToolRows } from "@shanepadgett/liminal-chat/tui";
+import { ToolRows, ToolRowView } from "@shanepadgett/liminal-chat/tui";
 import { definePlugin } from "@shanepadgett/liminal-core";
 
 import { webfetchName, websearchName } from "../contract.ts";
@@ -10,8 +10,8 @@ import { SearchRow } from "./SearchRow.tsx";
 
 const make = Effect.gen(function* () {
   const rows = yield* ToolRows;
-  yield* rows.add({ tool: websearchName, component: SearchRow });
-  yield* rows.add({ tool: webfetchName, component: FetchRow });
+  yield* rows.add(ToolRowView.Shown({ tool: websearchName, component: SearchRow }));
+  yield* rows.add(ToolRowView.Shown({ tool: webfetchName, component: FetchRow }));
 });
 
 export default definePlugin({

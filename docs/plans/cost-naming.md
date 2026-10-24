@@ -26,8 +26,8 @@ Cache marks, `usage` and `session-name`. Work list: [plugins/providers.md](../pl
 | Step | Work | Shape |
 | --- | --- | --- |
 | 1 | Cache marks, built and checked live on `anthropic`, `openrouter`, `opencode-go`, `openai` and `codex`. Sign in with ChatGPT is not offered: its route caches nothing (an identical 9.9k-token prompt sent twice reports no write and no read, and it refuses `prompt_cache_options`; others report the same at github.com/Daanish2003/bot-sdk/issues/664), and a coding agent without caching costs too much. | The Messages wire in `model-wire` sends a top-level `cache_control`, so the API caches the prompt up to its last block. `model-openrouter` sends the same for `anthropic/` models. Chat Completions and Responses send none: those models cache on their own. No `cache-hints` plugin and no `ModelRequest` field: no one turns caching off, and the mark depends on the wire. |
-| 2 | `usage`, built and checked with fake events; not yet seen in a live session. | Counts turn steps from `loop/step-end`. The sidebar shows context used with its share of the window, and the session's cost. A provider that reports a window serves, as `codex` does (272K, or 500K for `gpt-6.1-sol`), overrides the catalog's through `ModelInfo.contextWindow`. A step whose input passes a catalog price tier (272K for OpenAI's models) is priced at that tier. Context is the latest step's input plus output, against its model's window read again at each update. The model lists and catalog refresh in the background when a read finds them over an hour old. |
-| 3 | `session-name` | `session` defines a name event that its list shows over the first message. After the first turn, `session-name` names the session with `generateObject` on the `small` model and appends the event. |
+| 2 | `usage`, built and checked live. | Counts turn steps from `loop/step-end`. The sidebar shows context used with its share of the window, and the session's cost. A provider that reports a window serves, as `codex` does (272K, or 500K for `gpt-6.1-sol`), overrides the catalog's through `ModelInfo.contextWindow`. A step whose input passes a catalog price tier (272K for OpenAI's models) is priced at that tier. Context is the latest step's input plus output, against its model's window read again at each update. The model lists and catalog refresh in the background when a read finds them over an hour old. |
+| 3 | `session-name` | `session` defines a name event that its list shows over the first message. The main model names the session itself with a `name_session` tool, once it knows what the session is about. See [Step 3](#step-3-session-name). |
 
 Usage of calls outside the turn loop and today's cost across sessions are under Later in [status.md](../status.md).
 
@@ -72,3 +72,35 @@ The plan-billed `codex` provider is priced at API rates, so every session shows 
 - The server sums usage: a `usage/session` RPC reads the session log and streams `SessionUsage`.
 - `Models.details(model)` joins `model`'s contract, the same lookup `model/details` uses, so steps on signed-out providers still get prices.
 - The sidebar shows the share of the latest request read from the cache.
+
+## Step 3: `session-name`
+
+### Shape
+
+```text
+session
+  defines session/name { name }
+  list query: the latest session/name, else the first line of the first user message
+
+session-name server entry
+  Tools.add(name_session { name })    deferred; appends session/name, answers "Named."
+  BeforeCall: no session/name in the log -> ToolList.offer(name_session)
+              named                      -> ToolList.withdraw(name_session)
+
+session-name server entry
+  SessionNameRpc "session-name/name" { session } -> stream of names (SessionLog.live, session/name only)
+
+session-name tui entry
+  ToolRows.add(ToolRowView.Hidden({ tool: "name_session" }))
+  fills chat's title slot with the latest name; nothing before the first
+```
+
+### Agreed for step 3
+
+- The model names the session in the normal course of work: at once for a clear request, after clarifying for a vague one. It never says it is naming the session.
+- The guidance lives in the tool's description, so it leaves the prompt with the tool. No system prompt section.
+- A name is 3 to 8 words in sentence case, with no quotes and no trailing period.
+- Once named, the tool is withdrawn: the model gets the removal note, the tool stays in the sent list until the next fold so the cache holds, and calls to it fail. A checkpoint's fold drops it.
+- Print mode names sessions the same way, since naming happens inside the turn.
+- The name shows in `/sessions` and in chat's header, through a `title` slot that `session-name` fills from its `session-name/name` stream. The call never shows in the transcript, not even for a moment while it streams.
+- Renaming belongs to `memory`'s checkpoints in milestone 5.

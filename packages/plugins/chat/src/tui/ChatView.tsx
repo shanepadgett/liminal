@@ -54,6 +54,7 @@ import {
   type Moods,
   sidebar,
   type ToolRows,
+  ToolRowView,
 } from "./slots.ts";
 import { type Renderers, Turn } from "./Turn.tsx";
 
@@ -93,7 +94,11 @@ const useTurns = (state: Parameters<typeof buildTranscript>[0], renderers: Acces
   const [turns, setTurns] = createStore<{ list: TurnData[] }>({ list: [] });
 
   createEffect(() => {
-    const built = buildTranscript(state, new Set(renderers().events.keys()));
+    const built = buildTranscript(
+      state,
+      new Set(renderers().events.keys()),
+      renderers().hiddenTools,
+    );
 
     setTurns("list", reconcile([...built], { key: "id" }));
   });
@@ -157,7 +162,12 @@ function SessionScreen(props: {
 
   return (
     <Layout
-      header={<Header isScanning={view.state.running && mood()?.header !== "still"} />}
+      header={
+        <Header
+          session={props.session}
+          isScanning={view.state.running && mood()?.header !== "still"}
+        />
+      }
       transcript={
         <>
           <For each={turns()}>
@@ -311,6 +321,7 @@ const useAdded = (props: {
   const [renderers, setRenderers] = createSignal<Renderers>({
     events: new Map(),
     tools: new Map(),
+    hiddenTools: new Set(),
   });
 
   const [covers, setCovers] = createSignal<ReadonlyArray<ComposerCover>>([]);
@@ -323,7 +334,14 @@ const useAdded = (props: {
         ([views, rows, added, moodsAdded]) => {
           setRenderers({
             events: new Map(views.map((view) => [view.kind, view.component])),
-            tools: new Map(rows.map((row) => [row.tool, row.component])),
+            tools: new Map(
+              rows.flatMap((row) =>
+                ToolRowView.$is("Shown")(row) ? [[row.tool, row.component] as const] : [],
+              ),
+            ),
+            hiddenTools: new Set(
+              rows.flatMap((row) => (ToolRowView.$is("Hidden")(row) ? [row.tool] : [])),
+            ),
           });
 
           setCovers(added);

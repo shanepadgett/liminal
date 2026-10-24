@@ -12,6 +12,7 @@ import {
   type Seq,
   type SessionEvent,
   SessionId,
+  SessionNamed,
   SessionNotFound,
   SessionStoreFailed,
   type SessionSummary,
@@ -161,11 +162,15 @@ export const before = Effect.fn("SessionStore.before")(function* (
   return (yield* decodeRows(rows)).toReversed();
 });
 
-/** A session as the list query gives it: its latest event's time and its first user message. */
+/**
+ * A session as the list query gives it: its latest event's time, its first user message and its
+ * latest name, if it has one.
+ */
 const SummaryRow = Schema.Struct({
   id: SessionId,
   updated_at: Schema.DateTimeUtcFromMillis,
   first_message: Schema.fromJsonString(Message),
+  name: Schema.NullOr(Schema.String),
 });
 
 /** The first line of the message's first text, trimmed. */
@@ -177,7 +182,7 @@ const titleOf = (message: Message) => {
 
 const toSummary = (row: typeof SummaryRow.Type): SessionSummary => ({
   id: row.id,
-  title: titleOf(row.first_message),
+  title: row.name ?? titleOf(row.first_message),
   updatedAt: row.updated_at,
 });
 
@@ -194,7 +199,11 @@ export const list = Effect.fn("SessionStore.list")(function* (
         WHERE u.session_id = s.id AND u.kind = ${MessageEvent.kind}
           AND json_extract(u.data, '$.role') = 'user'
         ORDER BY u.seq LIMIT 1
-      ) AS first_message
+      ) AS first_message, (
+        SELECT json_extract(n.data, '$.name') FROM session_events n
+        WHERE n.session_id = s.id AND n.kind = ${SessionNamed.kind}
+        ORDER BY n.seq DESC LIMIT 1
+      ) AS name
       FROM sessions s JOIN session_events e ON e.session_id = s.id
       WHERE s.folder = ${folder}
       GROUP BY s.id

@@ -44,7 +44,7 @@ export type LiveItem = typeof LiveItem.Type;
 /** A saved session as a list shows it. */
 export const SessionSummary = Schema.Struct({
   id: SessionId,
-  /** The first line of the first user message. */
+  /** Its latest name, else the first line of the first user message. */
   title: Schema.String,
   /** When its latest event was saved. */
   updatedAt: Schema.DateTimeUtc,
@@ -108,6 +108,9 @@ export const defineEvent = <T>(
 
 /** A message the model sees: a user's input, a reply or tool results. */
 export const MessageEvent = defineEvent("session/message", Message);
+
+/** The session's name; lists show the latest one in place of the first message. */
+export const SessionNamed = defineEvent("session/name", Schema.Struct({ name: Schema.String }));
 
 /** A message for the user that the model never sees. */
 export const Notice = defineEvent(

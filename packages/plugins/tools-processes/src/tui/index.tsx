@@ -1,7 +1,7 @@
 /** `process_start`'s `tui` entry: its transcript row, labelled by the call's description. */
 import { Effect, Layer, Option, Schema } from "effect";
 
-import { type ToolRowProps, ToolRows, WorkRow } from "@shanepadgett/liminal-chat/tui";
+import { type ToolRowProps, ToolRows, ToolRowView, WorkRow } from "@shanepadgett/liminal-chat/tui";
 import { definePlugin } from "@shanepadgett/liminal-core";
 
 import { processStartName } from "../contract.ts";
@@ -26,7 +26,7 @@ function StartRow(props: ToolRowProps) {
 }
 
 const make = Effect.gen(function* () {
-  yield* (yield* ToolRows).add({ tool: processStartName, component: StartRow });
+  yield* (yield* ToolRows).add(ToolRowView.Shown({ tool: processStartName, component: StartRow }));
 });
 
 export default definePlugin({

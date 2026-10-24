@@ -31,6 +31,7 @@
     "@shanepadgett/liminal-persona": "workspace:*",
     "@shanepadgett/liminal-questions": "workspace:*",
     "@shanepadgett/liminal-session": "workspace:*",
+    "@shanepadgett/liminal-session-name": "workspace:*",
     "@shanepadgett/liminal-session-picker": "workspace:*",
     "@shanepadgett/liminal-settings": "workspace:*",
     "@shanepadgett/liminal-slash": "workspace:*",

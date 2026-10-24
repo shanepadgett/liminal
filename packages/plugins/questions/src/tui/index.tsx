@@ -14,6 +14,7 @@ import {
   type Mood,
   Moods,
   ToolRows,
+  ToolRowView,
 } from "@shanepadgett/liminal-chat/tui";
 import { draftTextOf } from "@shanepadgett/liminal-chat/view";
 import { Host } from "@shanepadgett/liminal-client";
@@ -72,7 +73,7 @@ const make = Effect.gen(function* () {
     );
 
   yield* views.add({ kind: formQuestion.kind, component: FormAsk });
-  yield* (yield* ToolRows).add({ tool: askQuestionName, component: AskRow });
+  yield* (yield* ToolRows).add(ToolRowView.Shown({ tool: askQuestionName, component: AskRow }));
 
   yield* (yield* ComposerCovers).add({
     active: (props) => openAsks(props.state).length > 0,

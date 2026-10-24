@@ -3,6 +3,7 @@
  * slots, covers for the composer, Porter's moods, and the pipeline every send passes through.
  */
 import type { JSX } from "@opentui/solid";
+import { Data } from "effect";
 
 import type { SessionView } from "@shanepadgett/liminal-client";
 import { Pipeline, Registry } from "@shanepadgett/liminal-core";
@@ -72,11 +73,17 @@ export interface ToolRowProps {
   readonly state: SessionView.ViewState;
 }
 
-/** How calls to `tool` show in the transcript, in place of the plain row. */
-export interface ToolRowView {
-  readonly tool: string;
-  readonly component: (props: ToolRowProps) => JSX.Element;
-}
+/**
+ * How calls to `tool` show in the transcript: `Shown` draws them with `component` in place of the
+ * plain row; `Hidden` leaves them and their results out from the first streamed delta, for a tool
+ * the model uses under the hood.
+ */
+export type ToolRowView = Data.TaggedEnum<{
+  Shown: { readonly tool: string; readonly component: (props: ToolRowProps) => JSX.Element };
+  Hidden: { readonly tool: string };
+}>;
+
+export const ToolRowView = Data.taggedEnum<ToolRowView>();
 
 /** Read when the transcript first draws, so add to it from a `tui` entry. */
 export class ToolRows extends Registry.Service<ToolRows, ToolRowView>()("chat/ToolRows") {}
@@ -99,6 +106,13 @@ export interface Mood {
 
 /** Read when the session screen first draws; the first active mood wins, else the screen's own. */
 export class Moods extends Registry.Service<Moods, Mood>()("chat/Moods") {}
+
+export interface TitleProps {
+  readonly session: SessionId;
+}
+
+/** The session's title, at the right of the header; the last fill wins. */
+export const title = defineSlot<TitleProps>("chat/title", "replace");
 
 export interface StatusProps {
   /** The session on screen; undefined on the landing screen. */

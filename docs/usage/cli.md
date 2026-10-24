@@ -39,7 +39,7 @@ Type `/` as the first character of the draft to list commands. Keep typing to fi
 | Command | Does |
 | --- | --- |
 | `/new` | New session, as Ctrl+N |
-| `/sessions` | Open a saved session, as Ctrl+O |
+| `/sessions` | Open a saved session, as Ctrl+O. The model names each session once it knows what the session is about, and the name shows at the right of the header; until then the list shows its first message |
 | `/model` | Pick a model. See below |
 | `/connect` | Connect a provider, as `liminal connect` does. See below |
 | `/disconnect` | Log out of a connected login, as `liminal logout` does. See below |

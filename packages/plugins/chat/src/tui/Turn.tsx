@@ -7,6 +7,7 @@
  */
 
 import { Dynamic } from "@opentui/solid";
+import type { Data } from "effect";
 import { For, Match, Show, Switch } from "solid-js";
 
 import type { SessionView } from "@shanepadgett/liminal-client";
@@ -19,10 +20,14 @@ import { StickyPrompt } from "./sticky.tsx";
 import { TurnEnd } from "./TurnEnd.tsx";
 import { WorkRow } from "./WorkRow.tsx";
 
-/** Each event kind another plugin draws, and its component; and each tool's row the same way. */
+/**
+ * Each event kind another plugin draws, and its component; each tool's row the same way; and the
+ * tools whose calls never show.
+ */
 export interface Renderers {
   readonly events: ReadonlyMap<string, ItemView["component"]>;
-  readonly tools: ReadonlyMap<string, ToolRowView["component"]>;
+  readonly tools: ReadonlyMap<string, Data.TaggedEnum.Value<ToolRowView, "Shown">["component"]>;
+  readonly hiddenTools: ReadonlySet<string>;
 }
 
 interface ItemProps {

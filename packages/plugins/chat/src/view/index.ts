@@ -105,7 +105,8 @@ export const draftTextOf = (input: NewEvent): Option.Option<string> =>
     Option.filter((text) => text !== ""),
   );
 
-const makeBuilder = () => {
+/** `hidden` names the tools whose calls and results never become items. */
+const makeBuilder = (hidden: ReadonlySet<string>) => {
   const turns: Building[] = [];
 
   const start = (id: string, startedAt?: DateTime.Utc) => {
@@ -126,6 +127,8 @@ const makeBuilder = () => {
   const current = () => turns.at(-1) ?? start("start");
 
   const put = (item: Item) => {
+    if (item.kind === "tool" && hidden.has(item.name)) return;
+
     current().items.set(item.id, item);
   };
 
@@ -353,13 +356,15 @@ const addDelta = (builder: Builder, delta: Delta) => {
 
 /**
  * The turns of `state`, saved events first, then the deltas streaming now. `drawn` names the kinds
- * other plugins draw; any other kind, such as `loop/step-start`, never shows.
+ * other plugins draw; any other kind, such as `loop/step-start`, never shows. Calls to the tools in
+ * `hidden` and their results never show either.
  */
 export const buildTranscript = (
   state: SessionView.ViewState,
   drawn: ReadonlySet<string>,
+  hidden: ReadonlySet<string>,
 ): ReadonlyArray<Turn> => {
-  const builder = makeBuilder();
+  const builder = makeBuilder(hidden);
 
   for (const event of state.events) addEvent(builder, event, drawn);
   for (const delta of state.streaming) addDelta(builder, delta);
