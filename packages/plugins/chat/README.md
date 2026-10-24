@@ -8,7 +8,9 @@ The chat screen: a landing until the first send opens a session, then the sessio
 
 - `buildTranscript(state, kinds, hidden)`: a session view's events and deltas as turns of items: later inputs, replies, tool rows, notices, each closed turn's end (done, stopped or interrupted, with the model and how long it ran; a failed turn ends in its error notice), and events of the `kinds` other plugins draw. Reasoning never shows, nor calls to the `hidden` tools. A tool call and its result share one row.
 - `isWriting(state)`: whether reply text is streaming now.
-- `draftTextOf(input)`: what the user wrote in an input, such as a queued message, without the parts plugins added; none for other inputs.
+- `writtenOf(input)`: what the user wrote in an input, such as a queued message, without the parts plugins added, with its marks; none for other inputs.
+- `Marks`: the `chat/marks` attribute on a user message sent from the screen: the texts the draft marked, such as `$skill`, in order. The transcript draws them in the accent color.
+- `markRanges(text, marks)`: where each mark lies in `text`, each at its first match after the mark before.
 
 ## TUI
 
@@ -23,13 +25,14 @@ The chat screen: a landing until the first send opens a session, then the sessio
 | `WorkRow` | The plain row a tool call shows as, for a `ToolRows` view that keeps its look. `note` is a short fact after the input, such as `+3 -1`. `details()` draws what a click opens under the row, each time it opens; a row with details brightens under the mouse, one without stays still |
 | `Gutter` | The composer's left bar, `rows` high, for a cover that keeps the composer's look |
 | `sidebar` | The column beside the transcript once a session starts; every fill shows, in order. Props: `session`, `state` |
-| `composer` | Where the user writes; the last fill wins. Props: `running`, `queued`, `send(text, mode?)`, `cancel()` (also puts the queued inputs back into the draft), `pullBack()` |
+| `composer` | Where the user writes; the last fill wins. Props: `running`, `queued`, `send({ text, marks }, mode?)`, `cancel()` (also puts the queued inputs back into the draft), `pullBack()` |
 | `title` | The session's title, at the right of the header after the diagonals; the last fill wins. Props: `session` |
 | `status` | The left of the hint row under the draft, such as the model line; every fill shows, in order, at its own width, and the hints take the rest. Props: `session`, undefined on the landing |
 | `ChatSend` | The pipeline every send from the screen runs through, with `session`, `input` and `mode`, before the screen shows the session. A wrap still sees the screen it was sent from, so it can add what was chosen there |
-| `ChatScreen` | The screen as commands reach it: `session()`, `running()` (whether a turn runs in the session showing), `show(session)`, `startNew()` (back to the landing; nothing is saved until the next send), `draft` with `text()`, `insert(text)`, `prepend(text)` and `clearIf(text)`, and `registerDraftCommands(commands, keys)`: commands that work only while the draft has focus |
+| `ChatScreen` | The screen as commands reach it: `session()`, `running()` (whether a turn runs in the session showing), `show(session)`, `startNew()` (back to the landing; nothing is saved until the next send), `draft` with `text()`, `marks()`, `insert(text, marks?)`, `prepend(text, marks?)` (both mark `marks` again in the text) and `clearIf(text)`, and `registerDraftCommands(commands, keys)`: commands that work only while the draft has focus |
 | `DraftTriggers` | A registry of menus a character opens in the draft. See below |
 | `replaceToken(draft, token, text)` | Puts `text` in place of a trigger's token |
+| `writeMark(draft, token, text, style)` | Puts `text` in place of a trigger's token as a highlighted mark: the cursor steps over it and Backspace removes it whole |
 | `turnBlocked(screen, name)` | A command's `blocked` for `/name` that runs only while no turn runs: while one runs, it warns `/name runs once the turn ends` |
 
 Chat fills `sidebar` with the Session section (folder and git branch) and `composer` with its own composer.
@@ -56,4 +59,4 @@ Notifications show above the composer, over the queued inputs.
 
 The line under the draft shows a hint for each key that would do something now, while the draft has focus; without it, only Tab and Ctrl+Q. Enter appears once the draft has text, Esc only while a turn runs. Enter and Esc come first; when the rest do not fit, the line ends with `ctrl+g more`. `buildTranscript` leaves out the parts plugins added to a message on send, by `loop`'s `loop/added` attribute.
 
-The `tui` entry requires `Host`, `Slots`, `Renderer` and `Keymap`, and calls `session/*`, `loop/*` and `directories/workspace`.
+The `tui` entry requires `Host`, `Slots`, `Renderer`, `Keymap` and `Colors`, and calls `session/*`, `loop/*` and `directories/workspace`.

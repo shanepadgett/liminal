@@ -7,6 +7,7 @@
 import { DateTime, type Duration, Option, Schema } from "effect";
 
 import type { SessionView } from "@shanepadgett/liminal-client";
+import { Attribute, type Attributes } from "@shanepadgett/liminal-core";
 import {
   addedOf,
   Interrupted,
@@ -29,12 +30,56 @@ export type ToolStatus = "running" | "done" | "failed";
 
 export type NoticeLevel = "info" | "warning" | "error";
 
+/** What the user wrote, and the texts in it a draft trigger marked, such as `$skill`, in order. */
+export interface Written {
+  readonly text: string;
+  readonly marks: ReadonlyArray<string>;
+}
+
+/** On a user message sent from the chat screen: the texts the draft marked, in order. */
+export const Marks = Attribute.make("chat/marks", Schema.Array(Schema.String));
+
+/** The texts the draft marked in a message; none when it has no marks. */
+const marksOf = (attributes: Attributes): ReadonlyArray<string> => {
+  const encoded = attributes[Marks.key];
+  if (encoded === undefined) return [];
+
+  return Option.getOrElse(Schema.decodeOption(Marks.schema)(encoded), () => []);
+};
+
+export interface TextRange {
+  readonly start: number;
+  readonly end: number;
+}
+
+/**
+ * Where each mark lies in `text`, as string indexes: each at its first match after the mark before
+ * it. A mark not found is left out.
+ */
+export const markRanges = (
+  text: string,
+  marks: ReadonlyArray<string>,
+): ReadonlyArray<TextRange> => {
+  const ranges: TextRange[] = [];
+  let from = 0;
+
+  for (const mark of marks) {
+    const start = text.indexOf(mark, from);
+    if (mark === "" || start === -1) continue;
+
+    from = start + mark.length;
+    ranges.push({ start, end: from });
+  }
+
+  return ranges;
+};
+
 /** How a turn ended, as its last line reads; a failed turn ends in its error notice instead. */
 export type Ending = "done" | "stopped" | "interrupted";
 
 export type Item =
   /** An input sent after the one that started the turn, such as a steer. */
-  | { readonly kind: "input"; readonly id: string; readonly text: string }
+  | ({ readonly kind: "input"; readonly id: string } & Written)
   | { readonly kind: "reply"; readonly id: string; readonly text: string; readonly isLive: boolean }
   | {
       readonly kind: "tool";
@@ -69,7 +114,7 @@ export type ToolItem = Extract<Item, { readonly kind: "tool" }>;
 export interface Turn {
   readonly id: string;
   /** The input that started the turn; missing when it lies before the events loaded. */
-  readonly input: string | undefined;
+  readonly input: Written | undefined;
   readonly items: ReadonlyArray<Item>;
 }
 
@@ -80,7 +125,7 @@ interface Building {
   /** Its latest step: the seq of that step's `loop/step-start`, and the model it runs. */
   step: string | undefined;
   model: string | undefined;
-  input: string | undefined;
+  input: Written | undefined;
   /** By id; setting an id seen before replaces the item in place. */
   readonly items: Map<string, Item>;
 }
@@ -93,11 +138,14 @@ const textOf = (message: Message, attached: number) =>
     .join("\n");
 
 /** What the user wrote in `input`, such as a queued message; none for other inputs or no text. */
-export const draftTextOf = (input: NewEvent): Option.Option<string> =>
+export const writtenOf = (input: NewEvent): Option.Option<Written> =>
   MessageEvent.decodeOption(input).pipe(
     Option.filter((message) => message.role === "user"),
-    Option.map((message) => textOf(message, addedOf(input.attributes)).trim()),
-    Option.filter((text) => text !== ""),
+    Option.map((message) => ({
+      text: textOf(message, addedOf(input.attributes)).trim(),
+      marks: marksOf(input.attributes),
+    })),
+    Option.filter((written) => written.text !== ""),
   );
 
 /** `hidden` names the tools whose calls and results never become items. */
@@ -168,9 +216,10 @@ type Builder = ReturnType<typeof makeBuilder>;
 const addInput = (builder: Builder, event: SessionEvent, message: Message) => {
   const turn = builder.current();
   const text = textOf(message, addedOf(event.attributes));
+  const marks = marksOf(event.attributes);
 
-  if (turn.input === undefined && turn.items.size === 0) turn.input = text;
-  else builder.put({ kind: "input", id: String(event.seq), text });
+  if (turn.input === undefined && turn.items.size === 0) turn.input = { text, marks };
+  else builder.put({ kind: "input", id: String(event.seq), text, marks });
 };
 
 /** Each text part a reply, each tool call a running row. */

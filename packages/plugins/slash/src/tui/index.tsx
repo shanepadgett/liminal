@@ -20,7 +20,7 @@ import {
   type OpenTrigger,
   replaceToken,
 } from "@shanepadgett/liminal-chat/tui";
-import { draftTextOf } from "@shanepadgett/liminal-chat/view";
+import { writtenOf } from "@shanepadgett/liminal-chat/view";
 import { definePlugin } from "@shanepadgett/liminal-core";
 import {
   type CommandArgument,
@@ -137,7 +137,7 @@ const make = Effect.gen(function* () {
 
   yield* (yield* ChatSend).wrap((request, next) =>
     Option.match(
-      Option.flatMap(draftTextOf(request.input), (text) =>
+      Option.flatMap(writtenOf(request.input), ({ text }) =>
         typedCommand(slashCommands(keymap), text),
       ),
       {

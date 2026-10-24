@@ -15,8 +15,14 @@ const createStashes = Effect.flatMap(
   `,
 );
 
+/** The texts the draft marked, as a JSON array. */
+const addMarks = Effect.flatMap(
+  SqlClient.SqlClient,
+  (sql) => sql`ALTER TABLE stashes ADD COLUMN marks TEXT NOT NULL DEFAULT '[]'`,
+);
+
 /** Applies the migrations the database has not seen yet. */
 export const migrate = Migrator.make({})({
-  loader: Migrator.fromRecord({ "0001_create_stashes": createStashes }),
+  loader: Migrator.fromRecord({ "0001_create_stashes": createStashes, "0002_add_marks": addMarks }),
   table: "stash_migrations",
 });

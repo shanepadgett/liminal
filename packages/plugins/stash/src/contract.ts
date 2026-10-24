@@ -6,6 +6,8 @@ import { Rpc, RpcGroup } from "effect/rpc";
 export const Stash = Schema.Struct({
   id: Schema.Int,
   text: Schema.String,
+  /** The texts the draft marked in it, such as `$skill`, in order. */
+  marks: Schema.Array(Schema.String),
   /** When it was stashed, in epoch milliseconds. */
   createdAt: Schema.Int,
 });
@@ -19,8 +21,14 @@ export class StashesFailed extends Schema.TaggedError<
 >()("StashesFailed", { message: Schema.String }) {}
 
 export class StashRpc extends RpcGroup.make(
-  /** Stashes `text` in the workspace folder's list; the same text again keeps one stash. */
-  Rpc.make("stash/save", { payload: { text: Schema.String }, error: StashesFailed }),
+  /**
+   * Stashes `text` and its `marks` in the workspace folder's list; the same text again keeps one
+   * stash.
+   */
+  Rpc.make("stash/save", {
+    payload: { text: Schema.String, marks: Schema.Array(Schema.String) },
+    error: StashesFailed,
+  }),
   /** The workspace folder's stashes, newest first. */
   Rpc.make("stash/list", { success: Schema.Array(Stash), error: StashesFailed }),
   Rpc.make("stash/drop", { payload: { id: Schema.Int }, error: StashesFailed }),

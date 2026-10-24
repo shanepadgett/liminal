@@ -13,6 +13,6 @@ Requires `loop/Send`, `Directories`, `SqlClient`, `ChildProcessSpawner`, `FileSy
 
 ## TUI
 
-The `tui` entry adds the `@` draft trigger to chat's `DraftTriggers`: `@` at the start of the draft or after whitespace opens the list of tags. It loads `tags/list` each time it opens, and ranks rows by their `fuzzysort` match times one plus their frecency, 50 at most. Enter tags the row; Tab, shown only on a folder, opens it to list what is inside. A picked tag is a virtual extmark: the cursor steps over it and Backspace removes it whole.
+The `tui` entry adds the `@` draft trigger to chat's `DraftTriggers`: `@` at the start of the draft or after whitespace opens the list of tags. It loads `tags/list` each time it opens, and ranks rows by their `fuzzysort` match times one plus their frecency, 50 at most. Enter tags the row. Tab tags a file too, and on a folder opens it to list what is inside. A picked tag is a virtual extmark: the cursor steps over it and Backspace removes it whole.
 
 The entry requires `Host`, `Colors` and `DraftTriggers`.

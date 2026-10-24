@@ -10,7 +10,15 @@ import { Effect, Layer } from "effect";
 
 import { Host } from "@shanepadgett/liminal-client";
 import { definePlugin, Pipeline, Registry } from "@shanepadgett/liminal-core";
-import { Dialogs, Keymap, Notifications, Renderer, screen, Slots } from "@shanepadgett/liminal-tui";
+import {
+  Colors,
+  Dialogs,
+  Keymap,
+  Notifications,
+  Renderer,
+  screen,
+  Slots,
+} from "@shanepadgett/liminal-tui";
 
 import { ChatView, sendToLoop } from "./ChatView.tsx";
 import { Composer } from "./Composer.tsx";
@@ -68,6 +76,7 @@ export {
   DraftTriggers,
   type OpenTrigger,
   replaceToken,
+  writeMark,
 } from "./triggers.ts";
 
 const fill = Effect.gen(function* () {
@@ -123,7 +132,7 @@ const fill = Effect.gen(function* () {
 export default definePlugin({
   name: "chat-tui",
   provides: [ItemRenderer, ToolRows, ComposerCovers, Moods, ChatScreen, DraftTriggers, ChatSend],
-  requires: [Host, Slots, Renderer, Keymap, Dialogs, Notifications],
+  requires: [Host, Slots, Renderer, Keymap, Colors, Dialogs, Notifications],
   layer: Layer.effectDiscard(fill).pipe(
     Layer.provideMerge(
       Layer.mergeAll(

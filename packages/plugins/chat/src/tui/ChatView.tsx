@@ -25,6 +25,7 @@ import {
 import { createStore, reconcile } from "solid-js/store";
 
 import { Host } from "@shanepadgett/liminal-client";
+import { Attribute } from "@shanepadgett/liminal-core";
 import { LoopRpc, type SendMode } from "@shanepadgett/liminal-loop/contract";
 import { MessageEvent, type SessionId, SessionRpc } from "@shanepadgett/liminal-session/contract";
 import {
@@ -37,7 +38,14 @@ import {
   useSessionView,
 } from "@shanepadgett/liminal-tui";
 
-import { buildTranscript, draftTextOf, isWriting, type Turn as TurnData } from "../view/index.ts";
+import {
+  buildTranscript,
+  isWriting,
+  Marks,
+  type Turn as TurnData,
+  type Written,
+  writtenOf,
+} from "../view/index.ts";
 import { Header } from "./Header.tsx";
 import { Landing } from "./Landing.tsx";
 import { Layout, useSidebarPlace } from "./Layout.tsx";
@@ -74,7 +82,10 @@ const openSession = Effect.gen(function* () {
   return yield* sessions["session/open"]();
 }).pipe(Effect.scoped);
 
-/** Stops the turn, or only empties its queue; the queued inputs' text goes back into the draft. */
+/**
+ * Stops the turn, or only empties its queue; the queued inputs' text goes back into the draft, with
+ * its marks.
+ */
 const takeBack = Effect.fn("ChatView.takeBack")(function* (
   session: SessionId,
   draft: Draft,
@@ -82,11 +93,14 @@ const takeBack = Effect.fn("ChatView.takeBack")(function* (
 ) {
   const loop = yield* (yield* Host).client(LoopRpc);
   const inputs = yield* loop[how]({ session });
-  const texts = inputs.flatMap((input) => Option.toArray(draftTextOf(input)));
-  if (texts.length === 0) return;
+  const written = inputs.flatMap((input) => Option.toArray(writtenOf(input)));
+  if (written.length === 0) return;
 
   yield* Effect.sync(() => {
-    draft.prepend(texts.join("\n\n"));
+    draft.prepend(
+      written.map(({ text }) => text).join("\n\n"),
+      written.flatMap(({ marks }) => marks),
+    );
   });
 }, Effect.scoped);
 
@@ -165,7 +179,7 @@ function SessionScreen(props: {
   readonly isSidebarOpen: boolean;
   readonly closeSidebar: () => void;
   readonly screen: Screen["Service"];
-  readonly send: (text: string, mode?: SendMode) => void;
+  readonly send: (written: Written, mode?: SendMode) => void;
 }) {
   const run = useRun();
   const view = useSessionView(props.session);
@@ -221,7 +235,7 @@ function SessionScreen(props: {
 
 function LandingScreen(props: {
   readonly covers: Accessor<ReadonlyArray<ComposerCover>>;
-  readonly send: (text: string, mode?: SendMode) => void;
+  readonly send: (written: Written, mode?: SendMode) => void;
 }) {
   return (
     <Layout
@@ -307,16 +321,24 @@ const useScreenKeys = (
 
 /**
  * The first send opens the session; quitting before it saves nothing. The session shows once the
- * send is through, so `ChatSend` wraps still see the screen it was sent from.
+ * send is through, so `ChatSend` wraps still see the screen it was sent from. The draft's marks go
+ * with the message, so the transcript draws them too.
  */
 const sendText = Effect.fn("ChatView.send")(function* (
   screen: Screen["Service"],
   chatSend: ChatSend["Service"],
-  text: string,
+  written: Written,
   mode: SendMode | undefined,
 ) {
   const session = screen.session() ?? (yield* openSession);
-  const input = yield* MessageEvent.make({ role: "user", parts: [{ type: "text", text }] });
+
+  const attributes =
+    written.marks.length === 0 ? {} : yield* Attribute.set({}, Marks, written.marks);
+
+  const input = yield* MessageEvent.make(
+    { role: "user", parts: [{ type: "text", text: written.text }] },
+    attributes,
+  );
 
   yield* chatSend.run({ session, input, mode }).pipe(
     Effect.ensuring(
@@ -395,8 +417,8 @@ export function ChatView(props: {
     sidebarCommands(hasDrawer, isSidebarOpen, setSidebarOpen),
   );
 
-  const send = (text: string, mode?: SendMode) => {
-    run(sendText(props.screen, props.chatSend, text, mode));
+  const send = (written: Written, mode?: SendMode) => {
+    run(sendText(props.screen, props.chatSend, written, mode));
   };
 
   const session = props.screen.session;

@@ -8,6 +8,8 @@ The folders Liminal reads and writes, as the `Directories` service.
 | `workspace` | The folder Liminal works in |
 | `project` | `<workspace>/.liminal` |
 
+`foldersDown(path, directories)` lists the folders from the repository root down to the workspace, or the workspace alone outside a repository.
+
 `DirectoriesRpc` serves `directories/workspace`: the workspace folder, the home folder written `~`, and the Git branch checked out, read from `.git/HEAD` on each call.
 
 Requires `Path` and `FileSystem`. To keep files elsewhere, compose a plugin that provides `Directories` instead.

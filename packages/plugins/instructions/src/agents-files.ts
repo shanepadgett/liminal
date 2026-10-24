@@ -1,7 +1,7 @@
 /** The `agents-files` section: every `AGENTS.md`, most shared first, once the setting turns it on. */
-import { Effect, Option, type Path } from "effect";
+import { Effect } from "effect";
 
-import type { Directories } from "@shanepadgett/liminal-directories/contract";
+import { type Directories, foldersDown } from "@shanepadgett/liminal-directories/contract";
 import type { SessionId } from "@shanepadgett/liminal-session/contract";
 import type { Settings } from "@shanepadgett/liminal-settings/contract";
 
@@ -18,22 +18,6 @@ export interface AgentsFiles {
   readonly home: string;
   readonly tell: Tell;
 }
-
-/** `folder` and each folder above it up to `root`, nearest first. */
-const foldersUp = (path: Path.Path, folder: string, root: string): ReadonlyArray<string> => {
-  const parent = path.dirname(folder);
-
-  return folder === root || parent === folder
-    ? [folder]
-    : [folder, ...foldersUp(path, parent, root)];
-};
-
-/** The repository root down to the workspace; the workspace alone outside a repository. */
-const foldersDown = (path: Path.Path, { workspace, repository }: Directories["Service"]) =>
-  Option.match(repository, {
-    onNone: () => [workspace],
-    onSome: (root) => foldersUp(path, workspace, root).toReversed(),
-  });
 
 export const makeAgentsFiles = (services: AgentsFiles) =>
   Effect.fn("agentsFiles")(function* (session: SessionId) {

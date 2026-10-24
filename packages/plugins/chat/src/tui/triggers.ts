@@ -3,7 +3,7 @@
  * for commands. A trigger gives the menu's rows for what follows its character, and keys that pick
  * a row and edit the draft. The menu's own keys are up, down and esc.
  */
-import type { TextareaRenderable } from "@opentui/core";
+import type { ExtmarkOptions, SyntaxStyle, TextareaRenderable } from "@opentui/core";
 import type { Effect } from "effect";
 
 import { Registry } from "@shanepadgett/liminal-core";
@@ -66,4 +66,41 @@ export const replaceToken = (draft: TextareaRenderable, token: DraftToken, text:
 
   draft.deleteRange(from.row, from.col, to.row, to.col);
   draft.insertText(text);
+};
+
+const MARK_STYLE = "markup.raw.inline";
+
+/**
+ * Marks `text`, already in `draft` at editor offset `start`, as one unit: a virtual extmark the
+ * cursor steps over and one backspace removes, in the syntax style's inline code.
+ */
+export const markText = (
+  draft: TextareaRenderable,
+  start: number,
+  text: string,
+  style: SyntaxStyle,
+) => {
+  const mark: ExtmarkOptions = {
+    start,
+    end: start + draft.editBuffer.measureText(text),
+    virtual: true,
+  };
+
+  const styleId = style.getStyleId(MARK_STYLE);
+  if (styleId !== null) mark.styleId = styleId;
+  draft.extmarks.create(mark);
+};
+
+/**
+ * Puts `text` in place of `token` as one unit, then a space: a virtual extmark the cursor steps
+ * over and one backspace removes, in the syntax style's inline code.
+ */
+export const writeMark = (
+  draft: TextareaRenderable,
+  token: DraftToken,
+  text: string,
+  style: SyntaxStyle,
+) => {
+  replaceToken(draft, token, `${text} `);
+  markText(draft, token.start, text, style);
 };

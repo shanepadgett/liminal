@@ -18,7 +18,7 @@ import type {
 } from "@shanepadgett/liminal-session/contract";
 import { defineSlot, type kit } from "@shanepadgett/liminal-tui";
 
-import type { ToolItem } from "../view/index.ts";
+import type { ToolItem, Written } from "../view/index.ts";
 
 /** How a plugin's saved events of `kind` show in the transcript. */
 export interface ItemView {
@@ -42,7 +42,7 @@ export interface ComposerProps {
   /** Inputs sent while the turn runs, oldest first, until it takes them. */
   readonly queued: ReadonlyArray<Queued>;
   /** Starts a turn; while one runs, `mode` says whether the text steers it or follows it. */
-  readonly send: (text: string, mode?: SendMode) => void;
+  readonly send: (written: Written, mode?: SendMode) => void;
   /** Stops the running turn and puts the queued inputs back into the draft. */
   readonly cancel: () => void;
   /** Puts the queued inputs back into the draft; the turn goes on. */

@@ -31,6 +31,7 @@ import session from "@shanepadgett/liminal-session";
 import sessionName from "@shanepadgett/liminal-session-name";
 import sessionPicker from "@shanepadgett/liminal-session-picker";
 import settings from "@shanepadgett/liminal-settings";
+import skills from "@shanepadgett/liminal-skills";
 import slash from "@shanepadgett/liminal-slash";
 import sqlite from "@shanepadgett/liminal-sqlite";
 import stash from "@shanepadgett/liminal-stash";
@@ -105,6 +106,7 @@ export const plugins = [
   sessionName,
   questions,
   approvals,
+  skills,
   commit,
   stash,
   slash,

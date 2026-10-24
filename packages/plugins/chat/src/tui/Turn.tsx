@@ -48,7 +48,7 @@ function ItemBody(props: ItemProps & { readonly item: Item }) {
   return (
     <Switch>
       <Match when={asKind(props.item, "input")}>
-        {(input) => <StickyPrompt input={input().text} />}
+        {(input) => <StickyPrompt input={input()} />}
       </Match>
       <Match when={asKind(props.item, "reply")}>
         {(reply) => <Reply text={reply().text} isLive={reply().isLive} />}

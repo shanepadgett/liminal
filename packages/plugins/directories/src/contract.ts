@@ -1,5 +1,5 @@
 /** The folders Liminal reads and writes. */
-import { Context, type Effect, type Option, Schema } from "effect";
+import { Context, type Effect, Option, type Path, Schema } from "effect";
 import { Rpc, RpcGroup } from "effect/rpc";
 
 export class Directories extends Context.Service<
@@ -17,6 +17,25 @@ export class Directories extends Context.Service<
     readonly branch: Effect.Effect<Option.Option<string>>;
   }
 >()("directories/Directories") {}
+
+/** `folder` and each folder above it up to `root`, nearest first. */
+const foldersUp = (path: Path.Path, folder: string, root: string): ReadonlyArray<string> => {
+  const parent = path.dirname(folder);
+
+  return folder === root || parent === folder
+    ? [folder]
+    : [folder, ...foldersUp(path, parent, root)];
+};
+
+/** The repository root down to the workspace; the workspace alone outside a repository. */
+export const foldersDown = (
+  path: Path.Path,
+  { workspace, repository }: Directories["Service"],
+): ReadonlyArray<string> =>
+  Option.match(repository, {
+    onNone: () => [workspace],
+    onSome: (root) => foldersUp(path, workspace, root).toReversed(),
+  });
 
 /** Where the session runs, as a screen shows it. */
 export const Workspace = Schema.Struct({

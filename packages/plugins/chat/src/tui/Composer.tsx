@@ -29,10 +29,10 @@ import {
   useSyntax,
 } from "@shanepadgett/liminal-tui";
 
-import { draftTextOf } from "../view/index.ts";
+import { writtenOf } from "../view/index.ts";
 import { useDraftMenu } from "./draft-menu.ts";
 import { DraftMenu } from "./DraftMenu.tsx";
-import { type ChatScreen, SCREEN_HINTS } from "./screen.ts";
+import { type ChatScreen, type Draft as ScreenDraft, SCREEN_HINTS } from "./screen.ts";
 import { type ComposerProps, status } from "./slots.ts";
 import type { DraftTriggers } from "./triggers.ts";
 
@@ -88,7 +88,7 @@ function QueuedLine(props: { readonly queued: Queued; readonly text: string }) {
 function QueuedLines(props: { readonly queued: ReadonlyArray<Queued> }) {
   const shown = () =>
     props.queued.flatMap((queued) =>
-      Option.toArray(Option.map(draftTextOf(queued.input), (text) => ({ queued, text }))),
+      Option.toArray(Option.map(writtenOf(queued.input), ({ text }) => ({ queued, text }))),
     );
 
   return <For each={shown()}>{(line) => <QueuedLine queued={line.queued} text={line.text} />}</For>;
@@ -103,10 +103,10 @@ const DRAFT_KEYS = [
 
 type Draft = () => TextareaRenderable | undefined;
 
-/** Sends the draft and clears it; `mode` only while a turn runs. */
+/** Sends the draft with its marks and clears it; `mode` only while a turn runs. */
 const sender =
-  (props: ComposerProps, draft: Draft, text: () => string) => (mode?: SendMode) => () => {
-    const sent = text();
+  (props: ComposerProps, draft: Draft, written: ScreenDraft) => (mode?: SendMode) => () => {
+    const sent = { text: written.text(), marks: written.marks() };
     draft()?.clear();
     props.send(sent, mode);
   };
@@ -176,11 +176,11 @@ const turnCommands = (props: ComposerProps, stop: StopGuard): Command[] => [
 const composerCommands = (
   props: ComposerProps,
   draft: Draft,
-  text: () => string,
+  written: ScreenDraft,
   stop: StopGuard,
 ) => {
-  const hasText = () => text() !== "";
-  const sendAs = sender(props, draft, text);
+  const hasText = () => written.text() !== "";
+  const sendAs = sender(props, draft, written);
 
   return [
     {
@@ -263,7 +263,7 @@ export function Composer(
 
   useBindings(() => ({
     target: () => draft,
-    commands: composerCommands(props, () => draft, props.screen.draft.text, stop),
+    commands: composerCommands(props, () => draft, props.screen.draft, stop),
     bindings: COMPOSER_KEYS,
   }));
 

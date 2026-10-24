@@ -54,6 +54,7 @@
         "@shanepadgett/liminal-session-name": "workspace:*",
         "@shanepadgett/liminal-session-picker": "workspace:*",
         "@shanepadgett/liminal-settings": "workspace:*",
+        "@shanepadgett/liminal-skills": "workspace:*",
         "@shanepadgett/liminal-slash": "workspace:*",
         "@shanepadgett/liminal-sqlite": "workspace:*",
         "@shanepadgett/liminal-stash": "workspace:*",
@@ -455,6 +456,27 @@
       "peerDependencies": {
         "@shanepadgett/liminal-core": "workspace:*",
         "@shanepadgett/liminal-directories": "workspace:*",
+        "effect": "*",
+      },
+    },
+    "packages/plugins/skills": {
+      "name": "@shanepadgett/liminal-skills",
+      "version": "0.1.0",
+      "dependencies": {
+        "fuzzysort": "4.0.2",
+      },
+      "peerDependencies": {
+        "@shanepadgett/liminal-approvals": "workspace:*",
+        "@shanepadgett/liminal-chat": "workspace:*",
+        "@shanepadgett/liminal-client": "workspace:*",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-history": "workspace:*",
+        "@shanepadgett/liminal-loop": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-system-prompt": "workspace:*",
+        "@shanepadgett/liminal-tui": "workspace:*",
         "effect": "*",
       },
     },
@@ -1032,6 +1054,8 @@
     "@shanepadgett/liminal-session-picker": ["@shanepadgett/liminal-session-picker@workspace:packages/plugins/session-picker"],
 
     "@shanepadgett/liminal-settings": ["@shanepadgett/liminal-settings@workspace:packages/plugins/settings"],
+
+    "@shanepadgett/liminal-skills": ["@shanepadgett/liminal-skills@workspace:packages/plugins/skills"],
 
     "@shanepadgett/liminal-slash": ["@shanepadgett/liminal-slash@workspace:packages/plugins/slash"],
 

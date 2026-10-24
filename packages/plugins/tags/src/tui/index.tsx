@@ -1,16 +1,22 @@
 /**
  * Tags' `tui` entry: the `@` draft trigger. Its menu lists the workspace's tags, loaded each time
- * it opens; enter puts the tag in the draft, and on a folder tab opens it to list what is inside.
+ * it opens; enter puts the tag in the draft. Tab does too on a file, and on a folder opens it to
+ * list what is inside.
  */
 import { Effect, Layer } from "effect";
 
-import { DraftTriggers, type OpenTrigger, replaceToken } from "@shanepadgett/liminal-chat/tui";
+import {
+  type DraftKey,
+  DraftTriggers,
+  type OpenTrigger,
+  replaceToken,
+  writeMark,
+} from "@shanepadgett/liminal-chat/tui";
 import { Host } from "@shanepadgett/liminal-client";
 import { definePlugin } from "@shanepadgett/liminal-core";
 import { Colors } from "@shanepadgett/liminal-tui";
 
-import { TagsRpc } from "../contract.ts";
-import { writeTag } from "./marks.ts";
+import { TagsRpc, tagText } from "../contract.ts";
 import { rank } from "./rank.ts";
 
 /** The workspace's tags. */
@@ -25,6 +31,10 @@ const make = Effect.gen(function* () {
   const colors = yield* Colors;
   const triggers = yield* DraftTriggers;
 
+  const tag: DraftKey["run"] = (row, draft, token) => {
+    writeMark(draft, token, tagText(row.id), colors.syntax());
+  };
+
   const open = Effect.gen(function* () {
     const listed = yield* Effect.provideService(listTags, Host, host);
     const kinds = new Map(listed.map((each) => [each.tag, each.kind]));
@@ -38,12 +48,13 @@ const make = Effect.gen(function* () {
         })),
       empty: "No files match",
       keys: [
+        { key: "return", title: "Tag", run: tag },
         {
-          key: "return",
-          title: "Tag",
-          run: (row, draft, token) => {
-            writeTag(draft, token, row.id, colors.syntax());
-          },
+          key: "tab",
+          title: "Complete",
+          hint: "complete",
+          enabled: (row) => kinds.get(row.id) !== "folder",
+          run: tag,
         },
         {
           key: "tab",

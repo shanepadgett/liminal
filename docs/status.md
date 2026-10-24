@@ -73,7 +73,8 @@ Work: [plugins/features.md](plugins/features.md)
 
 - [x] Commands that run only while no turn runs
 - [x] `memory`
-- [ ] `skills`, `references`, `vocabulary`
+- [x] `skills`
+- [ ] `references`, `vocabulary`
 - [ ] `checks`
 - [x] `commit`
 - [ ] `tools-search`, `tools-execute`, `attention`
@@ -121,6 +122,7 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 - Telling the model when a `tools-processes` process exits on its own, without a `process_output` call, as OpenCode notifies on a background command's exit.
 - A cap on how many `tools-processes` processes run at once.
 - A `history` tool in `memory` that lets the model look up the entries a memory sums up.
+- Check `memory` in daily use once Liminal does enough to switch over to it: memories written, compacted, checkpoints by the model, on idle, on a model switch and on overflow, reminders, and the sidebar section. Then archive [plans/memory.md](plans/memory.md).
 - A live diff in the `edit` row while the call's params stream, as DeepSeek draws one from the params.
 - An Exa API key through `accounts` for `websearch`, past Exa's free limit.
 - A read-before-edit check, as Crush has: `edit` and `write` refuse a file the model has not read, or one changed since it read it.

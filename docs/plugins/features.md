@@ -52,6 +52,8 @@ registerCommands([{ name: "commit.run", slash: { name: "commit" },
 
 - Defers rarely used tools: wraps the tool list sent to the model and adds a search tool that loads them.
 - Sends deferred tools, which `tool-definitions` leaves out in milestone 1.
+- Skills move behind the search too: the system prompt stops listing every skill's name and description, and the model finds skills the way it finds deferred tools.
+- A classifier reads the whole list of deferred tools and skills against the system prompt and the user's message, and offers the ones that might help before the model asks.
 - Previous code: `tools-search`.
 
 ## `tools-execute`

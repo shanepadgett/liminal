@@ -25,8 +25,8 @@ import { type Stash, StashRpc } from "../contract.ts";
 
 const client = Effect.flatMap(Host, (host) => host.client(StashRpc));
 
-const save = (text: string) =>
-  Effect.scoped(Effect.flatMap(client, (stashes) => stashes["stash/save"]({ text })));
+const save = (text: string, marks: ReadonlyArray<string>) =>
+  Effect.scoped(Effect.flatMap(client, (stashes) => stashes["stash/save"]({ text, marks })));
 
 const list = Effect.scoped(Effect.flatMap(client, (stashes) => stashes["stash/list"]()));
 
@@ -52,7 +52,7 @@ interface Stashes {
 const openStashes = (chat: ChatScreen["Service"], stashes: Stashes, run: EntryRun) =>
   Effect.gen(function* () {
     yield* stashes.reload;
-    const textOf = (id: string) => stashes.list().find((stash) => String(stash.id) === id)?.text;
+    const stashOf = (id: string) => stashes.list().find((stash) => String(stash.id) === id);
 
     const dropThen = (id: string) => Effect.andThen(drop(Number(id)), stashes.reload);
 
@@ -74,9 +74,9 @@ const openStashes = (chat: ChatScreen["Service"], stashes: Stashes, run: EntryRu
         },
       ],
       onSelect: (row) => {
-        const text = textOf(row.id);
-        if (text === undefined) return;
-        chat.draft.insert(text);
+        const picked = stashOf(row.id);
+        if (picked === undefined) return;
+        chat.draft.insert(picked.text, picked.marks);
         run(dropThen(row.id));
       },
     });
@@ -94,7 +94,7 @@ const make = Effect.gen(function* () {
 
     run(
       Effect.andThen(
-        save(text),
+        save(text, chat.draft.marks()),
         Effect.andThen(
           Effect.sync(() => {
             chat.draft.clearIf(text);

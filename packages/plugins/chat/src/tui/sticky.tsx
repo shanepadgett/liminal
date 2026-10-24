@@ -8,12 +8,13 @@ import type { BoxRenderable, MouseEvent, ScrollBoxRenderable } from "@opentui/co
 import { type JSX, useRenderer } from "@opentui/solid";
 import { createContext, createSignal, onCleanup, onMount, Show, useContext } from "solid-js";
 
+import type { Written } from "../view/index.ts";
 import { Prompt } from "./Prompt.tsx";
 
 /** An input drawn in the transcript. */
 interface Row {
   readonly box: BoxRenderable;
-  readonly text: () => string;
+  readonly written: () => Written;
   readonly expanded: () => boolean;
   readonly toggle: () => void;
 }
@@ -24,7 +25,7 @@ type AddRow = (row: Row) => () => void;
 const Rows = createContext<AddRow>();
 
 /** An input in the transcript; it sticks while it is inside `StickyScroll`. */
-export function StickyPrompt(props: { readonly input: string }) {
+export function StickyPrompt(props: { readonly input: Written }) {
   const add = useContext(Rows);
   const [box, setBox] = createSignal<BoxRenderable>();
   const [expanded, setExpanded] = createSignal(false);
@@ -35,7 +36,7 @@ export function StickyPrompt(props: { readonly input: string }) {
 
     if (add === undefined || mounted === undefined) return;
 
-    onCleanup(add({ box: mounted, text: () => props.input, expanded, toggle }));
+    onCleanup(add({ box: mounted, written: () => props.input, expanded, toggle }));
   });
 
   return (
@@ -125,7 +126,7 @@ function StuckCopy(props: { readonly stuck: Stuck; readonly scroll: (event: Mous
     >
       <box position="absolute" top={props.stuck.shift} left={0} right={0}>
         <Prompt
-          input={props.stuck.row.text()}
+          input={props.stuck.row.written()}
           expanded={props.stuck.row.expanded()}
           onToggle={props.stuck.row.toggle}
         />

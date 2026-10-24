@@ -11,7 +11,14 @@ import { Directories } from "@shanepadgett/liminal-directories/contract";
 import { Stash, StashesFailed, StashRpc } from "./contract.ts";
 import { migrate } from "./migrations.ts";
 
-const decodeStashes = Schema.decodeUnknownEffect(Schema.Array(Stash));
+/** The `marks` column holds a JSON array. */
+const MarksColumn = Schema.fromJsonString(Schema.Array(Schema.String));
+
+const decodeStashes = Schema.decodeUnknownEffect(
+  Schema.Array(Schema.Struct({ ...Stash.fields, marks: MarksColumn })),
+);
+
+const encodeMarks = Schema.encodeEffect(MarksColumn);
 
 const failed = (error: { readonly message: string }) =>
   new StashesFailed({ message: `Stashes: ${error.message}` });
@@ -23,20 +30,20 @@ const rpc = StashRpc.toLayer(
     const { workspace } = yield* Directories;
 
     return StashRpc.of({
-      "stash/save": ({ text }) =>
-        Clock.currentTimeMillis.pipe(
-          Effect.flatMap(
-            (now) => sql`
-              INSERT INTO stashes (folder, text, created_at) VALUES (${workspace}, ${text}, ${now})
-              ON CONFLICT (folder, text) DO NOTHING
-            `,
-          ),
-          Effect.asVoid,
-          Effect.mapError(failed),
-        ),
+      "stash/save": ({ text, marks }) =>
+        Effect.gen(function* () {
+          const now = yield* Clock.currentTimeMillis;
+          const encoded = yield* encodeMarks(marks);
+
+          yield* sql`
+            INSERT INTO stashes (folder, text, marks, created_at)
+            VALUES (${workspace}, ${text}, ${encoded}, ${now})
+            ON CONFLICT (folder, text) DO NOTHING
+          `;
+        }).pipe(Effect.mapError(failed)),
       "stash/list": () =>
         sql`
-          SELECT id, text, created_at AS createdAt FROM stashes
+          SELECT id, text, marks, created_at AS createdAt FROM stashes
           WHERE folder = ${workspace} ORDER BY id DESC
         `.pipe(Effect.flatMap(decodeStashes), Effect.mapError(failed)),
       "stash/drop": ({ id }) =>

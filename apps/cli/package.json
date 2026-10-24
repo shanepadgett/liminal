@@ -36,6 +36,7 @@
     "@shanepadgett/liminal-session-name": "workspace:*",
     "@shanepadgett/liminal-session-picker": "workspace:*",
     "@shanepadgett/liminal-settings": "workspace:*",
+    "@shanepadgett/liminal-skills": "workspace:*",
     "@shanepadgett/liminal-slash": "workspace:*",
     "@shanepadgett/liminal-sqlite": "workspace:*",
     "@shanepadgett/liminal-stash": "workspace:*",
