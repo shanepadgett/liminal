@@ -1,10 +1,11 @@
 /** `Models`: the `small` role, the model list and one-off calls. */
-import { Effect, Option, Schema, Stream } from "effect";
+import { Duration, Effect, Option, Schema, Stream } from "effect";
 import { AiError } from "effect/ai";
 
 import type { Registry } from "@shanepadgett/liminal-core";
 import type { Settings } from "@shanepadgett/liminal-settings/contract";
 
+import { findModel } from "./call.ts";
 import { makeClassify } from "./classify.ts";
 import {
   type GenerateObjectOptions,
@@ -21,6 +22,9 @@ import {
 } from "./contract.ts";
 import { ModelSetting } from "./setting.ts";
 import { generateWithTools } from "./steps.ts";
+
+/** A provider's cache lifetime when it does not declare one, as Anthropic's default. */
+const DEFAULT_CACHE_LIFETIME = Duration.minutes(5);
 
 /** The reply's text, which holds the JSON of a structured output. */
 const textOf = (reply: Reply) =>
@@ -112,9 +116,16 @@ export const make = (
     );
   };
 
+  const cacheLifetime = Effect.fn("Models.cacheLifetime")(function* (model: ModelId) {
+    const { provider } = yield* findModel(providers, model);
+
+    return provider.cacheLifetime ?? DEFAULT_CACHE_LIFETIME;
+  });
+
   return Models.of({
     resolve,
     ...lookups,
+    cacheLifetime,
     generate: (options) => Effect.map(reply(options), Reply.message),
     generateObject,
     classify: makeClassify(providers, settings),

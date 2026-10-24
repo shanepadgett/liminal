@@ -13,6 +13,7 @@ Runs turns: an input starts one, the model is called, the tools it asks for run,
 - `Turns.fold(session)`: waits for the running turn, then logs the system prompt and tool list again.
 - `BeforeCall`: hooks that run before each model call, after the system prompt and tool list sync.
 - `TurnEnd`: hooks that run when the model answers without tool calls.
+- `CallFailed`: hooks that run when a step's model call fails, after the failed step is logged. A hook that answers true has the step tried once more with a fresh request; a second failure ends the turn.
 - `LoopRpc`: `loop/send`, `loop/cancel`, `loop/pull-back` and `loop/state` for screens.
 
 Requires `SessionLog`, `SystemPrompt`, `ToolList`, `History`, `ModelProviders`, `ModelCall`, `Tools` and `ToolCall`.
@@ -48,4 +49,4 @@ A `BeforeCall` hook logs its own records, such as a note the model should read b
 
 ## Replace it
 
-Leave out `loop` and provide `Inbox`, `Send`, `SessionModel`, `Turns`, `BeforeCall` and `TurnEnd` from your own plugin.
+Leave out `loop` and provide `Inbox`, `Send`, `SessionModel`, `Turns`, `BeforeCall`, `TurnEnd` and `CallFailed` from your own plugin.

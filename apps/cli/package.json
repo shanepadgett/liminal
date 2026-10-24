@@ -20,6 +20,7 @@
     "@shanepadgett/liminal-history": "workspace:*",
     "@shanepadgett/liminal-instructions": "workspace:*",
     "@shanepadgett/liminal-loop": "workspace:*",
+    "@shanepadgett/liminal-memory": "workspace:*",
     "@shanepadgett/liminal-model": "workspace:*",
     "@shanepadgett/liminal-model-anthropic": "workspace:*",
     "@shanepadgett/liminal-model-catalog": "workspace:*",

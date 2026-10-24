@@ -5,9 +5,13 @@
 import { Effect, Layer, Option } from "effect";
 
 import { definePlugin, Pipeline } from "@shanepadgett/liminal-core";
-import { Converters, defineConverter } from "@shanepadgett/liminal-history/contract";
+import { Converters, defineConverter, History } from "@shanepadgett/liminal-history/contract";
 import type { ToolDefinition, ToolResult } from "@shanepadgett/liminal-model/contract";
-import { type SessionId, SessionLog } from "@shanepadgett/liminal-session/contract";
+import {
+  type SessionEvent,
+  type SessionId,
+  SessionLog,
+} from "@shanepadgett/liminal-session/contract";
 import {
   type Tool,
   ToolCall,
@@ -49,6 +53,14 @@ const deferredOf = (tools: ReadonlyArray<Tool>) =>
 const offeredIn = (log: SessionLog["Service"], session: SessionId) =>
   Effect.map(Effect.flatMap(log.read(session), replay), offeredOf);
 
+/** The events without changes logged before the latest record, whose list already holds them. */
+const withoutFoldedChanges = (events: ReadonlyArray<SessionEvent>) => {
+  const record = events.findLast((event) => event.kind === ToolListRecord.kind);
+  if (record === undefined) return events;
+
+  return events.filter((event) => event.kind !== ToolListChange.kind || event.seq > record.seq);
+};
+
 /** Changes reach the model as `tool-change` parts; calls to tools not offered fail. */
 const guard = Effect.gen(function* () {
   const log = yield* SessionLog;
@@ -58,6 +70,8 @@ const guard = Effect.gen(function* () {
       { role: "user", parts: [{ type: "tool-change", added, removed }] },
     ]),
   );
+
+  yield* (yield* History).wrap((events, next) => next(withoutFoldedChanges(events)));
 
   yield* (yield* ToolCall).wrap((request, next) =>
     offeredIn(log, request.session).pipe(
@@ -152,6 +166,6 @@ const make = Effect.gen(function* () {
 export default definePlugin({
   name: "tool-definitions",
   provides: [ToolDefinitions, ToolList],
-  requires: [Tools, ToolCall, SessionLog, Converters],
+  requires: [Tools, ToolCall, SessionLog, Converters, History],
   layer: Layer.effect(ToolList, make).pipe(Layer.provideMerge(definitions)),
 });

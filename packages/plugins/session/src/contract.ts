@@ -77,6 +77,8 @@ export interface EventKind<T> {
   readonly make: (data: T, attributes?: Attributes) => Effect.Effect<NewEvent>;
   /** The data of an event or delta of this kind, or none for any other kind. */
   readonly decode: (item: Delta) => Effect.Effect<Option.Option<T>, EventInvalid>;
+  /** The data of an event or delta of this kind, or none for any other kind or rejected data. */
+  readonly decodeOption: (item: Delta) => Option.Option<T>;
 }
 
 export const defineEvent = <T>(
@@ -104,6 +106,8 @@ export const defineEvent = <T>(
           ),
         )
       : Effect.succeedNone,
+  decodeOption: (item) =>
+    item.kind === kind ? Schema.decodeOption(schema)(item.data) : Option.none(),
 });
 
 /** A message the model sees: a user's input, a reply or tool results. */

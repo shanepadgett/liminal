@@ -19,7 +19,6 @@ import {
 import type { Message, ToolResult } from "@shanepadgett/liminal-model/contract";
 import {
   type Delta,
-  type EventKind,
   MessageEvent,
   type NewEvent,
   Notice,
@@ -74,10 +73,6 @@ export interface Turn {
   readonly items: ReadonlyArray<Item>;
 }
 
-/** `item`'s data when it is of `kind` and its schema accepts it. */
-const decoded = <T>(kind: EventKind<T>, item: Delta): Option.Option<T> =>
-  item.kind === kind.kind ? Schema.decodeOption(kind.schema)(item.data) : Option.none();
-
 interface Building {
   readonly id: string;
   /** When its `loop/turn-start` was saved; missing when that lies before the events loaded. */
@@ -99,7 +94,7 @@ const textOf = (message: Message, attached: number) =>
 
 /** What the user wrote in `input`, such as a queued message; none for other inputs or no text. */
 export const draftTextOf = (input: NewEvent): Option.Option<string> =>
-  decoded(MessageEvent, input).pipe(
+  MessageEvent.decodeOption(input).pipe(
     Option.filter((message) => message.role === "user"),
     Option.map((message) => textOf(message, addedOf(input.attributes)).trim()),
     Option.filter((text) => text !== ""),
@@ -259,13 +254,13 @@ const endTurn = (builder: Builder, event: SessionEvent, outcome: Outcome) => {
 
 /** The `loop/*` events that open a turn, name its model and close it; whether `event` is one. */
 const addTurnEvent = (builder: Builder, event: SessionEvent): boolean => {
-  if (Option.isSome(decoded(TurnStarted, event))) {
+  if (Option.isSome(TurnStarted.decodeOption(event))) {
     builder.start(String(event.seq), event.at);
 
     return true;
   }
 
-  const step = decoded(StepStarted, event);
+  const step = StepStarted.decodeOption(event);
 
   if (Option.isSome(step)) {
     builder.stepWith(String(event.seq), step.value.model);
@@ -273,7 +268,7 @@ const addTurnEvent = (builder: Builder, event: SessionEvent): boolean => {
     return true;
   }
 
-  const ended = decoded(TurnEnded, event);
+  const ended = TurnEnded.decodeOption(event);
 
   if (Option.isNone(ended)) return false;
 
@@ -285,8 +280,8 @@ const addTurnEvent = (builder: Builder, event: SessionEvent): boolean => {
 const addEvent = (builder: Builder, event: SessionEvent, drawn: ReadonlySet<string>) => {
   if (addTurnEvent(builder, event)) return;
 
-  const message = decoded(MessageEvent, event).pipe(
-    Option.orElse(() => Option.map(decoded(Interrupted, event), (data) => data.message)),
+  const message = MessageEvent.decodeOption(event).pipe(
+    Option.orElse(() => Option.map(Interrupted.decodeOption(event), (data) => data.message)),
   );
 
   if (Option.isSome(message)) {
@@ -295,7 +290,7 @@ const addEvent = (builder: Builder, event: SessionEvent, drawn: ReadonlySet<stri
     return;
   }
 
-  const notice = decoded(Notice, event);
+  const notice = Notice.decodeOption(event);
 
   if (Option.isSome(notice)) {
     builder.put({ kind: "notice", id: String(event.seq), ...notice.value });
@@ -342,7 +337,7 @@ const addReplyDelta = (builder: Builder, data: typeof ReplyDelta.schema.Type) =>
 };
 
 const addDelta = (builder: Builder, delta: Delta) => {
-  const reply = decoded(ReplyDelta, delta);
+  const reply = ReplyDelta.decodeOption(delta);
 
   if (Option.isSome(reply)) {
     addReplyDelta(builder, reply.value);
@@ -350,7 +345,7 @@ const addDelta = (builder: Builder, delta: Delta) => {
     return;
   }
 
-  const done = decoded(ToolDone, delta);
+  const done = ToolDone.decodeOption(delta);
   if (Option.isSome(done)) addResult(builder, done.value);
 };
 
@@ -378,7 +373,7 @@ export const isWriting = (state: SessionView.ViewState): boolean => {
   if (last === undefined) return false;
 
   return Option.exists(
-    decoded(ReplyDelta, last),
+    ReplyDelta.decodeOption(last),
     (data) => data.type === "text" || data.type === "tool-input",
   );
 };

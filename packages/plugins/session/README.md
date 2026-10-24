@@ -10,7 +10,7 @@ The session log: each session's events in order, saved through `SqlClient`, and 
 - `SessionLog.latest(kind)`: the newest event of a kind in any session, or none.
 - `SessionLog.live(session, after?)`: saved events after a seq, the deltas since the last append, then each new event and delta. Covers writes made in the same process.
 - `SessionLog.publish(session, delta)`: streams a delta to `live` viewers.
-- `defineEvent(kind, schema)`: an event or delta kind, with `make` and `decode`.
+- `defineEvent(kind, schema)`: an event or delta kind, with `make`, `decode`, and `decodeOption`, which gives none for data its schema rejects.
 - `MessageEvent`: the `session/message` kind, holding `model`'s `Message`.
 - `Notice`: the `session/notice` kind, a message for the user that the model never sees.
 - `SessionNamed`: the `session/name` kind, the session's name, which `list` shows over the first message.

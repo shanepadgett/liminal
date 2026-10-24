@@ -8,7 +8,7 @@ import { Option, Schema } from "effect";
 import type { SessionView } from "@shanepadgett/liminal-client";
 import { Registry } from "@shanepadgett/liminal-core";
 import { TurnStarted } from "@shanepadgett/liminal-loop/contract";
-import type { EventKind, SessionEvent, SessionId } from "@shanepadgett/liminal-session/contract";
+import type { SessionId } from "@shanepadgett/liminal-session/contract";
 
 import { Answered, Asked } from "../contract.ts";
 
@@ -34,9 +34,6 @@ export interface AskView {
 /** Read when the cover first draws, so add to it from a `tui` entry. */
 export class AskViews extends Registry.Service<AskViews, AskView>()("questions/AskViews") {}
 
-export const decodedAs = <T>(kind: EventKind<T>, event: SessionEvent): Option.Option<T> =>
-  event.kind === kind.kind ? Schema.decodeOption(kind.schema)(event.data) : Option.none();
-
 /** The asks since the running turn started that have no answer yet, oldest first. */
 export const openAsks = (state: SessionView.ViewState): ReadonlyArray<AskedData> => {
   if (!state.running) return [];
@@ -46,12 +43,12 @@ export const openAsks = (state: SessionView.ViewState): ReadonlyArray<AskedData>
 
   const answered = new Set(
     since.flatMap((event) =>
-      Option.toArray(Option.map(decodedAs(Answered, event), ({ id }) => id)),
+      Option.toArray(Option.map(Answered.decodeOption(event), ({ id }) => id)),
     ),
   );
 
   return since.flatMap((event) =>
-    decodedAs(Asked, event).pipe(
+    Asked.decodeOption(event).pipe(
       Option.filter((ask) => !answered.has(ask.id)),
       Option.toArray,
     ),

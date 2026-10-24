@@ -38,6 +38,7 @@
         "@shanepadgett/liminal-history": "workspace:*",
         "@shanepadgett/liminal-instructions": "workspace:*",
         "@shanepadgett/liminal-loop": "workspace:*",
+        "@shanepadgett/liminal-memory": "workspace:*",
         "@shanepadgett/liminal-model": "workspace:*",
         "@shanepadgett/liminal-model-anthropic": "workspace:*",
         "@shanepadgett/liminal-model-catalog": "workspace:*",
@@ -243,6 +244,28 @@
         "@shanepadgett/liminal-tool-definitions": "workspace:*",
         "@shanepadgett/liminal-tools": "workspace:*",
         "effect": "*",
+      },
+    },
+    "packages/plugins/memory": {
+      "name": "@shanepadgett/liminal-memory",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@opentui/solid": "0.6.6",
+        "@shanepadgett/liminal-chat": "workspace:*",
+        "@shanepadgett/liminal-client": "workspace:*",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-directories": "workspace:*",
+        "@shanepadgett/liminal-history": "workspace:*",
+        "@shanepadgett/liminal-loop": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-system-prompt": "workspace:*",
+        "@shanepadgett/liminal-tool-definitions": "workspace:*",
+        "@shanepadgett/liminal-tools": "workspace:*",
+        "@shanepadgett/liminal-tools-read": "workspace:*",
+        "@shanepadgett/liminal-tui": "workspace:*",
+        "effect": "*",
+        "solid-js": "1.9.12",
       },
     },
     "packages/plugins/model": {
@@ -973,6 +996,8 @@
     "@shanepadgett/liminal-instructions": ["@shanepadgett/liminal-instructions@workspace:packages/plugins/instructions"],
 
     "@shanepadgett/liminal-loop": ["@shanepadgett/liminal-loop@workspace:packages/plugins/loop"],
+
+    "@shanepadgett/liminal-memory": ["@shanepadgett/liminal-memory@workspace:packages/plugins/memory"],
 
     "@shanepadgett/liminal-model": ["@shanepadgett/liminal-model@workspace:packages/plugins/model"],
 

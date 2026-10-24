@@ -94,6 +94,15 @@ export class BeforeCall extends Registry.Service<BeforeCall, Hook>()("loop/Befor
 /** Runs when the model answers without tool calls; a hook continues the turn by sending a follow-up. */
 export class TurnEnd extends Registry.Service<TurnEnd, Hook>()("loop/TurnEnd") {}
 
+/** Answers a failed model call; true asks to try the step again. */
+export type FailedHook = (turn: Turn, error: ModelCallError) => Effect.Effect<boolean, LogError>;
+
+/**
+ * Runs when a step's model call fails, after the failed step is logged. When a hook answers true
+ * the step is tried once more with a fresh request; a second failure ends the turn.
+ */
+export class CallFailed extends Registry.Service<CallFailed, FailedHook>()("loop/CallFailed") {}
+
 /**
  * The model a session's next turn runs, from its events; no events asks for a new session's. The
  * end is the first signed-in provider's `main` default; wrap it to choose, as `model-choice` does.

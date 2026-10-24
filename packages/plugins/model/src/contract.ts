@@ -1,5 +1,13 @@
 /** The model vocabulary: messages, requests, providers, the model call and one-off calls. */
-import { Context, type Effect, type Option, Schema, type Stream } from "effect";
+import {
+  Context,
+  type Duration,
+  type Effect,
+  type Option,
+  Predicate,
+  Schema,
+  type Stream,
+} from "effect";
 import type { AiError, Decision, DecisionModel, LanguageModel, Response } from "effect/ai";
 import { Rpc, RpcGroup } from "effect/rpc";
 
@@ -270,6 +278,8 @@ export interface ModelProvider {
    * takes none, and each change is a note and a changed tool list.
    */
   readonly nativeToolChanges?: ((model: string) => boolean) | undefined;
+  /** How long its prompt cache keeps a request's prefix after the last call; missing is 5 minutes. */
+  readonly cacheLifetime?: Duration.Duration | undefined;
   /** An Effect AI language model for one of its models, without the `provider/` prefix. */
   readonly languageModel: (
     model: string,
@@ -282,6 +292,56 @@ export interface ModelProvider {
     | ((model: string) => Effect.Effect<DecisionModel.DecisionModel, AiError.AiError>)
     | undefined;
 }
+
+/** What providers say when a request does not fit the model's context window, as OpenCode matches. */
+const CONTEXT_OVERFLOW = [
+  /prompt is too long/i,
+  /input is too long for (?:the )?(?:requested|selected) model/i,
+  /too large for the model'?s configured input limit/i,
+  /exceeded this model context window limit/i,
+  /exceeds the context window/i,
+  /exceeds (?:the )?(?:model'?s )?maximum context length(?: of [\d,]+ tokens?|\s*\([\d,]+\))/i,
+  /input token count.*exceeds the maximum/i,
+  /number of input tokens exceeds maximum length/i,
+  /tokens in request more than max tokens allowed/i,
+  /maximum prompt length is \d+/i,
+  /reduce the length of the messages/i,
+  /requested input length \d+ exceeds maximum input length/i,
+  /maximum context length is \d+ tokens/i,
+  /exceeds (?:the )?maximum allowed input length of [\d,]+ tokens?/i,
+  /input(?: \(\d+ tokens\))? is longer than the model'?s context length/i,
+  /exceeds the limit of \d+/i,
+  /exceeds the available context size/i,
+  /greater than the context length/i,
+  /`inputs` tokens \+ `max_new_tokens` must be <= \d+/i,
+  /context window exceeds limit/i,
+  /exceeded model token limit/i,
+  /context[_ ]length[_ ]exceeded/i,
+  /context length is only \d+ tokens/i,
+  /input length.*exceeds.*context length/i,
+  /prompt (?:too long|exceeds max length|\u8d85\u957f)/i,
+  /too large for model with \d+ maximum context length/i,
+  /prompt has [\d,]+ tokens?, but the configured context size is [\d,]+ tokens?/i,
+  /model_context_window_exceeded/i,
+  /range of input length should be/i,
+  /too many tokens/i,
+  /token limit exceeded/i,
+  /request_too_large/i,
+  /request entity too large/i,
+  /payload too large/i,
+];
+
+/** Whether a failed model call failed because the request did not fit the model's window. */
+export const isContextOverflow = (error: ModelCallError) => {
+  if (!Predicate.isTagged(error, "AiError")) return false;
+
+  // "Too many tokens" also names a rate limit, which waits rather than overflows.
+  const isLimit =
+    Predicate.isTagged(error.reason, "RateLimitError")
+    || Predicate.isTagged(error.reason, "QuotaExhaustedError");
+
+  return !isLimit && CONTEXT_OVERFLOW.some((pattern) => pattern.test(error.message));
+};
 
 export class ModelProviders extends Registry.Service<ModelProviders, ModelProvider>()(
   "model/ModelProviders",
@@ -476,6 +536,8 @@ export class Models extends Context.Service<
      * it or cannot be read.
      */
     readonly details: (model: ModelId) => Effect.Effect<Option.Option<ModelDetails>, ModelNotFound>;
+    /** How long the prompt cache of the model's provider lasts; 5 minutes when it does not say. */
+    readonly cacheLifetime: (model: ModelId) => Effect.Effect<Duration.Duration, ModelNotFound>;
     /** One model call outside the turn loop, through `ModelCall`; the reply is not logged. */
     readonly generate: (options: GenerateOptions) => Effect.Effect<Message, ModelCallError>;
     /**

@@ -1,7 +1,7 @@
 /** Sample turns the transcript states and the chat screen share. */
 
-/** A short-term memory as the model writes it: a few words, in its own voice. */
-export const SHORT_TERM_MEMORY = "Traced the double retry to recovery.ts and turn.ts";
+/** A memory as the model writes it: a few words, in its own voice. */
+export const MEMORY_LINE = "Traced the double retry to recovery.ts and turn.ts";
 
 export const QUESTION = "Why does the loop retry twice when the provider is overloaded?";
 

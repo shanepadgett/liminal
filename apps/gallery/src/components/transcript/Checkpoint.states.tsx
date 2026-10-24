@@ -1,7 +1,7 @@
 import type { State } from "../../entries.ts";
 import { Checkpoint } from "./Checkpoint.tsx";
 import { Memory } from "./Memory.tsx";
-import { SHORT_TERM_MEMORY } from "./samples.ts";
+import { MEMORY_LINE } from "./samples.ts";
 import { READ } from "./work-samples.tsx";
 import { WorkRows } from "./WorkRows.tsx";
 
@@ -15,7 +15,7 @@ export const checkpointStates: readonly [State, ...State[]] = [
     view: () => (
       <box gap={1}>
         <WorkRows rows={READ} />
-        <Memory kind="short-term" text={SHORT_TERM_MEMORY} />
+        <Memory kind="entries" text={MEMORY_LINE} />
         <Checkpoint filesRead={6} />
         <WorkRows rows={READ} />
       </box>

@@ -21,7 +21,6 @@ import {
   isSuggested,
   noteOf,
 } from "../contract.ts";
-import { decodedAs } from "./asks.ts";
 
 interface AnswerLine {
   readonly prompt: string;
@@ -63,7 +62,7 @@ const summaryOf = ({ answers }: Answers) => {
 /** The user's answers to the ask `id`, once they come. */
 const answersOf = (props: ToolRowProps, id: string) =>
   props.state.events.flatMap((event) =>
-    decodedAs(Answered, event).pipe(
+    Answered.decodeOption(event).pipe(
       Option.filter((answer) => answer.id === id),
       Option.flatMap((answer) => decodeAnswers(answer.answer)),
       Option.toArray,
@@ -73,7 +72,7 @@ const answersOf = (props: ToolRowProps, id: string) =>
 /** The call's form and the user's answers, from the events that ask and answer it. */
 const askOf = (props: ToolRowProps) =>
   props.state.events.flatMap((event) =>
-    decodedAs(Asked, event).pipe(
+    Asked.decodeOption(event).pipe(
       Option.filter((ask) => ask.callId === props.item.id),
       Option.map((ask) => ({
         form: Option.getOrUndefined(decodeForm(ask.data)),

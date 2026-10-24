@@ -15,6 +15,7 @@ import environment from "@shanepadgett/liminal-environment";
 import history from "@shanepadgett/liminal-history";
 import instructions from "@shanepadgett/liminal-instructions";
 import loop from "@shanepadgett/liminal-loop";
+import memory from "@shanepadgett/liminal-memory";
 import model from "@shanepadgett/liminal-model";
 import modelAnthropic from "@shanepadgett/liminal-model-anthropic";
 import modelCatalog from "@shanepadgett/liminal-model-catalog";
@@ -100,6 +101,7 @@ export const plugins = [
   theme,
   chat,
   usage,
+  memory,
   sessionName,
   questions,
   approvals,

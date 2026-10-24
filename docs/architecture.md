@@ -170,6 +170,7 @@ interface ModelProvider {
   languageModel(model, { thinking?, cacheKey?, details?, toolChanges? }): Effect<LanguageModel>   // an Effect AI language model; a provider that routes its cache by key sends cacheKey; toolChanges = { declared; changes }, set only for a native model with changes
   classifiers?: Effect<ModelInfo[]>         // only those the current login can call
   decisionModel?(model): Effect<DecisionModel>   // an Effect AI decision model for one of its classifiers
+  cacheLifetime?: Duration                  // how long its prompt cache lasts; 5 minutes when missing
 }
 ModelProviders: Registry<ModelProvider>
 ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>   // retries inside; converts to Effect AI's types
@@ -177,6 +178,8 @@ Reply.add(reply, delta) / Reply.message(reply)          // deltas into the assis
 Models.resolve("small" | ModelId, main?: ModelId): Effect<ModelChoice>   // small follows main's provider
 Models.list: Effect<ModelInfo[]>   // signed-in providers only, cached in ~/.liminal/models.json; a provider whose list fails is logged and left out
 Models.details(model): Effect<Option<ModelDetails>, ModelNotFound>   // from the catalog, signed in or not, with the window the provider last listed
+Models.cacheLifetime(model): Effect<Duration, ModelNotFound>        // its provider's cacheLifetime
+isContextOverflow(error: ModelCallError): boolean   // the provider said the request is past the context window
 Models.generate(options: {
   model?: "small" | ModelId                 // missing is the prefix's model, or small
   main?: ModelId                            // the model the user works with; small is its provider's
@@ -196,7 +199,7 @@ ModelCatalog.models(catalogId): Effect<CatalogModel[], CatalogUnavailable>   // 
 type SessionEvent = { session: SessionId; seq: Seq; at: Date; kind: string; data: Schema.Json; attributes: Attributes }
 type NewEvent = { kind: string; data: Schema.Json; attributes: Attributes }
 type Delta = { kind: string; data: Schema.Json }   // streamed to viewers, never stored
-defineEvent(kind, schema): { make(data, attributes?): Effect<NewEvent>; decode(item): Effect<Option<T>> } // deltas use it too
+defineEvent(kind, schema): { make(data, attributes?): Effect<NewEvent>; decode(item): Effect<Option<T>>; decodeOption(item): Option<T> } // deltas use it too
 MessageEvent                                   // session/message: model's Message, role and parts
 Notice                                         // session/notice: level and text; the model never sees it
 SessionNamed                                   // session/name: the name lists show over the first message
@@ -235,6 +238,7 @@ Sections: Registry<Section>                  // Section = { name; text: (session
 SystemPrompt.sync(id): Effect<void>          // logs the prompt at start, then a note with each changed section's full text
 SystemPrompt.current(events): string         // the prompt the log says the model is sent
 SystemPrompt.fold(id): Effect<void>          // logs the prompt again from the current sections
+// system-prompt and tool-definitions each wrap History to leave out the change notes logged before their latest full record
 
 // history: the messages each model call sends
 Converters: Registry<Converter>              // one per event kind; a kind with no converter never reaches the model
@@ -254,6 +258,7 @@ BeforeCall: Registry<Hook>                    // records logged before each mode
 Turns.request(id): Effect<ModelRequest>      // system prompt + tool definitions + History, as the next model call sends them
 Turns.fold(id): Effect<void>                 // SystemPrompt.fold + ToolList.fold; waits for a running turn
 TurnEnd: Registry<Hook>
+CallFailed: Registry<(turn, error: ModelCallError) => Effect<boolean>>   // a step's model call failed; true from any hook tries the step once more
 ```
 
 The loop runs one turn:
@@ -263,6 +268,8 @@ log steers → sync system prompt and tool list → BeforeCall hooks → Turns.r
 → ToolCall for each call, results logged in order → repeat while the reply asked for tools → TurnEnd hooks
 → follow-ups continue the turn, else loop/turn-end
 ```
+
+A failed model call runs the `CallFailed` hooks after the failed step is logged; when one answers true, the step is tried once more with a fresh request.
 
 - Each step carries the attributes of the latest input it consumed; tool calls read them from `ToolContext` and log them.
 - The system prompt and tool definitions are logged at session start and never change in place. A change is logged as a note before the next model call; a fold logs them anew.

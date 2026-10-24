@@ -11,6 +11,8 @@ import { ToolCall, Tools } from "@shanepadgett/liminal-tools/contract";
 
 import {
   BeforeCall,
+  CallFailed,
+  type FailedHook,
   type Hook,
   Inbox,
   LoopRpc,
@@ -38,6 +40,7 @@ const services = Effect.gen(function* () {
     toolCall: yield* ToolCall,
     beforeCall: yield* BeforeCall,
     turnEnd: yield* TurnEnd,
+    callFailed: yield* CallFailed,
   };
 
   return turns;
@@ -112,11 +115,12 @@ const rpc = LoopRpc.toLayer(
 const registries = Layer.mergeAll(
   Layer.effect(BeforeCall, Registry.make<Hook>()),
   Layer.effect(TurnEnd, Registry.make<Hook>()),
+  Layer.effect(CallFailed, Registry.make<FailedHook>()),
 );
 
 export default definePlugin({
   name: "loop",
-  provides: [Inbox, Send, Turns, SessionModel, BeforeCall, TurnEnd],
+  provides: [Inbox, Send, Turns, SessionModel, BeforeCall, TurnEnd, CallFailed],
   requires: [
     SessionLog,
     SystemPrompt,

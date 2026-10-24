@@ -4,7 +4,7 @@ import { Response } from "effect/ai";
 
 import type { Attributes } from "@shanepadgett/liminal-core";
 import type { History } from "@shanepadgett/liminal-history/contract";
-import type { ModelCall, ModelRequest } from "@shanepadgett/liminal-model/contract";
+import type { ModelCall, ModelCallError, ModelRequest } from "@shanepadgett/liminal-model/contract";
 import {
   MessageEvent,
   Notice,
@@ -17,6 +17,7 @@ import type { ToolCall, Tools } from "@shanepadgett/liminal-tools/contract";
 
 import {
   type BeforeCall,
+  type CallFailed,
   type SessionModel,
   StepEnded,
   StepStarted,
@@ -39,6 +40,7 @@ export interface TurnServices {
   readonly toolCall: ToolCall["Service"];
   readonly beforeCall: BeforeCall["Service"];
   readonly turnEnd: TurnEnd["Service"];
+  readonly callFailed: CallFailed["Service"];
 }
 
 /** The session's next model request, read from its log. */
@@ -107,9 +109,38 @@ const callModel = Effect.fn("Loop.callModel")(function* (
   return reply;
 });
 
+/** Whether a `CallFailed` hook asks to try the step again; every hook hears of the failure. */
+const isRetried = (services: TurnServices, turn: Turn, error: ModelCallError) =>
+  Effect.flatMap(services.callFailed.list, (hooks) =>
+    Effect.map(
+      Effect.forEach(hooks, (hook) => hook(turn, error)),
+      (answers) => answers.includes(true),
+    ),
+  );
+
+/** The step's request and reply; a failed call is tried once more when a hook asks. */
+const makeCall = (services: TurnServices) => {
+  const request = makeRequest(services);
+
+  const callOnce = Effect.fn("Loop.callOnce")(function* (turn: Turn) {
+    const next = yield* request(turn.session);
+
+    return { next, reply: yield* callModel(services, turn, next) };
+  });
+
+  return (turn: Turn) =>
+    callOnce(turn).pipe(
+      Effect.catchTag("AiError", (error) =>
+        Effect.flatMap(isRetried(services, turn, error), (retry) =>
+          retry ? callOnce(turn) : Effect.fail(error),
+        ),
+      ),
+    );
+};
+
 /** One model call and the tool calls it asks for; true when the model answered without calls. */
 const makeStep = (services: TurnServices) => {
-  const request = makeRequest(services);
+  const call = makeCall(services);
 
   return Effect.fn("Loop.step")(function* (turn: Turn) {
     const { log, systemPrompt, toolList, beforeCall, turnEnd } = services;
@@ -118,8 +149,7 @@ const makeStep = (services: TurnServices) => {
     yield* toolList.sync(session);
     yield* runHooks(beforeCall, turn);
 
-    const next = yield* request(session);
-    const reply = yield* callModel(services, turn, next);
+    const { next, reply } = yield* call(turn);
     const calls = reply.message.parts.filter((part) => part.type === "tool-call");
 
     if (calls.length === 0) {
