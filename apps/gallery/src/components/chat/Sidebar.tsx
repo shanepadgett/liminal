@@ -1,8 +1,9 @@
 /**
  * The chat screen's side column: where the session runs, then usage's section with the share of the
  * model's context window the latest step used, that step's tokens, the share read from the cache
- * and what the session's steps cost. The title is in the header and the model by the composer, so
- * neither is repeated here. It fills the width the chat screen gives it.
+ * and what the session's steps cost; then memory's section with how many memories and checkpoints
+ * the session has, once it has a memory. The title is in the header and the model by the composer,
+ * so neither is repeated here. It fills the width the chat screen gives it.
  */
 
 import { Show } from "solid-js";
@@ -28,6 +29,17 @@ export interface SidebarUsage {
   /** The steps whose model has no price. */
   readonly unpriced: number;
 }
+
+export interface SidebarMemory {
+  /** Every memory the session holds, compacted ones included. */
+  readonly memories: number;
+  readonly checkpoints: number;
+  /** The small model is writing or compacting a memory now. */
+  readonly writing: boolean;
+}
+
+/** `1 memory` or `12 memories`. */
+const plural = (count: number, one: string, many: string) => (count === 1 ? one : many);
 
 /** `840`, `84K` or `1.2M`. */
 const tokensText = (count: number) => {
@@ -101,11 +113,28 @@ function UsageSection(props: { readonly usage: SidebarUsage }) {
   );
 }
 
+function MemorySection(props: { readonly memory: SidebarMemory }) {
+  const memories = () => props.memory.memories;
+  const checkpoints = () => props.memory.checkpoints;
+
+  return (
+    <Section title="Memory" note={props.memory.writing ? "writing" : undefined}>
+      <Row value={String(memories())} label={plural(memories(), "memory", "memories")} />
+      <Row
+        value={String(checkpoints())}
+        label={plural(checkpoints(), "checkpoint", "checkpoints")}
+      />
+    </Section>
+  );
+}
+
 export function Sidebar(props: {
   readonly folder: string;
   /** Left out when the folder is not a Git repository. */
   readonly branch?: string;
   readonly usage: SidebarUsage;
+  /** Left out until the session's first memory. */
+  readonly memory?: SidebarMemory;
 }) {
   const color = useColor();
 
@@ -124,6 +153,7 @@ export function Sidebar(props: {
         </Show>
       </Section>
       <UsageSection usage={props.usage} />
+      <Show when={props.memory}>{(memory) => <MemorySection memory={memory()} />}</Show>
     </box>
   );
 }

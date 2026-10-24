@@ -8,6 +8,7 @@ export const SAMPLE_SIDEBAR: ComponentProps<typeof Sidebar> = {
   folder: "~/dev/liminal",
   branch: "main",
   usage: { context: 86_000, contextWindow: 200_000, cacheHit: 0.912, cost: 0.84, unpriced: 0 },
+  memory: { memories: 12, checkpoints: 2, writing: false },
 };
 
 const sidebar = (props: ComponentProps<typeof Sidebar>) => () => (
@@ -21,6 +22,11 @@ const sidebar = (props: ComponentProps<typeof Sidebar>) => () => (
 export const sidebarStates: readonly [State, ...State[]] = [
   { name: "In use", fill: "screen", view: sidebar(SAMPLE_SIDEBAR) },
   {
+    name: "Writing a memory",
+    fill: "screen",
+    view: sidebar({ ...SAMPLE_SIDEBAR, memory: { memories: 1, checkpoints: 0, writing: true } }),
+  },
+  {
     name: "Near the limit",
     fill: "screen",
     view: sidebar({
@@ -31,7 +37,11 @@ export const sidebarStates: readonly [State, ...State[]] = [
   {
     name: "No price or window",
     fill: "screen",
-    view: sidebar({ ...SAMPLE_SIDEBAR, usage: { context: 42_000, cacheHit: 0.5, unpriced: 4 } }),
+    view: sidebar({
+      folder: "~/dev/liminal",
+      branch: "main",
+      usage: { context: 42_000, cacheHit: 0.5, unpriced: 4 },
+    }),
   },
   {
     name: "Fresh",
