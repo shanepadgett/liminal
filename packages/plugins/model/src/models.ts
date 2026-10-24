@@ -11,7 +11,6 @@ import {
   type GenerateOptions,
   type ModelCall,
   type ModelChoice,
-  type ModelInfo,
   ModelNotFound,
   type ModelProvider,
   type ModelRequest,
@@ -61,7 +60,7 @@ export const make = (
   providers: Registry<ModelProvider>,
   settings: Settings["Service"],
   call: ModelCall["Service"],
-  list: Effect.Effect<ReadonlyArray<ModelInfo>>,
+  lookups: Pick<Models["Service"], "list" | "details">,
 ) => {
   const resolve = Effect.fn("Models.resolve")(function* (model: string) {
     if (model !== "small") return { model } satisfies ModelChoice;
@@ -110,7 +109,7 @@ export const make = (
 
   return Models.of({
     resolve,
-    list,
+    ...lookups,
     generate: (options) => Effect.map(reply(options), Reply.message),
     generateObject,
     classify: makeClassify(providers, settings),

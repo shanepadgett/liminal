@@ -7,7 +7,6 @@ The chat screen: a landing until the first send opens a session, then the sessio
 `./view` has no frontend framework, so any frontend can use it:
 
 - `buildTranscript(state, kinds)`: a session view's events and deltas as turns of items: later inputs, replies, tool rows, notices, each closed turn's end (done, stopped or interrupted, with the model and how long it ran; a failed turn ends in its error notice), and events of the `kinds` other plugins draw. Reasoning never shows. A tool call and its result share one row.
-- `contextUsed(state)`: the latest step's input tokens, for the share of the context window in use.
 - `isWriting(state)`: whether reply text is streaming now.
 - `draftTextOf(input)`: what the user wrote in an input, such as a queued message, without the parts plugins added; none for other inputs.
 
@@ -31,7 +30,7 @@ The chat screen: a landing until the first send opens a session, then the sessio
 | `DraftTriggers` | A registry of menus a character opens in the draft. See below |
 | `replaceToken(draft, token, text)` | Puts `text` in place of a trigger's token |
 
-Chat fills `sidebar` with the Session section (folder, git branch, and the share of the context window the latest step's model used, read with `model/details`) and `composer` with its own composer.
+Chat fills `sidebar` with the Session section (folder and git branch) and `composer` with its own composer.
 
 ### Draft triggers
 
@@ -53,4 +52,4 @@ Keys:
 
 The line under the draft shows a hint for each key that would do something now, while the draft has focus; without it, only Tab and Ctrl+Q. Enter appears once the draft has text, Esc only while a turn runs. Enter and Esc come first; when the rest do not fit, the line ends with `ctrl+g more`. `buildTranscript` leaves out the parts plugins added to a message on send, by `loop`'s `loop/added` attribute.
 
-The `tui` entry requires `Host`, `Slots`, `Renderer` and `Keymap`, and calls `session/*`, `loop/*`, `directories/workspace` and `model/details`.
+The `tui` entry requires `Host`, `Slots`, `Renderer` and `Keymap`, and calls `session/*`, `loop/*` and `directories/workspace`.

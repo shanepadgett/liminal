@@ -67,6 +67,7 @@
         "@shanepadgett/liminal-tools-web": "workspace:*",
         "@shanepadgett/liminal-tools-write": "workspace:*",
         "@shanepadgett/liminal-tui": "workspace:*",
+        "@shanepadgett/liminal-usage": "workspace:*",
         "@shanepadgett/liminal-web-search-anthropic": "workspace:*",
         "@shanepadgett/liminal-web-search-openai": "workspace:*",
         "effect": "4.0.5",
@@ -609,6 +610,23 @@
         "solid-js": "1.9.12",
       },
     },
+    "packages/plugins/usage": {
+      "name": "@shanepadgett/liminal-usage",
+      "version": "0.1.0",
+      "peerDependencies": {
+        "@opentui/core": "0.6.6",
+        "@opentui/solid": "0.6.6",
+        "@shanepadgett/liminal-chat": "workspace:*",
+        "@shanepadgett/liminal-client": "workspace:*",
+        "@shanepadgett/liminal-core": "workspace:*",
+        "@shanepadgett/liminal-loop": "workspace:*",
+        "@shanepadgett/liminal-model": "workspace:*",
+        "@shanepadgett/liminal-session": "workspace:*",
+        "@shanepadgett/liminal-tui": "workspace:*",
+        "effect": "*",
+        "solid-js": "1.9.12",
+      },
+    },
     "packages/plugins/web-search-anthropic": {
       "name": "@shanepadgett/liminal-web-search-anthropic",
       "version": "0.1.0",
@@ -977,6 +995,8 @@
     "@shanepadgett/liminal-tools-write": ["@shanepadgett/liminal-tools-write@workspace:packages/plugins/tools-write"],
 
     "@shanepadgett/liminal-tui": ["@shanepadgett/liminal-tui@workspace:packages/tui"],
+
+    "@shanepadgett/liminal-usage": ["@shanepadgett/liminal-usage@workspace:packages/plugins/usage"],
 
     "@shanepadgett/liminal-web-search-anthropic": ["@shanepadgett/liminal-web-search-anthropic@workspace:packages/plugins/web-search-anthropic"],
 

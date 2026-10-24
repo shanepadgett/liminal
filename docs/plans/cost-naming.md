@@ -26,12 +26,12 @@ Cache marks, `usage` and `session-name`. Work list: [plugins/providers.md](../pl
 | Step | Work | Shape |
 | --- | --- | --- |
 | 1 | Cache marks, built and checked live on `anthropic`, `openrouter`, `opencode-go`, `openai` and `codex`. Sign in with ChatGPT is not offered: its route caches nothing (an identical 9.9k-token prompt sent twice reports no write and no read, and it refuses `prompt_cache_options`; others report the same at github.com/Daanish2003/bot-sdk/issues/664), and a coding agent without caching costs too much. | The Messages wire in `model-wire` sends a top-level `cache_control`, so the API caches the prompt up to its last block. `model-openrouter` sends the same for `anthropic/` models. Chat Completions and Responses send none: those models cache on their own. No `cache-hints` plugin and no `ModelRequest` field: no one turns caching off, and the mark depends on the wire. |
-| 2 | `usage` | Counts turn steps from `loop/step-end`. The sidebar shows context used with its share of the window, and the session's cost. |
+| 2 | `usage`, built and checked with fake events; not yet seen in a live session. | Counts turn steps from `loop/step-end`. The sidebar shows context used with its share of the window, and the session's cost. |
 | 3 | `session-name` | `session` defines a name event that its list shows over the first message. After the first turn, `session-name` names the session with `generateObject` on the `small` model and appends the event. |
 
 Usage of calls outside the turn loop and today's cost across sessions are under Later in [status.md](../status.md).
 
-## Step 2: `usage` (proposed)
+## Step 2: `usage`
 
 ### Today
 
@@ -66,11 +66,9 @@ tui entry
 
 The plan-billed `codex` provider is priced at API rates, so every session shows what it would cost on the API. It lists `openai` as its catalog id, so its models already carry those prices.
 
-### Decisions for the user
+### Agreed for step 2
 
-| # | Question | Recommendation |
-| --- | --- | --- |
-| 1 | Context share lives in `chat` today. Move it to `usage`, or leave it and have `usage` add cost only? | Move it: `chat`'s Session section keeps folder and branch, and `contextUsed`, `stepModel` and `useWindow` leave `chat`. One plugin owns token numbers. |
-| 2 | Sum on the server with a `usage/session` RPC, or in the TUI by streaming the whole session over `session/live`? | Server: it sends a few numbers, not every event, and stays cheap for remote frontends. |
-| 3 | Prices need a model's details on the server. Add `Models.details(model)` to `model`'s contract, the same `describe` the RPC uses, or use `Models.list`? | Add `details`: `list` skips signed-out providers, so their steps would go unpriced. |
-| 4 | Show the share of the latest request read from the cache? | Yes: one line, and it shows whether the cache marks work. |
+- The context share moves from `chat` to `usage`. `chat`'s Session section keeps folder and branch; `contextUsed`, `stepModel` and `useWindow` leave `chat`.
+- The server sums usage: a `usage/session` RPC reads the session log and streams `SessionUsage`.
+- `Models.details(model)` joins `model`'s contract, the same lookup `model/details` uses, so steps on signed-out providers still get prices.
+- The sidebar shows the share of the latest request read from the cache.

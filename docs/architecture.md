@@ -176,6 +176,7 @@ ModelCall: Pipeline<ModelRequest, Stream<ModelDelta>>   // retries inside; conve
 Reply.add(reply, delta) / Reply.message(reply)          // deltas into the assistant Message
 Models.resolve("small" | ModelId): Effect<ModelChoice>
 Models.list: Effect<ModelInfo[]>   // signed-in providers only, cached in ~/.liminal/models.json; a provider whose list fails is logged and left out
+Models.details(model): Effect<Option<ModelDetails>, ModelNotFound>   // from the catalog, signed in or not
 Models.generate(options: {
   model?: "small" | ModelId                 // missing is the prefix's model, or small
   prompt: Part[]

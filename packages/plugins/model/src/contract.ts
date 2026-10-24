@@ -1,5 +1,5 @@
 /** The model vocabulary: messages, requests, providers, the model call and one-off calls. */
-import { Context, type Effect, Schema, type Stream } from "effect";
+import { Context, type Effect, type Option, Schema, type Stream } from "effect";
 import type { AiError, Decision, DecisionModel, LanguageModel, Response } from "effect/ai";
 import { Rpc, RpcGroup } from "effect/rpc";
 
@@ -455,6 +455,11 @@ export class Models extends Context.Service<
     ) => Effect.Effect<ModelChoice, ModelNotFound | SettingsInvalid>;
     /** The models of every signed-in provider; a provider whose list fails is logged and left out. */
     readonly list: Effect.Effect<ReadonlyArray<ModelInfo>>;
+    /**
+     * One model's details from the catalog, signed in or not; none when the catalog does not list
+     * it or cannot be read.
+     */
+    readonly details: (model: ModelId) => Effect.Effect<Option.Option<ModelDetails>, ModelNotFound>;
     /** One model call outside the turn loop, through `ModelCall`; the reply is not logged. */
     readonly generate: (options: GenerateOptions) => Effect.Effect<Message, ModelCallError>;
     /**

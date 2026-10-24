@@ -43,6 +43,7 @@ import toolsRead from "@shanepadgett/liminal-tools-read";
 import toolsShell from "@shanepadgett/liminal-tools-shell";
 import toolsWeb from "@shanepadgett/liminal-tools-web";
 import toolsWrite from "@shanepadgett/liminal-tools-write";
+import usage from "@shanepadgett/liminal-usage";
 import webSearchAnthropic from "@shanepadgett/liminal-web-search-anthropic";
 import webSearchOpenai from "@shanepadgett/liminal-web-search-openai";
 
@@ -96,6 +97,7 @@ export const plugins = [
   tags,
   theme,
   chat,
+  usage,
   questions,
   approvals,
   stash,

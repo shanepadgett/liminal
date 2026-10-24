@@ -1,5 +1,5 @@
 /** The model call every turn and side call goes through, the providers it routes to, and the list. */
-import { Effect, FileSystem, Layer, Path } from "effect";
+import { Effect, FileSystem, Layer, Option, Path } from "effect";
 
 import { definePlugin, Pipeline, Registry } from "@shanepadgett/liminal-core";
 import { Directories } from "@shanepadgett/liminal-directories/contract";
@@ -9,13 +9,14 @@ import { makeCall } from "./call.ts";
 import {
   ModelCall,
   ModelCatalog,
+  type ModelId,
   type ModelProvider,
   ModelProviders,
   ModelRpc,
   Models,
 } from "./contract.ts";
 import { listModels, openLists } from "./list-cache.ts";
-import { describe, listAll } from "./listing.ts";
+import { describe, listAll, lookUp } from "./listing.ts";
 import { make } from "./models.ts";
 import { ModelSetting } from "./setting.ts";
 
@@ -33,9 +34,15 @@ const models = Layer.effect(
   Models,
   Effect.gen(function* () {
     const providers = yield* ModelProviders;
-    const list = listModels(yield* openLists, providers, yield* ModelCatalog);
+    const catalog = yield* ModelCatalog;
+    const list = listModels(yield* openLists, providers, catalog);
 
-    return make(providers, yield* Settings, yield* ModelCall, list);
+    const details = (model: ModelId) =>
+      Effect.map(lookUp(providers, catalog, model), (found) =>
+        Option.fromUndefinedOr(found.details),
+      );
+
+    return make(providers, yield* Settings, yield* ModelCall, { list, details });
   }),
 );
 

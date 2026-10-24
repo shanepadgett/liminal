@@ -38,17 +38,18 @@ export const listAll = (providers: Registry<ModelProvider>, models: Models["Serv
     });
   });
 
-/** One model from the catalog, without asking its provider; the catalog names it when it can. */
-export const describe = Effect.fn("ModelRpc.details")(function* (
+/**
+ * One model from the catalog, without asking its provider: its provider, its name, which the
+ * catalog gives when it can, and its details when the catalog lists it.
+ */
+export const lookUp = Effect.fn("Models.lookUp")(function* (
   providers: Registry<ModelProvider>,
   catalog: ModelCatalog["Service"],
   id: ModelId,
 ) {
   const { provider, model } = yield* findModel(providers, id);
 
-  if (provider.catalogId === undefined) {
-    return listingOf(provider, { id, name: model });
-  }
+  if (provider.catalogId === undefined) return { provider, name: model, details: undefined };
 
   const listed = yield* catalog.models(provider.catalogId).pipe(
     Effect.catchTag("CatalogUnavailable", (error) =>
@@ -57,5 +58,15 @@ export const describe = Effect.fn("ModelRpc.details")(function* (
     Effect.map((all) => all.find((each) => each.id === model)),
   );
 
-  return listingOf(provider, { id, name: listed?.name ?? model }, listed?.details);
+  return { provider, name: listed?.name ?? model, details: listed?.details };
 });
+
+/** One model as screens show it, signed in or not. */
+export const describe = (
+  providers: Registry<ModelProvider>,
+  catalog: ModelCatalog["Service"],
+  id: ModelId,
+) =>
+  Effect.map(lookUp(providers, catalog, id), ({ provider, name, details }) =>
+    listingOf(provider, { id, name }, details),
+  );

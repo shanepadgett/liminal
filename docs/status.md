@@ -66,7 +66,7 @@ Planned dependencies are pinned in `tools/planned/package.json` so their docs ar
 Work: [plugins/providers.md](plugins/providers.md)
 
 - [x] Cache marks for Claude: the Messages wire and OpenRouter
-- [ ] `usage`
+- [x] `usage`
 - [ ] `session-name`
 
 ### 5. Long sessions and project features
