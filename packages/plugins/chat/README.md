@@ -43,7 +43,7 @@ Keys:
 | Enter | Send; while a turn runs, steer it |
 | Shift+Enter | New line |
 | Tab | While a turn runs, send as a follow-up |
-| Esc | Close the open sidebar; otherwise, while a turn runs, stop it |
+| Esc | Close the open sidebar; otherwise, while a turn runs, press twice within two seconds to stop it. The first press turns the hint to `again to stop` |
 | Ctrl+C | Clear the draft; with no draft, what Esc does. Never quits |
 | Ctrl+Q | Quit, even under a dialog |
 | Tab | While the draft lacks focus and no dialog is open: focus the draft |

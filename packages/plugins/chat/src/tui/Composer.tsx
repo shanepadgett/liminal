@@ -3,16 +3,17 @@
  * bold chevron and the rest fading from light accent to dark. Below are the `status` slot's fills,
  * such as the model line, and on the right the hints of the keys that act now, while the draft has
  * focus; without it, only the screen's `tab` and `ctrl+q`. `enter` sends and `shift+enter` adds a
- * line; while a turn runs, `enter` steers it, `tab` queues a follow-up and `esc` stops it. Queued
- * inputs show above the draft until the turn takes them; `alt+up` puts them back into the draft, as
- * `esc` does. `ctrl+c` clears the draft, and with none does what `esc` does. A draft trigger, such
- * as `@`, opens its menu above the draft; the menu's keys come first.
+ * line; while a turn runs, `enter` steers it, `tab` queues a follow-up and `esc` pressed twice
+ * within two seconds stops it, the first press turning its hint to `again to stop`. Queued inputs
+ * show above the draft until the turn takes them; `alt+up` puts them back into the draft, as `esc`
+ * does. `ctrl+c` clears the draft, and with none does what `esc` does. A draft trigger, such as
+ * `@`, opens its menu above the draft; the menu's keys come first.
  */
 
 import { TextAttributes, type TextareaRenderable } from "@opentui/core";
 import { useBindings, useKeymapSelector } from "@opentui/keymap/solid";
 import { Option } from "effect";
-import { For, Show } from "solid-js";
+import { createEffect, createSignal, For, onCleanup, Show } from "solid-js";
 
 import type { Queued, SendMode } from "@shanepadgett/liminal-loop/contract";
 import {
@@ -108,14 +109,52 @@ const sender =
     props.send(sent, mode);
   };
 
-/** Keys for the running turn and its queue. */
-const turnCommands = (props: ComposerProps): Command[] => [
+/** How long the first `esc` waits for the second before a turn stops. */
+const STOP_WINDOW_MS = 2000;
+
+/** Whether the first `esc` is waiting for the second; it lapses after the window or the turn. */
+const useStopGuard = (running: () => boolean) => {
+  const [armed, setArmed] = createSignal(false);
+  let lapse: ReturnType<typeof setTimeout> | undefined;
+
+  const disarm = () => {
+    clearTimeout(lapse);
+    setArmed(false);
+  };
+
+  const arm = () => {
+    clearTimeout(lapse);
+    setArmed(true);
+    lapse = setTimeout(disarm, STOP_WINDOW_MS);
+  };
+
+  createEffect(() => {
+    if (!running()) disarm();
+  });
+
+  onCleanup(disarm);
+
+  return { armed, arm, disarm };
+};
+
+type StopGuard = ReturnType<typeof useStopGuard>;
+
+/** Keys for the running turn and its queue; a turn stops on the second `esc`. */
+const turnCommands = (props: ComposerProps, stop: StopGuard): Command[] => [
   {
     name: "chat.stop",
     title: "Stop",
     hint: { label: "stop", important: true },
-    enabled: () => props.running,
+    enabled: () => props.running && !stop.armed(),
+    run: stop.arm,
+  },
+  {
+    name: "chat.stop-confirm",
+    title: "Stop",
+    hint: { label: "again to stop", important: true },
+    enabled: () => props.running && stop.armed(),
     run: () => {
+      stop.disarm();
       props.cancel();
     },
   },
@@ -131,8 +170,13 @@ const turnCommands = (props: ComposerProps): Command[] => [
   },
 ];
 
-/** The draft's own keys, each acting only when it would do something now. */
-const composerCommands = (props: ComposerProps, draft: Draft, text: () => string): Command[] => {
+/** The draft's own keys in the keymap's form, each acting only when it would do something now. */
+const composerCommands = (
+  props: ComposerProps,
+  draft: Draft,
+  text: () => string,
+  stop: StopGuard,
+) => {
   const hasText = () => text() !== "";
   const sendAs = sender(props, draft, text);
 
@@ -176,8 +220,8 @@ const composerCommands = (props: ComposerProps, draft: Draft, text: () => string
         draft()?.clear();
       },
     },
-    ...turnCommands(props),
-  ];
+    ...turnCommands(props, stop),
+  ].map(keymapCommand);
 };
 
 const COMPOSER_KEYS = [
@@ -190,6 +234,7 @@ const COMPOSER_KEYS = [
   // Before `escape`, which answers `ctrl+c` too: the draft clears before the turn stops.
   { key: "ctrl+c", cmd: "chat.clear" },
   { key: "escape", cmd: "chat.stop" },
+  { key: "escape", cmd: "chat.stop-confirm" },
   { key: "alt+up", cmd: "chat.pull-back" },
 ];
 
@@ -203,6 +248,7 @@ export function Composer(
   const syntax = useSyntax();
   let draft: TextareaRenderable | undefined;
   const menu = useDraftMenu(() => draft, props.triggers);
+  const stop = useStopGuard(() => props.running);
 
   // Without focus on the draft, such as behind a dialog, only the screen's own keys.
   const hints = useKeymapSelector((keymap) =>
@@ -211,7 +257,7 @@ export function Composer(
 
   useBindings(() => ({
     target: () => draft,
-    commands: composerCommands(props, () => draft, props.screen.draft.text).map(keymapCommand),
+    commands: composerCommands(props, () => draft, props.screen.draft.text, stop),
     bindings: COMPOSER_KEYS,
   }));
 
