@@ -17,6 +17,10 @@
 			"definition": "The unit Liminal plugins are distributed in: an npm, git, or local package containing one or more plugins."
 		},
 		{
+			"term": "checkpoint",
+			"definition": "The point where the model rebuilds its context from memories, the entries no memory covers and its continuation note, so a session continues past the context window."
+		},
+		{
 			"term": "command",
 			"definition": "A slash command that runs on the agent side."
 		},
@@ -27,6 +31,10 @@
 		{
 			"term": "context",
 			"definition": "What the model receives on a step: prompt sections plus history projected from the session log."
+		},
+		{
+			"term": "continuation note",
+			"definition": "What the model writes at a checkpoint to carry on: the request and its limits, unfinished work, blockers, open questions and the next action."
 		},
 		{
 			"term": "contract",
@@ -49,8 +57,16 @@
 			"definition": "A registry, pipeline or attribute a contract exposes for other plugins to extend."
 		},
 		{
+			"term": "fold",
+			"definition": "At a checkpoint, prompt sections that were only appended join the system prompt."
+		},
+		{
 			"term": "frontend",
 			"definition": "A way to see and drive sessions: the TUI, the desktop webview, print mode or a browser."
+		},
+		{
+			"term": "handoff",
+			"definition": "A new chat started from the current one, carrying context from it."
 		},
 		{
 			"term": "host",

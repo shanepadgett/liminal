@@ -7,21 +7,23 @@ Work for [status.md](../status.md) milestone 5.
 - Slash commands that run only while no turn runs: prompt commands such as `/qna` start a turn, action commands such as `/commit` do one-off work and start none. Tried during a turn, they show a warning notification and do nothing. There is no `/compact`: `memory`'s checkpoints keep sessions inside the window.
 - UI commands such as `/connect` stay keymap commands and run at once, during a turn too.
 - The TUI's `/` menu and palette list them beside the keymap's commands.
-- Plan: [commit.md](../plans/commit.md).
+- Plan: [commit.md](../plans/_archive/commit.md).
 
 ## `memory`
 
-- Keeps long sessions inside the context window: checkpoints and notes as events.
-- Wraps `History` to project from the latest checkpoint; wraps `ModelCall` to checkpoint before the window fills.
+- Keeps long sessions inside the context window: memories, checkpoints and nudges as events.
+- The provider's small model writes memories of the history beside the session and compacts older memories into one.
+- The model calls `checkpoint` with a continuation note and the files it needs; hidden nudges ask for it at 150K and 200K tokens, and other tool calls are denied from 250K.
+- Wraps `History` to project from the latest checkpoint; wraps `ToolCall` for the denial; `BeforeCall` hooks measure the context and checkpoint on their own when the cache expired or the model changed.
+- A call that overflows the window checkpoints without a note and retries the step once, through `loop`'s `CallFailed` hook.
 - A checkpoint can rename the session when the work has moved away from its name, by appending a new `session/name` event.
-- Adds queries across sessions to `SessionLog` if it needs them.
-- The model writes each short-term and long-term memory with a line of a few words in its own voice, which the transcript shows where the memory was written. The transcript shows no entry ranges or token counts.
-- A call that still overflows the window fails the turn; `loop` ends it with a notice. Decide whether `memory` checkpoints and retries, as OpenCode compacts and retries.
-- Previous code: `memory`.
+- Each memory has a line of a few words in the model's voice, which the transcript shows where the memory was written. The transcript shows no entry ranges or token counts.
+- Plan: [memory.md](../plans/memory.md). Previous code: `memory`.
 
 ```ts
-History.wrap((events, next) => next(fromLatestCheckpoint(events)))
-ModelCall.wrap((req, next) => nearLimit(req) ? checkpoint(req).pipe(Effect.andThen(next(rebuild(req)))) : next(req))
+History.wrap((events, next) => afterCheckpoint(events, next))
+ToolCall.wrap((call, next) => full(call.session) && call.name !== "checkpoint" ? denied(call) : next(call))
+CallFailed.add((turn, error) => isContextOverflow(error) ? checkpoint(turn, "overflow").pipe(Effect.as(true)) : Effect.succeed(false))
 ```
 
 ## `skills`, `references`, `vocabulary`
