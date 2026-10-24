@@ -33,8 +33,10 @@ export function Ask(props: {
   return (
     <box flexDirection="row">
       <Gutter rows={rows()} />
+      {/* Its own height, not the row's: stretched, it would keep the gutter's old height. */}
       <box
         flexGrow={1}
+        alignSelf="flex-start"
         onSizeChange={function () {
           setRows(this.height);
         }}
