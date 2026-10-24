@@ -1,6 +1,6 @@
 # Plan: milestone 3 step 6, edit and write
 
-Part of milestone 3, overview in [coding.md](../coding.md). Work list: [plugins/coding.md](../../plugins/coding.md).
+Part of milestone 3, overview in [coding.md](coding.md).
 
 Today one plugin, `tools-files`, adds `read` (`src/read.ts`; `src/contract.ts` holds `pageOf`, `entriesOf`, `isBinary`, `MAX_LINES`). `tags` imports `@shanepadgett/liminal-tools-files/contract` for file listing, and the CLI composition adds the plugin. Nothing changes files.
 

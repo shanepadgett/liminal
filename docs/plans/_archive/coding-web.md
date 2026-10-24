@@ -1,6 +1,6 @@
 # Plan: milestone 3 step 7, web tools
 
-`tools-web` adds `websearch` and `webfetch`. Overview in [coding.md](coding.md). Work list: [plugins/coding.md](../plugins/coding.md).
+`tools-web` adds `websearch` and `webfetch`. Overview in [coding.md](coding.md).
 
 ## Today
 

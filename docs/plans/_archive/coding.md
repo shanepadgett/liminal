@@ -1,6 +1,6 @@
 # Plan: milestone 3, the coding agent
 
-Tools that read, edit and run things, the prompt that tells the model where it is, and the questions and approvals that keep the user in charge. Work list: [plugins/coding.md](../plugins/coding.md). Each step has its own plan; built steps are in `_archive/`.
+Tools that read, edit and run things, the prompt that tells the model where it is, and the questions and approvals that keep the user in charge. Each step has its own plan.
 
 ## Systems
 
@@ -21,14 +21,13 @@ Tools that read, edit and run things, the prompt that tells the model where it i
 
 | Step | Plugins | Plan |
 | --- | --- | --- |
-| 1 | `instructions`, `environment`; `.liminal/instructions/` | [coding-prompt-sections.md](_archive/coding-prompt-sections.md) |
-| 2 | `read`, `tool-output`; `ToolResult` parts | [coding-read.md](_archive/coding-read.md) |
-| 3 | `questions` | [coding-questions.md](_archive/coding-questions.md) |
-| 4 | `tools-shell`, `tools-processes`; `ToolContext.progress` | [coding-shell.md](_archive/coding-shell.md) |
-| 5 | `approvals`; `Tool.access` | [coding-approvals.md](_archive/coding-approvals.md) |
-| 6 | `tools-read`, `tools-edit`, `tools-write`; diffs in chat | [coding-edit-write.md](_archive/coding-edit-write.md) |
+| 1 | `instructions`, `environment`; `.liminal/instructions/` | [coding-prompt-sections.md](coding-prompt-sections.md) |
+| 2 | `read`, `tool-output`; `ToolResult` parts | [coding-read.md](coding-read.md) |
+| 3 | `questions` | [coding-questions.md](coding-questions.md) |
+| 4 | `tools-shell`, `tools-processes`; `ToolContext.progress` | [coding-shell.md](coding-shell.md) |
+| 5 | `approvals`; `Tool.access` | [coding-approvals.md](coding-approvals.md) |
+| 6 | `tools-read`, `tools-edit`, `tools-write`; diffs in chat | [coding-edit-write.md](coding-edit-write.md) |
 | 7 | `tools-web` | [coding-web.md](coding-web.md) |
-| 8 | Liminal works on its own repository | Not planned yet |
 
 - Each tool is its own plugin, so one can be swapped, such as an OpenAI patch tool for `edit` and `write`.
 - Each contract change lands with its first user. Its shape comes from the code that needs it.

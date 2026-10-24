@@ -1,6 +1,6 @@
 # Plan: milestone 3 step 1, prompt sections
 
-Part of milestone 3, overview in [coding.md](../coding.md). Work list: [plugins/coding.md](../../plugins/coding.md).
+Part of milestone 3, overview in [coding.md](coding.md).
 
 ```mermaid
 flowchart LR

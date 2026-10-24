@@ -1,6 +1,6 @@
 # Plan: milestone 3 step 4, shell and processes
 
-Part of milestone 3, overview in [coding.md](../coding.md). Work list: [plugins/coding.md](../../plugins/coding.md).
+Part of milestone 3, overview in [coding.md](coding.md).
 
 `tools-shell` adds `shell`, so approvals is shaped around a real command tool. It joins the CLI composition together with approvals, since nothing runs commands before the user can approve them.
 
