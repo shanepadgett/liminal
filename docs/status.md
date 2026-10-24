@@ -116,7 +116,6 @@ Work: [plugins/hosting.md](plugins/hosting.md)
 - A turn that ends in structured output: the final answer, after any tool use, must decode through a schema the prompt gives, as OpenCode's `format` option does. `Models.generateObject` covers one-off calls.
 - A session event when the model changes mid-session, as Pi and OpenCode log, so the transcript shows where it switched.
 - Image generation built in: when a signed-in provider offers an image model, a simple way to make an image with it.
-- A place to read the TUI's logs, such as a file under `~/.liminal/` or OpenTUI's console overlay. Inside the TUI, OpenTUI captures console output, so logged errors such as a slot fill that fails to draw stay hidden.
 - Older history in the transcript: the chat screen shows a session's latest 100 events and never calls the session view's `loadOlder`.
 - Telling the model when a `tools-processes` process exits on its own, without a `process_output` call, as OpenCode notifies on a background command's exit.
 - A cap on how many `tools-processes` processes run at once.

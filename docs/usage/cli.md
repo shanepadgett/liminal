@@ -124,6 +124,10 @@ When you send, each tagged file's text goes with the message as the model's `rea
 liminal -p "Summarize @README.md"
 ```
 
+### Logs
+
+The TUI writes warnings and errors, including warning and error notifications, to `~/.liminal/logs/tui-<start time>.log`, one JSON line each. A run that logs nothing leaves no file. A file stops at 5 MB with one last line saying so. At start, Liminal deletes files older than 7 days, then keeps the newest 20.
+
 `liminal --help` lists the commands and flags.
 
 ## Connect a provider

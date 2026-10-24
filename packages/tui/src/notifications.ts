@@ -1,6 +1,7 @@
 /**
  * Notifications: short notes any plugin posts, shown above the composer for 5 seconds each, oldest
  * first. Made with Solid signals, so a component reading `shown` redraws as each one empties.
+ * Warnings and errors are logged too, so they can be read after they leave the screen.
  */
 import { Context, Duration, Effect, FiberSet } from "effect";
 import { type Accessor, createSignal } from "solid-js";
@@ -35,6 +36,24 @@ const SHOWN_FOR = Duration.seconds(5);
 const STEPS = 50;
 
 const STEP = Duration.divideUnsafe(SHOWN_FOR, STEPS);
+
+/** A warning or error as a log entry, at its own level; others log nothing. */
+const logOf = (notification: Notification) => {
+  const text =
+    notification.message === undefined
+      ? notification.title
+      : `${notification.title}: ${notification.message}`;
+
+  if (notification.kind === "error") {
+    return Effect.annotateLogs(Effect.logError(text), "source", "notification");
+  }
+
+  if (notification.kind === "warning") {
+    return Effect.annotateLogs(Effect.logWarning(text), "source", "notification");
+  }
+
+  return Effect.void;
+};
 
 export const makeNotifications = Effect.gen(function* () {
   const fork = yield* FiberSet.makeRuntime();
@@ -75,6 +94,7 @@ export const makeNotifications = Effect.gen(function* () {
     const id = nextId;
     setShown((all) => [...all, { ...notification, id, remaining: 1 }]);
     fork(empty(id));
+    fork(logOf(notification));
   };
 
   const notifications: Notifications["Service"] = { post, shown };
