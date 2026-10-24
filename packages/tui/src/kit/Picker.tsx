@@ -1,9 +1,9 @@
 /**
- * A dialog that filters a list as the user types. With no query the rows sit under their section
- * titles; with one, `fuzzysort` orders them by match and marks the matched letters. It keeps its
- * own query and selection: up and down move, enter picks, esc closes, and each action's key runs it
- * on the selected row. A pick or action that confirms asks in the footer first; typing drops the
- * question.
+ * A dialog that filters a list as the user types. Rows sit under their section titles; a query
+ * keeps the rows that match, best first within each section, and marks the matched letters. It
+ * keeps its own query and selection: up and down move, enter picks, esc closes, and each action's
+ * key runs it on the selected row. A pick or action that confirms asks in the footer first; typing
+ * drops the question.
  */
 
 import { type InputRenderable, type ScrollBoxRenderable, TextAttributes } from "@opentui/core";
@@ -76,9 +76,16 @@ export interface PickerProps {
   readonly onClose?: () => void;
 }
 
+/** A row and the letters of its title the query matched. */
+interface Found {
+  readonly kind: "row";
+  readonly row: PickerRow;
+  readonly matches: readonly number[];
+}
+
 type Item =
   | { readonly kind: "section"; readonly title: string; readonly isSpaced: boolean }
-  | { readonly kind: "row"; readonly row: PickerRow; readonly matches: readonly number[] };
+  | Found;
 
 const LIST_ROWS = 12;
 
@@ -86,24 +93,32 @@ const LIST_ROWS = 12;
  * A section title goes before the first row of each section, after a blank line unless it opens the
  * list.
  */
-const sectioned = (rows: ReadonlyArray<PickerRow>): readonly Item[] =>
-  rows.flatMap((row, index): Item[] => {
-    const item: Item = { kind: "row", row, matches: [] };
-    const isFirst = row.section !== undefined && row.section !== rows[index - 1]?.section;
+const sectioned = (found: ReadonlyArray<Found>): readonly Item[] =>
+  found.flatMap((item, index): Item[] => {
+    const { section } = item.row;
+    const isFirst = section !== undefined && section !== found[index - 1]?.row.section;
 
-    return isFirst ? [{ kind: "section", title: row.section, isSpaced: index > 0 }, item] : [item];
+    return isFirst ? [{ kind: "section", title: section, isSpaced: index > 0 }, item] : [item];
   });
 
 /** The lines the items take, blank lines included. */
 const linesOf = (items: readonly Item[]) =>
   items.length + items.filter((item) => item.kind === "section" && item.isSpaced).length;
 
-const itemsOf = (rows: ReadonlyArray<PickerRow>, query: string): readonly Item[] =>
-  query === ""
-    ? sectioned(rows)
-    : fuzzysort
-        .go(query, rows, { key: "title" })
-        .map((result) => ({ kind: "row", row: result.obj, matches: result.indexes }));
+/** The rows matching `query` in their sections, which keep their order; every row for none. */
+const itemsOf = (rows: ReadonlyArray<PickerRow>, query: string): readonly Item[] => {
+  if (query === "") return sectioned(rows.map((row) => ({ kind: "row", row, matches: [] })));
+
+  const found = fuzzysort
+    .go(query, rows, { key: "title" })
+    .map((result): Found => ({ kind: "row", row: result.obj, matches: result.indexes }));
+
+  const sections = [...new Set(rows.map((row) => row.section))];
+
+  return sectioned(
+    sections.flatMap((section) => found.filter((each) => each.row.section === section)),
+  );
+};
 
 const rowId = (id: string) => `picker-row-${id}`;
 

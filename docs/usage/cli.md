@@ -85,7 +85,7 @@ In both of `/connect`'s lists, Ctrl+D on a connected provider or login disconnec
 
 ### Pick a model
 
-`/model` lists the models of the providers you are signed in to, a section per provider, with each model's context window. Favorites sit on top. Keep typing to filter.
+`/model` lists the models of the providers you are signed in to, a section per provider, with each model's context window. Favorites sit on top, each listed only there. Keep typing to filter; matches stay under their sections, favorites still on top.
 
 | Key | Does |
 | --- | --- |
